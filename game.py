@@ -63,9 +63,10 @@ class UnitType:
         self.y = y
 
     def incomingAttack(self, attack):
+        print(f"{self.name} being attacked")
         self.health = self.health - attack
         if self.health <= 0:
-            destroyed = True
+            self.destroyed = True
 
     # calculates attacks and marks units as DESTROYED, creates arrays of units in squares where multiple units are
     # trying to move simultaneously into the same square
@@ -74,29 +75,29 @@ class UnitType:
             # make sure that location on the board is empty
             assert self.board[self.x, self.y] is board.Empty, f"can't add {self.name} to board at ({self.x},{self.y})"
         elif self.state == UnitType.MOVING:
-            dest_x = 0
-            dest_y = 0
+            dest_x = self.x
+            dest_y = self.y
             if self.direction == UnitType.NORTH:
                 dest_y = self.y - 1
-                if self.y < 0:
+                if dest_y < 0:
                     self.y = 0
                     self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.EAST:
                 dest_x = self.x + 1
-                if self.x > self.board_max_x:
-                    self.x = self.board_max_x
+                if dest_x > self.board_max_x - 1:
+                    self.x = self.board_max_x - 1
                     self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.SOUTH:
                 dest_y = self.y + 1
-                if self.y > self.board_max_y:
-                    self.y = self.board_max_y
+                if dest_y > self.board_max_y - 1:
+                    self.y = self.board_max_y - 1
                     self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.WEST:
                 dest_x = self.x - 1
-                if self.x < 0:
+                if dest_x < 0:
                     self.x = 0
                     self.state = UnitType.NOP
                     return
@@ -112,7 +113,7 @@ class UnitType:
                 self.board[self.x, self.y] = board.Empty
                 self.setCoords(dest_x, dest_y)
                 self.board[dest_x, dest_y].append(self)
-            elif self.board[dest_x, dest_y] is UnitType:
+            elif type(self.board[dest_x, dest_y]) is UnitType:
                 self.board[dest_x, dest_y].incomingAttack(self.attack)
             self.state = UnitType.NOP
             return
@@ -190,7 +191,7 @@ class Board:
 
     def listUnits(self):
         for unit in self.units:
-            print(f"{unit.name}, {unit.symbol}, {unit.speed}, {unit.attack}, {unit.health}, [{unit.x},{unit.y}], {unit.state}")
+            print(f"{unit.name}, {unit.symbol}, {unit.speed}, {unit.attack}, {unit.health}, [{unit.x},{unit.y}], {unit.state}, {unit.destroyed}, {unit.on_board}")
 
     def getUnit(self, name):
         assert name in self.unit_dict, f"Unit {name} does not exist"
@@ -224,15 +225,33 @@ b.print()
 b.listUnits()
 
 w1 = b.getUnit("w1")
+b1 = b.getUnit("b1")
+w2 = b.getUnit("w2")
+b2 = b.getUnit("b2")
+b3 = b.getUnit("b3")
+b4 = b.getUnit("b4")
+w4 = b.getUnit("w4")
+
 w1.move(UnitType.EAST)
+b1.move(UnitType.WEST)
+w2.move(UnitType.EAST)
+b2.move(UnitType.WEST)
+b.commit()
+
+w1.move(UnitType.EAST)
+w2.move(UnitType.EAST)
+b2.move(UnitType.WEST)
 
 b.commit()
 b.print()
 b.listUnits()
 
-w1 = b.getUnit("w1")
-w1.move(UnitType.WEST)
+w1.move(UnitType.NORTH)
+w4.move(UnitType.WEST)
+b3.move(UnitType.EAST)
+b4.move(UnitType.SOUTH)
 
 b.commit()
 b.print()
 b.listUnits()
+
