@@ -103,6 +103,8 @@ class UnitType:
             if self.board[dest_x, dest_y] is board.Empty:
                 setCoords(dest_x, dest_y)
                 board[self.x, self.y] = [ self ]
+            elif type(self.board[dest_x, dest_y]) is list:
+                self.board[dest_x, dest_y].append(self)
             elif self.board[dest_x, dest_y] is UnitType:
                 self.board[dest_x, dest_y].incomingAttack(self.attack)
             self.STATE = UnitType.NOP
