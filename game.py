@@ -43,6 +43,7 @@ class UnitType:
         self.state = UnitType.INITIAL
         self.direction = UnitType.NONE
         self.destroyed = False
+        self.on_board = False
 
     def move(self, direction):
         self.state = UnitType.MOVING
@@ -55,6 +56,7 @@ class UnitType:
         self.board = board
         self.board_max_x = board_max_x
         self.board_max_y = board_max_y
+        self.on_board = True
 
     def setCoords(self, x, y):
         self.x = x
@@ -70,8 +72,10 @@ class UnitType:
     def preCommit(self):
         if self.state == UnitType.INITIAL:
             # make sure that location on the board is empty
-            assert self.board[self.x, self.y] is board.Empty, f"can't add {name} to board at ({x},{y})"
+            assert self.board[self.x, self.y] is board.Empty, f"can't add {self.name} to board at ({self.x},{self.y})"
         elif self.state == UnitType.MOVING:
+            dest_x = 0
+            dest_y = 0
             if self.direction == UnitType.NORTH:
                 dest_y = self.y - 1
                 if self.y < 0:
@@ -101,9 +105,10 @@ class UnitType:
                 return
 
             if self.board[dest_x, dest_y] is board.Empty:
-                setCoords(dest_x, dest_y)
-                board[self.x, self.y] = [ self ]
+                self.setCoords(dest_x, dest_y)
+                self.board[self.x, self.y] = [ self ]
             elif type(self.board[dest_x, dest_y]) is list:
+                self.setCoords(dest_x, dest_y)
                 self.board[dest_x, dest_y].append(self)
             elif self.board[dest_x, dest_y] is UnitType:
                 self.board[dest_x, dest_y].incomingAttack(self.attack)
@@ -120,6 +125,7 @@ class UnitType:
             assert self.board[self.x, self.y] is board.Empty, f"can't add {name} to board at ({x},{y})"
             # add the unit to the board
             self.board[self.x, self.y] = self
+            self.STATE = UnitType.NOP
         elif self.state == UnitType.MOVING:
             assert self.state == UnitType.MOVING, "During commit, no unit should be in the MOVING state" 
         else:
@@ -136,9 +142,12 @@ class UnitType:
                 for unit in self.board[self.x, self.y]:
                     if unit.destroyed == False:
                         self.board[self.x, self.y] = unit
+                    else:
+                        unit.on_board = False
             else:
                 if self.destroyed:
                     self.board[self.x, self.y] = board.Empty
+                    self.on_board = False
 
     def __str__(self):
         return(self.symbol)
@@ -158,6 +167,7 @@ class Board:
 
         self.board = board.Board((size_x, size_y))
         self.units = []
+        self.unit_dict = {}
     
     def add(self, x, y, name, unit_type):
         # make a shallow copy of the unit type to create a new unit instance
@@ -172,9 +182,26 @@ class Board:
         unit.preCommit()
         unit.commit()
         self.units.append(unit)
+        self.unit_dict[name] = unit
 
     def print(self):
         self.board.draw()
+
+    def listUnits(self):
+        for unit in self.units:
+            print(f"{unit.name}, {unit.symbol}, {unit.speed}, {unit.attack}, {unit.health}, [{unit.x},{unit.y}]")
+
+    def getUnit(self, name):
+        assert name in self.unit_dict, f"Unit {name} does not exist"
+        return self.unit_dict[name]
+
+    def commit(self):
+        for unit in self.units:
+            if unit.on_board:
+                unit.preCommit()
+        for unit in self.units:
+            if unit.on_board:
+                unit.commit()
 
 white = UnitType("White", "W", 1, 1, 1)
 black = UnitType("Black", "B", 1, 1, 1)
@@ -190,5 +217,12 @@ b.add(3, 0, "b1", black)
 b.add(3, 1, "b2", black)
 b.add(3, 2, "b3", black)
 b.add(3, 3, "b4", black)
+
+b.print()
+
+b.listUnits()
+w1 = b.getUnit("w1")
+w1.move(UnitType.EAST)
+b.commit()
 
 b.print()
