@@ -80,39 +80,41 @@ class UnitType:
                 dest_y = self.y - 1
                 if self.y < 0:
                     self.y = 0
-                    self.STATE = UnitType.NOP
+                    self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.EAST:
                 dest_x = self.x + 1
                 if self.x > self.board_max_x:
                     self.x = self.board_max_x
-                    self.STATE = UnitType.NOP
+                    self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.SOUTH:
                 dest_y = self.y + 1
                 if self.y > self.board_max_y:
                     self.y = self.board_max_y
-                    self.STATE = UnitType.NOP
+                    self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.WEST:
                 dest_x = self.x - 1
                 if self.x < 0:
                     self.x = 0
-                    self.STATE = UnitType.NOP
+                    self.state = UnitType.NOP
                     return
             else:
-                self.STATE = UnitType.NOP
+                self.state = UnitType.NOP
                 return
 
             if self.board[dest_x, dest_y] is board.Empty:
+                self.board[self.x, self.y] = board.Empty
                 self.setCoords(dest_x, dest_y)
                 self.board[self.x, self.y] = [ self ]
             elif type(self.board[dest_x, dest_y]) is list:
+                self.board[self.x, self.y] = board.Empty
                 self.setCoords(dest_x, dest_y)
                 self.board[dest_x, dest_y].append(self)
             elif self.board[dest_x, dest_y] is UnitType:
                 self.board[dest_x, dest_y].incomingAttack(self.attack)
-            self.STATE = UnitType.NOP
+            self.state = UnitType.NOP
             return
         else:
             pass
@@ -127,18 +129,18 @@ class UnitType:
             self.board[self.x, self.y] = self
             self.state = UnitType.NOP
         elif self.state == UnitType.MOVING:
-            assert self.state == UnitType.MOVING, "During commit, no unit should be in the MOVING state" 
+            assert not(self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state" 
         else:
             if type(self.board[self.x, self.y]) is list:
-                units = len(self.board[self.x, self.y])
-                while units >= 1:
+                unit_count = len(self.board[self.x, self.y])
+                while unit_count > 1:
                     for unit in self.board[self.x, self.y]:
                         for target in self.board[self.x, self.y]:
                             if unit != target:
                                 target.incomingAttack(unit.attack)
                     for unit in self.board[self.x, self.y]:
                         if unit.destroyed:
-                            units = units - 1 
+                            unit_count = unit_count - 1 
                 for unit in self.board[self.x, self.y]:
                     if unit.destroyed == False:
                         self.board[self.x, self.y] = unit
@@ -219,10 +221,18 @@ b.add(3, 3, "b4", black)
 
 b.commit()
 b.print()
-
 b.listUnits()
+
 w1 = b.getUnit("w1")
 w1.move(UnitType.EAST)
-b.commit()
 
+b.commit()
 b.print()
+b.listUnits()
+
+w1 = b.getUnit("w1")
+w1.move(UnitType.WEST)
+
+b.commit()
+b.print()
+b.listUnits()
