@@ -125,7 +125,7 @@ class UnitType:
             assert self.board[self.x, self.y] is board.Empty, f"can't add {name} to board at ({x},{y})"
             # add the unit to the board
             self.board[self.x, self.y] = self
-            self.STATE = UnitType.NOP
+            self.state = UnitType.NOP
         elif self.state == UnitType.MOVING:
             assert self.state == UnitType.MOVING, "During commit, no unit should be in the MOVING state" 
         else:
@@ -178,10 +178,9 @@ class Board:
         unit.setBoard(self.board, self.size_x, self.size_y)
         # keep a copy of the unit coords in the unit
         unit.setCoords(x,y)
-        # add it to the board
-        unit.preCommit()
-        unit.commit()
+        # add it to the unit list
         self.units.append(unit)
+        # add it to the unit dict
         self.unit_dict[name] = unit
 
     def print(self):
@@ -189,7 +188,7 @@ class Board:
 
     def listUnits(self):
         for unit in self.units:
-            print(f"{unit.name}, {unit.symbol}, {unit.speed}, {unit.attack}, {unit.health}, [{unit.x},{unit.y}]")
+            print(f"{unit.name}, {unit.symbol}, {unit.speed}, {unit.attack}, {unit.health}, [{unit.x},{unit.y}], {unit.state}")
 
     def getUnit(self, name):
         assert name in self.unit_dict, f"Unit {name} does not exist"
@@ -218,6 +217,7 @@ b.add(3, 1, "b2", black)
 b.add(3, 2, "b3", black)
 b.add(3, 3, "b4", black)
 
+b.commit()
 b.print()
 
 b.listUnits()
