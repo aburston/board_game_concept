@@ -152,24 +152,27 @@ class UnitType:
                 unit_count = len(self.board[self.x, self.y])
                 print(f"{self.name} commit process list in [{self.x},{self.y}]: {self.board[self.x, self.y]}")
                 while unit_count > 1:
-                    print(f"{self.name} commit process multiple units in square ${unit_count}")
+                    print(f"{self.name} commit process {unit_count} units in square [{self.x},{self.y}]")
                     for unit in self.board[self.x, self.y]:
                         for target in self.board[self.x, self.y]:
-                            if unit != target:
+                            print(f"{self.name} commit processing {unit.name} -> {target.name}")
+                            if not(unit is target):
                                 energy = unit.energy - unit.attack
                                 if energy >= 0:
                                     unit.energy = energy
-                                    print(f"commit: {self.name} attack {unit.name}")
+                                    print(f"commit: {target.name} attack {unit.name}")
                                     target.incomingAttack(unit.attack)
                     for unit in self.board[self.x, self.y]:
                         if unit.destroyed:
-                            unit_count = unit_count - 1 
+                            unit_count = unit_count - 1             
                 for unit in self.board[self.x, self.y]:
                     if unit.destroyed == False:
                         self.board[self.x, self.y] = unit
                         print(f"{self.name} commit add unit to square [{self.x},{self.y}]")
                     else:
                         unit.on_board = False
+                if unit_count == 0:
+                    self.board[self.x, self.y] = board.Empty
             else:
                 if self.destroyed:
                     self.board[self.x, self.y] = board.Empty
