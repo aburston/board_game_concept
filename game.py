@@ -5,6 +5,10 @@ import copy
 
 DEBUG = False
 
+class Empty:
+    def __str__(self):
+        return "#"
+
 # Unit
 #   name: One or more character
 #   symbol: One single character
@@ -76,7 +80,7 @@ class UnitType:
     def preCommit(self):
         if self.state == UnitType.INITIAL:
             # make sure that location on the board is empty
-            assert self.board[self.x, self.y] is board.Empty, f"can't add {self.name} to board at ({self.x},{self.y})"
+            assert type(self.board[self.x, self.y]) is Empty, f"can't add {self.name} to board at ({self.x},{self.y})"
         elif self.state == UnitType.MOVING:
             dest_x = self.x
             dest_y = self.y
@@ -108,12 +112,12 @@ class UnitType:
                 self.state = UnitType.NOP
                 return
 
-            if self.board[dest_x, dest_y] is board.Empty:
+            if type(self.board[dest_x, dest_y]) is Empty:
                 energy = self.energy - (self.energy // 100 + 1)
                 # only act if the unit has enough energy
                 if energy >= 0:
                     self.energy = energy
-                    self.board[self.x, self.y] = board.Empty
+                    self.board[self.x, self.y] = Empty()
                     self.setCoords(dest_x, dest_y)
                     self.board[self.x, self.y] = [ self ]
                     if DEBUG:
@@ -123,7 +127,7 @@ class UnitType:
                 # only act if the unit has enough energy
                 if energy >= 0:
                     self.energy = energy
-                    self.board[self.x, self.y] = board.Empty
+                    self.board[self.x, self.y] = Empty()
                     self.setCoords(dest_x, dest_y)
                     self.board[dest_x, dest_y].append(self)
                     if DEBUG:
@@ -147,7 +151,7 @@ class UnitType:
     def commit(self):
         if self.state == UnitType.INITIAL:
             # make sure that location on the board is empty
-            assert self.board[self.x, self.y] is board.Empty, f"can't add {name} to board at ({x},{y})"
+            assert type(self.board[self.x, self.y]) is Empty, f"can't add {name} to board at ({x},{y})"
             # add the unit to the board
             self.board[self.x, self.y] = self
             self.state = UnitType.NOP
@@ -183,10 +187,10 @@ class UnitType:
                     else:
                         unit.on_board = False
                 if unit_count == 0:
-                    self.board[self.x, self.y] = board.Empty
+                    self.board[self.x, self.y] = Empty()
             else:
                 if self.destroyed:
-                    self.board[self.x, self.y] = board.Empty
+                    self.board[self.x, self.y] = Empty()
                     self.on_board = False
                     if DEBUG:
                         print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
@@ -212,6 +216,10 @@ class Board:
         assert ((size_y >= 2) and (size_y <= 10)), "size_y must be a value from 2 to 10"
 
         self.board = board.Board((size_x, size_y))
+        for x in range(0, size_x):
+            for y in range(0, size_y):
+                self.board[x, y] = Empty()
+
         self.units = []
         self.unit_dict = {}
     
@@ -266,6 +274,7 @@ if __name__ == "__main__":
     black = UnitType("Black", "B", 1, 1, 100)
 
     b = Board(4,4)
+    b.print()
 
     w1_id= b.add(0, 0, "w1", white)
     b.add(0, 1, "w2", white)
