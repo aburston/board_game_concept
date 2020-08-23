@@ -21,16 +21,12 @@ class UnitType:
     MOVING = 1;
     NOP = 2;
 
-    def __init__(self, name, symbol, speed, attack, health):
+    def __init__(self, name, symbol, attack, health, energy):
         self.name = name
         assert (len(str(name)) >= 1), "name must be one or more character"
 
         self.symbol = symbol
         assert (len(str(symbol)) == 1), "symbol must be only one character"
-
-        self.speed = speed
-        assert isinstance(speed, int), "speed must be an integer value"
-        assert ((speed >= 1) and (speed <= 10)), "speed must be a value from 1 to 10"
 
         self.attack = attack
         assert isinstance(attack, int), "attack must be an integer value"
@@ -39,6 +35,10 @@ class UnitType:
         self.health = health
         assert isinstance(health, int), "health must be an integer value"
         assert ((health >= 1) and (health <= 10)), "health must be a value from 1 to 10"
+
+        self.energy = energy
+        assert isinstance(energy, int), "health must be an integer value"
+        assert ((energy >= 1) and (energy <= 100)), "energy must be a value from 1 to 100"
 
         self.state = UnitType.INITIAL
         self.direction = UnitType.NONE
@@ -106,15 +106,31 @@ class UnitType:
                 return
 
             if self.board[dest_x, dest_y] is board.Empty:
-                self.board[self.x, self.y] = board.Empty
-                self.setCoords(dest_x, dest_y)
-                self.board[self.x, self.y] = [ self ]
+                energy = self.energy - (self.energy // 100 + 1)
+                # only act if the unit has enough energy
+                if energy >= 0:
+                    self.energy = energy
+                    self.board[self.x, self.y] = board.Empty
+                    self.setCoords(dest_x, dest_y)
+                    self.board[self.x, self.y] = [ self ]
+                    print(f"preCommit: {self.name} move to [{self.x},{self.y}]")
             elif type(self.board[dest_x, dest_y]) is list:
-                self.board[self.x, self.y] = board.Empty
-                self.setCoords(dest_x, dest_y)
-                self.board[dest_x, dest_y].append(self)
+                energy = self.energy - (self.energy // 100 + 1)
+                # only act if the unit has enough energy
+                if energy >= 0:
+                    self.energy = energy
+                    self.board[self.x, self.y] = board.Empty
+                    self.setCoords(dest_x, dest_y)
+                    self.board[dest_x, dest_y].append(self)
+                    print(f"preCommit: {self.name} added to list in [{self.x},{self.y}]")
             elif type(self.board[dest_x, dest_y]) is UnitType:
-                self.board[dest_x, dest_y].incomingAttack(self.attack)
+                energy = self.energy - self.attack
+                # only act if the unit has enough energy
+                if energy >= 0:
+                    self.energy = energy
+                    target = self.board[dest_x, dest_y]
+                    target.incomingAttack(self.attack)
+                    print(f"preCommit: {self.name} attack {target.name}")
             self.state = UnitType.NOP
             return
         else:
@@ -134,23 +150,34 @@ class UnitType:
         else:
             if type(self.board[self.x, self.y]) is list:
                 unit_count = len(self.board[self.x, self.y])
+                print(f"{self.name} commit process list in [{self.x},{self.y}]: {self.board[self.x, self.y]}")
                 while unit_count > 1:
+                    print(f"{self.name} commit process multiple units in square ${unit_count}")
                     for unit in self.board[self.x, self.y]:
                         for target in self.board[self.x, self.y]:
                             if unit != target:
-                                target.incomingAttack(unit.attack)
+                                energy = unit.energy - unit.attack
+                                if energy >= 0:
+                                    unit.energy = energy
+                                    print(f"commit: {self.name} attack {unit.name}")
+                                    target.incomingAttack(unit.attack)
                     for unit in self.board[self.x, self.y]:
                         if unit.destroyed:
                             unit_count = unit_count - 1 
                 for unit in self.board[self.x, self.y]:
                     if unit.destroyed == False:
                         self.board[self.x, self.y] = unit
+                        print(f"{self.name} commit add unit to square [{self.x},{self.y}]")
                     else:
                         unit.on_board = False
             else:
                 if self.destroyed:
                     self.board[self.x, self.y] = board.Empty
                     self.on_board = False
+                    print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
+
+    def dump(self):
+        print(f"{self.name}, {self.symbol}, {self.attack}, {self.health}, {self.energy}, [{self.x},{self.y}], {self.state}, d={self.destroyed}, ob={self.on_board}")
 
     def __str__(self):
         return(self.symbol)
@@ -191,7 +218,7 @@ class Board:
 
     def listUnits(self):
         for unit in self.units:
-            print(f"{unit.name}, {unit.symbol}, {unit.speed}, {unit.attack}, {unit.health}, [{unit.x},{unit.y}], {unit.state}, {unit.destroyed}, {unit.on_board}")
+            unit.dump()
 
     def getUnit(self, name):
         assert name in self.unit_dict, f"Unit {name} does not exist"
@@ -205,8 +232,8 @@ class Board:
             if unit.on_board:
                 unit.commit()
 
-white = UnitType("White", "W", 1, 1, 1)
-black = UnitType("Black", "B", 1, 1, 1)
+white = UnitType("White", "W", 1, 1, 100)
+black = UnitType("Black", "B", 1, 1, 100)
 
 b = Board(4,4)
 
@@ -235,8 +262,9 @@ w4 = b.getUnit("w4")
 w1.move(UnitType.EAST)
 b1.move(UnitType.WEST)
 w2.move(UnitType.EAST)
-b2.move(UnitType.WEST)
 b.commit()
+
+b.print()
 
 w1.move(UnitType.EAST)
 w2.move(UnitType.EAST)
@@ -254,4 +282,9 @@ b4.move(UnitType.SOUTH)
 b.commit()
 b.print()
 b.listUnits()
+
+w2.dump()
+b2.dump()
+
+
 
