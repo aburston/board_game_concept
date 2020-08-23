@@ -3,6 +3,8 @@
 import board
 import copy
 
+DEBUG = False
+
 # Unit
 #   name: One or more character
 #   symbol: One single character
@@ -113,7 +115,8 @@ class UnitType:
                     self.board[self.x, self.y] = board.Empty
                     self.setCoords(dest_x, dest_y)
                     self.board[self.x, self.y] = [ self ]
-                    print(f"preCommit: {self.name} move to [{self.x},{self.y}]")
+                    if DEBUG:
+                        print(f"preCommit: {self.name} move to [{self.x},{self.y}]")
             elif type(self.board[dest_x, dest_y]) is list:
                 energy = self.energy - (self.energy // 100 + 1)
                 # only act if the unit has enough energy
@@ -122,7 +125,8 @@ class UnitType:
                     self.board[self.x, self.y] = board.Empty
                     self.setCoords(dest_x, dest_y)
                     self.board[dest_x, dest_y].append(self)
-                    print(f"preCommit: {self.name} added to list in [{self.x},{self.y}]")
+                    if DEBUG:
+                        print(f"preCommit: {self.name} added to list in [{self.x},{self.y}]")
             elif type(self.board[dest_x, dest_y]) is UnitType:
                 energy = self.energy - self.attack
                 # only act if the unit has enough energy
@@ -130,7 +134,8 @@ class UnitType:
                     self.energy = energy
                     target = self.board[dest_x, dest_y]
                     target.incomingAttack(self.attack)
-                    print(f"preCommit: {self.name} attack {target.name}")
+                    if DEBUG:
+                        print(f"preCommit: {self.name} attack {target.name}")
             self.state = UnitType.NOP
             return
         else:
@@ -150,17 +155,21 @@ class UnitType:
         else:
             if type(self.board[self.x, self.y]) is list:
                 unit_count = len(self.board[self.x, self.y])
-                print(f"{self.name} commit process list in [{self.x},{self.y}]: {self.board[self.x, self.y]}")
+                if DEBUG:
+                    print(f"{self.name} commit process list in [{self.x},{self.y}]: {self.board[self.x, self.y]}")
                 while unit_count > 1:
-                    print(f"{self.name} commit process {unit_count} units in square [{self.x},{self.y}]")
+                    if DEBUG:
+                        print(f"{self.name} commit process {unit_count} units in square [{self.x},{self.y}]")
                     for unit in self.board[self.x, self.y]:
                         for target in self.board[self.x, self.y]:
-                            print(f"{self.name} commit processing {unit.name} -> {target.name}")
+                            if DEBUG:
+                                print(f"{self.name} commit processing {unit.name} -> {target.name}")
                             if not(unit is target):
                                 energy = unit.energy - unit.attack
                                 if energy >= 0:
                                     unit.energy = energy
-                                    print(f"commit: {target.name} attack {unit.name}")
+                                    if DEBUG:
+                                        print(f"commit: {target.name} attack {unit.name}")
                                     target.incomingAttack(unit.attack)
                     for unit in self.board[self.x, self.y]:
                         if unit.destroyed:
@@ -168,7 +177,8 @@ class UnitType:
                 for unit in self.board[self.x, self.y]:
                     if unit.destroyed == False:
                         self.board[self.x, self.y] = unit
-                        print(f"{self.name} commit add unit to square [{self.x},{self.y}]")
+                        if DEBUG:
+                            print(f"{self.name} commit add unit to square [{self.x},{self.y}]")
                     else:
                         unit.on_board = False
                 if unit_count == 0:
@@ -177,7 +187,8 @@ class UnitType:
                 if self.destroyed:
                     self.board[self.x, self.y] = board.Empty
                     self.on_board = False
-                    print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
+                    if DEBUG:
+                        print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
 
     def dump(self):
         print(f"{self.name}, {self.symbol}, {self.attack}, {self.health}, {self.energy}, [{self.x},{self.y}], {self.state}, d={self.destroyed}, ob={self.on_board}")
