@@ -65,7 +65,8 @@ class UnitType:
         self.y = y
 
     def incomingAttack(self, attack):
-        print(f"{self.name} being attacked")
+        if DEBUG:
+            print(f"incoingAttack: {self.name} being attacked")
         self.health = self.health - attack
         if self.health <= 0:
             self.destroyed = True
@@ -246,59 +247,62 @@ class Board:
             if unit.on_board:
                 unit.commit()
 
-white = UnitType("White", "W", 1, 1, 100)
-black = UnitType("Black", "B", 1, 1, 100)
+# class testing
+if __name__ == "__main__":
+    white = UnitType("White", "W", 1, 2, 100)
+    black = UnitType("Black", "B", 1, 1, 100)
 
-b = Board(4,4)
+    b = Board(4,4)
 
-b.add(0, 0, "w1", white)
-b.add(0, 1, "w2", white)
-b.add(0, 2, "w3", white)
-b.add(0, 3, "w4", white)
+    b.add(0, 0, "w1", white)
+    b.add(0, 1, "w2", white)
+    b.add(0, 2, "w3", white)
+    b.add(0, 3, "w4", white)
 
-b.add(3, 0, "b1", black)
-b.add(3, 1, "b2", black)
-b.add(3, 2, "b3", black)
-b.add(3, 3, "b4", black)
+    b.add(3, 0, "b1", black)
+    b.add(3, 1, "b2", black)
+    b.add(3, 2, "b3", black)
+    b.add(3, 3, "b4", black)
+    b.add(2, 2, "b5", black)
+    b.commit()
 
-b.commit()
-b.print()
-b.listUnits()
+    w1 = b.getUnit("w1")
+    b1 = b.getUnit("b1")
+    w2 = b.getUnit("w2")
+    b2 = b.getUnit("b2")
+    b3 = b.getUnit("b3")
+    b4 = b.getUnit("b4")
+    b5 = b.getUnit("b5")
+    w4 = b.getUnit("w4")
 
-w1 = b.getUnit("w1")
-b1 = b.getUnit("b1")
-w2 = b.getUnit("w2")
-b2 = b.getUnit("b2")
-b3 = b.getUnit("b3")
-b4 = b.getUnit("b4")
-w4 = b.getUnit("w4")
+    b.print()
+    b.listUnits()
 
-w1.move(UnitType.EAST)
-b1.move(UnitType.WEST)
-w2.move(UnitType.EAST)
-b.commit()
+    w1.move(UnitType.EAST)
+    b1.move(UnitType.WEST)
+    w2.move(UnitType.EAST)
+    b.commit()
 
-b.print()
+    b.print()
+    b.listUnits()
 
-w1.move(UnitType.EAST)
-w2.move(UnitType.EAST)
-b2.move(UnitType.WEST)
+    w1.move(UnitType.EAST)
+    w2.move(UnitType.EAST)
+    b2.move(UnitType.WEST)
+    b5.move(UnitType.NORTH)
 
-b.commit()
-b.print()
-b.listUnits()
+    b.commit()
+    b.print()
+    b.listUnits()
 
-w1.move(UnitType.NORTH)
-w4.move(UnitType.WEST)
-b3.move(UnitType.EAST)
-b4.move(UnitType.SOUTH)
+    w1.move(UnitType.NORTH)
+    w4.move(UnitType.WEST)
+    b3.move(UnitType.EAST)
+    b4.move(UnitType.SOUTH)
 
-b.commit()
-b.print()
-b.listUnits()
+    b.commit()
+    b.print()
+    b.listUnits()
 
-w2.dump()
-b2.dump()
-
-
-
+    w2.dump()
+    b2.dump()
