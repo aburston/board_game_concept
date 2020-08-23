@@ -192,7 +192,8 @@ class UnitType:
                         print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
 
     def dump(self):
-        print(f"{self.name}, {self.symbol}, {self.attack}, {self.health}, {self.energy}, [{self.x},{self.y}], {self.state}, d={self.destroyed}, ob={self.on_board}")
+        print(f"name={self.name}, symbol={self.symbol}, attack={self.attack}, health={self.health}, energy={self.energy}, coords=[{self.x},{self.y}], state={self.state}, destroyed={self.destroyed}, on_board={self.on_board}")
+
 
     def __str__(self):
         return(self.symbol)
@@ -226,18 +227,30 @@ class Board:
         # add it to the unit list
         self.units.append(unit)
         # add it to the unit dict
-        self.unit_dict[name] = unit
+        if name in self.unit_dict:
+            self.unit_dict[name].append(unit)
+        else:    
+            self.unit_dict[name] = [ unit ]
+
+        return len(self.units)    
 
     def print(self):
         self.board.draw()
 
     def listUnits(self):
+        i = 0
         for unit in self.units:
+            print(f"id={i}", end=' ')
             unit.dump()
+            i = i + 1
 
-    def getUnit(self, name):
+    def getUnitByName(self, name):
         assert name in self.unit_dict, f"Unit {name} does not exist"
         return self.unit_dict[name]
+
+    def getUnitById(self, index):
+        assert isinstance(index, int) and index >= 0 and index < len(self.units), f"Unit {name} does not exist"
+        return self.units[index]
 
     def commit(self):
         for unit in self.units:
@@ -254,7 +267,7 @@ if __name__ == "__main__":
 
     b = Board(4,4)
 
-    b.add(0, 0, "w1", white)
+    w1_id= b.add(0, 0, "w1", white)
     b.add(0, 1, "w2", white)
     b.add(0, 2, "w3", white)
     b.add(0, 3, "w4", white)
@@ -266,14 +279,14 @@ if __name__ == "__main__":
     b.add(2, 2, "b5", black)
     b.commit()
 
-    w1 = b.getUnit("w1")
-    b1 = b.getUnit("b1")
-    w2 = b.getUnit("w2")
-    b2 = b.getUnit("b2")
-    b3 = b.getUnit("b3")
-    b4 = b.getUnit("b4")
-    b5 = b.getUnit("b5")
-    w4 = b.getUnit("w4")
+    w1 = b.getUnitById(0)
+    b1 = b.getUnitByName("b1")[0]
+    w2 = b.getUnitByName("w2")[0]
+    b2 = b.getUnitByName("b2")[0]
+    b3 = b.getUnitByName("b3")[0]
+    b4 = b.getUnitByName("b4")[0]
+    b5 = b.getUnitByName("b5")[0]
+    w4 = b.getUnitByName("w4")[0]
 
     b.print()
     b.listUnits()
@@ -303,6 +316,3 @@ if __name__ == "__main__":
     b.commit()
     b.print()
     b.listUnits()
-
-    w2.dump()
-    b2.dump()
