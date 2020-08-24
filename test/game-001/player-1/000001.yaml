@@ -1,0 +1,9 @@
+moves:
+        - { id: 0, direction: SOUTH }
+        - { id: 1, direction: SOUTH }
+        - { id: 2, direction: SOUTH }
+        - { id: 3, direction: SOUTH }
+        - { id: 4, direction: SOUTH }
+        - { id: 5, direction: SOUTH }
+        - { id: 6, direction: SOUTH }
+        - { id: 7, direction: SOUTH }
