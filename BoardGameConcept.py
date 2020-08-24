@@ -9,6 +9,12 @@ class Empty:
     def __str__(self):
         return "#"
 
+class Player:
+    def __init__(self, name, email):
+        self.name = name
+        assert (len(str(name)) >= 1), "name must be one or more character"
+        self.email = email
+
 # Unit
 #   name: One or more character
 #   symbol: One single character
@@ -67,6 +73,10 @@ class UnitType:
     def setCoords(self, x, y):
         self.x = x
         self.y = y
+
+    def setPlayer(self, player):
+        self.player = player
+        assert (type(player) is Player), "player object must be provided"
 
     def incomingAttack(self, attack):
         if DEBUG:
@@ -223,11 +233,13 @@ class Board:
         self.units = []
         self.unit_dict = {}
     
-    def add(self, x, y, name, unit_type):
+    def add(self, player, x, y, name, unit_type):
         # make a shallow copy of the unit type to create a new unit instance
         unit = copy.copy(unit_type)
         # reset the unit name
         unit.setName(name)
+        # set the player
+        unit.setPlayer(player)
         # add a ref to the board into the unit + the size
         unit.setBoard(self.board, self.size_x, self.size_y)
         # keep a copy of the unit coords in the unit
@@ -242,15 +254,19 @@ class Board:
 
         return len(self.units)    
 
-    def print(self):
+    def print(self, player = None):
         self.board.draw()
 
-    def listUnits(self):
+    def listUnits(self, player = None):
         i = 0
-        for unit in self.units:
-            print(f"id={i}", end=' ')
-            unit.dump()
-            i = i + 1
+        while i < len(self.units):
+            if player == None:
+                print(f"id={i}", end=' ')
+                self.units[i].dump()
+            elif self.units[i].player == player:
+                print(f"id={i}", end=' ')
+                self.units[i].dump()
+            i = i + 1    
 
     def getUnitByName(self, name):
         assert name in self.unit_dict, f"Unit {name} does not exist"
