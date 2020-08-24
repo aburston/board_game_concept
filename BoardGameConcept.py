@@ -254,8 +254,19 @@ class Board:
 
         return len(self.units)    
 
+
     def print(self, player = None):
-        self.board.draw()
+        def _render_unit(unit):
+            if type(unit) is Empty:
+                return unit.__str__()
+            elif unit.player == player:
+                return unit.__str__()
+            else:
+                return Empty().__str__()
+        if player == None:    
+            self.board.draw()
+        else:
+            self.board.draw(callback=_render_unit)
 
     def listUnits(self, player = None):
         i = 0
