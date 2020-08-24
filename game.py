@@ -4,8 +4,8 @@ from BoardGameConcept import UnitType
 from BoardGameConcept import Board
 from BoardGameConcept import Player
 
-p1 = Player("test1", "ashley_burston@hotmail.com")
-p2 = Player("test2", "ashley_burston@hotmail.com")
+p1 = Player("test1", "")
+p2 = Player("test2", "")
 
 scout = UnitType("scout", "S", 1, 1, 50)
 warrior = UnitType("warrior", "W", 2, 2, 100)
