@@ -206,7 +206,7 @@ class UnitType:
                         print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
 
     def dump(self):
-        print(f"name={self.name}, symbol={self.symbol}, attack={self.attack}, health={self.health}, energy={self.energy}, coords=[{self.x},{self.y}], state={self.state}, destroyed={self.destroyed}, on_board={self.on_board}")
+        print(f"player={self.player.name}, name={self.name}, symbol={self.symbol}, attack={self.attack}, health={self.health}, energy={self.energy}, coords=[{self.x},{self.y}], state={self.state}, destroyed={self.destroyed}, on_board={self.on_board}")
 
 
     def __str__(self):
@@ -248,12 +248,13 @@ class Board:
         self.units.append(unit)
         # add it to the unit dict
         if name in self.unit_dict:
+            for instance in self.unit_dict[name]:
+                assert instance.player != player, f"unit {name} already exists for {player.name}"    
             self.unit_dict[name].append(unit)
         else:    
-            self.unit_dict[name] = [ unit ]
-
+            self.unit_dict[name] = [unit]
+        # return the unit id
         return len(self.units)    
-
 
     def print(self, player = None):
         def _render_unit(unit):
@@ -272,16 +273,23 @@ class Board:
         i = 0
         while i < len(self.units):
             if player == None:
-                print(f"id={i}", end=' ')
+                print(f"id={i},", end=' ')
                 self.units[i].dump()
             elif self.units[i].player == player:
-                print(f"id={i}", end=' ')
+                print(f"id={i},", end=' ')
                 self.units[i].dump()
             i = i + 1    
 
-    def getUnitByName(self, name):
-        assert name in self.unit_dict, f"Unit {name} does not exist"
-        return self.unit_dict[name]
+    def getUnitByName(self, name, player = None):
+        if player == None:
+            assert name in self.unit_dict, f"Unit {name} does not exist"
+            return self.unit_dict[name]
+        else:
+            assert name in self.unit_dict, f"Unit {name} does not exist"
+            for unit in self.unit_dict[name]:
+                if unit.player == player:
+                    return [unit]
+            assert True, f"unit {name} does not exist"    
 
     def getUnitById(self, index):
         assert isinstance(index, int) and index >= 0 and index < len(self.units), f"Unit {name} does not exist"

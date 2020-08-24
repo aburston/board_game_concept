@@ -1,9 +1,9 @@
 moves:
-        - { id: 0, direction: SOUTH }
-        - { id: 1, direction: SOUTH }
-        - { id: 2, direction: SOUTH }
-        - { id: 3, direction: SOUTH }
-        - { id: 4, direction: SOUTH }
-        - { id: 5, direction: SOUTH }
-        - { id: 6, direction: SOUTH }
-        - { id: 7, direction: SOUTH }
+        - { name: "Scout 0", direction: SOUTH }
+        - { name: "Scout 1", direction: SOUTH }
+        - { name: "Scout 2", direction: SOUTH }
+        - { name: "Scout 3", direction: SOUTH }
+        - { name: "Scout 4", direction: SOUTH }
+        - { name: "Scout 5", direction: SOUTH }
+        - { name: "Scout 6", direction: SOUTH }
+        - { name: "Scout 7", direction: SOUTH }
