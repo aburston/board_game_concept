@@ -56,6 +56,8 @@ class UnitType:
         self.direction = UnitType.NONE
         self.destroyed = False
         self.on_board = False
+        self.seen_by = []
+        self.player = None
 
     def move(self, direction):
         self.state = UnitType.MOVING
@@ -149,6 +151,9 @@ class UnitType:
                     self.energy = energy
                     target = self.board[dest_x, dest_y]
                     target.incomingAttack(self.attack)
+                    # populuate seen_by
+                    self.seen_by.append(target)
+                    target.seen_by.append(self)
                     if DEBUG:
                         print(f"preCommit: {self.name} attack {target.name}")
             self.state = UnitType.NOP
@@ -186,6 +191,9 @@ class UnitType:
                                     if DEBUG:
                                         print(f"commit: {target.name} attack {unit.name}")
                                     target.incomingAttack(unit.attack)
+                                    # populuate seen_by
+                                    unit.seen_by.append(target)
+                                    target.seen_by.append(unit)
                     for unit in self.board[self.x, self.y]:
                         if unit.destroyed:
                             unit_count = unit_count - 1             
@@ -270,6 +278,10 @@ class Board:
 
     def listUnits(self, player = None):
         unitsStr = "board: {" + f" size_x: {self.size_x}, size_y: {self.size_y}" + "}\n"
+        if player == None:
+            unitsStr = unitsStr + f"player: {player}\n"
+        else:
+            unitsStr = unitsStr + f"player: {player.name}\n"
         unitsStr = unitsStr + "units: \n"
         i = 0
         while i < len(self.units):
@@ -277,6 +289,11 @@ class Board:
                 unitsStr = unitsStr + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             elif self.units[i].player == player:
                 unitsStr = unitsStr + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
+            else:
+                for seen in self.units[i].seen_by:
+                    #print(f"{player.name} {seen.player.name}")
+                    if (player.name == seen.player.name):
+                        unitsStr = unitsStr + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             i = i + 1    
         return unitsStr    
 
@@ -296,9 +313,15 @@ class Board:
         return self.units[index]
 
     def commit(self):
+        # clear the seen_by list in each unit on the board
+        for unit in self.units:
+            if unit.on_board:
+                unit.seen_by = []
+        # pre_commit the actions required
         for unit in self.units:
             if unit.on_board:
                 unit.preCommit()
+        # commit the changes
         for unit in self.units:
             if unit.on_board:
                 unit.commit()
@@ -345,6 +368,8 @@ if __name__ == "__main__":
 
     b.print()
     print(b.listUnits())
+    print(b.listUnits(p1))
+    print(b.listUnits(p2))
 
     w1.move(UnitType.EAST)
     w2.move(UnitType.EAST)
@@ -354,6 +379,8 @@ if __name__ == "__main__":
     b.commit()
     b.print()
     print(b.listUnits())
+    print(b.listUnits(p1))
+    print(b.listUnits(p2))
 
     w1.move(UnitType.NORTH)
     w4.move(UnitType.WEST)
