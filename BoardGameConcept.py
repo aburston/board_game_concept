@@ -206,8 +206,7 @@ class UnitType:
                         print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
 
     def dump(self):
-        print(f"player={self.player.name}, name={self.name}, symbol={self.symbol}, attack={self.attack}, health={self.health}, energy={self.energy}, coords=[{self.x},{self.y}], state={self.state}, destroyed={self.destroyed}, on_board={self.on_board}")
-
+        return(f"player: \"{self.player.name}\", name: \"{self.name}\", symbol: \"{self.symbol}\", attack: \"{self.attack}\", health: \"{self.health}\", energy: \"{self.energy}\", x: {self.x}, y: {self.y}, state: {self.state}, destroyed: {self.destroyed}, on_board: {self.on_board}")
 
     def __str__(self):
         return(self.symbol)
@@ -270,14 +269,16 @@ class Board:
             self.board.draw(callback=_render_unit)
 
     def listUnits(self, player = None):
+        print("board: {" + f" size_x: {self.size_x}, size_y: {self.size_y}" + "}")
+        print("units: ")
         i = 0
         while i < len(self.units):
             if player == None:
-                print(f"id={i},", end=' ')
-                self.units[i].dump()
+                print("  - { " + f"id: {i}, ", end='')
+                print(self.units[i].dump() + " }")
             elif self.units[i].player == player:
-                print(f"id={i},", end=' ')
-                self.units[i].dump()
+                print("  - { " + f"id: {i}, ", end='')
+                print(self.units[i].dump() + " }")
             i = i + 1    
 
     def getUnitByName(self, name, player = None):
