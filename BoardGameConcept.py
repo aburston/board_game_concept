@@ -269,17 +269,16 @@ class Board:
             self.board.draw(callback=_render_unit)
 
     def listUnits(self, player = None):
-        print("board: {" + f" size_x: {self.size_x}, size_y: {self.size_y}" + "}")
-        print("units: ")
+        unitsStr = "board: {" + f" size_x: {self.size_x}, size_y: {self.size_y}" + "}\n"
+        unitsStr = unitsStr + "units: \n"
         i = 0
         while i < len(self.units):
             if player == None:
-                print("  - { " + f"id: {i}, ", end='')
-                print(self.units[i].dump() + " }")
+                unitsStr = unitsStr + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             elif self.units[i].player == player:
-                print("  - { " + f"id: {i}, ", end='')
-                print(self.units[i].dump() + " }")
+                unitsStr = unitsStr + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             i = i + 1    
+        return unitsStr    
 
     def getUnitByName(self, name, player = None):
         if player == None:
@@ -309,19 +308,22 @@ if __name__ == "__main__":
     white = UnitType("White", "W", 1, 2, 100)
     black = UnitType("Black", "B", 1, 1, 100)
 
+    p1 = Player("test1", "")
+    p2 = Player("test2", "")
+
     b = Board(4,4)
     b.print()
 
-    w1_id= b.add(0, 0, "w1", white)
-    b.add(0, 1, "w2", white)
-    b.add(0, 2, "w3", white)
-    b.add(0, 3, "w4", white)
+    w1_id= b.add(p1, 0, 0, "w1", white)
+    b.add(p1, 0, 1, "w2", white)
+    b.add(p1, 0, 2, "w3", white)
+    b.add(p1, 0, 3, "w4", white)
 
-    b.add(3, 0, "b1", black)
-    b.add(3, 1, "b2", black)
-    b.add(3, 2, "b3", black)
-    b.add(3, 3, "b4", black)
-    b.add(2, 2, "b5", black)
+    b.add(p2, 3, 0, "b1", black)
+    b.add(p2, 3, 1, "b2", black)
+    b.add(p2, 3, 2, "b3", black)
+    b.add(p2, 3, 3, "b4", black)
+    b.add(p2, 2, 2, "b5", black)
     b.commit()
 
     w1 = b.getUnitById(0)
@@ -334,7 +336,7 @@ if __name__ == "__main__":
     w4 = b.getUnitByName("w4")[0]
 
     b.print()
-    b.listUnits()
+    print(b.listUnits())
 
     w1.move(UnitType.EAST)
     b1.move(UnitType.WEST)
@@ -342,7 +344,7 @@ if __name__ == "__main__":
     b.commit()
 
     b.print()
-    b.listUnits()
+    print(b.listUnits())
 
     w1.move(UnitType.EAST)
     w2.move(UnitType.EAST)
@@ -351,7 +353,7 @@ if __name__ == "__main__":
 
     b.commit()
     b.print()
-    b.listUnits()
+    print(b.listUnits())
 
     w1.move(UnitType.NORTH)
     w4.move(UnitType.WEST)
@@ -360,4 +362,4 @@ if __name__ == "__main__":
 
     b.commit()
     b.print()
-    b.listUnits()
+    print(b.listUnits())
