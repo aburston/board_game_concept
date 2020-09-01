@@ -1,0 +1,6 @@
+- board:
+  - sizeX: 8
+  - sizeY: 2
+- game:
+  - game: '002'
+  - players: 2

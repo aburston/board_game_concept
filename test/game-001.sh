@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./game.py 001 5 5
+./client.py 001 5 5
 add player 1 test1 test1@test.com password1
 add player 2 test2 test2@test.com password2
 commit
