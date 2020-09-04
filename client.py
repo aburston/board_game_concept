@@ -44,9 +44,10 @@ def main(argv):
     size_y = 0
     game_password = ""
     password = ""
-    player_data = {}
     board_meta_data = {}
     new_game = False
+    board = None
+    players = {}
 
     argc = len(argv)
     if DEBUG:
@@ -70,7 +71,6 @@ def main(argv):
         print(f"Basepath: {basePath}")
     
     # try reading data file for game 
-    # except to create the directory for the game data file
     try:
         with open(data_path + '/data.yaml') as f:
             try:
@@ -78,12 +78,14 @@ def main(argv):
                 size_x = board_meta_data['board']['size_x']
                 size_y = board_meta_data['board']['size_y']
                 game_password = board_meta_data['game']['password']
+                board = Board(size_x, size_y)
                 if DEBUG:
                     print("Finished loading game meta data")
             except yaml.YAMLError as exc:
                 print(exc, file = sys.stderr)
                 sys.exit(1)
     except:
+        # if this is a new game request the game admin password
         if player_name == '0':
             new_game = True
             print("Set game password")
@@ -97,21 +99,32 @@ def main(argv):
         else:
             print(f"No game with number: {gameno}", file = sys.stderr)
             sys.exit(1)
-    
+
+    # load all the player files
+    for player_file in os.listdir(player_path):
+        with open(player_path + '/' + player_file) as f:
+            try:
+                player_data = yaml.safe_load(f)
+                obj = Player(player_data['name'], player_data['email'])
+                players[player_data['name']] = {
+                    'email': player_data['email'],
+                    'password': player_data['password'],
+                    'obj': obj
+                }
+            except yaml.YAMLError as exc:
+                print(exc, file = sys.stderr)
+                sys.exit(1)
+   
+    # check the player password
     if player_name != '0':
-        password = getpass.getpass()
-        try:
-            with open(player_path + '/'+ player_name + '.yaml') as f:
-                try:
-                    player_data = yaml.safe_load(f)
-                except yaml.YAMLError as exc:
-                    print(exc)
-        except:
-            print(f"no player with name {player_name}", file = sys.stderr)
-            sys.exit(1)
-        # check password    
-        if player_data['password'] != password:
-           print("Incorrect password", file = sys.stderr) 
+        if player_name in players.keys():
+            password = getpass.getpass()
+            # check password    
+            if players[player_name]['password'] != password:
+                print("Incorrect password", file = sys.stderr) 
+                sys.exit(1)
+        else:
+           print(f"player {player_name} does not exist", file = sys.stderr)
            sys.exit(1)
     elif not(new_game):
         password = getpass.getpass()
@@ -121,7 +134,6 @@ def main(argv):
 
     # candidate config, this should be populated from any existing files
 
-    players = {}
     name = []
     symbol = []
     health = []
@@ -150,17 +162,38 @@ def main(argv):
             command_help()
             continue
 
+        # show - board
+        if tokens[0]=='show':
+            if DEBUG:
+                print(f"len(tokens): {len(tokens)}")
+            if tokens[1] == 'board':
+                if board == None:
+                    print("must create board - set size and commit")
+                    continue
+                board.print()
+            if tokens[1] == 'players':
+                for player in players.keys():
+                    print(f"name: {player}, email: {players[player]['email']}")
+            else:
+                print("invalid set command")
+                continue
+
         # set - size, player
         if tokens[0]=='set':
             if DEBUG:
                 print(f"len(tokens): {len(tokens)}")
             if tokens[1] == 'size':
+                if board != None:
+                    print("can't resize an existing board")
+                    continue
                 if len(tokens) != 4:
                     print("must provide x and y for size")
                     continue
                 try:
                     size_x = int(tokens[2])
                     size_y = int(tokens[3])
+                    # immediately create the board object
+                    board = Board(size_x, size_y)
                 except:    
                     print("x and y must be a numbers")
                     continue
@@ -168,6 +201,9 @@ def main(argv):
                     print("x must be greater than 1")
                 if size_y < 2:
                     print("y must be greater than 1")
+            else:
+                print("invalid set command")
+                continue
 
         # add - player, type, unit
         if tokens[0] == 'add':
@@ -180,6 +216,7 @@ def main(argv):
                     continue
                 players[tokens[2]] = {}
                 players[tokens[2]]["email"] = tokens[3]
+                players[tokens[2]]['obj'] = Player(tokens[2], tokens[3])
                 password1 = getpass.getpass()
                 password2 = getpass.getpass("Reenter password: ")
                 if password1 != password2:
@@ -245,10 +282,11 @@ def main(argv):
                 player_dict = {
                     'name': p,
                     'email': players[p]['email'],
-                    'password': players[p]['password']
+                    'password': players[p]['password'],
                 }
                 with open(player_path + '/'+ p + '.yaml', 'w') as file:
                     yaml.safe_dump(player_dict, file)
+                    
 
         # use to update player yaml to include added unit types    
         if tokens[0] == 'commit_types':
