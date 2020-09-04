@@ -20,13 +20,14 @@ add player <name> <email> - add a new player to the game, only player '0' i.e. t
 add type <name> <symbol> <attack> <health> <energy>
 add unit <type> <name> <x> <y>
 
-set player <email> - set a player's email address to a different value - only player '0' or the player setting their own email can do this
+~~set player email <email> - set a player's email address to a different value - only player '0' or the player setting their own email can do this
+~~set player password <password> - set a player's password to a different value - only player '0' or the player setting their own email can do this
 set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
 
 show player - show player information 
 show types - show types, this includes any enemy types seen
 show units - show units, this includes any enemy units that the player has seen in the last turn
-show candidate - shows the current actions that will be performed on commit
+~~show candidate - shows the current actions that will be performed on commit
 
 show board - shows the map of the board form the player's perspective
 
@@ -47,6 +48,8 @@ def main(argv):
     board_meta_data = {}
     new_game = False
     board = None
+    # for the game admin player_obj is set to None
+    player_obj = None
     players = {}
 
     argc = len(argv)
@@ -123,6 +126,8 @@ def main(argv):
             if players[player_name]['password'] != password:
                 print("Incorrect password", file = sys.stderr) 
                 sys.exit(1)
+            # set the player_obj to provide context that limits visibility on several show commands, etc    
+            player_obj = players[player_name]['obj']    
         else:
            print(f"player {player_name} does not exist", file = sys.stderr)
            sys.exit(1)
@@ -132,18 +137,6 @@ def main(argv):
            print("Incorrect password", file = sys.stderr) 
            sys.exit(1)
 
-    # candidate config, this should be populated from any existing files
-
-    name = []
-    symbol = []
-    health = []
-    attack = []
-    energy = []
-    utype = []
-    unit_name = []
-    x_location = []
-    y_location = []
-    
     # interactive mode
 
     while True:
@@ -170,12 +163,21 @@ def main(argv):
                 if board == None:
                     print("must create board - set size and commit")
                     continue
-                board.print()
-            if tokens[1] == 'players':
+                board.print(player_obj)
+                
+            elif tokens[1] == 'types':
+                for player in players:
+                    if 'types' in players[player].keys():    
+                        for types in players[player]['types'].keys():
+                            for unit_name in players[player]['types'].keys():
+                                unit_type = players[player]['types'][unit_name]
+                                print(f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
+
+            elif tokens[1] == 'players':
                 for player in players.keys():
                     print(f"name: {player}, email: {players[player]['email']}")
             else:
-                print("invalid set command")
+                print("invalid show command")
                 continue
 
         # set - size, player
@@ -183,6 +185,9 @@ def main(argv):
             if DEBUG:
                 print(f"len(tokens): {len(tokens)}")
             if tokens[1] == 'size':
+                if player_name != '0':
+                    print("only the game admin (player '0') can set board size")
+                    continue
                 if board != None:
                     print("can't resize an existing board")
                     continue
@@ -225,14 +230,25 @@ def main(argv):
                 else:
                     players[tokens[2]]["password"] = password1
             elif tokens[1] == 'type':
+                if player_name == '0':
+                    print("only the players can add unit types not admin")
+                    continue
                 if len(tokens) != 7:
                     print("must provide 5 args for type")
                     continue
-                name.append(tokens[2])
-                symbol.append(tokens[3])
-                health.append(tokens[4])
-                attack.append(tokens[5])
-                energy.append(tokens[6])
+                try:
+                    obj = UnitType(player_obj, tokens[3], int(tokens[4]), int(tokens[5]), int(tokens[6]))
+                except Exception as e:    
+                    print(f"error adding unit type: {e}")
+                    continue
+                players[player_name]['types'] = {}
+                players[player_name]['types'][tokens[2]] = {}
+                players[player_name]['types'][tokens[2]]['name'] = tokens[2]
+                players[player_name]['types'][tokens[2]]['symbol'] = tokens[3]
+                players[player_name]['types'][tokens[2]]['health'] = tokens[4]
+                players[player_name]['types'][tokens[2]]['attack'] = tokens[5]
+                players[player_name]['types'][tokens[2]]['energy'] = tokens[6]
+                players[player_name]['obj'] = obj
             elif tokens[1] == 'unit':
                 if len(tokens) != 6:
                     print("must provide 4 args for unit")
@@ -286,7 +302,16 @@ def main(argv):
                 }
                 with open(player_path + '/'+ p + '.yaml', 'w') as file:
                     yaml.safe_dump(player_dict, file)
-                    
+
+            # write the types to the player directory
+            for p in players.keys():
+                player_dict = {
+                    'name': p,
+                    'email': players[p]['email'],
+                    'password': players[p]['password'],
+                }
+                with open(player_path + '/'+ p + '.yaml', 'w') as file:
+                    yaml.safe_dump(player_dict, file)
 
         # use to update player yaml to include added unit types    
         if tokens[0] == 'commit_types':

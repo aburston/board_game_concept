@@ -239,8 +239,11 @@ class Board:
 
         self.units = []
         self.unit_dict = {}
+        self.types = {}
     
     def add(self, player, x, y, name, unit_type):
+        # add the unit to a dictionary of types organised by player
+        self.types[player.name][unit_type.name] = unit_type
         # make a shallow copy of the unit type to create a new unit instance
         unit = copy.copy(unit_type)
         # reset the unit name
@@ -275,6 +278,14 @@ class Board:
             self.board.draw()
         else:
             self.board.draw(callback=_render_unit)
+
+    def listTypes(self, player = None):
+        typesStr = "types:\n"
+        for player in self.types.keys():
+            for type_name in self.types[player].keys():
+                unit_type = self.types[player][type_name]
+                typesStr = typesStr + f"- { player: \"{player}\", name: \"{unit_type.name}\", symbol: \"{unit_type.symbol}\", attack: \"{unit_type.attack}\", health: \"{unit_type.health}\", energy: \"{unit_type.energy}\" }\n"
+        return typesStr    
 
     def listUnits(self, player = None):
         unitsStr = "board: {" + f" size_x: {self.size_x}, size_y: {self.size_y}" + "}\n"
