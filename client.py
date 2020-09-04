@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from BoardGameConcept import UnitType
 from BoardGameConcept import Board
@@ -6,33 +6,47 @@ from BoardGameConcept import Player
 import sys
 import yaml
 import os
+import getpass
+
+DEBUG = True
+
+def usage():
+   print("usage, client.py <gameno>", file = sys.stderr)
+   print("or, client.py <gameno> <playername>", file = sys.stderr)
 
 def main(argv):
+
     xsize = 2
     ysize = 2
     MAX_PLAYERS = 2
+    game_password = ""
+    password = ""
+
+    argc = len(argv)
+    if DEBUG:
+        print(f"len(argv): {argc}")
     
-    #2 startup modes, player 0 or non-0 player
-    assert len(argv)>=3, "usage, client.py <gameno> <playername> <xsize> <ysize>\nor, client.py <gameno> <playername> <password>"
-    if argv[1]=='0':
-        playername = argv[1]
-        gameno = argv[0]
-        xsize = argv[2]
-        ysize = argv[3]
-    elif argv[1]:
-        gameno = argv[0]
-        playername = argv[1]
-        password = argv[2]
+    if len(argv) == 2:
+        playername = '0'
+        gameno = argv[1]
+    elif len(argv) == 3:
+        gameno = argv[1]
+        playername = argv[2]
     else:
-        assert False, "usage, client.py <gameno> <playerno> <xsize> <ysize>\nor, client.py <gameno> <playerno> <password>"
+        usage()
+        sys.exit(1)
     
-    dataPath = os.getcwd() + "\games\_" + gameno + "\data"
-    playerPath = os.getcwd() + "\games\_" + gameno + "\players"
+    basePath = os.getcwd() + "/games/_" + gameno
+    dataPath = basePath + "/data"
+    playerPath = basePath + "/players"
+
+    if DEBUG:
+        print(f"Basepath: {basePath}")
     
-    #try reading data file for game 
-    #except to create the directory for the game data file
+    # try reading data file for game 
+    # except to create the directory for the game data file
     try:
-        with open(dataPath + '\\data.yaml') as f:
+        with open(dataPath + '/data.yaml') as f:
             try:
                 data = yaml.safe_load(f)
             except yaml.YAMLError as exc:
@@ -40,35 +54,38 @@ def main(argv):
     except:
         if playername=='0':
             try:
+                print("Set game password")
+                password1 = getpass.getpass()
+                password2 = getpass.getpass(prompt="Reenter password: ")
+                if password1 == password2:
+                    game_password = password1
                 os.makedirs(dataPath)
                 os.makedirs(playerPath)
+
             except OSError:
-                print ("Creation of the directories for game %s failed" % gameno)
+                print (f"Creation of the directories for game {gameno} failed", file = sys.stderr)
+                sys.exit(1)
             else:
-                print ("Successfully created the directories for game %s" % gameno)
+                print (f"Successfully created the directories for game {gameno}")
         else:
-            print("no such game")
+            print(f"No game with number: {gameno}", file = sys.stderr)
+            sys.exit(1)
           
     if playername != '0':
+        password = getpass.getpass()
         try:
-            with open(playerPath + '\\'+ playername + '.yaml') as f:
+            with open(playerPath + '/'+ playername + '.yaml') as f:
                 try:
                     playerData = yaml.safe_load(f)
                 except yaml.YAMLError as exc:
                     print(exc)
         except:
-            print('no player with name %s' % playername)
-            sys.exit()
+            print(f"no player with name {playername}", file = sys.stderr)
+            sys.exit(1)
  
-
-    directory = os.fsencode(playerPath)
-    
-    
-    
     #if player, retrieve data, check password
     if playername != '0':
-        for file in os.listdir(directory):
-            filename = os.fsdecode(file)
+        for filename in os.listdir(playerPath):
             if filename.endswith(".yaml"):
                 filename = os.path.splitext(filename)[0] 
                 if filename==playername:
@@ -138,11 +155,11 @@ def main(argv):
             break
         
         #initialising the game savees all input data to yaml for the game setup step
-        if tokens[0]=='initialise':
+        if tokens[0]=='commit':
             assert len(player_names)>=MAX_PLAYERS, "not enough players"
             
             dict_file = {'board' : {'size_x' : xsize,'size_y' : ysize},'game' : {'game' : gameno,'no_of_players' : MAX_PLAYERS}}
-            with open(dataPath + '\\data.yaml', 'w') as file:
+            with open(dataPath + '/data.yaml', 'w') as file:
                 yaml.safe_dump(dict_file, file)
             for p in list(range(1,MAX_PLAYERS+1)):
                 player_dict = {
@@ -150,7 +167,7 @@ def main(argv):
                 'email':emails[int(p)-1],
                 'password':passwords[int(p)-1]                                                       
                 }
-                with open(playerPath + '\\'+ player_names[int(p)-1] + '.yaml', 'w') as file:
+                with open(playerPath + '/'+ player_names[int(p)-1] + '.yaml', 'w') as file:
                     yaml.safe_dump(player_dict, file)
             
         #use to update player yaml to include added unit types    
@@ -162,7 +179,7 @@ def main(argv):
             'energy' : energy[i]   
             } for i in list(range(0,len(name)))}}
             playerData.update(unitData)
-            with open(playerPath + '\\'+ playername + '.yaml', 'w') as file:
+            with open(playerPath + '/'+ playername + '.yaml', 'w') as file:
                     yaml.safe_dump(playerData, file)
                  
         #use to update player yaml to unclude placed units
@@ -186,4 +203,4 @@ def main(argv):
             
     
 if __name__ == "__main__":
-   main(sys.argv[1:])
+   main(sys.argv)
