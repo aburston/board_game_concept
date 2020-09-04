@@ -14,6 +14,30 @@ def usage():
    print("usage, client.py <gameno>", file = sys.stdin)
    print("or, client.py <gameno> <playername>", file = sys.stderr)
 
+def command_help():
+    print("""
+add player <name> <email> - add a new player to the game, only player '0' i.e. the game admin can do this
+add type <name> <symbol> <attack> <health> <energy>
+add unit <type> <name> <x> <y>
+
+set player <email> - set a player's email address to a different value - only player '0' or the player setting their own email can do this
+set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
+
+show player - show player information 
+show types - show types, this includes any enemy types seen
+show units - show units, this includes any enemy units that the player has seen in the last turn
+show candidate - shows the current actions that will be performed on commit
+
+show board - shows the map of the board form the player's perspective
+
+move <unit_id/unit_name> <north|south|east|west> - move a unit in the specified direction, players can only move their own units
+
+commit - commit actions taken, this can't be undone
+
+help - display this information
+exit - exit the game client
+    """)
+
 def main(argv):
 
     xsize = 2
@@ -52,7 +76,7 @@ def main(argv):
             except yaml.YAMLError as exc:
                 print(exc)
     except:
-        if playername=='0':
+        if playername == '0':
             try:
                 print("Set game password")
                 password1 = getpass.getpass()
@@ -62,8 +86,6 @@ def main(argv):
                 else:
                     print("Passwords must match", file = sys.stderr)
                     sys.exit(1)
-                os.makedirs(dataPath)
-                os.makedirs(playerPath)
 
             except OSError:
                 print (f"Creation of the directories for game {gameno} failed", file = sys.stderr)
@@ -92,11 +114,11 @@ def main(argv):
             if filename.endswith(".yaml"):
                 filename = os.path.splitext(filename)[0] 
                 if filename==playername:
-                    assert playerData['password']==password,'password doesnt match username'
+                    assert playerData['password']==password, "password doesn't match username"
                     xsize = data['board']['size_x']
                     ysize = data['board']['size_y']
 
-    # candidate config
+    # candidate config, this should be populated from any existing files
     players = {}
     name = []
     symbol = []
@@ -109,14 +131,21 @@ def main(argv):
     y_location = []
     
     # interactive mode
+
     while True:
 
         # read line from stdin + tokenize it
+        print(f"{argv[0]}> ", flush=True, end='')
         line = sys.stdin.readline().rstrip()
         tokens = line.split()
 
         # ignore empty lines
-        if len(tokens)==0:
+        if len(tokens) == 0:
+            continue
+
+        # command help
+        if tokens[0] == 'help':
+            command_help()
             continue
 
         # add - player, type, unit
@@ -166,16 +195,22 @@ def main(argv):
 #             assert len(tokens)==5,"must provide 3 args for player"
 # =============================================================================
 
-        if tokens[0]=='exit':
+        if tokens[0] == 'exit':
             break
 
         #initialising the game savees all input data to yaml for the game setup step
-        if tokens[0]=='commit':
+        if tokens[0] == 'commit':
 
             # check there are enough players
             if len(players.keys())<MAX_PLAYERS:
                 print ("not enough players")
                 continue
+
+            # add required directories
+            if not(os.path.exists(dataPath)):
+                os.makedirs(dataPath)
+            if not(os.path.exists(playerPath)):
+                os.makedirs(playerPath)
 
             # write the data file for the board
             dict_file = {'board' : {'size_x' : xsize,'size_y' : ysize},'game' : {'game' : gameno,'no_of_players' : MAX_PLAYERS}}
@@ -193,19 +228,20 @@ def main(argv):
                     yaml.safe_dump(player_dict, file)
 
         #use to update player yaml to include added unit types    
-        if tokens[0]=='commit_types':
-            unitData = {'unit_types' : {name[i] : {
-            'symbol' : symbol[i],
-            'health' : health[i],
-            'attack' : attack[i],
-            'energy' : energy[i]   
-            } for i in list(range(0,len(name)))}}
-            playerData.update(unitData)
-            with open(playerPath + '/'+ playername + '.yaml', 'w') as file:
-                    yaml.safe_dump(playerData, file)
+        if tokens[0] == 'commit_types':
+            unitData = {
+                'unit_types' : {
+                    name[i] : {
+                        'symbol' : symbol[i],
+                        'health' : health[i],
+                        'attack' : attack[i],
+                        'energy' : energy[i]
+                    }
+                }        
+            }
 
         #use to update player yaml to unclude placed units
-        if tokens[0]=='place_units':
+        if tokens[0] == 'place_units':
             for i in utype:
                 if i in playerData['unit_types']:
                     continue
@@ -213,15 +249,17 @@ def main(argv):
                     print("no unit of type %s" % i)
                     utype.remove(i)
 
-            assert len(utype)>=1,"must place a non zero number of units"
-            unitLocations = {'unit_locations' : {unit_name[i] : {
-            'type' : utype[i],
-            'x_location' : x_location[i],
-            'y_location' : y_location[i]  
-            } for i in list(range(0,len(unit_name)))}}
-            playerData.update(unitLocations)
-            with open(playerPath + '\\'+ playername + '.yaml', 'w') as file:
-                    yaml.safe_dump(playerData, file)
+            assert len(utype) >= 1,"must place a non zero number of units"
+            unitLocations = {
+                'unit_locations' : {
+                    unit_name[i] : {
+                        'type' : utype[i],
+                        'x_location' : x_location[i],
+                        'y_location' : y_location[i]  
+                    }
+                    for i in list(range(0,len(unit_name)))
+                }
+            }
 
 
 if __name__ == "__main__":
