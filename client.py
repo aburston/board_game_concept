@@ -46,6 +46,7 @@ def main(argv):
     password = ""
     player_data = {}
     board_meta_data = {}
+    new_game = False
 
     argc = len(argv)
     if DEBUG:
@@ -76,25 +77,23 @@ def main(argv):
                 board_meta_data = yaml.safe_load(f)
                 size_x = board_meta_data['board']['size_x']
                 size_y = board_meta_data['board']['size_y']
+                game_password = board_meta_data['game']['password']
+                if DEBUG:
+                    print("Finished loading game meta data")
             except yaml.YAMLError as exc:
-                print(exc)
+                print(exc, file = sys.stderr)
+                sys.exit(1)
     except:
         if player_name == '0':
-            try:
-                print("Set game password")
-                password1 = getpass.getpass()
-                password2 = getpass.getpass(prompt="Reenter password: ")
-                if password1 == password2:
-                    game_password = password1
-                else:
-                    print("Passwords must match", file = sys.stderr)
-                    sys.exit(1)
-
-            except OSError:
-                print (f"Creation of the directories for game {gameno} failed", file = sys.stderr)
-                sys.exit(1)
+            new_game = True
+            print("Set game password")
+            password1 = getpass.getpass()
+            password2 = getpass.getpass(prompt="Reenter password: ")
+            if password1 == password2:
+                game_password = password1
             else:
-                print (f"Successfully created the directories for game {gameno}")
+                print("Passwords must match", file = sys.stderr)
+                sys.exit(1)
         else:
             print(f"No game with number: {gameno}", file = sys.stderr)
             sys.exit(1)
@@ -110,14 +109,15 @@ def main(argv):
         except:
             print(f"no player with name {player_name}", file = sys.stderr)
             sys.exit(1)
- 
-    # if player, retrieve data, check password
-    if player_name != '0':
-        for filename in os.listdir(player_path):
-            if filename.endswith(".yaml"):
-                filename = os.path.splitext(filename)[0] 
-                if filename == player_name:
-                    assert player_data['password']==password, "password doesn't match username"
+        # check password    
+        if player_data['password'] != password:
+           print("Incorrect password", file = sys.stderr) 
+           sys.exit(1)
+    elif not(new_game):
+        password = getpass.getpass()
+        if game_password != password:
+           print("Incorrect password", file = sys.stderr) 
+           sys.exit(1)
 
     # candidate config, this should be populated from any existing files
 
@@ -170,7 +170,7 @@ def main(argv):
                     print("y must be greater than 1")
 
         # add - player, type, unit
-        if tokens[0]=='add':
+        if tokens[0] == 'add':
             if tokens[1] == 'player':
                 if player_name != '0':
                     print("only the game admin (player '0') can add players")
