@@ -11,7 +11,7 @@ import getpass
 DEBUG = True
 
 def usage():
-   print("usage, client.py <gameno>", file = sys.stderr)
+   print("usage, client.py <gameno>", file = sys.stdin)
    print("or, client.py <gameno> <playername>", file = sys.stderr)
 
 def main(argv):
@@ -25,7 +25,7 @@ def main(argv):
     argc = len(argv)
     if DEBUG:
         print(f"len(argv): {argc}")
-    
+
     if len(argv) == 2:
         playername = '0'
         gameno = argv[1]
@@ -35,7 +35,7 @@ def main(argv):
     else:
         usage()
         sys.exit(1)
-    
+
     basePath = os.getcwd() + "/games/_" + gameno
     dataPath = basePath + "/data"
     playerPath = basePath + "/players"
@@ -59,6 +59,9 @@ def main(argv):
                 password2 = getpass.getpass(prompt="Reenter password: ")
                 if password1 == password2:
                     game_password = password1
+                else:
+                    print("Passwords must match", file = sys.stderr)
+                    sys.exit(1)
                 os.makedirs(dataPath)
                 os.makedirs(playerPath)
 
@@ -70,7 +73,7 @@ def main(argv):
         else:
             print(f"No game with number: {gameno}", file = sys.stderr)
             sys.exit(1)
-          
+    
     if playername != '0':
         password = getpass.getpass()
         try:
@@ -92,11 +95,9 @@ def main(argv):
                     assert playerData['password']==password,'password doesnt match username'
                     xsize = data['board']['size_x']
                     ysize = data['board']['size_y']
-                   
-    b = Board(int(xsize),int(ysize))
-    player_names = []
-    emails = []
-    passwords = []
+
+    # candidate config
+    players = {}
     name = []
     symbol = []
     health = []
@@ -107,69 +108,90 @@ def main(argv):
     x_location = []
     y_location = []
     
-    
+    # interactive mode
     while True:
-# =============================================================================
-#         print("+-+-+-+-+-+-+\n")
-#         for p in ps:
-#             print(p)
-#         print("\n+-+-+-+-+-+-+\n")
-#         print()
-# =============================================================================
-        b.print()
+
+        # read line from stdin + tokenize it
         line = sys.stdin.readline().rstrip()
         tokens = line.split()
+
+        # ignore empty lines
         if len(tokens)==0:
             continue
+
+        # add - player, type, unit
         if tokens[0]=='add':
             assert len(tokens)>=2,"invalid add command"
-            if tokens[1]=='player':
-                assert len(tokens)==5,"must provide 3 args for player"
-                player_names.append(tokens[2]) 
-                emails.append(tokens[3]) 
-                passwords.append(tokens[4])
-            elif tokens[1] == 'unit_type':
-                assert len(tokens)==7,"must provide 5 args for unit_type"
+            if tokens[1] == 'player':
+                if playername != '0':
+                    print("only the game admin (player '0') can add players")
+                    continue
+                if len(tokens) != 4:
+                    print("must provide 2 args for player")
+                    continue
+                players[tokens[2]] = {}
+                players[tokens[2]]["email"] = tokens[3]
+                password1 = getpass.getpass()
+                password2 = getpass.getpass("Reenter password: ")
+                if password1 != password2:
+                    print("User passwords must match")
+                    continue
+                else:
+                    players[tokens[2]]["password"] = password1
+            elif tokens[1] == 'type':
+                if len(tokens) != 7:
+                    print("must provide 5 args for type")
+                    continue
                 name.append(tokens[2])
                 symbol.append(tokens[3])
                 health.append(tokens[4])
                 attack.append(tokens[5])
                 energy.append(tokens[6])
             elif tokens[1] == 'unit':
-                assert len(tokens)==6, "must provide 4 args for unit"
+                if len(tokens) != 6:
+                    print("must provide 4 args for unit")
+                    continue
                 utype.append(tokens[2])
                 unit_name.append(tokens[3])
                 x_location.append(tokens[4])
                 y_location.append(tokens[5])
             else:
-                assert False,"invalid add command"#
-                
+                print("invalid add command")
+                continue
+
 # =============================================================================
 #         if token[0]=='commit':
 #             commit()
 #         if token[0]=='move':
 #             assert len(tokens)==5,"must provide 3 args for player"
 # =============================================================================
-        
+
         if tokens[0]=='exit':
             break
-        
+
         #initialising the game savees all input data to yaml for the game setup step
         if tokens[0]=='commit':
-            assert len(player_names)>=MAX_PLAYERS, "not enough players"
-            
+
+            # check there are enough players
+            if len(players.keys())<MAX_PLAYERS:
+                print ("not enough players")
+                continue
+
+            # write the data file for the board
             dict_file = {'board' : {'size_x' : xsize,'size_y' : ysize},'game' : {'game' : gameno,'no_of_players' : MAX_PLAYERS}}
             with open(dataPath + '/data.yaml', 'w') as file:
                 yaml.safe_dump(dict_file, file)
-            for p in list(range(1,MAX_PLAYERS+1)):
+
+            # write the individual player files
+            for p in players.keys():
                 player_dict = {
-                'player_name':player_names[int(p)-1],
-                'email':emails[int(p)-1],
-                'password':passwords[int(p)-1]                                                       
+                    'name': p,
+                    'email': players[p]['email'],
+                    'password': players[p]['password']
                 }
-                with open(playerPath + '/'+ player_names[int(p)-1] + '.yaml', 'w') as file:
+                with open(playerPath + '/'+ p + '.yaml', 'w') as file:
                     yaml.safe_dump(player_dict, file)
-            
+
         #use to update player yaml to include added unit types    
         if tokens[0]=='commit_types':
             unitData = {'unit_types' : {name[i] : {
@@ -181,7 +203,7 @@ def main(argv):
             playerData.update(unitData)
             with open(playerPath + '/'+ playername + '.yaml', 'w') as file:
                     yaml.safe_dump(playerData, file)
-                 
+
         #use to update player yaml to unclude placed units
         if tokens[0]=='place_units':
             for i in utype:
@@ -190,7 +212,7 @@ def main(argv):
                 else:
                     print("no unit of type %s" % i)
                     utype.remove(i)
-            
+
             assert len(utype)>=1,"must place a non zero number of units"
             unitLocations = {'unit_locations' : {unit_name[i] : {
             'type' : utype[i],
@@ -200,7 +222,7 @@ def main(argv):
             playerData.update(unitLocations)
             with open(playerPath + '\\'+ playername + '.yaml', 'w') as file:
                     yaml.safe_dump(playerData, file)
-            
-    
+
+
 if __name__ == "__main__":
    main(sys.argv)
