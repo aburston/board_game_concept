@@ -11,7 +11,7 @@ import getpass
 DEBUG = True
 
 def usage():
-   print("usage, client.py <gameno>", file = sys.stdin)
+   print("usage, client.py <gameno>", file = sys.stderr)
    print("or, client.py <gameno> <player_name>", file = sys.stderr)
 
 def command_help():
@@ -162,12 +162,12 @@ def main(argv):
             continue
 
         # command help
-        if tokens[0] == 'help':
+        elif tokens[0] == 'help':
             command_help()
             continue
 
         # show - board, units
-        if tokens[0]=='show':
+        elif tokens[0]=='show':
             if DEBUG:
                 print(f"len(tokens): {len(tokens)}")
             if tokens[1] == 'board':
@@ -197,7 +197,7 @@ def main(argv):
                 continue
 
         # set - size, player
-        if tokens[0]=='set':
+        elif tokens[0]=='set':
             if DEBUG:
                 print(f"len(tokens): {len(tokens)}")
             if tokens[1] == 'board':
@@ -227,13 +227,16 @@ def main(argv):
                 continue
 
         # add - player, type, unit
-        if tokens[0] == 'add':
+        elif tokens[0] == 'add':
             if tokens[1] == 'player':
                 if player_name != '0':
                     print("only the game admin (player '0') can add players")
                     continue
                 if len(tokens) != 4:
                     print("must provide 2 args for player")
+                    continue
+                if new_game == False:
+                    print("can't add players to an existing game")
                     continue
                 players[tokens[2]] = {}
                 players[tokens[2]]["email"] = tokens[3]
@@ -251,6 +254,9 @@ def main(argv):
                     continue
                 if len(tokens) != 7:
                     print("must provide 5 args for type")
+                    continue
+                if new_game == False:
+                    print("can't add types after first turn")
                     continue
                 try:
                     obj = UnitType(player_obj, tokens[3], int(tokens[4]), int(tokens[5]), int(tokens[6]))
@@ -280,6 +286,9 @@ def main(argv):
                 if board == None:
                     print("board must be loaded in order to place units")
                     continue
+                if new_game == False:
+                    print("can't add units after first turn")
+                    continue
                 try:
                     type_name = tokens[2]
                     name = tokens[3]
@@ -297,7 +306,7 @@ def main(argv):
                 continue
 
         # move - unit
-        if tokens[0] == 'move':
+        elif tokens[0] == 'move':
             if player_name == '0':
                 print("only the players can move units not admin")
                 continue
@@ -306,6 +315,9 @@ def main(argv):
                 continue
             if board == None:
                 print("board must be loaded in order to move units")
+                continue
+            if new_game:
+                print("can't move units until after the first turn is complete")
                 continue
             try:
                 unit_name = tokens[1]
@@ -330,7 +342,7 @@ def main(argv):
                 continue
 
         # commiting the game saves all input data to yaml for the game setup step
-        if tokens[0] == 'commit':
+        elif tokens[0] == 'commit':
 
             # check the board size has been set
             if size_x <= 1 or size_y <= 1:
@@ -405,11 +417,14 @@ def main(argv):
                     file.write(player_units)
                     file.close()
 
-            print("commit complete")    
+            print("commit complete")
+            break
 
         # leave
-        if tokens[0] == 'exit':
+        elif tokens[0] == 'exit':
             break
+        else:
+            print("invalid command")    
 
 
 if __name__ == "__main__":
