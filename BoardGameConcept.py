@@ -35,6 +35,9 @@ class UnitType:
 
     def __init__(self, name, symbol, attack, health, energy):
         self.name = name
+        self.type_name = name
+
+        # XXX this is a rather not so nice way of preserving the original type name whe this object is copied and turned into a unit
         assert (len(str(name)) >= 1), "name must be one or more character"
 
         self.symbol = symbol
@@ -218,7 +221,11 @@ class UnitType:
                         print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
 
     def dump(self):
-        return(f"player: \"{self.player.name}\", name: \"{self.name}\", symbol: \"{self.symbol}\", attack: \"{self.attack}\", health: \"{self.health}\", energy: \"{self.energy}\", x: {self.x}, y: {self.y}, state: {self.state}, direction: {self.direction}, destroyed: {self.destroyed}, on_board: {self.on_board}")
+
+        result = f"player: \"{self.player.name}\", type: \"{self.type_name}\", name: \"{self.name}\", symbol: \"{self.symbol}\", attack: \"{self.attack}\", health: \"{self.health}\", energy: \"{self.energy}\", x: {self.x}, y: {self.y}, state: {self.state}, direction: {self.direction}, destroyed: {self.destroyed}, on_board: {self.on_board}"
+        if DEBUG:
+            print(result)
+        return(result)
 
     def __str__(self):
         return(self.symbol)

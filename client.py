@@ -78,7 +78,7 @@ def main(argv):
     if DEBUG:
         print(f"Basepath: {basePath}")
     
-    # try reading data file for game 
+    # try reading meta data file for game 
     try:
         with open(data_path + '/data.yaml') as f:
             try:
@@ -92,6 +92,7 @@ def main(argv):
             except yaml.YAMLError as exc:
                 print(exc, file = sys.stderr)
                 sys.exit(1)
+
     except:
         # if this is a new game request the game admin password
         if player_name == '0':
@@ -117,8 +118,9 @@ def main(argv):
                         print("unprocessed player moves, waiting for game to complete the turn, try again later", file = sys.stderr)
                         sys.exit(1)
                     continue   
-                if str(f).find("commit") != -1:
-                    new_game = False
+                if str(f).find("commit_") != -1:
+                    if str(f).find("commit_" + player_name) != -1:
+                        new_game = False
                     continue
                 try:
                     player_data = yaml.safe_load(f)
@@ -129,8 +131,23 @@ def main(argv):
                         'name': name,
                         'email': player_data['email'],
                         'password': player_data['password'],
-                        'obj': obj
+                        'obj': obj,
+                        'types': {}
                     }
+                    if 'types' in player_data.keys():
+                        for unit_type_name in player_data['types'].keys():
+                            unit_type = player_data['types'][unit_type_name]
+                            print("***")
+                            print(unit_type)
+                            unit_type_obj = UnitType(
+                                unit_type['name'],
+                                unit_type['symbol'],
+                                int(unit_type['attack']),
+                                int(unit_type['health']),
+                                int(unit_type['energy']))
+                            unit_type['obj'] = unit_type_obj
+                            players[name]['types'][unit_type['name']] = unit_type
+
                     # if this is player '0' the moves files could exist
                     moves_file = player_path + '/' + player_data['name'] + '_units.yaml'
                     if os.path.exists(moves_file):
@@ -141,6 +158,23 @@ def main(argv):
                 except yaml.YAMLError as exc:
                     print(exc, file = sys.stderr)
                     sys.exit(1)
+
+    # load the units into the board                
+    if os.path.exists(data_path + '/units.yaml'):        
+        print("loading units")
+        with open(data_path + '/units.yaml') as f:
+            units = yaml.safe_load(f)['units']
+            print(units)
+            if units != None:
+                for unit in units:
+                    print("peocessing unit")
+                    name = unit['name']
+                    p_name = unit['player']
+                    print(players[p_name]['types'])
+                    player = players[p_name]['obj']
+                    unit_type = players[p_name]['types'][unit['type']]['obj']
+                    board.add(player, unit['x'], unit['y'], name, unit_type)
+                board.commit()    
    
     # check the player password
     if player_name != '0':
@@ -190,7 +224,7 @@ def main(argv):
                 board.print(player_obj)
                 
             elif tokens[1] == 'types':
-                for player in players:
+                for player in players.keys():
                     if 'types' in players[player].keys():    
                         for types in players[player]['types'].keys():
                             for unit_name in players[player]['types'].keys():
@@ -255,16 +289,19 @@ def main(argv):
                 if new_game == False:
                     print("can't add players to an existing game")
                     continue
-                players[tokens[2]] = {}
-                players[tokens[2]]["email"] = tokens[3]
-                players[tokens[2]]['obj'] = Player(tokens[2], tokens[3])
+                name = tokens[2]
+                players[name] = {
+                    "email": tokens[3],
+                    'obj': Player(tokens[2], tokens[3]),
+                    'types': {}
+                }
                 password1 = getpass.getpass()
                 password2 = getpass.getpass("Reenter password: ")
                 if password1 != password2:
                     print("User passwords must match")
                     continue
                 else:
-                    players[tokens[2]]["password"] = password1
+                    players[name]["password"] = password1
             elif tokens[1] == 'type':
                 if player_name == '0':
                     print("only the players can add unit types not admin")
@@ -276,23 +313,22 @@ def main(argv):
                     print("can't add types after first turn")
                     continue
                 try:
-                    obj = UnitType(player_obj, tokens[3], int(tokens[4]), int(tokens[5]), int(tokens[6]))
+                    type_name = tokens[2]
+                    symbol = tokens[3]
+                    attack = tokens[4]
+                    health = tokens[5]
+                    energy = tokens[6]
+                    obj = UnitType(type_name, symbol, int(attack), int(health), int(energy))
+                    players[player_name]['types'][type_name] = {}
+                    players[player_name]['types'][type_name]['name'] = type_name
+                    players[player_name]['types'][type_name]['symbol'] = symbol
+                    players[player_name]['types'][type_name]['attack'] = attack
+                    players[player_name]['types'][type_name]['health'] = health
+                    players[player_name]['types'][type_name]['energy'] = energy
+                    players[player_name]['types'][type_name]['obj'] = obj
                 except Exception as e:    
                     print(f"error adding unit type: {e}")
                     continue
-                type_name = tokens[2]
-                symbol = tokens[3]
-                attack = tokens[4]
-                health = tokens[5]
-                energy = tokens[6]
-                players[player_name]['types'] = {}
-                players[player_name]['types'][type_name] = {}
-                players[player_name]['types'][type_name]['name'] = type_name
-                players[player_name]['types'][type_name]['symbol'] = symbol
-                players[player_name]['types'][type_name]['attack'] = attack
-                players[player_name]['types'][type_name]['health'] = health
-                players[player_name]['types'][type_name]['energy'] = energy
-                players[player_name]['types'][type_name]['obj'] = obj
             elif tokens[1] == 'unit':
                 if player_name == '0':
                     print("only the players can add units not admin")
@@ -390,33 +426,57 @@ def main(argv):
                     yaml.safe_dump(board_meta_data, file)
 
                 # TODO: pick up board files created by players and merge them into the board
+                for player in players.keys():
+                    if 'moves' in players[player].keys():
+                        print(f"player: {player}, moves: {players[player]['moves']}")
+                        units = players[player]['moves']['units']
+                        if units == None:
+                            continue
+                        for unit in units:
+                            name = unit['name']
+                            p_name = unit['player']
+                            print(players[p_name]['types'])
+                            player = players[p_name]['obj']
+                            unit_type = players[p_name]['types'][unit['type']]['obj']
+                            board.add(player, unit['x'], unit['y'], name, unit_type)
 
                 # resolve all moves and end the turn
                 board.commit()
+                for player_file in os.listdir(player_path):
+                        if player_file.find("_units.yaml") != -1:
+                            os.remove(player_path + "/" + player_file)
 
             # both admin and players can update the player info
             # write the individual player files
             if player_name == '0':
                 # write all players
                 for p in players.keys():
+                    types = players[p]['types']
+                    for type_name in types.keys():
+                        del types[type_name]['obj']
                     player_dict = {
                         'name': p,
                         'email': players[p]['email'],
                         'password': players[p]['password'],
+                        'types': types
                     }
                     with open(player_path + '/'+ p + '.yaml', 'w') as file:
                         yaml.safe_dump(player_dict, file)
             else:
                 # write the logged in player file only
                 p = player_name
+                types = players[p]['types']
+                for type_name in types.keys():
+                    del types[type_name]['obj']
                 player_dict = {
                     'name': p,
                     'email': players[p]['email'],
                     'password': players[p]['password'],
+                    'types': types
                 }
                 with open(player_path + '/'+ p + '.yaml', 'w') as file:
                     yaml.safe_dump(player_dict, file)
-                with open(player_path + '/'+ 'commit', 'w') as file:
+                with open(player_path + '/'+ 'commit_' + player_name, 'w') as file:
                     file.write("")
                     file.close()
 
@@ -430,6 +490,8 @@ def main(argv):
             else:
                 # this creates files of unit creation or unit moves
                 player_units = board.listUnits(player_obj)
+                print("XXX")
+                print(player_units)
                 with open(player_path + '/'+ p + '_units.yaml', 'w') as file:
                     file.write(player_units)
                     file.close()
