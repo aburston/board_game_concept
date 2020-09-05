@@ -106,6 +106,8 @@ def main(argv):
     # load all the player files
     for player_file in os.listdir(player_path):
         with open(player_path + '/' + player_file) as f:
+            if str(f).find("_units.yaml") != -1:
+                continue
             try:
                 player_data = yaml.safe_load(f)
                 obj = Player(player_data['name'], player_data['email'])
@@ -155,7 +157,7 @@ def main(argv):
             command_help()
             continue
 
-        # show - board
+        # show - board, units
         if tokens[0]=='show':
             if DEBUG:
                 print(f"len(tokens): {len(tokens)}")
@@ -176,6 +178,11 @@ def main(argv):
             elif tokens[1] == 'players':
                 for player in players.keys():
                     print(f"name: {player}, email: {players[player]['email']}")
+            elif tokens[1] == 'units':
+                if board == None:
+                    print("must create board - set size and commit")
+                    continue
+                print(board.listUnits(player_obj))
             else:
                 print("invalid show command")
                 continue
@@ -280,8 +287,38 @@ def main(argv):
                 print("invalid add command")
                 continue
 
-        if tokens[0] == 'exit':
-            break
+        # move - unit
+        if tokens[0] == 'move':
+            if player_name == '0':
+                print("only the players can move units not admin")
+                continue
+            if len(tokens) != 3:
+                print("must provide 2 args for move")
+                continue
+            if board == None:
+                print("board must be loaded in order to move units")
+                continue
+            try:
+                unit_name = tokens[1]
+                direction = tokens[2]
+                # TODO - make sure you implment rules to make this unique per player
+                unit = board.getUnitByName(unit_name)[0]
+                if direction == 'north':
+                    direction = UnitType.NORTH
+                elif direction == 'south':
+                    direction = UnitType.SOUTH
+                elif direction == 'east':
+                    direction = UnitType.EAST
+                elif direction == 'west':
+                    direction = UnitType.WEST
+                else:
+                    print(f"invalid direction {direction}")
+                    continue
+                unit.move(direction)
+                print(board.listUnits(player_obj))
+            except Exception as e:
+                print(f"error moving unit {e}")
+                continue
 
         # commiting the game saves all input data to yaml for the game setup step
         if tokens[0] == 'commit':
@@ -341,10 +378,16 @@ def main(argv):
 
             # only a player can write unit types and units to the player directories
             if player_name != '0':
-                print(board.listUnits(player_obj))
-
+                player_units = board.listUnits(player_obj)
+                with open(player_path + '/'+ p + '_units.yaml', 'w') as file:
+                    file.write(player_units)
 
             print("commit complete")    
+
+        # leave
+        if tokens[0] == 'exit':
+            break
+
 
 
 

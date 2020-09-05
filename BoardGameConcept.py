@@ -98,24 +98,28 @@ class UnitType:
             dest_y = self.y
             if self.direction == UnitType.NORTH:
                 dest_y = self.y - 1
+                self.direction = UnitType.NONE
                 if dest_y < 0:
                     self.y = 0
                     self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.EAST:
                 dest_x = self.x + 1
+                self.direction = UnitType.NONE
                 if dest_x > self.board_max_x - 1:
                     self.x = self.board_max_x - 1
                     self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.SOUTH:
                 dest_y = self.y + 1
+                self.direction = UnitType.NONE
                 if dest_y > self.board_max_y - 1:
                     self.y = self.board_max_y - 1
                     self.state = UnitType.NOP
                     return
             elif self.direction == UnitType.WEST:
                 dest_x = self.x - 1
+                self.direction = UnitType.NONE
                 if dest_x < 0:
                     self.x = 0
                     self.state = UnitType.NOP
@@ -214,7 +218,7 @@ class UnitType:
                         print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
 
     def dump(self):
-        return(f"player: \"{self.player.name}\", name: \"{self.name}\", symbol: \"{self.symbol}\", attack: \"{self.attack}\", health: \"{self.health}\", energy: \"{self.energy}\", x: {self.x}, y: {self.y}, state: {self.state}, destroyed: {self.destroyed}, on_board: {self.on_board}")
+        return(f"player: \"{self.player.name}\", name: \"{self.name}\", symbol: \"{self.symbol}\", attack: \"{self.attack}\", health: \"{self.health}\", energy: \"{self.energy}\", x: {self.x}, y: {self.y}, state: {self.state}, direction: {self.direction}, destroyed: {self.destroyed}, on_board: {self.on_board}")
 
     def __str__(self):
         return(self.symbol)
