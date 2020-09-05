@@ -298,25 +298,35 @@ class Board:
         return typesStr    
 
     def listUnits(self, player = None):
-        unitsStr = "board: {" + f" size_x: {self.size_x}, size_y: {self.size_y}" + "}\n"
+        # board information
+        units_str = "board: {" + f" size_x: {self.size_x}, size_y: {self.size_y}" + "}\n"
+        
+        # player making request
         if player == None:
-            unitsStr = unitsStr + f"player: {player}\n"
+            units_str = units_str + f"player: {player}\n"
         else:
-            unitsStr = unitsStr + f"player: {player.name}\n"
-        unitsStr = unitsStr + "units: \n"
+            units_str = units_str + f"player: {player.name}\n"
+
+        # units seen by player
         i = 0
+        tmp_str = ""
         while i < len(self.units):
             if player == None:
-                unitsStr = unitsStr + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
+                tmp_str = tmp_str + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             elif self.units[i].player == player:
-                unitsStr = unitsStr + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
+                tmp_str = tmp_str + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             else:
                 for seen in self.units[i].seen_by:
                     #print(f"{player.name} {seen.player.name}")
                     if (player.name == seen.player.name):
-                        unitsStr = unitsStr + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
-            i = i + 1    
-        return unitsStr    
+                        tmp_str = tmp_str + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
+            i = i + 1
+        if tmp_str == "":    
+            units_str = units_str + "units: None\n"
+        else:
+            units_str = units_str + "units:\n" + tmp_str
+
+        return units_str    
 
     def getUnitByName(self, name, player = None):
         if player == None:

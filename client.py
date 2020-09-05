@@ -109,24 +109,25 @@ def main(argv):
             sys.exit(1)
 
     # load all the player files
-    for player_file in os.listdir(player_path):
-        with open(player_path + '/' + player_file) as f:
-            if str(f).find("_units.yaml") != -1:
-                continue
-            if str(f).find("commit") != -1:
-                new_game = False
-                continue
-            try:
-                player_data = yaml.safe_load(f)
-                obj = Player(player_data['name'], player_data['email'])
-                players[player_data['name']] = {
-                    'email': player_data['email'],
-                    'password': player_data['password'],
-                    'obj': obj
-                }
-            except yaml.YAMLError as exc:
-                print(exc, file = sys.stderr)
-                sys.exit(1)
+    if os.path.exists(player_path):
+        for player_file in os.listdir(player_path):
+            with open(player_path + '/' + player_file) as f:
+                if str(f).find("_units.yaml") != -1:
+                    continue
+                if str(f).find("commit") != -1:
+                    new_game = False
+                    continue
+                try:
+                    player_data = yaml.safe_load(f)
+                    obj = Player(player_data['name'], player_data['email'])
+                    players[player_data['name']] = {
+                        'email': player_data['email'],
+                        'password': player_data['password'],
+                        'obj': obj
+                    }
+                except yaml.YAMLError as exc:
+                    print(exc, file = sys.stderr)
+                    sys.exit(1)
    
     # check the player password
     if player_name != '0':
@@ -199,7 +200,7 @@ def main(argv):
         if tokens[0]=='set':
             if DEBUG:
                 print(f"len(tokens): {len(tokens)}")
-            if tokens[1] == 'size':
+            if tokens[1] == 'board':
                 if player_name != '0':
                     print("only the game admin (player '0') can set board size")
                     continue
@@ -395,7 +396,7 @@ def main(argv):
                 # this writes the master board units, i.e. everything
                 all_units = board.listUnits()
                 with open(data_path + '/units.yaml', 'w') as file:
-                    file.write(player_units)
+                    file.write(all_units)
                     file.close()
             else:
                 # this creates files of unit creation or unit moves
