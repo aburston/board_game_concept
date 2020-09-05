@@ -113,18 +113,31 @@ def main(argv):
         for player_file in os.listdir(player_path):
             with open(player_path + '/' + player_file) as f:
                 if str(f).find("_units.yaml") != -1:
-                    continue
+                    if player_name != '0':
+                        print("unprocessed player moves, waiting for game to complete the turn, try again later", file = sys.stderr)
+                        sys.exit(1)
+                    continue   
                 if str(f).find("commit") != -1:
                     new_game = False
                     continue
                 try:
                     player_data = yaml.safe_load(f)
-                    obj = Player(player_data['name'], player_data['email'])
-                    players[player_data['name']] = {
+                    print(player_data)
+                    name = player_data['name']
+                    obj = Player(name, player_data['email'])
+                    players[name] = {
+                        'name': name,
                         'email': player_data['email'],
                         'password': player_data['password'],
                         'obj': obj
                     }
+                    # if this is player '0' the moves files could exist
+                    moves_file = player_path + '/' + player_data['name'] + '_units.yaml'
+                    if os.path.exists(moves_file):
+                        with open(moves_file) as g:
+                            players[name]['moves'] = yaml.safe_load(g)
+                            print(players[name]['moves'])
+
                 except yaml.YAMLError as exc:
                     print(exc, file = sys.stderr)
                     sys.exit(1)
@@ -192,6 +205,10 @@ def main(argv):
                     print("must create board - set size and commit")
                     continue
                 print(board.listUnits(player_obj))
+            elif tokens[1] == 'pending':
+                for player in players.keys():
+                    if 'moves' in players[player].keys():
+                        print(f"player: {player}, moves: {players[player]['moves']}")
             else:
                 print("invalid show command")
                 continue
