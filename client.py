@@ -41,15 +41,18 @@ exit - exit the game client
 
 def main(argv):
 
+    # the password of the user connecting to this client (could be a player or admin)
+    password = ""
+    # assume this isn't a new game until admin can't load the game files
+    new_game = False
+    # the board starts out not existing, if the file is there it will be created
+    board = None
+    board_meta_data = {}
     size_x = 0
     size_y = 0
-    game_password = ""
-    password = ""
-    board_meta_data = {}
-    new_game = False
-    board = None
     # for the game admin player_obj is set to None
     player_obj = None
+    # empty players dict
     players = {}
 
     argc = len(argv)
@@ -62,6 +65,8 @@ def main(argv):
     elif len(argv) == 3:
         gameno = argv[1]
         player_name = argv[2]
+        # flip the logic if this is a player connecting
+        new_game = True
     else:
         usage()
         sys.exit(1)
@@ -80,7 +85,7 @@ def main(argv):
                 board_meta_data = yaml.safe_load(f)
                 size_x = board_meta_data['board']['size_x']
                 size_y = board_meta_data['board']['size_y']
-                game_password = board_meta_data['game']['password']
+                password = board_meta_data['game']['password']
                 board = Board(size_x, size_y)
                 if DEBUG:
                     print("Finished loading game meta data")
@@ -95,7 +100,7 @@ def main(argv):
             password1 = getpass.getpass()
             password2 = getpass.getpass(prompt="Reenter password: ")
             if password1 == password2:
-                game_password = password1
+                password = password1
             else:
                 print("Passwords must match", file = sys.stderr)
                 sys.exit(1)
@@ -107,6 +112,9 @@ def main(argv):
     for player_file in os.listdir(player_path):
         with open(player_path + '/' + player_file) as f:
             if str(f).find("_units.yaml") != -1:
+                continue
+            if str(f).find("commit") != -1:
+                new_game = False
                 continue
             try:
                 player_data = yaml.safe_load(f)
@@ -134,8 +142,8 @@ def main(argv):
            print(f"player {player_name} does not exist", file = sys.stderr)
            sys.exit(1)
     elif not(new_game):
-        password = getpass.getpass()
-        if game_password != password:
+        password1 = getpass.getpass()
+        if password != password1:
            print("Incorrect password", file = sys.stderr) 
            sys.exit(1)
 
@@ -345,13 +353,16 @@ def main(argv):
                     'game' : {
                         'game' : gameno,
                         'no_of_players' : len(players.keys()),
-                        'password': game_password
+                        'password': password
                     },
                 }
                 with open(data_path + '/data.yaml', 'w') as file:
                     yaml.safe_dump(board_meta_data, file)
 
                 # TODO: pick up board files created by players and merge them into the board
+
+                # resolve all moves and end the turn
+                board.commit()
 
             # both admin and players can update the player info
             # write the individual player files
@@ -375,20 +386,29 @@ def main(argv):
                 }
                 with open(player_path + '/'+ p + '.yaml', 'w') as file:
                     yaml.safe_dump(player_dict, file)
+                with open(player_path + '/'+ 'commit', 'w') as file:
+                    file.write("")
+                    file.close()
 
-            # only a player can write unit types and units to the player directories
-            if player_name != '0':
+            # write out the units information to disk
+            if player_name == '0':
+                # this writes the master board units, i.e. everything
+                all_units = board.listUnits()
+                with open(data_path + '/units.yaml', 'w') as file:
+                    file.write(player_units)
+                    file.close()
+            else:
+                # this creates files of unit creation or unit moves
                 player_units = board.listUnits(player_obj)
                 with open(player_path + '/'+ p + '_units.yaml', 'w') as file:
                     file.write(player_units)
+                    file.close()
 
             print("commit complete")    
 
         # leave
         if tokens[0] == 'exit':
             break
-
-
 
 
 if __name__ == "__main__":
