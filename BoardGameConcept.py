@@ -3,7 +3,7 @@
 import board
 import copy
 
-DEBUG = False
+DEBUG = True
 
 class Empty:
     def __str__(self):
@@ -242,7 +242,13 @@ class Board:
         self.types = {}
     
     def add(self, player, x, y, name, unit_type):
+        if DEBUG:
+            print(type(unit_type))
+            print(type(player))
+        assert x >= 0 and x < self.size_x and y >= 0 and y < self.size_y, f"cordinates ({x}, {y}) are out of bounds for this board"
         # add the unit to a dictionary of types organised by player
+        if not(player.name in self.types.keys()):
+            self.types[player.name] = {}
         self.types[player.name][unit_type.name] = unit_type
         # make a shallow copy of the unit type to create a new unit instance
         unit = copy.copy(unit_type)

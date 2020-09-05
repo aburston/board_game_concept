@@ -241,22 +241,41 @@ def main(argv):
                 except Exception as e:    
                     print(f"error adding unit type: {e}")
                     continue
+                type_name = tokens[2]
+                symbol = tokens[3]
+                attack = tokens[4]
+                health = tokens[5]
+                energy = tokens[6]
                 players[player_name]['types'] = {}
-                players[player_name]['types'][tokens[2]] = {}
-                players[player_name]['types'][tokens[2]]['name'] = tokens[2]
-                players[player_name]['types'][tokens[2]]['symbol'] = tokens[3]
-                players[player_name]['types'][tokens[2]]['health'] = tokens[4]
-                players[player_name]['types'][tokens[2]]['attack'] = tokens[5]
-                players[player_name]['types'][tokens[2]]['energy'] = tokens[6]
-                players[player_name]['obj'] = obj
+                players[player_name]['types'][type_name] = {}
+                players[player_name]['types'][type_name]['name'] = type_name
+                players[player_name]['types'][type_name]['symbol'] = symbol
+                players[player_name]['types'][type_name]['attack'] = attack
+                players[player_name]['types'][type_name]['health'] = health
+                players[player_name]['types'][type_name]['energy'] = energy
+                players[player_name]['types'][type_name]['obj'] = obj
             elif tokens[1] == 'unit':
+                if player_name == '0':
+                    print("only the players can add units not admin")
+                    continue
                 if len(tokens) != 6:
                     print("must provide 4 args for unit")
                     continue
-                utype.append(tokens[2])
-                unit_name.append(tokens[3])
-                x_location.append(tokens[4])
-                y_location.append(tokens[5])
+                if board == None:
+                    print("board must be loaded in order to place units")
+                    continue
+                try:
+                    type_name = tokens[2]
+                    name = tokens[3]
+                    x = int(tokens[4])
+                    y = int(tokens[5])
+                    if DEBUG:
+                        print(f"{player_obj}, {x}, {y}, {name}, {players[player_name]['types'][type_name]['obj']}")
+                    board.add(player_obj, x, y, name, players[player_name]['types'][type_name]['obj'])
+                    board.commit()
+                except Exception as e:
+                    print(f"error creating new unit {e}")
+                    continue
             else:
                 print("invalid add command")
                 continue
@@ -272,29 +291,46 @@ def main(argv):
                 print(f"the board size is too small ({size_x}, {size_y})")
                 continue
 
-            # add required directories
-            if not(os.path.exists(data_path)):
-                os.makedirs(data_path)
-            if not(os.path.exists(player_path)):
-                os.makedirs(player_path)
+            # only admin can write to the data directory
+            if player_name == '0':
+                # add required directories
+                if not(os.path.exists(data_path)):
+                    os.makedirs(data_path)
+                if not(os.path.exists(player_path)):
+                    os.makedirs(player_path)
 
-            # write the data file for the board
-            board_meta_data = {
-                'board' : {
-                    'size_x' : size_x,
-                    'size_y' : size_y
-                },
-                'game' : {
-                    'game' : gameno,
-                    'no_of_players' : len(players.keys()),
-                    'password': game_password
-                },
-            }
-            with open(data_path + '/data.yaml', 'w') as file:
-                yaml.safe_dump(board_meta_data, file)
+                # write the data file for the board
+                board_meta_data = {
+                    'board' : {
+                        'size_x' : size_x,
+                        'size_y' : size_y
+                    },
+                    'game' : {
+                        'game' : gameno,
+                        'no_of_players' : len(players.keys()),
+                        'password': game_password
+                    },
+                }
+                with open(data_path + '/data.yaml', 'w') as file:
+                    yaml.safe_dump(board_meta_data, file)
 
+                # TODO: pick up board files created by players and merge them into the board
+
+            # both admin and players can update the player info
             # write the individual player files
-            for p in players.keys():
+            if player_name == '0':
+                # write all players
+                for p in players.keys():
+                    player_dict = {
+                        'name': p,
+                        'email': players[p]['email'],
+                        'password': players[p]['password'],
+                    }
+                    with open(player_path + '/'+ p + '.yaml', 'w') as file:
+                        yaml.safe_dump(player_dict, file)
+            else:
+                # write the logged in player file only
+                p = player_name
                 player_dict = {
                     'name': p,
                     'email': players[p]['email'],
@@ -303,49 +339,13 @@ def main(argv):
                 with open(player_path + '/'+ p + '.yaml', 'w') as file:
                     yaml.safe_dump(player_dict, file)
 
-            # write the types to the player directory
-            for p in players.keys():
-                player_dict = {
-                    'name': p,
-                    'email': players[p]['email'],
-                    'password': players[p]['password'],
-                }
-                with open(player_path + '/'+ p + '.yaml', 'w') as file:
-                    yaml.safe_dump(player_dict, file)
+            # only a player can write unit types and units to the player directories
+            if player_name != '0':
+                print(board.listUnits(player_obj))
 
-        # use to update player yaml to include added unit types    
-        if tokens[0] == 'commit_types':
-            unitData = {
-                'unit_types' : {
-                    name[i] : {
-                        'symbol' : symbol[i],
-                        'health' : health[i],
-                        'attack' : attack[i],
-                        'energy' : energy[i]
-                    }
-                }        
-            }
 
-        # use to update player yaml to unclude placed units
-        if tokens[0] == 'place_units':
-            for i in utype:
-                if i in player_data['unit_types']:
-                    continue
-                else:
-                    print("no unit of type %s" % i)
-                    utype.remove(i)
+            print("commit complete")    
 
-            assert len(utype) >= 1,"must place a non zero number of units"
-            unitLocations = {
-                'unit_locations' : {
-                    unit_name[i] : {
-                        'type' : utype[i],
-                        'x_location' : x_location[i],
-                        'y_location' : y_location[i]  
-                    }
-                    for i in list(range(0,len(unit_name)))
-                }
-            }
 
 
 if __name__ == "__main__":
