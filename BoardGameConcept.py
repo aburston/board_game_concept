@@ -3,7 +3,7 @@
 import board
 import copy
 
-DEBUG = True
+DEBUG = False
 
 class Empty:
     def __str__(self):

@@ -8,7 +8,7 @@ import yaml
 import os
 import getpass
 
-DEBUG = True
+DEBUG = False
 
 def usage():
    print("usage, client.py <gameno>", file = sys.stderr)
@@ -124,7 +124,8 @@ def main(argv):
                     continue
                 try:
                     player_data = yaml.safe_load(f)
-                    print(player_data)
+                    if DEBUG:
+                        print(player_data)
                     name = player_data['name']
                     obj = Player(name, player_data['email'])
                     players[name] = {
@@ -137,7 +138,6 @@ def main(argv):
                     if 'types' in player_data.keys():
                         for unit_type_name in player_data['types'].keys():
                             unit_type = player_data['types'][unit_type_name]
-                            print("***")
                             print(unit_type)
                             unit_type_obj = UnitType(
                                 unit_type['name'],
@@ -153,7 +153,8 @@ def main(argv):
                     if os.path.exists(moves_file):
                         with open(moves_file) as g:
                             players[name]['moves'] = yaml.safe_load(g)
-                            print(players[name]['moves'])
+                            if DEBUG:
+                                print(players[name]['moves'])
 
                 except yaml.YAMLError as exc:
                     print(exc, file = sys.stderr)
@@ -161,16 +162,20 @@ def main(argv):
 
     # load the units into the board                
     if os.path.exists(data_path + '/units.yaml'):        
-        print("loading units")
+        if DEBUG:
+            print("loading units")
         with open(data_path + '/units.yaml') as f:
             units = yaml.safe_load(f)['units']
-            print(units)
+            if DEBUG:
+                print(units)
             if units != None:
                 for unit in units:
                     name = unit['name']
-                    print(f"processing unit {name}")
+                    if DEBUG:
+                        print(f"processing unit {name}")
                     p_name = unit['player']
-                    print(players[p_name]['types'])
+                    if DEBUG:
+                        print(players[p_name]['types'])
                     player = players[p_name]['obj']
                     unit_type = players[p_name]['types'][unit['type']]['obj']
                     board.add(player, unit['x'], unit['y'], name, unit_type)
@@ -502,8 +507,9 @@ def main(argv):
             else:
                 # this creates files of unit creation or unit moves
                 player_units = board.listUnits(player_obj)
-                print("XXX")
-                print(player_units)
+                if DEBUG:
+                    print("write moves/changes")
+                    print(player_units)
                 with open(player_path + '/'+ p + '_units.yaml', 'w') as file:
                     file.write(player_units)
                     file.close()
