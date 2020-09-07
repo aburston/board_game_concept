@@ -167,8 +167,8 @@ def main(argv):
             print(units)
             if units != None:
                 for unit in units:
-                    print("peocessing unit")
                     name = unit['name']
+                    print(f"processing unit {name}")
                     p_name = unit['player']
                     print(players[p_name]['types'])
                     player = players[p_name]['obj']
@@ -435,10 +435,22 @@ def main(argv):
                         for unit in units:
                             name = unit['name']
                             p_name = unit['player']
-                            print(players[p_name]['types'])
+                            x = unit['x']
+                            y = unit['y']
+                            state = unit['state']
+                            direction = unit['direction']
+                            print(f"processing unit {name} belonging to {p_name} at ({x},{y}) {str(direction)}")
                             player = players[p_name]['obj']
+                            #print(players[p_name]['types'])
                             unit_type = players[p_name]['types'][unit['type']]['obj']
-                            board.add(player, unit['x'], unit['y'], name, unit_type)
+                            if state == UnitType.INITIAL:
+                                board.add(player, x, y, name, unit_type)
+                            elif state == UnitType.MOVING:
+                                actual_unit = board.getUnitByCoords(x, y)
+                                actual_unit.move(direction)
+                                print(f"moving unit at ({x},{y}) {str(direction)}")
+                            else:    
+                                assert False, f"Invalid unit state {str(state)} provided by player"
 
                 # resolve all moves and end the turn
                 board.commit()

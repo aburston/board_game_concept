@@ -350,6 +350,9 @@ class Board:
         assert isinstance(index, int) and index >= 0 and index < len(self.units), f"Unit {name} does not exist"
         return self.units[index]
 
+    def getUnitByCoords(self, x, y):
+        return self.board[x, y]
+
     def commit(self):
         # clear the seen_by list in each unit on the board
         for unit in self.units:
