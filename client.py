@@ -3,6 +3,7 @@
 from BoardGameConcept import UnitType
 from BoardGameConcept import Board
 from BoardGameConcept import Player
+from BoardGameConcept import Empty
 import sys
 import yaml
 import os
@@ -114,7 +115,7 @@ def main(argv):
         for player_file in os.listdir(player_path):
             with open(player_path + '/' + player_file) as f:
                 if str(f).find("_units.yaml") != -1:
-                    if player_name != '0':
+                    if str(f).find(player_name + "_units.yaml") != -1:
                         print("unprocessed player moves, waiting for game to complete the turn, try again later", file = sys.stderr)
                         sys.exit(1)
                     continue   
@@ -138,7 +139,8 @@ def main(argv):
                     if 'types' in player_data.keys():
                         for unit_type_name in player_data['types'].keys():
                             unit_type = player_data['types'][unit_type_name]
-                            print(unit_type)
+                            if DEBUG:
+                                print(unit_type)
                             unit_type_obj = UnitType(
                                 unit_type['name'],
                                 unit_type['symbol'],
@@ -168,7 +170,7 @@ def main(argv):
             units = yaml.safe_load(f)['units']
             if DEBUG:
                 print(units)
-            if units != None:
+            if units != 'None':
                 for unit in units:
                     name = unit['name']
                     if DEBUG:
@@ -222,7 +224,10 @@ def main(argv):
         elif tokens[0]=='show':
             if DEBUG:
                 print(f"len(tokens): {len(tokens)}")
-            if tokens[1] == 'board':
+            if len(tokens) == 1:
+                print("invalid show command")
+                continue
+            elif tokens[1] == 'board':
                 if board == None:
                     print("must create board - set size and commit")
                     continue
@@ -256,7 +261,10 @@ def main(argv):
         elif tokens[0]=='set':
             if DEBUG:
                 print(f"len(tokens): {len(tokens)}")
-            if tokens[1] == 'board':
+            if len(tokens) == 1:
+                print("invalid set command")
+                continue
+            elif tokens[1] == 'board':
                 if player_name != '0':
                     print("only the game admin (player '0') can set board size")
                     continue
@@ -284,7 +292,10 @@ def main(argv):
 
         # add - player, type, unit
         elif tokens[0] == 'add':
-            if tokens[1] == 'player':
+            if len(tokens) == 1:
+                print("invalid add command")
+                continue
+            elif tokens[1] == 'player':
                 if player_name != '0':
                     print("only the game admin (player '0') can add players")
                     continue
@@ -368,13 +379,13 @@ def main(argv):
             if player_name == '0':
                 print("only the players can move units not admin")
                 continue
-            if len(tokens) != 3:
+            elif len(tokens) != 3:
                 print("must provide 2 args for move")
                 continue
-            if board == None:
+            elif board == None:
                 print("board must be loaded in order to move units")
                 continue
-            if new_game:
+            elif new_game:
                 print("can't move units until after the first turn is complete")
                 continue
             try:
@@ -454,6 +465,12 @@ def main(argv):
                                 actual_unit = board.getUnitByCoords(x, y)
                                 actual_unit.move(direction)
                                 print(f"moving unit at ({x},{y}) {str(direction)}")
+                            elif state == UnitType.NOP:
+                                actual_unit = board.getUnitByCoords(x, y)
+                                print(type(actual_unit))
+                                if isinstance(actual_unit, Empty):
+                                    board.add(player, x, y, name, unit_type)
+                                print(f"NOP unit at ({x},{y}) {str(direction)}")
                             else:    
                                 assert False, f"Invalid unit state {str(state)} provided by player"
 
