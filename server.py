@@ -85,18 +85,14 @@ def main(argv):
 
     except:
         # if this is a new game request the game admin password
-        if player_name == '0':
-            new_game = True
-            print("Set game password")
-            password1 = getpass.getpass()
-            password2 = getpass.getpass(prompt="Reenter password: ")
-            if password1 == password2:
-                password = password1
-            else:
-                print("Passwords must match", file = sys.stderr)
-                sys.exit(1)
+        new_game = True
+        print("Set game password")
+        password1 = getpass.getpass()
+        password2 = getpass.getpass(prompt="Reenter password: ")
+        if password1 == password2:
+            password = password1
         else:
-            print(f"No game with number: {gameno}", file = sys.stderr)
+            print("Passwords must match", file = sys.stderr)
             sys.exit(1)
 
     # load all the player files
@@ -188,7 +184,6 @@ def main(argv):
     # interactive mode
 
     while True:
-
         # read line from stdin + tokenize it
         print(f"{argv[0]}> ", flush=True, end='')
         line = sys.stdin.readline().rstrip()
@@ -287,28 +282,24 @@ def main(argv):
                 print("invalid add command")
                 continue
             elif tokens[1] == 'player':
-                if player_name != '0':
-                    print("only the game admin (player '0') can add players")
-                    continue
                 if len(tokens) != 4:
                     print("must provide 2 args for player")
-                    continue
-                if new_game == False:
+                elif new_game == False:
                     print("can't add players to an existing game")
-                    continue
-                name = tokens[2]
-                players[name] = {
-                    "email": tokens[3],
-                    'obj': Player(tokens[2], tokens[3]),
-                    'types': {}
-                }
-                password1 = getpass.getpass()
-                password2 = getpass.getpass("Reenter password: ")
-                if password1 != password2:
-                    print("User passwords must match")
-                    continue
-                else:
-                    players[name]["password"] = password1
+                else:    
+                    name = tokens[2]
+                    players[name] = {
+                        "email": tokens[3],
+                        'obj': Player(tokens[2], tokens[3]),
+                        'types': {}
+                    }
+                    password1 = getpass.getpass()
+                    password2 = getpass.getpass("Reenter password: ")
+                    if password1 != password2:
+                        print("User passwords must match")
+                        continue
+                    else:
+                        players[name]["password"] = password1
             else:
                 print("invalid add command")
                 continue
@@ -321,106 +312,101 @@ def main(argv):
                 print(f"the board size is too small ({size_x}, {size_y})")
                 continue
 
-            # only admin can write to the data directory
-            if player_name == '0':
-                # add required directories
-                if not(os.path.exists(data_path)):
-                    os.makedirs(data_path)
-                if not(os.path.exists(player_path)):
-                    os.makedirs(player_path)
+            # add required directories
+            if not(os.path.exists(data_path)):
+                os.makedirs(data_path)
+            if not(os.path.exists(player_path)):
+                os.makedirs(player_path)
 
-                # write the data file for the board
-                board_meta_data = {
-                    'board' : {
-                        'size_x' : size_x,
-                        'size_y' : size_y
-                    },
-                    'game' : {
-                        'game' : gameno,
-                        'no_of_players' : len(players.keys()),
-                        'password': password
-                    },
-                }
-                with open(data_path + '/data.yaml', 'w') as file:
-                    yaml.safe_dump(board_meta_data, file)
+            # write the data file for the board
+            board_meta_data = {
+                'board' : {
+                    'size_x' : size_x,
+                    'size_y' : size_y
+                },
+                'game' : {
+                    'game' : gameno,
+                    'no_of_players' : len(players.keys()),
+                    'password': password
+                },
+            }
+            with open(data_path + '/data.yaml', 'w') as file:
+                yaml.safe_dump(board_meta_data, file)
 
-                # pick up board files created by players and merge them into the board
-                for player in players.keys():
-                    if 'moves' in players[player].keys():
-                        print(f"player: {player}, moves: {players[player]['moves']}")
-                        units = players[player]['moves']['units']
-                        if units == None:
-                            continue
-                        for unit in units:
-                            name = unit['name']
-                            p_name = unit['player']
-                            x = unit['x']
-                            y = unit['y']
-                            state = unit['state']
-                            direction = unit['direction']
-                            print(f"processing unit {name} belonging to {p_name} at ({x},{y}) {str(direction)}")
-                            player = players[p_name]['obj']
-                            #print(players[p_name]['types'])
-                            unit_type = players[p_name]['types'][unit['type']]['obj']
-                            if state == UnitType.INITIAL:
+            # pick up board files created by players and merge them into the board
+            for player in players.keys():
+                if 'moves' in players[player].keys():
+                    print(f"player: {player}, moves: {players[player]['moves']}")
+                    units = players[player]['moves']['units']
+                    if units == None:
+                        continue
+                    for unit in units:
+                        name = unit['name']
+                        p_name = unit['player']
+                        x = unit['x']
+                        y = unit['y']
+                        state = unit['state']
+                        direction = unit['direction']
+                        print(f"processing unit {name} belonging to {p_name} at ({x},{y}) {str(direction)}")
+                        player = players[p_name]['obj']
+                        #print(players[p_name]['types'])
+                        unit_type = players[p_name]['types'][unit['type']]['obj']
+                        if state == UnitType.INITIAL:
+                            board.add(player, x, y, name, unit_type)
+                        elif state == UnitType.MOVING:
+                            actual_unit = board.getUnitByCoords(x, y)
+                            actual_unit.move(direction)
+                            print(f"moving unit at ({x},{y}) {str(direction)}")
+                        elif state == UnitType.NOP:
+                            actual_unit = board.getUnitByCoords(x, y)
+                            print(type(actual_unit))
+                            if isinstance(actual_unit, Empty):
                                 board.add(player, x, y, name, unit_type)
-                            elif state == UnitType.MOVING:
-                                actual_unit = board.getUnitByCoords(x, y)
-                                actual_unit.move(direction)
-                                print(f"moving unit at ({x},{y}) {str(direction)}")
-                            elif state == UnitType.NOP:
-                                actual_unit = board.getUnitByCoords(x, y)
-                                print(type(actual_unit))
-                                if isinstance(actual_unit, Empty):
-                                    board.add(player, x, y, name, unit_type)
-                                print(f"NOP unit at ({x},{y}) {str(direction)}")
-                            else:    
-                                assert False, f"Invalid unit state {str(state)} provided by player"
+                            print(f"NOP unit at ({x},{y}) {str(direction)}")
+                        else:    
+                            assert False, f"Invalid unit state {str(state)} provided by player"
 
-                # resolve all moves and end the turn
-                board.commit()
-                for player_file in os.listdir(player_path):
-                        if player_file.find("_units.yaml") != -1:
-                            os.remove(player_path + "/" + player_file)
+            # resolve all moves and end the turn
+            board.commit()
+            for player_file in os.listdir(player_path):
+                    if player_file.find("_units.yaml") != -1:
+                        os.remove(player_path + "/" + player_file)
 
             # both admin and players can update the player info
             # write the individual player files
-            if player_name == '0':
-                # write all players the first time
-                for p in players.keys():
-                    types = players[p]['types']
-                    for type_name in types.keys():
-                        del types[type_name]['obj']
-                    player_dict = {
-                        'name': p,
-                        'email': players[p]['email'],
-                        'password': players[p]['password'],
-                        'types': types
-                    }
-                    with open(player_path + '/'+ p + '.yaml', 'w') as file:
-                        yaml.safe_dump(player_dict, file)
+            # write all players the first time
+            for p in players.keys():
+                types = players[p]['types']
+                for type_name in types.keys():
+                    del types[type_name]['obj']
+                player_dict = {
+                    'name': p,
+                    'email': players[p]['email'],
+                    'password': players[p]['password'],
+                    'types': types
+                }
+                with open(player_path + '/'+ p + '.yaml', 'w') as file:
+                    yaml.safe_dump(player_dict, file)
 
             # write out the units information to disk
-            if player_name == '0':
-                # this writes the master board units, i.e. everything
-                all_units = board.listUnits()
-                with open(data_path + '/units.yaml', 'w') as file:
-                    file.write(all_units)
-                    file.close()
+            # this writes the master board units, i.e. everything
+            all_units = board.listUnits()
+            with open(data_path + '/units.yaml', 'w') as file:
+                file.write(all_units)
+                file.close()
 
             print("commit complete")
 
-            if player_name == '0':
-                print("updating player units seen based on the commit outcome")
-                for p in players.keys():
-                    player_obj = players[p]['obj']
-                    player_units = board.listUnits(player_obj)
-                    if DEBUG:
-                        print("write moves/changes")
-                        print(player_units)
-                    with open(player_path + '/'+ p + '_units_seen.yaml', 'w') as file:
-                        file.write(player_units)
-                        file.close()
+            print("updating player units seen based on the commit outcome")
+            for p in players.keys():
+                player_obj = players[p]['obj']
+                player_units = board.listUnits(player_obj)
+                if DEBUG:
+                    print("write moves/changes")
+                    print(player_units)
+                with open(player_path + '/'+ p + '_units_seen.yaml', 'w') as file:
+                    file.write(player_units)
+                    file.close()
 
             break
 
