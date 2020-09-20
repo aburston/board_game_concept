@@ -419,6 +419,9 @@ def main(argv):
                 break
             time.sleep(10)
 
+        # clear the new game flag
+        new_game = False
+
 # run main()
 if __name__ == "__main__":
    main(sys.argv)
