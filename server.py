@@ -27,6 +27,17 @@ help - display this information
 exit - exit the game client
     """)
 
+def wait_for_player_commit(player_path, players):
+    print("wait for player commit")
+    while True:
+        commit_count = 0
+        for player_file in os.listdir(player_path):
+            if player_file.find("_units.yaml") != -1:
+                commit_count = commit_count + 1
+        if commit_count == len(players.keys()):
+            break
+        time.sleep(10)
+
 def main(argv):
 
     # the password of the user connecting to this client (could be a player or admin)
@@ -409,15 +420,7 @@ def main(argv):
         print(board.listUnits())
         
         # wait for player commits before restarting the load and commit cycle
-        print("wait for player commit")
-        while True:
-            commit_count = 0
-            for player_file in os.listdir(player_path):
-                if player_file.find("_units.yaml") != -1:
-                    commit_count = commit_count + 1
-            if commit_count == len(players.keys()):
-                break
-            time.sleep(10)
+        wait_for_player_commit(player_path, players)
 
         # clear the new game flag
         new_game = False
