@@ -89,7 +89,6 @@ def main(argv):
                 size_y = board_meta_data['board']['size_y']
                 password = board_meta_data['game']['password']
                 board = Board(size_x, size_y)
-                seen_board = Board(size_x, size_y)
                 if DEBUG:
                     print("Finished loading game meta data")
             except yaml.YAMLError as exc:
@@ -195,6 +194,7 @@ def main(argv):
     # load the seen units into the visible board
     if player_name != '0':
         if os.path.exists(player_path + '/' + player_name + '_units_seen.yaml'):        
+            seen_board = Board(size_x, size_y)
             if DEBUG:
                 print("loading units seen")
             with open(player_path + '/' + player_name + '_units_seen.yaml') as f:
@@ -436,6 +436,12 @@ def main(argv):
                 direction = tokens[2]
                 # TODO - make sure you implment rules to make this unique per player
                 unit = board.getUnitByName(unit_name)[0]
+                if player_name != unit.player.name:
+                    print("can't move units belonging to other players")
+                    continue
+                if unit.on_board == False:
+                    print("can't move units not on the board")
+                    continue
                 if direction == 'north':
                     direction = UnitType.NORTH
                 elif direction == 'south':
