@@ -3,7 +3,7 @@
 import board
 import copy
 
-DEBUG = False
+DEBUG = True
 
 class Empty:
     def __str__(self):
@@ -78,6 +78,15 @@ class UnitType:
     def setCoords(self, x, y):
         self.x = x
         self.y = y
+
+    def setHealth(self, health):
+        self.health = health
+
+    def setDestroyed(self, destroyed):
+        self.destroyed = destroyed
+
+    def setOnBoard(self, on_board):
+        self.on_board = on_board
 
     def setPlayer(self, player):
         self.player = player
@@ -252,7 +261,7 @@ class Board:
         self.unit_dict = {}
         self.types = {}
     
-    def add(self, player, x, y, name, unit_type):
+    def add(self, player, x, y, name, unit_type, health = None, destroyed = False, on_board = True):
         if DEBUG:
             print(type(unit_type))
             print(type(player))
@@ -270,6 +279,15 @@ class Board:
         # add a ref to the board into the unit + the size
         unit.setBoard(self.board, self.size_x, self.size_y)
         # keep a copy of the unit coords in the unit
+        unit.setCoords(x, y)
+        # if the health value has been supplied, set it
+        if health != None:
+            unit.setHealth(health)
+        # mark the unit destroyed if required (needed when loading ongoing games)
+        unit.setDestroyed(destroyed)
+        # mark the unit on the board (needed when loading ongoing games)
+        unit.setOnBoard(on_board)
+        # set the coordinates
         unit.setCoords(x,y)
         # add it to the unit list
         self.units.append(unit)

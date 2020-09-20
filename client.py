@@ -9,7 +9,7 @@ import yaml
 import os
 import getpass
 
-DEBUG = False
+DEBUG = True
 
 def usage():
    print("usage, client.py <gameno>", file = sys.stderr)
@@ -28,7 +28,7 @@ set board <size_x> <size_y> - set the size of the board at the beginning of the 
 show player - show player information 
 show types - show types, this includes any enemy types seen
 show units - show units, this includes any enemy units that the player has seen in the last turn
-~~show candidate - shows the current actions that will be performed on commit
+show pending - shows the current actions that will be performed on commit
 
 show board - shows the map of the board form the player's perspective
 
@@ -180,7 +180,11 @@ def main(argv):
                         print(players[p_name]['types'])
                     player = players[p_name]['obj']
                     unit_type = players[p_name]['types'][unit['type']]['obj']
-                    board.add(player, unit['x'], unit['y'], name, unit_type)
+                    x = unit['x']
+                    y = unit['y']
+                    board.add(player, x, y, name, unit_type, unit['health'], unit['destroyed'], unit['on_board'])
+                    if DEBUG:
+                        print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}")
                 board.commit()    
    
     # check the player password
@@ -483,7 +487,7 @@ def main(argv):
             # both admin and players can update the player info
             # write the individual player files
             if player_name == '0':
-                # write all players
+                # write all players the first time
                 for p in players.keys():
                     types = players[p]['types']
                     for type_name in types.keys():
