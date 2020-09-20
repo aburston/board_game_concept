@@ -276,9 +276,6 @@ def main(argv):
                 print("invalid add command")
                 continue
             elif tokens[1] == 'type':
-                if player_name == '0':
-                    print("only the players can add unit types not admin")
-                    continue
                 if len(tokens) != 7:
                     print("must provide 5 args for type")
                     continue
@@ -303,9 +300,6 @@ def main(argv):
                     print(f"error adding unit type: {e}")
                     continue
             elif tokens[1] == 'unit':
-                if player_name == '0':
-                    print("only the players can add units not admin")
-                    continue
                 if len(tokens) != 6:
                     print("must provide 4 args for unit")
                     continue
@@ -333,10 +327,7 @@ def main(argv):
 
         # move - unit
         elif tokens[0] == 'move':
-            if player_name == '0':
-                print("only the players can move units not admin")
-                continue
-            elif len(tokens) != 3:
+            if len(tokens) != 3:
                 print("must provide 2 args for move")
                 continue
             elif board == None:
