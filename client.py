@@ -123,6 +123,9 @@ def main(argv):
                     if str(f).find("commit_" + player_name) != -1:
                         new_game = False
                     continue
+                if str(f).find("_units_seen.yaml") != -1:
+                    # skip these files
+                    continue
                 try:
                     player_data = yaml.safe_load(f)
                     if DEBUG:
@@ -182,7 +185,7 @@ def main(argv):
                     unit_type = players[p_name]['types'][unit['type']]['obj']
                     x = unit['x']
                     y = unit['y']
-                    board.add(player, x, y, name, unit_type, unit['health'], unit['destroyed'], unit['on_board'])
+                    board.add(player, x, y, name, unit_type, int(unit['health']), bool(unit['destroyed']), bool(unit['on_board']))
                     if DEBUG:
                         print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}")
                 board.commit()    
@@ -445,7 +448,7 @@ def main(argv):
                 with open(data_path + '/data.yaml', 'w') as file:
                     yaml.safe_dump(board_meta_data, file)
 
-                # TODO: pick up board files created by players and merge them into the board
+                # pick up board files created by players and merge them into the board
                 for player in players.keys():
                     if 'moves' in players[player].keys():
                         print(f"player: {player}, moves: {players[player]['moves']}")
@@ -536,6 +539,19 @@ def main(argv):
                     file.close()
 
             print("commit complete")
+
+            if player_name == '0':
+                print("updating player units seen based on the commit outcome")
+                for p in players.keys():
+                    player_obj = players[p]['obj']
+                    player_units = board.listUnits(player_obj)
+                    if DEBUG:
+                        print("write moves/changes")
+                        print(player_units)
+                    with open(player_path + '/'+ p + '_units_seen.yaml', 'w') as file:
+                        file.write(player_units)
+                        file.close()
+
             break
 
         # leave
