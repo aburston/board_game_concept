@@ -9,7 +9,7 @@ import yaml
 import os
 import getpass
 
-DEBUG = True
+DEBUG = False
 
 def usage():
    print("usage, client.py <gameno>", file = sys.stderr)
@@ -48,6 +48,7 @@ def main(argv):
     new_game = False
     # the board starts out not existing, if the file is there it will be created
     board = None
+    seen_board = None
     board_meta_data = {}
     size_x = 0
     size_y = 0
@@ -88,6 +89,7 @@ def main(argv):
                 size_y = board_meta_data['board']['size_y']
                 password = board_meta_data['game']['password']
                 board = Board(size_x, size_y)
+                seen_board = Board(size_x, size_y)
                 if DEBUG:
                     print("Finished loading game meta data")
             except yaml.YAMLError as exc:
@@ -189,6 +191,32 @@ def main(argv):
                     if DEBUG:
                         print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}")
                 board.commit()    
+
+    # load the seen units into the visible board
+    if player_name != '0':
+        if os.path.exists(player_path + '/' + player_name + '_units_seen.yaml'):        
+            if DEBUG:
+                print("loading units seen")
+            with open(player_path + '/' + player_name + '_units_seen.yaml') as f:
+                units = yaml.safe_load(f)['units']
+                if DEBUG:
+                    print(units)
+                if units != 'None':
+                    for unit in units:
+                        name = unit['name']
+                        if DEBUG:
+                            print(f"processing seen unit {name}")
+                        p_name = unit['player']
+                        if DEBUG:
+                            print(players[p_name]['types'])
+                        player = players[p_name]['obj']
+                        unit_type = players[p_name]['types'][unit['type']]['obj']
+                        x = unit['x']
+                        y = unit['y']
+                        seen_board.add(player, x, y, name, unit_type, int(unit['health']), bool(unit['destroyed']), bool(unit['on_board']))
+                        if DEBUG:
+                            print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}, on_board {unit['on_board']}")
+                    seen_board.commit()    
    
     # check the player password
     if player_name != '0':
@@ -235,11 +263,15 @@ def main(argv):
                 print("invalid show command")
                 continue
             elif tokens[1] == 'board':
-                if board == None:
+                if seen_board != None:
+                    if DEBUG:
+                        print("showing seen board")
+                    seen_board.print()
+                elif board == None:
                     print("must create board - set size and commit")
-                    continue
-                board.print(player_obj)
-                
+                else:
+                    board.print(player_obj)
+
             elif tokens[1] == 'types':
                 for player in players.keys():
                     if 'types' in players[player].keys():    
@@ -252,10 +284,14 @@ def main(argv):
                 for player in players.keys():
                     print(f"name: {player}, email: {players[player]['email']}")
             elif tokens[1] == 'units':
-                if board == None:
+                if seen_board != None:
+                    if DEBUG:
+                        print("showing seen units")
+                    print(seen_board.listUnits())
+                elif board == None:
                     print("must create board - set size and commit")
-                    continue
-                print(board.listUnits(player_obj))
+                else:
+                    print(board.listUnits(player_obj))
             elif tokens[1] == 'pending':
                 for player in players.keys():
                     if 'moves' in players[player].keys():
