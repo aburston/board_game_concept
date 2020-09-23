@@ -80,8 +80,8 @@ def main(argv):
                 if DEBUG:
                     print("Finished loading game meta data")
             except yaml.YAMLError as exc:
-                        print(exc, file = sys.stderr)
-                        sys.exit(1)
+                print(exc, file = sys.stderr)
+                sys.exit(1)
 
         if password != password1:
             print("Incorrect password", file = sys.stderr) 
@@ -162,7 +162,7 @@ def main(argv):
                         unit_type = players[p_name]['types'][unit['type']]['obj']
                         x = unit['x']
                         y = unit['y']
-                        board.add(player, x, y, name, unit_type, int(unit['health']), bool(unit['destroyed']), bool(unit['on_board']))
+                        board.add(player, x, y, name, unit_type, int(unit['health']), int(unit['energy']), bool(unit['destroyed']), bool(unit['on_board']))
                         if DEBUG:
                             print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}")
                     board.commit()    

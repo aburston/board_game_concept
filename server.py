@@ -176,7 +176,7 @@ def main(argv):
                         unit_type = players[p_name]['types'][unit['type']]['obj']
                         x = unit['x']
                         y = unit['y']
-                        board.add(player, x, y, name, unit_type, int(unit['health']), bool(unit['destroyed']), bool(unit['on_board']))
+                        board.add(player, x, y, name, unit_type, int(unit['health']), int(unit['energy']), bool(unit['destroyed']), bool(unit['on_board']))
                         if DEBUG:
                             print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}")
                     board.commit()    
@@ -343,7 +343,8 @@ def main(argv):
         # pick up board files created by players and merge them into the board
         for player in players.keys():
             if 'moves' in players[player].keys():
-                print(f"player: {player}, moves: {players[player]['moves']}")
+                if DEBUG:
+                    print(f"player: {player}, moves: {players[player]['moves']}")
                 units = players[player]['moves']['units']
                 if units == None:
                     continue
@@ -354,7 +355,8 @@ def main(argv):
                     y = unit['y']
                     state = unit['state']
                     direction = unit['direction']
-                    print(f"processing unit {name} belonging to {p_name} at ({x},{y}) {str(direction)}")
+                    if DEBUG:
+                        print(f"processing unit {name} belonging to {p_name} at ({x},{y}) {str(direction)}")
                     player = players[p_name]['obj']
                     #print(players[p_name]['types'])
                     unit_type = players[p_name]['types'][unit['type']]['obj']
@@ -363,10 +365,12 @@ def main(argv):
                     elif state == UnitType.MOVING:
                         actual_unit = board.getUnitByCoords(x, y)
                         actual_unit.move(direction)
-                        print(f"moving unit at ({x},{y}) {str(direction)}")
+                        if DEBUG:
+                            print(f"moving unit at ({x},{y}) {str(direction)}")
                     elif state == UnitType.NOP:
                         actual_unit = board.getUnitByCoords(x, y)
-                        print(type(actual_unit))
+                        if DEBUG:
+                            print(type(actual_unit))
                         if isinstance(actual_unit, Empty):
                             board.add(player, x, y, name, unit_type)
                         print(f"NOP unit at ({x},{y}) {str(direction)}")
@@ -402,9 +406,8 @@ def main(argv):
             file.write(all_units)
             file.close()
 
-        print("commit complete")
-
-        print("updating player units seen based on the commit outcome")
+        if DEBUG:
+            print("updating player units seen based on the commit outcome")
         for p in players.keys():
             player_obj = players[p]['obj']
             player_units = board.listUnits(player_obj)
@@ -414,6 +417,8 @@ def main(argv):
             with open(player_path + '/'+ p + '_units_seen.yaml', 'w') as file:
                 file.write(player_units)
                 file.close()
+
+        print("commit complete")
 
         # output board + units
         board.print()

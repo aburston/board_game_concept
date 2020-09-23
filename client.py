@@ -174,7 +174,7 @@ def main(argv):
                         unit_type = players[p_name]['types'][unit['type']]['obj']
                         x = unit['x']
                         y = unit['y']
-                        board.add(player, x, y, name, unit_type, int(unit['health']), bool(unit['destroyed']), bool(unit['on_board']))
+                        board.add(player, x, y, name, unit_type, int(unit['health']), int(unit['energy']), bool(unit['destroyed']), bool(unit['on_board']))
                         if DEBUG:
                             print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}")
                     board.commit()    
@@ -200,7 +200,7 @@ def main(argv):
                         unit_type = players[p_name]['types'][unit['type']]['obj']
                         x = unit['x']
                         y = unit['y']
-                        seen_board.add(player, x, y, name, unit_type, int(unit['health']), bool(unit['destroyed']), bool(unit['on_board']))
+                        seen_board.add(player, x, y, name, unit_type, int(unit['health']), int(unit['energy']), bool(unit['destroyed']), bool(unit['on_board']))
                         if DEBUG:
                             print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}, on_board {unit['on_board']}")
                     seen_board.commit()    

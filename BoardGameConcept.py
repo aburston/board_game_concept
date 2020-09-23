@@ -82,6 +82,9 @@ class UnitType:
     def setHealth(self, health):
         self.health = health
 
+    def setEnergy(self, energy):
+        self.energy = energy
+
     def setDestroyed(self, destroyed):
         self.destroyed = destroyed
 
@@ -261,7 +264,7 @@ class Board:
         self.unit_dict = {}
         self.types = {}
     
-    def add(self, player, x, y, name, unit_type, health = None, destroyed = False, on_board = True):
+    def add(self, player, x, y, name, unit_type, health = None, energy = None, destroyed = False, on_board = True):
         if DEBUG:
             print(type(unit_type))
             print(type(player))
@@ -283,6 +286,9 @@ class Board:
         # if the health value has been supplied, set it
         if health != None:
             unit.setHealth(health)
+        # if the energy value has been supplied, set it
+        if energy != None:
+            unit.setEnergy(energy)
         # mark the unit destroyed if required (needed when loading ongoing games)
         unit.setDestroyed(destroyed)
         # mark the unit on the board (needed when loading ongoing games)

@@ -1,0 +1,5 @@
+email: pleyr_two
+name: p2
+password: '1'
+types:
+  X: {attack: '1', energy: '10', health: '1', name: X, symbol: X}
