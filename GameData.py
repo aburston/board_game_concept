@@ -16,6 +16,7 @@ class GameData:
         self.data_path = data_path
         self.player_name = player_name
         self.players = {}
+        self.seen_board = None
         # XXX need a new name for this flag
         if player_name == '0':
             self.new_game = False

@@ -7,7 +7,7 @@ from BoardGameConcept import Empty
 import sys
 import yaml
 import os
-import getpass
+from getpass import getpass
 import time
 from GameData import GameData
 
@@ -58,7 +58,7 @@ def main(argv):
         print(f"Basepath: {basePath}")
 
     # the password of the user connecting to this client (could be a player or admin)
-    password = getpass.getpass()
+    password = getpass()
 
     # load the data 
     while True:
