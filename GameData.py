@@ -11,6 +11,9 @@ DEBUG = False
 
 class GameData:
 
+    def getUnprocessedMoves(self):
+        return self.unprocessed_moves
+
     def getGamePassword(self):
         return self.game_password
 
@@ -59,6 +62,7 @@ class GameData:
         self.seen_board = None
         self.board = None
         self.game_password = None
+        self.unprocessed_moves = False
         # XXX need a new name for this flag
         if player_name == '0':
             self.new_game = False
@@ -106,8 +110,9 @@ class GameData:
                 with open(player_path + '/' + player_file) as f:
                     if str(f).find("_units.yaml") != -1:
                         if str(f).find(player_name + "_units.yaml") != -1:
-                            print("unprocessed player moves, waiting for game to complete the turn, try again later", file = sys.stderr)
-                            sys.exit(1)
+                            if DEBUG:
+                                print("unprocessed player moves, waiting for game to complete the turn", file = sys.stderr)
+                            self.unprocessed_moves = True
                         continue   
                     if str(f).find("commit_") != -1:
                         if str(f).find("commit_" + player_name) != -1:

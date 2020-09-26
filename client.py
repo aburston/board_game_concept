@@ -72,9 +72,13 @@ def main(argv):
         size_x = data.getSizeX()
         size_y = data.getSizeY()
         new_game = data.getNewGame()
+        unprocessed_moves = data.getUnprocessedMoves()
+        if unprocessed_moves:
+            print("waiting for turn to complete...")
+            time.sleep(5)
 
         # interactive mode
-        while True:
+        while not(unprocessed_moves):
 
             # read line from stdin + tokenize it
             print(f"{argv[0]}> ", flush=True, end='')
@@ -260,25 +264,13 @@ def main(argv):
                     file.close()
 
                 print("commit complete")
-
-                while True:
-                    commit_count = 0
-                    for player_file in os.listdir(player_path):
-                        if player_file.find("_units.yaml") != -1:
-                            commit_count = commit_count + 1
-                    if commit_count == 0:
-                        break
-                    print("waiting for turn to complete...")
-                    time.sleep(5)
-              
-                # reload data and return to prompt
                 break
 
             # leave
             elif tokens[0] == 'exit':
                 sys.exit(0)
             else:
-                print("invalid command")    
+                print("invalid command")
 
 
 if __name__ == "__main__":
