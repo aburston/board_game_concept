@@ -50,14 +50,11 @@ class GameData:
 
     def __init__(self, data_path, player_path, player_name, password):
 
-        # if the game directory does not exist, create it    
-        if not(os.path.exists(data_path)):
-            os.makedirs(data_path)
-            os.makedirs(player_path)
-
-        self.player_path = player_path
         self.data_path = data_path
+        self.player_path = player_path
         self.player_name = player_name
+        self.password = password
+
         self.players = {}
         self.seen_board = None
         self.board = None
@@ -69,9 +66,16 @@ class GameData:
         else:
             self.new_game = True
 
+    def load(self):
+
+        # if the game directory does not exist, create it    
+        if not(os.path.exists(self.data_path)):
+            os.makedirs(self.data_path)
+            os.makedirs(self.player_path)
+
         # try reading meta data file for game 
         try:
-            with open(data_path + '/data.yaml') as f:
+            with open(self.data_path + '/data.yaml') as f:
                 try:
                     board_meta_data = yaml.safe_load(f)
                     size_x = board_meta_data['board']['size_x']
@@ -85,7 +89,7 @@ class GameData:
                     sys.exit(1)
 
         except Exception as e:
-            if player_name == '0':
+            if self.player_name == '0':
                 # if this is a new game request the game admin password
                 self.new_game = True
                 print("Set game password")
@@ -94,28 +98,28 @@ class GameData:
                 if password1 == password2:
                     self.game_password = password1
                     # set the blank password to the newly acquired password
-                    password = password1
+                    self.password = password1
                     self.game_password = password1
                 else:
                     print("Passwords must match", file = sys.stderr)
                     sys.exit(1)
             else:
-                print(f"No game with path: {data_path}", file = sys.stderr)
+                print(f"No game with path: {self.data_path}", file = sys.stderr)
                 print(e, file = sys.stderr)
                 sys.exit(1)
 
         # load all the player files
-        if os.path.exists(player_path):
-            for player_file in os.listdir(player_path):
-                with open(player_path + '/' + player_file) as f:
+        if os.path.exists(self.player_path):
+            for player_file in os.listdir(self.player_path):
+                with open(self.player_path + '/' + player_file) as f:
                     if str(f).find("_units.yaml") != -1:
-                        if str(f).find(player_name + "_units.yaml") != -1:
+                        if str(f).find(self.player_name + "_units.yaml") != -1:
                             if DEBUG:
                                 print("unprocessed player moves, waiting for game to complete the turn", file = sys.stderr)
                             self.unprocessed_moves = True
                         continue   
                     if str(f).find("commit_") != -1:
-                        if str(f).find("commit_" + player_name) != -1:
+                        if str(f).find("commit_" + self.player_name) != -1:
                             self.new_game = False
                         continue
                     if str(f).find("_units_seen.yaml") != -1:
@@ -149,7 +153,7 @@ class GameData:
                                 self.players[name]['types'][unit_type['name']] = unit_type
 
                         # if this is player '0' the moves files could exist
-                        moves_file = player_path + '/' + player_data['name'] + '_units.yaml'
+                        moves_file = self.player_path + '/' + player_data['name'] + '_units.yaml'
                         if os.path.exists(moves_file):
                             with open(moves_file) as g:
                                 self.players[name]['moves'] = yaml.safe_load(g)
@@ -161,10 +165,10 @@ class GameData:
                         sys.exit(1)
 
         # load the units into the board                
-        if os.path.exists(data_path + '/units.yaml'):        
+        if os.path.exists(self.data_path + '/units.yaml'):        
             if DEBUG:
                 print("loading units")
-            with open(data_path + '/units.yaml') as f:
+            with open(self.data_path + '/units.yaml') as f:
                 units = yaml.safe_load(f)['units']
                 if DEBUG:
                     print(units)
@@ -186,11 +190,11 @@ class GameData:
                     self.board.commit()    
 
         # load the seen units into the visible board
-        if os.path.exists(player_path + '/' + player_name + '_units_seen.yaml'):        
-            self.seen_board = Board(size_x, size_y)
+        if os.path.exists(self.player_path + '/' + self.player_name + '_units_seen.yaml'):        
+            self.seen_board = Board(self.board.size_x, self.board.size_y)
             if DEBUG:
                 print("loading units seen")
-            with open(player_path + '/' + player_name + '_units_seen.yaml') as f:
+            with open(self.player_path + '/' + self.player_name + '_units_seen.yaml') as f:
                 units = yaml.safe_load(f)['units']
                 if DEBUG:
                     print(units)
@@ -212,24 +216,56 @@ class GameData:
                     self.seen_board.commit()    
        
         # check the player password
-        if player_name in self.players.keys():
+        if self.player_name in self.players.keys():
             # check password    
-            if self.players[player_name]['password'] != password:
+            if self.players[self.player_name]['password'] != self.password:
                 print("Incorrect password", file = sys.stderr) 
                 sys.exit(1)
             # set the player_obj to provide context that limits visibility on several show commands, etc    
-            player_obj = self.players[player_name]['obj']
-            # set the password
-            self.password = password
-        elif player_name == '0':    
+            player_obj = self.players[self.player_name]['obj']
+        elif self.player_name == '0':    
             # check password    
-            if self.game_password != password:
+            if self.game_password != self.password:
                 print("Incorrect password", file = sys.stderr) 
                 sys.exit(1)
             # set the player_obj to provide context that limits visibility on several show commands, etc    
-            player_obj = None
-            # set the password
-            self.password = password
+            self.player_obj = None
         else:
            print(f"player {self.player_name} does not exist", file = sys.stderr)
            sys.exit(1)
+
+
+    def save(self):
+        # check the board size has been set
+        if self.board.size_x <= 1 or self.board.size_y <= 1:
+            print(f"the board size is too small ({self.board.size_x}, { self.board.size_y})")
+            return
+
+        # write the logged in player file only
+        p = self.player_name
+        types = self.players[p]['types']
+        for type_name in types.keys():
+            del self.types[type_name]['obj']
+        player_dict = {
+            'name': p,
+            'email': self.players[p]['email'],
+            'password': self.players[p]['password'],
+            'types': types
+        }
+        with open(self.player_path + '/'+ p + '.yaml', 'w') as file:
+            yaml.safe_dump(player_dict, file)
+        with open(self.player_path + '/'+ 'commit_' + self.player_name, 'w') as file:
+            file.write("")
+            file.close()
+
+        # this creates files of unit creation or unit moves
+        player_units = board.listUnits(self.player_obj)
+        if DEBUG:
+            print("write moves/changes")
+            print(self.player_units)
+        with open(self.player_path + '/'+ p + '_units.yaml', 'w') as file:
+            file.write(self.player_units)
+            file.close()
+
+        if DEBUG:
+            print("save complete")

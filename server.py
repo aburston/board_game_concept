@@ -65,11 +65,14 @@ def main(argv):
         password = getpass()
     else:
         password = ""
+
+    # initialize data object
+    data = GameData(data_path, player_path, player_name, password)
     
     while True:
 
         # load the gamedata
-        data = GameData(data_path, player_path, player_name, password)
+        data.load()
 
         players = data.getPlayers()
         player_obj = data.getPlayerObj(player_name)

@@ -60,11 +60,16 @@ def main(argv):
     # the password of the user connecting to this client (could be a player or admin)
     password = getpass()
 
+    # initialize the data object
+    data = GameData(data_path, player_path, player_name, password)
+
     # load the data 
     while True:
 
-        # load the gamedata
-        data = GameData(data_path, player_path, player_name, password)
+        # load/reload the gamedata
+        data.load()
+
+        # set the fields used in the parser
         players = data.getPlayers()
         player_obj = data.getPlayerObj(player_name)
         board = data.getBoard()
@@ -73,12 +78,16 @@ def main(argv):
         size_y = data.getSizeY()
         new_game = data.getNewGame()
         unprocessed_moves = data.getUnprocessedMoves()
+
+        # wait 5 seconds if there are unprocessed moves and then reload
         if unprocessed_moves:
             print("waiting for turn to complete...")
             time.sleep(5)
+            # restart the loop
+            continue
 
         # interactive mode
-        while not(unprocessed_moves):
+        while True:
 
             # read line from stdin + tokenize it
             print(f"{argv[0]}> ", flush=True, end='')

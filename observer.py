@@ -52,11 +52,15 @@ def main(argv):
     # get the password
     if os.path.exists(basePath):
         password = getpass()
-    
+   
+    # initialize the data object
+    data = GameData(data_path, player_path, player_name, password)
+
     while True:
 
         # load the gamedata
-        data = GameData(data_path, player_path, player_name, password)
+        data.load()
+
         players = data.getPlayers()
         player_obj = data.getPlayerObj(player_name)
         board = data.getBoard()
