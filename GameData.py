@@ -5,18 +5,60 @@ from BoardGameConcept import Empty
 import sys
 import yaml
 import os
+from getpass import getpass
 
 DEBUG = False
 
 class GameData:
 
+    def getGamePassword(self):
+        return self.game_password
+
+    def getPlayerObj(self):
+        if self.player_name == '0':
+            player_obj = None
+        else:
+            player_obj = self.players[player_name]['obj']
+        return player_obj
+
+    def getPlayers(self):
+        return self.players
+
+    def getNewGame(self):
+        return self.new_game
+
+    def getBoard(self):
+        return self.board
+
+    def getSeenBoard(self):
+        return self.seen_board
+
+    def getSizeX(self):
+        if self.board != None:
+            return self.board.size_x
+        else:
+            return 0
+
+    def getSizeY(self):
+        if self.board != None:
+            return self.board.size_y
+        else:
+            return 0
+
     def __init__(self, data_path, player_path, player_name, password):
+
+        # if the game directory does not exist, create it    
+        if not(os.path.exists(data_path)):
+            os.makedirs(data_path)
+            os.makedirs(player_path)
 
         self.player_path = player_path
         self.data_path = data_path
         self.player_name = player_name
         self.players = {}
         self.seen_board = None
+        self.board = None
+        self.game_password = None
         # XXX need a new name for this flag
         if player_name == '0':
             self.new_game = False
@@ -39,9 +81,24 @@ class GameData:
                     sys.exit(1)
 
         except Exception as e:
-            print(f"No game with path: {data_path}", file = sys.stderr)
-            print(e, file = sys.stderr)
-            sys.exit(1)
+            if player_name == '0':
+                # if this is a new game request the game admin password
+                self.new_game = True
+                print("Set game password")
+                password1 = getpass()
+                password2 = getpass(prompt="Reenter password: ")
+                if password1 == password2:
+                    self.game_password = password1
+                    # set the blank password to the newly acquired password
+                    password = password1
+                    self.game_password = password1
+                else:
+                    print("Passwords must match", file = sys.stderr)
+                    sys.exit(1)
+            else:
+                print(f"No game with path: {data_path}", file = sys.stderr)
+                print(e, file = sys.stderr)
+                sys.exit(1)
 
         # load all the player files
         if os.path.exists(player_path):

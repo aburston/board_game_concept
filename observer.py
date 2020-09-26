@@ -19,7 +19,7 @@ def usage():
 def command_help():
     print("""
 reload - reload game data    
-show player - show player information 
+show players - show player information 
 show types - show types, this includes any enemy types seen
 show units - show units, this includes any enemy units that the player has seen in the last turn
 show pending - shows the current actions that will be performed on commit

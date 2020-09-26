@@ -41,6 +41,7 @@ def wait_for_player_commit(player_path, players):
 
 def main(argv):
 
+    # process command line arguments
     if DEBUG:
         print(f"len(argv): {len(argv)}")
 
@@ -51,31 +52,36 @@ def main(argv):
         usage()
         sys.exit(1)
 
-    basePath = os.getcwd() + "/games/_" + gameno
-    data_path = basePath + "/data"
-    player_path = basePath + "/players"
+    # set the paths for the game db
+    base_path = os.getcwd() + "/games/_" + gameno
+    data_path = base_path + "/data"
+    player_path = base_path + "/players"
 
     if DEBUG:
-        print(f"Basepath: {basePath}")
+        print(f"Basepath: {base_path}")
 
     # if the game already exists ask for the password
-    if os.path.exists(basePath):
+    if os.path.exists(data_path + '/data.yaml'):
         password = getpass()
+    else:
+        password = ""
     
     while True:
 
         # load the gamedata
         data = GameData(data_path, player_path, player_name, password)
-        players = data.players
-        if player_name == '0':
-            player_obj = None
-        else:
-            player_obj = players[player_name]['obj']
-        board = data.board
-        seen_board = data.seen_board
-        size_x = data.board.size_x
-        size_y = data.board.size_y
-        new_game = data.new_game
+
+        players = data.getPlayers()
+        player_obj = data.getPlayerObj()
+        board = data.getBoard()
+        seen_board = data.getSeenBoard()
+        size_x = data.getSizeX()
+        size_y = data.getSizeY()
+        new_game = data.getNewGame()
+        game_password = data.getGamePassword()
+
+        # if this is the first time the server is run, you need to reset the initial password from blank here
+        password = data.getGamePassword()
 
         # interactive mode
         while new_game:
@@ -188,8 +194,8 @@ def main(argv):
                             'obj': Player(tokens[2], tokens[3]),
                             'types': {}
                         }
-                        password1 = getpass.getpass()
-                        password2 = getpass.getpass("Reenter password: ")
+                        password1 = getpass()
+                        password2 = getpass("Reenter password: ")
                         if password1 != password2:
                             print("User passwords must match")
                             continue
@@ -230,7 +236,7 @@ def main(argv):
             'game' : {
                 'game' : gameno,
                 'no_of_players' : len(players.keys()),
-                'password': password
+                'password': game_password
             },
         }
         with open(data_path + '/data.yaml', 'w') as file:
