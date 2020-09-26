@@ -65,16 +65,13 @@ def main(argv):
 
         # load the gamedata
         data = GameData(data_path, player_path, player_name, password)
-        players = data.players
-        if player_name == '0':
-            player_obj = None
-        else:
-            player_obj = players[player_name]['obj']
-        board = data.board
-        size_x = data.board.size_x
-        size_y = data.board.size_y
-        seen_board = data.seen_board
-        new_game = data.new_game
+        players = data.getPlayers()
+        player_obj = data.getPlayerObj(player_name)
+        board = data.getBoard()
+        seen_board = data.getSeenBoard()
+        size_x = data.getSizeX()
+        size_y = data.getSizeY()
+        new_game = data.getNewGame()
 
         # interactive mode
         while True:

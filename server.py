@@ -72,7 +72,7 @@ def main(argv):
         data = GameData(data_path, player_path, player_name, password)
 
         players = data.getPlayers()
-        player_obj = data.getPlayerObj()
+        player_obj = data.getPlayerObj(player_name)
         board = data.getBoard()
         seen_board = data.getSeenBoard()
         size_x = data.getSizeX()

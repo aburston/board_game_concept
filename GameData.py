@@ -14,7 +14,7 @@ class GameData:
     def getGamePassword(self):
         return self.game_password
 
-    def getPlayerObj(self):
+    def getPlayerObj(self, player_name):
         if self.player_name == '0':
             player_obj = None
         else:
