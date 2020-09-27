@@ -11,7 +11,7 @@ from getpass import getpass
 import time
 from GameData import GameData
 
-DEBUG = True
+DEBUG = False
 
 def usage():
    print("client.py <gameno> <player_name>", file = sys.stderr)
@@ -50,18 +50,8 @@ def main(argv):
         usage()
         sys.exit(1)
 
-    basePath = os.getcwd() + "/games/_" + gameno
-    data_path = basePath + "/data"
-    player_path = basePath + "/players"
-
-    if DEBUG:
-        print(f"Basepath: {basePath}")
-
-    # the password of the user connecting to this client (could be a player or admin)
-    password = getpass()
-
     # initialize the data object
-    data = GameData(data_path, player_path, player_name, password)
+    data = GameData(gameno, player_name)
 
     # load the data 
     while True:
@@ -240,7 +230,7 @@ def main(argv):
 
             # commiting the game saves all input data to yaml for the game setup step
             elif tokens[0] == 'commit':
-                if data.save():
+                if data.clientSave():
                     print("commit complete")
                     break
 

@@ -6,8 +6,9 @@ import sys
 import yaml
 import os
 from getpass import getpass
+import time
 
-DEBUG = True
+DEBUG = False
 
 class GameData:
 
@@ -30,8 +31,14 @@ class GameData:
     def getNewGame(self):
         return self.new_game
 
+    def setNewGame(self, new_game):
+        self.new_game = new_game
+
     def getBoard(self):
         return self.board
+
+    def setBoard(self, board):
+        self.board = board
 
     def getSeenBoard(self):
         return self.seen_board
@@ -48,10 +55,23 @@ class GameData:
         else:
             return 0
 
-    def __init__(self, data_path, player_path, player_name, password):
+    def __init__(self, gameno, player_name):
 
-        self.data_path = data_path
-        self.player_path = player_path
+        self.gameno = gameno
+
+        # set the paths for the game db
+        base_path = os.getcwd() + "/games/_" + gameno
+        if DEBUG:
+            print(f"Basepath: {base_path}")
+        self.data_path = base_path + "/data"
+        self.player_path = base_path + "/players"
+
+        # get the password if this game already exists
+        if os.path.exists(self.data_path + '/data.yaml'):
+            password = getpass()
+        else:
+            password = ""
+
         self.player_name = player_name
         self.password = password
 
@@ -238,7 +258,7 @@ class GameData:
            sys.exit(1)
 
 
-    def save(self):
+    def clientSave(self):
         # check the board size has been set
         if self.board.size_x <= 1 or self.board.size_y <= 1:
             print(f"the board size is too small ({self.board.size_x}, { self.board.size_y})")
@@ -274,3 +294,123 @@ class GameData:
             print("save complete")
 
         return(True)    
+
+    def serverSave(self):
+
+        # check the board size has been set
+        if self.getSizeX() <= 1 or self.getSizeY() <= 1:
+            print(f"the board size is too small ({self.getSizeX()}, {self.getSizeY()})")
+            return(False)
+
+        # add required directories
+        if not(os.path.exists(self.data_path)):
+            os.makedirs(self.data_path)
+        if not(os.path.exists(self.player_path)):
+            os.makedirs(self.player_path)
+
+        # write the data file for the board
+        board_meta_data = {
+            'board' : {
+                'size_x' : self.board.size_x,
+                'size_y' : self.board.size_y
+            },
+            'game' : {
+                'game' : self.gameno,
+                'no_of_players' : len(self.players.keys()),
+                'password': self.game_password
+            },
+        }
+        with open(self.data_path + '/data.yaml', 'w') as file:
+            yaml.safe_dump(board_meta_data, file)
+
+        # pick up board files created by players and merge them into the board
+        for player in self.players.keys():
+            if 'moves' in self.players[player].keys():
+                if DEBUG:
+                    print(f"player: {player}, moves: {self.players[player]['moves']}")
+                units = self.players[player]['moves']['units']
+                if units == None:
+                    continue
+                for unit in units:
+                    name = unit['name']
+                    p_name = unit['player']
+                    x = unit['x']
+                    y = unit['y']
+                    state = unit['state']
+                    direction = unit['direction']
+                    if DEBUG:
+                        print(f"processing unit {name} belonging to {p_name} at ({x},{y}) {str(direction)}")
+                    player = self.players[p_name]['obj']
+                    #print(players[p_name]['types'])
+                    unit_type = self.players[p_name]['types'][unit['type']]['obj']
+                    if state == UnitType.INITIAL:
+                        self.board.add(player, x, y, name, unit_type)
+                    elif state == UnitType.MOVING:
+                        actual_unit = self.board.getUnitByCoords(x, y)
+                        actual_unit.move(direction)
+                        if DEBUG:
+                            print(f"moving unit at ({x},{y}) {str(direction)}")
+                    elif state == UnitType.NOP:
+                        actual_unit = self.board.getUnitByCoords(x, y)
+                        if DEBUG:
+                            print(type(actual_unit))
+                        if isinstance(actual_unit, Empty):
+                            self.board.add(player, x, y, name, unit_type)
+                        print(f"NOP unit at ({x},{y}) {str(direction)}")
+                    else:    
+                        assert False, f"Invalid unit state {str(state)} provided by player"
+
+        # resolve all moves and end the turn
+        self.board.commit()
+        for player_file in os.listdir(self.player_path):
+                if player_file.find("_units.yaml") != -1:
+                    os.remove(self.player_path + "/" + player_file)
+
+        # both admin and players can update the player info
+        # write the individual player files
+        # write all players the first time
+        for p in self.players.keys():
+            types = self.players[p]['types']
+            for type_name in types.keys():
+                del types[type_name]['obj']
+            player_dict = {
+                'name': p,
+                'email': self.players[p]['email'],
+                'password': self.players[p]['password'],
+                'types': types
+            }
+            with open(self.player_path + '/'+ p + '.yaml', 'w') as file:
+                yaml.safe_dump(player_dict, file)
+
+        # write out the units information to disk
+        # this writes the master board units, i.e. everything
+        all_units = self.board.listUnits()
+        with open(self.data_path + '/units.yaml', 'w') as file:
+            file.write(all_units)
+            file.close()
+
+        if DEBUG:
+            print("updating player units seen based on the commit outcome")
+        for p in self.players.keys():
+            player_obj = self.players[p]['obj']
+            player_units = self.board.listUnits(player_obj)
+            if DEBUG:
+                print("write moves/changes")
+                print(player_units)
+            with open(self.player_path + '/'+ p + '_units_seen.yaml', 'w') as file:
+                file.write(player_units)
+                file.close()
+
+        return(True)        
+
+    def waitForPlayerCommit(self):
+        print("wait for player commit")
+        while True:
+            commit_count = 0
+            for player_file in os.listdir(self.player_path):
+                if player_file.find("_units.yaml") != -1:
+                    commit_count = commit_count + 1
+            if commit_count == len(self.players.keys()):
+                break
+            time.sleep(10)
+
