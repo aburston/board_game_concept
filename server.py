@@ -186,26 +186,28 @@ def main(argv):
 
             # commiting the game saves all input data to yaml for the game setup step
             elif tokens[0] == 'commit':
-                break
+                # do all the commit actions
+                if data.serverSave():
+                    # clear the new game flag, this supresses interactive mode for the server
+                    data.setNewGame(False)
+                    print("commit complete")
+                    break
+                else:
+                    # commit failed, go back to interactive prompt to resolve problems
+                    continue
             # leave
             elif tokens[0] == 'exit':
                 sys.exit(0)
             else:
                 print("invalid command")    
 
-        # do all the commit actions and then wait for player commits
-        data.serverSave()
-        print("commit complete")
-
-        # output board + units
+        # log board + units
         board.print()
         print(board.listUnits())
         
         # wait for player commits before restarting the load and commit cycle
         data.waitForPlayerCommit()
 
-        # clear the new game flag
-        data.setNewGame(False)
 
 # run main()
 if __name__ == "__main__":
