@@ -7,7 +7,7 @@ import yaml
 import os
 from getpass import getpass
 
-DEBUG = False
+DEBUG = True
 
 class GameData:
 
@@ -67,6 +67,9 @@ class GameData:
             self.new_game = True
 
     def load(self):
+
+        # reset unprocessed_moves
+        self.unprocessed_moves = False
 
         # if the game directory does not exist, create it    
         if not(os.path.exists(self.data_path)):
@@ -205,7 +208,7 @@ class GameData:
                             print(f"processing seen unit {name}")
                         p_name = unit['player']
                         if DEBUG:
-                            print(players[p_name]['types'])
+                            print(self.players[p_name]['types'])
                         player = self.players[p_name]['obj']
                         unit_type = self.players[p_name]['types'][unit['type']]['obj']
                         x = unit['x']
@@ -239,13 +242,13 @@ class GameData:
         # check the board size has been set
         if self.board.size_x <= 1 or self.board.size_y <= 1:
             print(f"the board size is too small ({self.board.size_x}, { self.board.size_y})")
-            return
+            return(False)
 
         # write the logged in player file only
         p = self.player_name
         types = self.players[p]['types']
         for type_name in types.keys():
-            del self.types[type_name]['obj']
+            del types[type_name]['obj']
         player_dict = {
             'name': p,
             'email': self.players[p]['email'],
@@ -259,13 +262,15 @@ class GameData:
             file.close()
 
         # this creates files of unit creation or unit moves
-        player_units = board.listUnits(self.player_obj)
+        player_units = self.board.listUnits(self.getPlayerObj(self.player_name))
         if DEBUG:
             print("write moves/changes")
-            print(self.player_units)
+            print(player_units)
         with open(self.player_path + '/'+ p + '_units.yaml', 'w') as file:
-            file.write(self.player_units)
+            file.write(player_units)
             file.close()
 
         if DEBUG:
             print("save complete")
+
+        return(True)    

@@ -11,7 +11,7 @@ from getpass import getpass
 import time
 from GameData import GameData
 
-DEBUG = False
+DEBUG = True
 
 def usage():
    print("client.py <gameno> <player_name>", file = sys.stderr)
@@ -240,40 +240,9 @@ def main(argv):
 
             # commiting the game saves all input data to yaml for the game setup step
             elif tokens[0] == 'commit':
-
-                # check the board size has been set
-                if size_x <= 1 or size_y <= 1:
-                    print(f"the board size is too small ({size_x}, {size_y})")
-                    continue
-
-                # write the logged in player file only
-                p = player_name
-                types = players[p]['types']
-                for type_name in types.keys():
-                    del types[type_name]['obj']
-                player_dict = {
-                    'name': p,
-                    'email': players[p]['email'],
-                    'password': players[p]['password'],
-                    'types': types
-                }
-                with open(player_path + '/'+ p + '.yaml', 'w') as file:
-                    yaml.safe_dump(player_dict, file)
-                with open(player_path + '/'+ 'commit_' + player_name, 'w') as file:
-                    file.write("")
-                    file.close()
-
-                # this creates files of unit creation or unit moves
-                player_units = board.listUnits(player_obj)
-                if DEBUG:
-                    print("write moves/changes")
-                    print(player_units)
-                with open(player_path + '/'+ p + '_units.yaml', 'w') as file:
-                    file.write(player_units)
-                    file.close()
-
-                print("commit complete")
-                break
+                if data.save():
+                    print("commit complete")
+                    break
 
             # leave
             elif tokens[0] == 'exit':
