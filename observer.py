@@ -42,19 +42,8 @@ def main(argv):
         usage()
         sys.exit(1)
 
-    basePath = os.getcwd() + "/games/_" + gameno
-    data_path = basePath + "/data"
-    player_path = basePath + "/players"
-
-    if DEBUG:
-        print(f"Basepath: {basePath}")
-
-    # get the password
-    if os.path.exists(basePath):
-        password = getpass()
-   
     # initialize the data object
-    data = GameData(data_path, player_path, player_name, password)
+    data = GameData(gameno, player_name)
 
     while True:
 

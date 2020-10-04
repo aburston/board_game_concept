@@ -138,7 +138,9 @@ class GameData:
                     if str(f).find("_units.yaml") != -1:
                         if str(f).find(self.player_name + "_units.yaml") != -1:
                             if DEBUG:
-                                print("unprocessed player moves, waiting for game to complete the turn", file = sys.stderr)
+                                print("unprocessed player moves, " +
+                                    "waiting for game to complete the turn", 
+                                    file = sys.stderr)
                             self.unprocessed_moves = True
                         continue   
                     if str(f).find("commit_") != -1:
@@ -207,9 +209,20 @@ class GameData:
                         unit_type = self.players[p_name]['types'][unit['type']]['obj']
                         x = unit['x']
                         y = unit['y']
-                        self.board.add(player, x, y, name, unit_type, int(unit['health']), int(unit['energy']), bool(unit['destroyed']), bool(unit['on_board']))
+                        self.board.add(
+                            player,
+                            x, y,
+                            name,
+                            unit_type,
+                            int(unit['health']),
+                            int(unit['energy']),
+                            bool(unit['destroyed']),
+                            bool(unit['on_board'])
+                        )
                         if DEBUG:
-                            print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}")
+                            print(f"processing unit {name} setting " +
+                                "health {unit['health']}, " +
+                                "destroyed {unit['destroyed']}")
                     self.board.commit()    
 
         # load the seen units into the visible board
@@ -233,9 +246,21 @@ class GameData:
                         unit_type = self.players[p_name]['types'][unit['type']]['obj']
                         x = unit['x']
                         y = unit['y']
-                        self.seen_board.add(player, x, y, name, unit_type, int(unit['health']), int(unit['energy']), bool(unit['destroyed']), bool(unit['on_board']))
+                        self.seen_board.add(
+                            player, 
+                            x, y,
+                            name,
+                            unit_type,
+                            int(unit['health']),
+                            int(unit['energy']),
+                            bool(unit['destroyed']),
+                            bool(unit['on_board'])
+                        )
                         if DEBUG:
-                            print(f"processing unit {name} setting health {unit['health']}, destroyed {unit['destroyed']}, on_board {unit['on_board']}")
+                            print(f"processing unit {name} setting " +
+                                f"health {unit['health']}, " +
+                                f"destroyed {unit['destroyed']}, " +
+                                f"on_board {unit['on_board']}")
                     self.seen_board.commit()    
        
         # check the player password
@@ -244,14 +269,16 @@ class GameData:
             if self.players[self.player_name]['password'] != self.password:
                 print("Incorrect password", file = sys.stderr) 
                 sys.exit(1)
-            # set the player_obj to provide context that limits visibility on several show commands, etc    
+            # set the player_obj to provide context that limits visibility on
+            # several show commands, etc
             player_obj = self.players[self.player_name]['obj']
         elif self.player_name == '0':    
             # check password    
             if self.game_password != self.password:
                 print("Incorrect password", file = sys.stderr) 
                 sys.exit(1)
-            # set the player_obj to provide context that limits visibility on several show commands, etc    
+            # set the player_obj to provide context that limits visibility on
+            # several show commands, etc
             self.player_obj = None
         else:
            print(f"player {self.player_name} does not exist", file = sys.stderr)
@@ -261,7 +288,8 @@ class GameData:
     def clientSave(self):
         # check the board size has been set
         if self.board.size_x <= 1 or self.board.size_y <= 1:
-            print(f"the board size is too small ({self.board.size_x}, { self.board.size_y})")
+            print(f"the board size is too small ({self.board.size_x}, " +
+            f"{self.board.size_y})")
             return(False)
 
         # write the logged in player file only
@@ -339,7 +367,8 @@ class GameData:
                     state = unit['state']
                     direction = unit['direction']
                     if DEBUG:
-                        print(f"processing unit {name} belonging to {p_name} at ({x},{y}) {str(direction)}")
+                        print(f"processing unit {name} belonging to {p_name} " +
+                            f"at ({x},{y}) {str(direction)}")
                     player = self.players[p_name]['obj']
                     #print(players[p_name]['types'])
                     unit_type = self.players[p_name]['types'][unit['type']]['obj']
@@ -358,7 +387,8 @@ class GameData:
                             self.board.add(player, x, y, name, unit_type)
                         print(f"NOP unit at ({x},{y}) {str(direction)}")
                     else:    
-                        assert False, f"Invalid unit state {str(state)} provided by player"
+                        assert False, (f"Invalid unit state {str(state)} " + 
+                            "provided by player")
 
         # resolve all moves and end the turn
         self.board.commit()
