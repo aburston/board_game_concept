@@ -1,6 +1,0 @@
-board:
-  size_x: '5'
-  size_y: '5'
-game:
-  game: '001'
-  no_of_players: 2

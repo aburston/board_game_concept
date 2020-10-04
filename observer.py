@@ -14,7 +14,7 @@ from GameData import GameData
 DEBUG = False
 
 def usage():
-   print("usage, client.py <gameno>", file = sys.stderr)
+   print("usage, observer.py <gameno>", file = sys.stderr)
 
 def command_help():
     print("""

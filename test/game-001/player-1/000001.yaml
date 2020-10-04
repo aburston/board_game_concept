@@ -1,9 +1,0 @@
-moves:
-        - { name: "Scout 0", direction: SOUTH }
-        - { name: "Scout 1", direction: SOUTH }
-        - { name: "Scout 2", direction: SOUTH }
-        - { name: "Scout 3", direction: SOUTH }
-        - { name: "Scout 4", direction: SOUTH }
-        - { name: "Scout 5", direction: SOUTH }
-        - { name: "Scout 6", direction: SOUTH }
-        - { name: "Scout 7", direction: SOUTH }

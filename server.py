@@ -11,15 +11,18 @@ from getpass import getpass
 import time
 from GameData import GameData
 
-DEBUG = True
+DEBUG = False
 
 def usage():
-   print("usage, client.py <gameno>", file = sys.stderr)
+   print("usage, server.py <gameno> [<boardfile>] [<playerfile 1>] ... [<playerfile n>]", file = sys.stderr)
 
 def command_help():
     print("""
 add player <name> <email> - add a new player to the game, only player '0' i.e. the game admin can do this
+load board <board_file> - loads the board size from a file
+load player <player_file> - loads the player data, player types and player units from a file
 set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
+set password - reset the game password
 show board - show the board
 show player - show player information 
 commit - commit actions taken, this can't be undone
@@ -34,12 +37,17 @@ def main(argv):
     if DEBUG:
         print(f"len(argv): {len(argv)}")
 
-    if len(argv) == 2:
+    if len(argv) >= 2:
         player_name = '0'
         gameno = argv[1]
     else:
         usage()
         sys.exit(1)
+
+    if len(argv) >= 3:
+        board_file = argv[2]
+    if len(argv) >= 4:
+        player_files = argv[3:]
 
     # initialize data object
     data = GameData(gameno, player_name)
@@ -184,12 +192,40 @@ def main(argv):
                     print("invalid add command")
                     continue
 
+            # load - player
+            elif tokens[0] == 'load':
+                if len(tokens) == 1:
+                    print("invalid load command")
+                    continue
+                elif tokens[1] == 'player':
+                    if len(tokens) != 3:
+                        print("must provide 1 args for load player")
+                    elif new_game == False:
+                        print("can't add players to an existing game")
+                    else:
+                        player_data = {}
+                        try:
+                            with open(tokens[2]) as f:
+                                    player_data = yaml.safe_load(f)
+                                    if DEBUG:
+                                        print("Finished player data")
+                        except Exception as e:
+                            print(f"Error loading player file {tokens[2]} {e}")
+                            continue
+                        players[player_data['name']] = {
+                            "email": player_data['email'],
+                            'obj': Player(player_data['name'], player_data['email']),
+                            'password': player_data['password'],
+                            'types': player_data['types']
+                        }
+                else:
+                    print("invalid load command")
+                    continue
+
             # commiting the game saves all input data to yaml for the game setup step
             elif tokens[0] == 'commit':
-                # do all the commit actions
+                # do all the commit actions for the first commit
                 if data.serverSave():
-                    # clear the new game flag, this supresses interactive mode for the server
-                    data.setNewGame(False)
                     print("commit complete")
                     break
                 else:
@@ -201,12 +237,23 @@ def main(argv):
             else:
                 print("invalid command")    
 
+        # do all the commit actions, this will be run when the server is non-interactive
+        if new_game:
+            # clear the new game flag, this supresses interactive mode for the server
+            data.setNewGame(False)
+        elif data.serverSave():
+            print("commit complete")
+        else:
+            print("internal server error saving game data")
+            sys.exit(1)
+
+        # wait for player commits before restarting the load and commit cycle
+        data.waitForPlayerCommit()
+
         # log board + units
         board.print()
         print(board.listUnits())
         
-        # wait for player commits before restarting the load and commit cycle
-        data.waitForPlayerCommit()
 
 
 # run main()

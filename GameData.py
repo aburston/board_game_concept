@@ -103,7 +103,7 @@ class GameData:
                     board_meta_data = yaml.safe_load(f)
                     size_x = board_meta_data['board']['size_x']
                     size_y = board_meta_data['board']['size_y']
-                    self.game_password = board_meta_data['game']['password']
+                    self.game_password = board_meta_data['password']
                     self.board = Board(size_x, size_y)
                     if DEBUG:
                         print("Finished loading game meta data")
@@ -221,8 +221,8 @@ class GameData:
                         )
                         if DEBUG:
                             print(f"processing unit {name} setting " +
-                                "health {unit['health']}, " +
-                                "destroyed {unit['destroyed']}")
+                                f"health {unit['health']}, " +
+                                f"destroyed {unit['destroyed']}")
                     self.board.commit()    
 
         # load the seen units into the visible board
@@ -296,7 +296,8 @@ class GameData:
         p = self.player_name
         types = self.players[p]['types']
         for type_name in types.keys():
-            del types[type_name]['obj']
+            if 'obj' in types[type_name].keys():
+                del types[type_name]['obj']
         player_dict = {
             'name': p,
             'email': self.players[p]['email'],
@@ -342,11 +343,7 @@ class GameData:
                 'size_x' : self.board.size_x,
                 'size_y' : self.board.size_y
             },
-            'game' : {
-                'game' : self.gameno,
-                'no_of_players' : len(self.players.keys()),
-                'password': self.game_password
-            },
+            'password': self.game_password
         }
         with open(self.data_path + '/data.yaml', 'w') as file:
             yaml.safe_dump(board_meta_data, file)
@@ -402,7 +399,8 @@ class GameData:
         for p in self.players.keys():
             types = self.players[p]['types']
             for type_name in types.keys():
-                del types[type_name]['obj']
+                if 'obj' in types[type_name].keys():
+                    del types[type_name]['obj']
             player_dict = {
                 'name': p,
                 'email': self.players[p]['email'],

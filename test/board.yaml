@@ -1,0 +1,4 @@
+board:
+    size_x: 4
+    size_y: 4
+password: '1'
