@@ -166,7 +166,7 @@ def main(argv):
 
             # add - player, type, unit
             elif tokens[0] == 'add':
-                if len(tokens) == 1:
+                if len(tokens) == 2:
                     print("invalid add command")
                     continue
                 elif tokens[1] == 'player':
@@ -194,7 +194,7 @@ def main(argv):
 
             # load - player
             elif tokens[0] == 'load':
-                if len(tokens) == 1:
+                if len(tokens) == 2:
                     print("invalid load command")
                     continue
                 elif tokens[1] == 'player':
@@ -208,7 +208,7 @@ def main(argv):
                             with open(tokens[2]) as f:
                                     player_data = yaml.safe_load(f)
                                     if DEBUG:
-                                        print("Finished player data")
+                                        print("finished player data")
                         except Exception as e:
                             print(f"Error loading player file {tokens[2]} {e}")
                             continue
@@ -218,6 +218,25 @@ def main(argv):
                             'password': player_data['password'],
                             'types': player_data['types']
                         }
+                elif tokens[1] == 'board':
+                    if len(tokens) != 3:
+                        print("must provide 1 args for load board")
+                    else:
+                        board_data = {}
+                        try:
+                            with open(tokens[2]) as f:
+                                    board_data = yaml.safe_load(f)
+                                    if DEBUG:
+                                        print("finished player data")
+                        except Exception as e:
+                            print(f"Error loading player file {tokens[2]} {e}")
+                            continue
+                        size_x = int(board_data['board']['size_x'])
+                        size_y = int(board_data['board']['size_y'])
+                        # immediately create the board object
+                        board = Board(size_x, size_y)
+                        data.setBoard(board)
+
                 else:
                     print("invalid load command")
                     continue
