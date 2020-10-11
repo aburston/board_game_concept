@@ -1,7 +1,0 @@
-board: { size_x: 4, size_y: 4}
-player: p2
-units:
-  - { id: 4, player: "p2", type: "X", name: "x1", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 0, state: 2, direction: 0, destroyed: False, on_board: True }
-  - { id: 5, player: "p2", type: "X", name: "x2", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 1, state: 2, direction: 0, destroyed: False, on_board: True }
-  - { id: 6, player: "p2", type: "X", name: "x3", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 2, state: 2, direction: 0, destroyed: False, on_board: True }
-  - { id: 7, player: "p2", type: "X", name: "x4", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 3, state: 2, direction: 0, destroyed: False, on_board: True }
