@@ -216,7 +216,8 @@ def main(argv):
                             "email": player_data['email'],
                             'obj': Player(player_data['name'], player_data['email']),
                             'password': player_data['password'],
-                            'types': player_data['types']
+                            'types': player_data['types'],
+                            'units': player_data['units']
                         }
                 elif tokens[1] == 'board':
                     if len(tokens) != 3:

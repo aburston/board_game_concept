@@ -27,6 +27,7 @@ expect "server.py> "
 # commit the changes and run the server
 send "commit\n"
 expect "wait for player commit"
+expect "wait for player commit"
 
 # exit cleanly
 send_user "\n"

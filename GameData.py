@@ -382,7 +382,8 @@ class GameData:
                             print(type(actual_unit))
                         if isinstance(actual_unit, Empty):
                             self.board.add(player, x, y, name, unit_type)
-                        print(f"NOP unit at ({x},{y}) {str(direction)}")
+                        if DEBUG:
+                            print(f"NOP unit at ({x},{y}) {str(direction)}")
                     else:    
                         assert False, (f"Invalid unit state {str(state)} " + 
                             "provided by player")
@@ -409,6 +410,12 @@ class GameData:
             }
             with open(self.player_path + '/'+ p + '.yaml', 'w') as file:
                 yaml.safe_dump(player_dict, file)
+                file.close()
+            if 'units' in self.players[p]:    
+                units = self.players[p]['units']
+                with open(self.player_path + '/'+ p + '_units.yaml', 'w') as file:
+                    yaml.safe_dump({ 'units': units }, file)
+                    file.close()
 
         # write out the units information to disk
         # this writes the master board units, i.e. everything
