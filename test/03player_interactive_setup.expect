@@ -1,8 +1,8 @@
 #!/usr/bin/expect
 
-# the game test-01 must already be running
-# player-1 (p1) with password 112233 must have been pre-configured
-# player-2 (p2) with password 112233 must have been pre-configured
+# run the script for test-01 again
+spawn bash -c "./01server_interactive_start.expect"
+expect "wait for player commit"
 
 # login as player 1
 spawn bash -c "../client.py test-01 p1"

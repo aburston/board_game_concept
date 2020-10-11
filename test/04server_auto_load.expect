@@ -1,0 +1,13 @@
+#!/usr/bin/expect
+
+# delete all the games in this directory
+spawn rm -rf games
+expect "$ "
+
+# start the server and set the password
+spawn ../server.py test-04 board.yaml player_1.yaml player_2.yaml
+expect "wait for player commit"
+
+# exit cleanly
+send_user "\n"
+exit 0
