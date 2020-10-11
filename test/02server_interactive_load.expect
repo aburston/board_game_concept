@@ -1,0 +1,31 @@
+#!/usr/bin/expect
+
+# delete all the games in this directory
+spawn rm -rf games
+expect "$ "
+
+# start the server and set the password
+spawn ../server.py test-01
+expect "Password:"
+send "112233\n"
+expect "password:"
+send "112233\n"
+expect "server.py> "
+
+# set the board size
+send "load board board.yaml\n"
+expect "server.py> "
+
+# add player 1
+send "load player player_1.yaml\n"
+expect "server.py> "
+
+# add player 2
+send "load player player_2.yaml\n"
+expect "server.py> "
+
+# commit the changes and run the server
+send "commit\n"
+
+interact
+
