@@ -1,0 +1,65 @@
+#!/usr/bin/expect
+
+# the game test-01 must already be running
+# player-1 (p1) with password 112233 must have been pre-configured
+# player-2 (p2) with password 112233 must have been pre-configured
+
+# login as player 1
+spawn bash -c "../client.py test-01 p1"
+expect "Password:"
+send "112233\n"
+expect "client.py> "
+
+# add player 1 unit type/s
+send "add type Cross X 1 1 10\n"
+expect "client.py> "
+
+# add player 1 units
+send "add unit Cross x1 0 0\n"
+send "add unit Cross x2 0 1\n"
+send "add unit Cross x3 0 2\n"
+send "add unit Cross x4 0 3\n"
+expect "client.py> "
+
+# commit changes
+send "commit\n"
+expect "waiting for turn to complete..."
+
+# shut down the process
+send "\x03"
+expect "$ "
+
+# login as player 2
+spawn bash -c "../client.py test-01 p2"
+expect "Password:"
+send "112233\n"
+expect "client.py> "
+
+# add player 2 unit type/s
+send "add type Naught O 1 1 10\n"
+expect "client.py> "
+
+# add player 1 units
+send "add unit Naught o1 3 0\n"
+send "add unit Naught o2 3 1\n"
+send "add unit Naught o3 3 2\n"
+send "add unit Naught o4 3 3\n"
+expect "client.py> "
+
+# commit changes
+send "commit\n"
+expect "waiting for turn to complete..."
+
+# shut down the process
+send "\x03"
+expect "$ "
+
+# run the server to process the player commits
+spawn bash -c "../server.py test-01"
+expect "Password:"
+send "112233\n"
+expect "wait for player commit"
+
+# exit cleanly
+send_user "\n"
+exit 0

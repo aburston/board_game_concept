@@ -1,7 +1,6 @@
-board: { size_x: 4, size_y: 4}
 email: playerone
 name: p1
-password: '1'
+password: '112233'
 types:
   O: {attack: '1', energy: '10', health: '1', name: O, symbol: O}
 units:
