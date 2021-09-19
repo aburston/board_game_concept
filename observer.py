@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-from BoardGameConcept import UnitType
-from BoardGameConcept import Board
-from BoardGameConcept import Player
-from BoardGameConcept import Empty
 import sys
 import yaml
 import os
 from getpass import getpass
 import time
+
+from BoardGameConcept import UnitType
+from BoardGameConcept import Board
+from BoardGameConcept import Player
+from BoardGameConcept import Empty
 from GameData import GameData
 
 DEBUG = False
