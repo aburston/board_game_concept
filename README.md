@@ -10,4 +10,7 @@ Board game idea based on building and programming your own units
 
  * The server should be running permanently, and automatically commit whenever all the players commit
  * The players should be paused after their commit and wait for the server to commit
- 
+
+# dependencies
+
+ * https://pypi.org/project/board/ 
