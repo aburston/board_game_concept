@@ -8,8 +8,15 @@ Board game idea based on building and programming your own units
  
 # server idea
 
- * The server should be running permanently, and automatically commit whenever all the players commit
- * The players should be paused after their commit and wait for the server to commit
+ * The server runs permanently, and automatically commits whenever all the players commit
+ * The players should are paused after their commit and wait for the server to commit
+ * Currently the server is run and waits for files to be created an written to in a directory on disk by the
+player client.
+
+# web service - [TODO]
+ * combine server, client and observer into different roles in the API based on login
+ * create "flask" based web service that exposes all the cli based commands as a RESTful API
+ * backend would still be files for now, although moving to sqlite may be a thought via a common data class
 
 # dependencies
 
