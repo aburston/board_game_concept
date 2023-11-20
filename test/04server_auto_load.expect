@@ -5,7 +5,7 @@ spawn rm -rf games
 expect "$ "
 
 # start the server and set the password
-spawn ../server.py test-04 board.yaml player_1.yaml player_2.yaml
+spawn ../server.py -g test-04 board.yaml player_1.yaml player_2.yaml
 expect "wait for player commit"
 
 # exit cleanly

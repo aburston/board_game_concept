@@ -5,7 +5,7 @@ spawn rm -rf games
 expect "$ "
 
 # start the server and set the password
-spawn ../server.py test-01
+spawn ../server.py -g test-01
 expect "Password:"
 send "112233\n"
 expect "password:"

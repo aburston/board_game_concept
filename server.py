@@ -5,6 +5,7 @@ import yaml
 import os
 from getpass import getpass
 import time
+import argparse
 
 from BoardGameConcept import UnitType
 from BoardGameConcept import Board
@@ -25,34 +26,73 @@ load player <player_file> - loads the player data, player types and player units
 set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
 set password - reset the game password
 show board - show the board
-show player - show player information 
+show player - show player information
+show types - show player defined unit types
 commit - commit actions taken, this can't be undone
 
 help - display this information
 exit - exit the game client
     """)
 
+#add player <name> <email> - add a new player to the game, only player '0' i.e. the game admin can do this
+def add_player(name, email):
+    pass
+
+#load board <board_file> - loads the board size from a file
+def load_board(board_file):
+    pass
+
+#load player <player_file> - loads the player data, player types and player units from a file
+def load_player(player_file):
+    pass
+
+#set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
+def set_board(size_x, size_y):
+    pass
+
+#set password - reset the game password
+def set_password(password):
+    pass
+
+#show board - show the board
+def show_board(data, player_name):
+    player_obj = data.getPlayerObj(player_name)
+    seen_board = data.getSeenBoard()
+    board = data.getBoard()
+    if seen_board != None:
+        if DEBUG:
+            print("showing seen board")
+        seen_board.print()
+    elif board == None:
+        print("must create board - set size and commit")
+    else:
+        board.print(player_obj)
+
+#show player - show player information
+def show_player(player_id):
+    pass
+
+#show types - show player defined unit types
+def show_types():
+    pass
+
+#commit - commit actions taken, this can't be undone
+def commit():
+    pass
+
 def main(argv):
 
-    # process command line arguments
-    if DEBUG:
-        print(f"len(argv): {len(argv)}")
+    # the server is run as the administrator who is player 0
+    player_name = '0'
 
-    if len(argv) >= 2:
-        player_name = '0'
-        gameno = argv[1]
-    else:
-        usage()
-        sys.exit(1)
-
-    if len(argv) >= 3:
-        board_file = argv[2]
-    if len(argv) >= 4:
-        player_files = argv[3:]
+    # other arguments
+    parser = argparse.ArgumentParser(exit_on_error=True)
+    parser.add_argument('-g', '--game-number', required=True, help='specify the game number')
+    args = parser.parse_args()
 
     # initialize data object
-    data = GameData(gameno, player_name)
-    
+    data = GameData(args.game_number, player_name)
+
     while True:
 
         # load the gamedata
@@ -94,18 +134,10 @@ def main(argv):
                     print("invalid show command")
                     continue
                 elif tokens[1] == 'board':
-                    if seen_board != None:
-                        if DEBUG:
-                            print("showing seen board")
-                        seen_board.print()
-                    elif board == None:
-                        print("must create board - set size and commit")
-                    else:
-                        board.print(player_obj)
-
+                    show_board(data, player_name)
                 elif tokens[1] == 'types':
                     for player in players.keys():
-                        if 'types' in players[player].keys():    
+                        if 'types' in players[player].keys():
                             for types in players[player]['types'].keys():
                                 for unit_name in players[player]['types'].keys():
                                     unit_type = players[player]['types'][unit_name]
@@ -154,7 +186,7 @@ def main(argv):
                         # immediately create the board object
                         board = Board(size_x, size_y)
                         data.setBoard(board)
-                    except:    
+                    except:
                         print("x and y must be a numbers")
                         continue
                     if size_x < 2:
@@ -175,7 +207,7 @@ def main(argv):
                         print("must provide 2 args for player")
                     elif new_game == False:
                         print("can't add players to an existing game")
-                    else:    
+                    else:
                         name = tokens[2]
                         players[name] = {
                             "email": tokens[3],
@@ -256,7 +288,7 @@ def main(argv):
             elif tokens[0] == 'exit':
                 sys.exit(0)
             else:
-                print("invalid command")    
+                print("invalid command")
 
         # do all the commit actions, this will be run when the server is non-interactive
         if new_game:
@@ -274,7 +306,7 @@ def main(argv):
         # log board + units
         board.print()
         print(board.listUnits())
-        
+
 # run main()
 if __name__ == "__main__":
    main(sys.argv)
