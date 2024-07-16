@@ -185,7 +185,7 @@ class UnitType:
     def commit(self):
         if self.state == UnitType.INITIAL:
             # make sure that location on the board is empty
-            assert type(self.board[self.x, self.y]) is Empty, f"can't add {name} to board at ({x},{y})"
+            assert type(self.board[self.x, self.y]) is Empty, f"can't add {self.name} to board at ({self.x},{self.y})"
             # add the unit to the board
             self.board[self.x, self.y] = self
             self.state = UnitType.NOP
@@ -371,7 +371,7 @@ class Board:
             assert True, f"unit {name} does not exist"    
 
     def getUnitById(self, index):
-        assert isinstance(index, int) and index >= 0 and index < len(self.units), f"Unit {name} does not exist"
+        assert isinstance(index, int) and index >= 0 and index < len(self.units), f"Unit {self.name} does not exist"
         return self.units[index]
 
     def getUnitByCoords(self, x, y):
