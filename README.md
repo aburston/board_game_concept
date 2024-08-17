@@ -20,4 +20,7 @@ player client.
 
 # dependencies
 
- * https://pypi.org/project/board/ 
+  * Install pip on ubunut 24.04 using `sudo apt-get install python3-pip`
+  * Install venv on ubuntu 24.04 using `sudo apt-get install python3.12-venv`
+  * Then create the venv in `board_game_concept` using `python3 -m venv .venv`
+  * https://pypi.org/project/board using `pip install board`
