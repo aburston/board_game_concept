@@ -4,7 +4,7 @@
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 # set the python path
-export PYTHONPATH=$SCRIPTPATH/..
+export PYTHONPATH=$PYTHONPATH:$SCRIPTPATH/..
 
 # check expect is installed
 if ! expect -v >/dev/null; then

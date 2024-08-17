@@ -20,7 +20,11 @@ player client.
 
 # dependencies
 
-  * Install pip on ubunut 24.04 using `sudo apt-get install python3-pip`
+  * Install expect on ubuntu 24.04 using `sudo apt-get install expect`
+  * Install dos2unix on ubuntu 24.04 using `sudo apt-get install dos2unix`
+  * Install pip on ubuntu 24.04 using `sudo apt-get install python3-pip`
   * Install venv on ubuntu 24.04 using `sudo apt-get install python3.12-venv`
   * Then create the venv in `board_game_concept` using `python3 -m venv .venv`
+  * Then activate the venv `source .venv/bin/activate`
   * https://pypi.org/project/board using `pip install board`
+  * pyaml `pip install pyaml`
