@@ -28,3 +28,4 @@ player client.
   * Then activate the venv `source .venv/bin/activate`
   * https://pypi.org/project/board using `pip install board`
   * pyaml `pip install pyaml`
+  * To test do: `cd test/; ./test.sh`
