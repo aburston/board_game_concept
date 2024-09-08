@@ -22,12 +22,14 @@ fi
 rm -f test.log
 
 echo "Testing board_game_concept"
+# clear log
+cat /dev/null > test.log
 for i in *.expect; do 
 	echo "Running test $i"
 	echo "****************************************" >> test.log
 	echo "Executing test: $i" >> test.log
 	echo "****************************************" >> test.log
-	expect -c "set timeout 2" -f $i 2>&1 >> test.log
+	expect -c "set timeout 2" -f $i 2>&1 | tee -a test.log
 	echo >> test.log
 done
 dos2unix test.log
