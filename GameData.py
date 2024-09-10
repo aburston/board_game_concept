@@ -5,7 +5,6 @@ from BoardGameConcept import Empty
 import sys
 import yaml
 import os
-from getpass import getpass
 import time
 
 DEBUG = False
@@ -14,9 +13,6 @@ class GameData:
 
     def getUnprocessedMoves(self):
         return self.unprocessed_moves
-
-    def getGamePassword(self):
-        return self.game_password
 
     def getPlayerObj(self, player_name):
         if self.player_name == '0':
@@ -66,19 +62,11 @@ class GameData:
         self.data_path = base_path + "/data"
         self.player_path = base_path + "/players"
 
-        # get the password if this game already exists
-        if os.path.exists(self.data_path + '/data.yaml'):
-            password = getpass()
-        else:
-            password = ""
-
         self.player_name = player_name
-        self.password = password
 
         self.players = {}
         self.seen_board = None
         self.board = None
-        self.game_password = None
         self.unprocessed_moves = False
         # XXX need a new name for this flag
         if player_name == '0':
@@ -103,29 +91,16 @@ class GameData:
                     board_meta_data = yaml.safe_load(f)
                     size_x = board_meta_data['board']['size_x']
                     size_y = board_meta_data['board']['size_y']
-                    self.game_password = board_meta_data['password']
                     self.board = Board(size_x, size_y)
                     if DEBUG:
                         print("Finished loading game meta data")
                 except yaml.YAMLError as e:
                     print(e, file = sys.stderr)
                     sys.exit(1)
-
         except Exception as e:
             if self.player_name == '0':
                 # if this is a new game request the game admin password
                 self.new_game = True
-                print("Set game password")
-                password1 = getpass()
-                password2 = getpass(prompt="Reenter password: ")
-                if password1 == password2:
-                    self.game_password = password1
-                    # set the blank password to the newly acquired password
-                    self.password = password1
-                    self.game_password = password1
-                else:
-                    print("Passwords must match", file = sys.stderr)
-                    sys.exit(1)
             else:
                 print(f"No game with path: {self.data_path}", file = sys.stderr)
                 print(e, file = sys.stderr)
@@ -159,7 +134,6 @@ class GameData:
                         self.players[name] = {
                             'name': name,
                             'email': player_data['email'],
-                            'password': player_data['password'],
                             'obj': obj,
                             'types': {}
                         }
@@ -263,20 +237,11 @@ class GameData:
                                 f"on_board {unit['on_board']}")
                     self.seen_board.commit()    
        
-        # check the player password
         if self.player_name in self.players.keys():
-            # check password    
-            if self.players[self.player_name]['password'] != self.password:
-                print("Incorrect password", file = sys.stderr) 
-                sys.exit(1)
             # set the player_obj to provide context that limits visibility on
             # several show commands, etc
             player_obj = self.players[self.player_name]['obj']
         elif self.player_name == '0':    
-            # check password    
-            if self.game_password != self.password:
-                print("Incorrect password", file = sys.stderr) 
-                sys.exit(1)
             # set the player_obj to provide context that limits visibility on
             # several show commands, etc
             self.player_obj = None
@@ -301,7 +266,6 @@ class GameData:
         player_dict = {
             'name': p,
             'email': self.players[p]['email'],
-            'password': self.players[p]['password'],
             'types': types
         }
         with open(self.player_path + '/'+ p + '.yaml', 'w') as file:
@@ -342,8 +306,7 @@ class GameData:
             'board' : {
                 'size_x' : self.board.size_x,
                 'size_y' : self.board.size_y
-            },
-            'password': self.game_password
+            }
         }
         with open(self.data_path + '/data.yaml', 'w') as file:
             yaml.safe_dump(board_meta_data, file)
@@ -405,7 +368,6 @@ class GameData:
             player_dict = {
                 'name': p,
                 'email': self.players[p]['email'],
-                'password': self.players[p]['password'],
                 'types': types
             }
             with open(self.player_path + '/'+ p + '.yaml', 'w') as file:

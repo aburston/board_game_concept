@@ -23,7 +23,6 @@ add type <name> <symbol> <attack> <health> <energy>
 add unit <type> <name> <x> <y>
 
 ~~set player email <email> - set a player's email address to a different value - only player '0' or the player setting their own email can do this
-~~set player password <password> - set a player's password to a different value - only player '0' or the player setting their own email can do this
 
 show player - show player information 
 show types - show types, this includes any enemy types seen

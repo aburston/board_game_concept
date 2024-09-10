@@ -6,8 +6,6 @@ expect "wait for player commit"
 
 # login as player 1
 spawn bash -c "../client.py test-01 p1"
-expect "Password:"
-send "112233\n"
 expect "client.py> "
 
 # add player 1 unit type/s
@@ -31,8 +29,6 @@ expect "$ "
 
 # login as player 2
 spawn bash -c "../client.py test-01 p2"
-expect "Password:"
-send "112233\n"
 expect "client.py> "
 
 # add player 2 unit type/s
@@ -56,8 +52,6 @@ expect "$ "
 
 # run the server to process the player commits
 spawn bash -c "../server.py -g test-01"
-expect "Password:"
-send "112233\n"
 expect "wait for player commit"
 
 # exit cleanly

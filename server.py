@@ -3,7 +3,6 @@
 import sys
 import yaml
 import os
-from getpass import getpass
 import time
 import argparse
 
@@ -24,7 +23,6 @@ add player <name> <email> - add a new player to the game, only player '0' i.e. t
 load board <board_file> - loads the board size from a file
 load player <player_file> - loads the player data, player types and player units from a file
 set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
-set password - reset the game password
 show board - show the board
 show player - show player information
 show types - show player defined unit types
@@ -48,10 +46,6 @@ def load_player(player_file):
 
 #set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
 def set_board(size_x, size_y):
-    pass
-
-#set password - reset the game password
-def set_password(password):
     pass
 
 #show board - show the board
@@ -105,10 +99,6 @@ def main(argv):
         size_x = data.getSizeX()
         size_y = data.getSizeY()
         new_game = data.getNewGame()
-        game_password = data.getGamePassword()
-
-        # if this is the first time the server is run, you need to reset the initial password from blank here
-        password = data.getGamePassword()
 
         # interactive mode
         while new_game:
@@ -214,13 +204,6 @@ def main(argv):
                             'obj': Player(tokens[2], tokens[3]),
                             'types': {}
                         }
-                        password1 = getpass()
-                        password2 = getpass("Reenter password: ")
-                        if password1 != password2:
-                            print("User passwords must match")
-                            continue
-                        else:
-                            players[name]["password"] = password1
                 else:
                     print("invalid add command")
                     continue
@@ -248,7 +231,6 @@ def main(argv):
                         players[player_data['name']] = {
                             "email": player_data['email'],
                             'obj': Player(player_data['name'], player_data['email']),
-                            'password': player_data['password'],
                             'types': player_data['types'],
                             'units': player_data['units']
                         }

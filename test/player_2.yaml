@@ -1,6 +1,5 @@
 email: playertwo
 name: p2
-password: '112233'
 types:
   O: {attack: '1', energy: '10', health: '1', name: X, symbol: X}
 units:

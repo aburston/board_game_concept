@@ -6,10 +6,6 @@ expect "$ "
 
 # start the server and set the password
 spawn ../server.py -g test-02
-expect "Password:"
-send "112233\n"
-expect "password:"
-send "112233\n"
 expect "server.py> "
 
 # set the board size

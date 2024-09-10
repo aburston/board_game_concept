@@ -6,10 +6,6 @@ expect "$ "
 
 # start the server and set the password
 spawn ../server.py -g test-01
-expect "Password:"
-send "112233\n"
-expect "password:"
-send "112233\n"
 expect "server.py> "
 
 # set the board size
@@ -18,18 +14,10 @@ expect "server.py> "
 
 # add player 1
 send "add player p1 player-1\n"
-expect "Password:"
-send "112233\n"
-expect "password:"
-send "112233\n"
 expect "server.py> "
 
 # add player 2
 send "add player p2 player-2\n"
-expect "Password:"
-send "112233\n"
-expect "password:"
-send "112233\n"
 expect "server.py> "
 
 # commit the changes and run the server
