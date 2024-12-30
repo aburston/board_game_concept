@@ -257,7 +257,7 @@ def main(argv):
                     print("invalid load command")
                     continue
 
-            # commiting the game saves all input data to yaml for the game setup step
+            # committing the game saves all input data to yaml for the game setup step
             elif tokens[0] == 'commit':
                 # do all the commit actions for the first commit
                 if data.serverSave():
@@ -274,7 +274,7 @@ def main(argv):
 
         # do all the commit actions, this will be run when the server is non-interactive
         if new_game:
-            # clear the new game flag, this supresses interactive mode for the server
+            # clear the new game flag, this suppresses interactive mode for the server
             data.setNewGame(False)
         elif data.serverSave():
             print("commit complete")

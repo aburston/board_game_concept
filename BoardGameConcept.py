@@ -29,7 +29,7 @@ class UnitType:
     SOUTH = 3;
     WEST = 4;
 
-    INITIAL = 0; 
+    INITIAL = 0;
     MOVING = 1;
     NOP = 2;
 
@@ -37,7 +37,8 @@ class UnitType:
         self.name = name
         self.type_name = name
 
-        # XXX this is a rather not so nice way of preserving the original type name whe this object is copied and turned into a unit
+        # XXX this is a rather not so nice way of preserving the original type name
+        # when this object is copied and turned into a unit
         assert (len(str(name)) >= 1), "name must be one or more character"
 
         self.symbol = symbol
@@ -97,7 +98,7 @@ class UnitType:
 
     def incomingAttack(self, attack):
         if DEBUG:
-            print(f"incoingAttack: {self.name} being attacked")
+            print(f"incomingAttack: {self.name} being attacked")
         self.health = self.health - attack
         if self.health <= 0:
             self.destroyed = True
@@ -190,7 +191,7 @@ class UnitType:
             self.board[self.x, self.y] = self
             self.state = UnitType.NOP
         elif self.state == UnitType.MOVING:
-            assert not(self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state" 
+            assert not(self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state"
         else:
             if type(self.board[self.x, self.y]) is list:
                 unit_count = len(self.board[self.x, self.y])
@@ -215,7 +216,7 @@ class UnitType:
                                     target.seen_by.append(unit)
                     for unit in self.board[self.x, self.y]:
                         if unit.destroyed:
-                            unit_count = unit_count - 1             
+                            unit_count = unit_count - 1
                 for unit in self.board[self.x, self.y]:
                     if unit.destroyed == False:
                         self.board[self.x, self.y] = unit
@@ -263,12 +264,12 @@ class Board:
         self.units = []
         self.unit_dict = {}
         self.types = {}
-    
+
     def add(self, player, x, y, name, unit_type, health = None, energy = None, destroyed = False, on_board = True):
         if DEBUG:
             print(type(unit_type))
             print(type(player))
-        assert x >= 0 and x < self.size_x and y >= 0 and y < self.size_y, f"cordinates ({x}, {y}) are out of bounds for this board"
+        assert x >= 0 and x < self.size_x and y >= 0 and y < self.size_y, f"coordinates ({x}, {y}) are out of bounds for this board"
         # add the unit to a dictionary of types organised by player
         if not(player.name in self.types.keys()):
             self.types[player.name] = {}
@@ -300,12 +301,12 @@ class Board:
         # add it to the unit dict
         if name in self.unit_dict:
             for instance in self.unit_dict[name]:
-                assert instance.player != player, f"unit {name} already exists for {player.name}"    
+                assert instance.player != player, f"unit {name} already exists for {player.name}"
             self.unit_dict[name].append(unit)
-        else:    
+        else:
             self.unit_dict[name] = [unit]
         # return the unit id
-        return len(self.units)    
+        return len(self.units)
 
     def print(self, player = None):
         def _render_unit(unit):
@@ -315,7 +316,7 @@ class Board:
                 return unit.__str__()
             else:
                 return Empty().__str__()
-        if player == None:    
+        if player == None:
             self.board.draw()
         else:
             self.board.draw(callback=_render_unit)

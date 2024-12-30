@@ -19,8 +19,8 @@ def usage():
 
 def command_help():
     print("""
-reload - reload game data    
-show players - show player information 
+reload - reload game data
+show players - show player information
 show types - show types, this includes any enemy types seen
 show units - show units, this includes any enemy units that the player has seen in the last turn
 show pending - shows the current actions that will be performed on commit
@@ -94,7 +94,7 @@ def main(argv):
 
                 elif tokens[1] == 'types':
                     for player in players.keys():
-                        if 'types' in players[player].keys():    
+                        if 'types' in players[player].keys():
                             for types in players[player]['types'].keys():
                                 for unit_name in players[player]['types'].keys():
                                     unit_type = players[player]['types'][unit_name]

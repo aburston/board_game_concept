@@ -114,10 +114,10 @@ class GameData:
                         if str(f).find(self.player_name + "_units.yaml") != -1:
                             if DEBUG:
                                 print("unprocessed player moves, " +
-                                    "waiting for game to complete the turn", 
+                                    "waiting for game to complete the turn",
                                     file = sys.stderr)
                             self.unprocessed_moves = True
-                        continue   
+                        continue
                     if str(f).find("commit_") != -1:
                         if str(f).find("commit_" + self.player_name) != -1:
                             self.new_game = False
@@ -164,7 +164,7 @@ class GameData:
                         sys.exit(1)
 
         # load the units into the board                
-        if os.path.exists(self.data_path + '/units.yaml'):        
+        if os.path.exists(self.data_path + '/units.yaml'):
             if DEBUG:
                 print("loading units")
             with open(self.data_path + '/units.yaml') as f:
@@ -200,7 +200,7 @@ class GameData:
                     self.board.commit()    
 
         # load the seen units into the visible board
-        if os.path.exists(self.player_path + '/' + self.player_name + '_units_seen.yaml'):        
+        if os.path.exists(self.player_path + '/' + self.player_name + '_units_seen.yaml'):
             self.seen_board = Board(self.board.size_x, self.board.size_y)
             if DEBUG:
                 print("loading units seen")
@@ -235,13 +235,13 @@ class GameData:
                                 f"health {unit['health']}, " +
                                 f"destroyed {unit['destroyed']}, " +
                                 f"on_board {unit['on_board']}")
-                    self.seen_board.commit()    
-       
+                    self.seen_board.commit()
+
         if self.player_name in self.players.keys():
             # set the player_obj to provide context that limits visibility on
             # several show commands, etc
             player_obj = self.players[self.player_name]['obj']
-        elif self.player_name == '0':    
+        elif self.player_name == '0':
             # set the player_obj to provide context that limits visibility on
             # several show commands, etc
             self.player_obj = None
@@ -286,7 +286,7 @@ class GameData:
         if DEBUG:
             print("save complete")
 
-        return(True)    
+        return(True)
 
     def serverSave(self):
 
@@ -347,8 +347,8 @@ class GameData:
                             self.board.add(player, x, y, name, unit_type)
                         if DEBUG:
                             print(f"NOP unit at ({x},{y}) {str(direction)}")
-                    else:    
-                        assert False, (f"Invalid unit state {str(state)} " + 
+                    else:
+                        assert False, (f"Invalid unit state {str(state)} " +
                             "provided by player")
 
         # resolve all moves and end the turn
@@ -398,7 +398,7 @@ class GameData:
                 file.write(player_units)
                 file.close()
 
-        return(True)        
+        return(True)
 
     def waitForPlayerCommit(self):
         print("wait for player commit")
