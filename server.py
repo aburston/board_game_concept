@@ -19,10 +19,10 @@ def usage():
 
 def command_help():
     print("""
-add player <name> <email> - add a new player to the game, only player '0' i.e. the game admin can do this
+add player <number> - add a new player to the game, only player 0 i.e. the game admin can do this
 load board <board_file> - loads the board size from a file
 load player <player_file> - loads the player data, player types and player units from a file
-set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
+set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player 0 can do this before the start of the game
 show board - show the board
 show player - show player information
 show types - show player defined unit types
@@ -32,7 +32,7 @@ help - display this information
 exit - exit the game client
     """)
 
-#add player <name> <email> - add a new player to the game, only player '0' i.e. the game admin can do this
+#add player <name> <email> - add a new player to the game, only player 0 i.e. the game admin can do this
 def add_player(name, email):
     pass
 
@@ -44,13 +44,13 @@ def load_board(board_file):
 def load_player(player_file):
     pass
 
-#set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player '0' can do this before the start of the game
+#set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player 0 can do this before the start of the game
 def set_board(size_x, size_y):
     pass
 
 #show board - show the board
-def show_board(data, player_name):
-    player_obj = data.getPlayerObj(player_name)
+def show_board(data, player_number):
+    player_obj = data.getPlayerObj(player_number)
     seen_board = data.getSeenBoard()
     board = data.getBoard()
     if seen_board != None:
@@ -77,7 +77,7 @@ def commit():
 def main(argv):
 
     # the server is run as the administrator who is player 0
-    player_name = '0'
+    player_number = 0
 
     # other arguments
     parser = argparse.ArgumentParser(exit_on_error=True)
@@ -85,7 +85,7 @@ def main(argv):
     args = parser.parse_args()
 
     # initialize data object
-    data = GameData(args.game_number, player_name)
+    data = GameData(args.game_number, player_number)
 
     while True:
 
@@ -93,7 +93,7 @@ def main(argv):
         data.load()
 
         players = data.getPlayers()
-        player_obj = data.getPlayerObj(player_name)
+        player_obj = data.getPlayerObj(player_number)
         board = data.getBoard()
         seen_board = data.getSeenBoard()
         size_x = data.getSizeX()
@@ -124,7 +124,7 @@ def main(argv):
                     print("invalid show command")
                     continue
                 elif tokens[1] == 'board':
-                    show_board(data, player_name)
+                    show_board(data, player_number)
                 elif tokens[1] == 'types':
                     for player in players.keys():
                         if 'types' in players[player].keys():
@@ -161,8 +161,8 @@ def main(argv):
                     print("invalid set command")
                     continue
                 elif tokens[1] == 'board':
-                    if player_name != '0':
-                        print("only the game admin (player '0') can set board size")
+                    if player_number != 0:
+                        print("only the game admin (player 0) can set board size")
                         continue
                     if board != None:
                         print("can't resize an existing board")
@@ -193,15 +193,14 @@ def main(argv):
                     print("invalid add command")
                     continue
                 elif tokens[1] == 'player':
-                    if len(tokens) != 4:
-                        print("must provide 2 args for player")
+                    if len(tokens) != 3:
+                        print("must provide 1 arg for player")
                     elif new_game == False:
                         print("can't add players to an existing game")
                     else:
-                        name = tokens[2]
-                        players[name] = {
-                            "email": tokens[3],
-                            'obj': Player(tokens[2], tokens[3]),
+                        number = tokens[2]
+                        players[number] = {
+                            'obj': Player(tokens[2]),
                             'types': {}
                         }
                 else:
@@ -228,9 +227,8 @@ def main(argv):
                         except Exception as e:
                             print(f"Error loading player file {tokens[2]} {e}")
                             continue
-                        players[player_data['name']] = {
-                            "email": player_data['email'],
-                            'obj': Player(player_data['name'], player_data['email']),
+                        players[player_data['number']] = {
+                            'obj': Player(player_data['number']),
                             'types': player_data['types'],
                             'units': player_data['units']
                         }

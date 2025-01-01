@@ -37,14 +37,14 @@ def main(argv):
         print(f"len(argv): {len(argv)}")
 
     if len(argv) == 2:
-        player_name = '0'
+        player_number = 0
         gameno = argv[1]
     else:
         usage()
         sys.exit(1)
 
     # initialize the data object
-    data = GameData(gameno, player_name)
+    data = GameData(gameno, player_number)
 
     while True:
 
@@ -52,7 +52,7 @@ def main(argv):
         data.load()
 
         players = data.getPlayers()
-        player_obj = data.getPlayerObj(player_name)
+        player_obj = data.getPlayerObj(player_number)
         board = data.getBoard()
         seen_board = data.getSeenBoard()
         size_x = data.getSizeX()
@@ -102,7 +102,7 @@ def main(argv):
 
                 elif tokens[1] == 'players':
                     for player in players.keys():
-                        print(f"name: {player}, email: {players[player]['email']}")
+                        print(f"number: {player}")
                 elif tokens[1] == 'units':
                     if seen_board != None:
                         if DEBUG:
@@ -120,9 +120,9 @@ def main(argv):
                     print("invalid show command")
                     continue
 
-            # commiting the game saves all input data to yaml for the game setup step
+            # committing the game saves all input data to yaml for the game setup step
             elif tokens[0] == 'reload':
-                # relaod the data
+                # reload the data
                 print("reloading")
                 break
             # leave

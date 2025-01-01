@@ -14,11 +14,11 @@ class GameData:
     def getUnprocessedMoves(self):
         return self.unprocessed_moves
 
-    def getPlayerObj(self, player_name):
-        if self.player_name == '0':
+    def getPlayerObj(self, player_number):
+        if self.player_number == 0:
             player_obj = None
         else:
-            player_obj = self.players[player_name]['obj']
+            player_obj = self.players[player_number]['obj']
         return player_obj
 
     def getPlayers(self):
@@ -51,7 +51,7 @@ class GameData:
         else:
             return 0
 
-    def __init__(self, gameno, player_name):
+    def __init__(self, gameno, player_number):
 
         self.gameno = gameno
 
@@ -62,14 +62,14 @@ class GameData:
         self.data_path = base_path + "/data"
         self.player_path = base_path + "/players"
 
-        self.player_name = player_name
+        self.player_number = player_number
 
         self.players = {}
         self.seen_board = None
         self.board = None
         self.unprocessed_moves = False
         # XXX need a new name for this flag
-        if player_name == '0':
+        if player_number == 0:
             self.new_game = False
         else:
             self.new_game = True
@@ -98,7 +98,7 @@ class GameData:
                     print(e, file = sys.stderr)
                     sys.exit(1)
         except Exception as e:
-            if self.player_name == '0':
+            if self.player_number == 0:
                 # if this is a new game request the game admin password
                 self.new_game = True
             else:
@@ -111,7 +111,7 @@ class GameData:
             for player_file in os.listdir(self.player_path):
                 with open(self.player_path + '/' + player_file) as f:
                     if str(f).find("_units.yaml") != -1:
-                        if str(f).find(self.player_name + "_units.yaml") != -1:
+                        if str(f).find(str(self.player_number) + "_units.yaml") != -1:
                             if DEBUG:
                                 print("unprocessed player moves, " +
                                     "waiting for game to complete the turn",
@@ -119,7 +119,7 @@ class GameData:
                             self.unprocessed_moves = True
                         continue
                     if str(f).find("commit_") != -1:
-                        if str(f).find("commit_" + self.player_name) != -1:
+                        if str(f).find("commit_" + str(self.player_number)) != -1:
                             self.new_game = False
                         continue
                     if str(f).find("_units_seen.yaml") != -1:
@@ -129,11 +129,10 @@ class GameData:
                         player_data = yaml.safe_load(f)
                         if DEBUG:
                             print(player_data)
-                        name = player_data['name']
-                        obj = Player(name, player_data['email'])
-                        self.players[name] = {
-                            'name': name,
-                            'email': player_data['email'],
+                        number = player_data['number']
+                        obj = Player(number)
+                        self.players[number] = {
+                            'number': number,
                             'obj': obj,
                             'types': {}
                         }
@@ -149,15 +148,15 @@ class GameData:
                                     int(unit_type['health']),
                                     int(unit_type['energy']))
                                 unit_type['obj'] = unit_type_obj
-                                self.players[name]['types'][unit_type['name']] = unit_type
+                                self.players[number]['types'][unit_type['name']] = unit_type
 
-                        # if this is player '0' the moves files could exist
-                        moves_file = self.player_path + '/' + player_data['name'] + '_units.yaml'
+                        # if this is player 0 the moves files could exist
+                        moves_file = self.player_path + '/' + str(player_data['number']) + '_units.yaml'
                         if os.path.exists(moves_file):
                             with open(moves_file) as g:
-                                self.players[name]['moves'] = yaml.safe_load(g)
+                                self.players[number]['moves'] = yaml.safe_load(g)
                                 if DEBUG:
-                                    print(self.players[name]['moves'])
+                                    print(self.players[number]['moves'])
 
                     except yaml.YAMLError as exc:
                         print(exc, file = sys.stderr)
@@ -176,11 +175,11 @@ class GameData:
                         name = unit['name']
                         if DEBUG:
                             print(f"processing unit {name}")
-                        p_name = unit['player']
+                        p_number = unit['player']
                         if DEBUG:
-                            print(self.players[p_name]['types'])
-                        player = self.players[p_name]['obj']
-                        unit_type = self.players[p_name]['types'][unit['type']]['obj']
+                            print(self.players[p_number]['types'])
+                        player = self.players[p_number]['obj']
+                        unit_type = self.players[p_number]['types'][unit['type']]['obj']
                         x = unit['x']
                         y = unit['y']
                         self.board.add(
@@ -197,14 +196,14 @@ class GameData:
                             print(f"processing unit {name} setting " +
                                 f"health {unit['health']}, " +
                                 f"destroyed {unit['destroyed']}")
-                    self.board.commit()    
+                    self.board.commit()
 
         # load the seen units into the visible board
-        if os.path.exists(self.player_path + '/' + self.player_name + '_units_seen.yaml'):
+        if os.path.exists(self.player_path + '/' + str(self.player_number) + '_units_seen.yaml'):
             self.seen_board = Board(self.board.size_x, self.board.size_y)
             if DEBUG:
                 print("loading units seen")
-            with open(self.player_path + '/' + self.player_name + '_units_seen.yaml') as f:
+            with open(self.player_path + '/' + str(self.player_number) + '_units_seen.yaml') as f:
                 units = yaml.safe_load(f)['units']
                 if DEBUG:
                     print(units)
@@ -213,11 +212,11 @@ class GameData:
                         name = unit['name']
                         if DEBUG:
                             print(f"processing seen unit {name}")
-                        p_name = unit['player']
+                        p_number = unit['player']
                         if DEBUG:
-                            print(self.players[p_name]['types'])
-                        player = self.players[p_name]['obj']
-                        unit_type = self.players[p_name]['types'][unit['type']]['obj']
+                            print(self.players[p_number]['types'])
+                        player = self.players[p_number]['obj']
+                        unit_type = self.players[p_number]['types'][unit['type']]['obj']
                         x = unit['x']
                         y = unit['y']
                         self.seen_board.add(
@@ -237,16 +236,16 @@ class GameData:
                                 f"on_board {unit['on_board']}")
                     self.seen_board.commit()
 
-        if self.player_name in self.players.keys():
+        if self.player_number in self.players.keys():
             # set the player_obj to provide context that limits visibility on
             # several show commands, etc
-            player_obj = self.players[self.player_name]['obj']
-        elif self.player_name == '0':
+            player_obj = self.players[self.player_number]['obj']
+        elif self.player_number == 0:
             # set the player_obj to provide context that limits visibility on
             # several show commands, etc
             self.player_obj = None
         else:
-           print(f"player {self.player_name} does not exist", file = sys.stderr)
+           print(f"player {self.player_number} does not exist", file = sys.stderr)
            sys.exit(1)
 
 
@@ -258,28 +257,27 @@ class GameData:
             return(False)
 
         # write the logged in player file only
-        p = self.player_name
+        p = self.player_number
         types = self.players[p]['types']
         for type_name in types.keys():
             if 'obj' in types[type_name].keys():
                 del types[type_name]['obj']
         player_dict = {
-            'name': p,
-            'email': self.players[p]['email'],
+            'number': p,
             'types': types
         }
-        with open(self.player_path + '/'+ p + '.yaml', 'w') as file:
+        with open(self.player_path + '/'+ str(p) + '.yaml', 'w') as file:
             yaml.safe_dump(player_dict, file)
-        with open(self.player_path + '/'+ 'commit_' + self.player_name, 'w') as file:
+        with open(self.player_path + '/'+ 'commit_' + str(self.player_number), 'w') as file:
             file.write("")
             file.close()
 
         # this creates files of unit creation or unit moves
-        player_units = self.board.listUnits(self.getPlayerObj(self.player_name))
+        player_units = self.board.listUnits(self.getPlayerObj(self.player_number))
         if DEBUG:
             print("write moves/changes")
             print(player_units)
-        with open(self.player_path + '/'+ p + '_units.yaml', 'w') as file:
+        with open(self.player_path + '/'+ str(p) + '_units.yaml', 'w') as file:
             file.write(player_units)
             file.close()
 
@@ -321,17 +319,17 @@ class GameData:
                     continue
                 for unit in units:
                     name = unit['name']
-                    p_name = unit['player']
+                    p_number = unit['player']
                     x = unit['x']
                     y = unit['y']
                     state = unit['state']
                     direction = unit['direction']
                     if DEBUG:
-                        print(f"processing unit {name} belonging to {p_name} " +
+                        print(f"processing unit {name} belonging to player {p_number} " +
                             f"at ({x},{y}) {str(direction)}")
-                    player = self.players[p_name]['obj']
-                    #print(players[p_name]['types'])
-                    unit_type = self.players[p_name]['types'][unit['type']]['obj']
+                    player = self.players[p_number]['obj']
+                    #print(players[p_number]['types'])
+                    unit_type = self.players[p_number]['types'][unit['type']]['obj']
                     if state == UnitType.INITIAL:
                         self.board.add(player, x, y, name, unit_type)
                     elif state == UnitType.MOVING:
@@ -366,16 +364,15 @@ class GameData:
                 if 'obj' in types[type_name].keys():
                     del types[type_name]['obj']
             player_dict = {
-                'name': p,
-                'email': self.players[p]['email'],
+                'number': p,
                 'types': types
             }
-            with open(self.player_path + '/'+ p + '.yaml', 'w') as file:
+            with open(self.player_path + '/'+ str(p) + '.yaml', 'w') as file:
                 yaml.safe_dump(player_dict, file)
                 file.close()
             if 'units' in self.players[p]:    
                 units = self.players[p]['units']
-                with open(self.player_path + '/'+ p + '_units.yaml', 'w') as file:
+                with open(self.player_path + '/'+ str(p) + '_units.yaml', 'w') as file:
                     yaml.safe_dump({ 'units': units }, file)
                     file.close()
 
@@ -394,7 +391,7 @@ class GameData:
             if DEBUG:
                 print("write moves/changes")
                 print(player_units)
-            with open(self.player_path + '/'+ p + '_units_seen.yaml', 'w') as file:
+            with open(self.player_path + '/'+ str(p) + '_units_seen.yaml', 'w') as file:
                 file.write(player_units)
                 file.close()
 

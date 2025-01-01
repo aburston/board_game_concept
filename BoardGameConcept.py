@@ -10,10 +10,9 @@ class Empty:
         return "#"
 
 class Player:
-    def __init__(self, name, email):
-        self.name = name
-        assert (len(str(name)) >= 1), "name must be one or more character"
-        self.email = email
+    def __init__(self, number):
+        self.number = number
+        assert (len(str(number)) >= 1), "number must be one or more character"
 
 # Unit
 #   name: One or more character
@@ -235,7 +234,7 @@ class UnitType:
 
     def dump(self):
 
-        result = f"player: \"{self.player.name}\", type: \"{self.type_name}\", name: \"{self.name}\", symbol: \"{self.symbol}\", attack: \"{self.attack}\", health: \"{self.health}\", energy: \"{self.energy}\", x: {self.x}, y: {self.y}, state: {self.state}, direction: {self.direction}, destroyed: {self.destroyed}, on_board: {self.on_board}"
+        result = f"player: \"{self.player.number}\", type: \"{self.type_name}\", name: \"{self.name}\", symbol: \"{self.symbol}\", attack: \"{self.attack}\", health: \"{self.health}\", energy: \"{self.energy}\", x: {self.x}, y: {self.y}, state: {self.state}, direction: {self.direction}, destroyed: {self.destroyed}, on_board: {self.on_board}"
         if DEBUG:
             print(result)
         return(result)
@@ -271,9 +270,9 @@ class Board:
             print(type(player))
         assert x >= 0 and x < self.size_x and y >= 0 and y < self.size_y, f"coordinates ({x}, {y}) are out of bounds for this board"
         # add the unit to a dictionary of types organised by player
-        if not(player.name in self.types.keys()):
-            self.types[player.name] = {}
-        self.types[player.name][unit_type.name] = unit_type
+        if not(player.number in self.types.keys()):
+            self.types[player.number] = {}
+        self.types[player.number][unit_type.name] = unit_type
         # make a shallow copy of the unit type to create a new unit instance
         unit = copy.copy(unit_type)
         # reset the unit name
@@ -337,7 +336,7 @@ class Board:
         if player == None:
             units_str = units_str + f"player: {player}\n"
         else:
-            units_str = units_str + f"player: {player.name}\n"
+            units_str = units_str + f"player: {player.number}\n"
 
         # units seen by player
         i = 0
@@ -349,8 +348,8 @@ class Board:
                 tmp_str = tmp_str + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             else:
                 for seen in self.units[i].seen_by:
-                    #print(f"{player.name} {seen.player.name}")
-                    if (player.name == seen.player.name):
+                    #print(f"{player.name} {seen.player.number}")
+                    if (player.number == seen.player.number):
                         tmp_str = tmp_str + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             i = i + 1
         if tmp_str == "":    
@@ -397,8 +396,8 @@ if __name__ == "__main__":
     white = UnitType("White", "W", 1, 2, 100)
     black = UnitType("Black", "B", 1, 1, 100)
 
-    p1 = Player("test1", "")
-    p2 = Player("test2", "")
+    p1 = Player(1)
+    p2 = Player(2)
 
     b = Board(4,4)
     b.print()

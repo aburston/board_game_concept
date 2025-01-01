@@ -15,16 +15,14 @@ from GameData import GameData
 DEBUG = False
 
 def usage():
-   print("client.py <gameno> <player_name>", file = sys.stderr)
+   print("client.py <gameno> <player_number>", file = sys.stderr)
 
 def command_help():
     print("""
 add type <name> <symbol> <attack> <health> <energy>
 add unit <type> <name> <x> <y>
 
-~~set player email <email> - set a player's email address to a different value - only player '0' or the player setting their own email can do this
-
-show player - show player information 
+show player - show player information
 show types - show types, this includes any enemy types seen
 show units - show units, this includes any enemy units that the player has seen in the last turn
 
@@ -45,13 +43,13 @@ def main(argv):
 
     if len(argv) == 3:
         gameno = argv[1]
-        player_name = argv[2]
+        player_number = argv[2]
     else:
         usage()
         sys.exit(1)
 
     # initialize the data object
-    data = GameData(gameno, player_name)
+    data = GameData(gameno, player_number)
 
     # load the data 
     while True:
@@ -61,7 +59,7 @@ def main(argv):
 
         # set the fields used in the parser
         players = data.getPlayers()
-        player_obj = data.getPlayerObj(player_name)
+        player_obj = data.getPlayerObj(player_number)
         board = data.getBoard()
         seen_board = data.getSeenBoard()
         size_x = data.getSizeX()
@@ -120,7 +118,7 @@ def main(argv):
 
                 elif tokens[1] == 'players':
                     for player in players.keys():
-                        print(f"name: {player}, email: {players[player]['email']}")
+                        print(f"number: {player}")
                 elif tokens[1] == 'units':
                     if seen_board != None:
                         if DEBUG:
@@ -153,13 +151,13 @@ def main(argv):
                         health = tokens[5]
                         energy = tokens[6]
                         obj = UnitType(type_name, symbol, int(attack), int(health), int(energy))
-                        players[player_name]['types'][type_name] = {}
-                        players[player_name]['types'][type_name]['name'] = type_name
-                        players[player_name]['types'][type_name]['symbol'] = symbol
-                        players[player_name]['types'][type_name]['attack'] = attack
-                        players[player_name]['types'][type_name]['health'] = health
-                        players[player_name]['types'][type_name]['energy'] = energy
-                        players[player_name]['types'][type_name]['obj'] = obj
+                        players[player_number]['types'][type_name] = {}
+                        players[player_number]['types'][type_name]['name'] = type_name
+                        players[player_number]['types'][type_name]['symbol'] = symbol
+                        players[player_number]['types'][type_name]['attack'] = attack
+                        players[player_number]['types'][type_name]['health'] = health
+                        players[player_number]['types'][type_name]['energy'] = energy
+                        players[player_number]['types'][type_name]['obj'] = obj
                     except Exception as e:    
                         print(f"error adding unit type: {e}")
                         continue
@@ -179,8 +177,8 @@ def main(argv):
                         x = int(tokens[4])
                         y = int(tokens[5])
                         if DEBUG:
-                            print(f"{player_obj}, {x}, {y}, {name}, {players[player_name]['types'][type_name]['obj']}")
-                        board.add(player_obj, x, y, name, players[player_name]['types'][type_name]['obj'])
+                            print(f"{player_obj}, {x}, {y}, {name}, {players[player_number]['types'][type_name]['obj']}")
+                        board.add(player_obj, x, y, name, players[player_number]['types'][type_name]['obj'])
                         board.commit()
                     except Exception as e:
                         print(f"error creating new unit {e}")
@@ -205,7 +203,7 @@ def main(argv):
                     direction = tokens[2]
                     # TODO - make sure you implment rules to make this unique per player
                     unit = board.getUnitByName(unit_name)[0]
-                    if player_name != unit.player.name:
+                    if player_number != unit.player.number:
                         print("can't move units belonging to other players")
                         continue
                     if unit.on_board == False:

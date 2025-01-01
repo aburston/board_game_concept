@@ -13,11 +13,11 @@ send "set board 4 4\n"
 expect "server.py> "
 
 # add player 1
-send "add player p1 player-1\n"
+send "add player 1\n"
 expect "server.py> "
 
 # add player 2
-send "add player p2 player-2\n"
+send "add player 2\n"
 expect "server.py> "
 
 # commit the changes and run the server

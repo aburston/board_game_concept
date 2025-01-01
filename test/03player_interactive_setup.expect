@@ -5,7 +5,7 @@ spawn bash -c "./01server_interactive_start.expect"
 expect "wait for player commit"
 
 # login as player 1
-spawn bash -c "../client.py test-01 p1"
+spawn bash -c "../client.py test-01 1"
 expect "client.py> "
 
 # add player 1 unit type/s
@@ -28,7 +28,7 @@ send "\x03"
 expect "$ "
 
 # login as player 2
-spawn bash -c "../client.py test-01 p2"
+spawn bash -c "../client.py test-01 2"
 expect "client.py> "
 
 # add player 2 unit type/s

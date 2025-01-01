@@ -1,9 +1,8 @@
-email: playertwo
-name: p2
+number: 2
 types:
   O: {attack: '1', energy: '10', health: '1', name: X, symbol: X}
 units:
-  - { id: 0, player: "p2", type: "X", name: "x1", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 0, state: 2, direction: 0, destroyed: False, on_board: True }
-  - { id: 1, player: "p2", type: "X", name: "x2", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 1, state: 2, direction: 0, destroyed: False, on_board: True }
-  - { id: 2, player: "p2", type: "X", name: "x3", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 2, state: 2, direction: 0, destroyed: False, on_board: True }
-  - { id: 3, player: "p2", type: "X", name: "x4", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 3, state: 2, direction: 0, destroyed: False, on_board: True }
+  - { id: 0, player: 2, type: "X", name: "x1", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 0, state: 2, direction: 0, destroyed: False, on_board: True }
+  - { id: 1, player: 2, type: "X", name: "x2", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 1, state: 2, direction: 0, destroyed: False, on_board: True }
+  - { id: 2, player: 2, type: "X", name: "x3", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 2, state: 2, direction: 0, destroyed: False, on_board: True }
+  - { id: 3, player: 2, type: "X", name: "x4", symbol: "X", attack: "1", health: "1", energy: "10", x: 3, y: 3, state: 2, direction: 0, destroyed: False, on_board: True }
