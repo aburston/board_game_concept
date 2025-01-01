@@ -2,15 +2,15 @@
 Board game idea based on building and programming your own units
 
  * Create your own units based on simple rules
- * Program each unit to pay the game
+ * Program each unit to play the game
  * Run the game automatically resolving the winner
  * Win condition = last player with a functional unit
  
 # server idea
 
  * The server runs permanently, and automatically commits whenever all the players commit
- * The players should are paused after their commit and wait for the server to commit
- * Currently the server is run and waits for files to be created an written to in a directory on disk by the
+ * The players should pause after their commit and wait for the server to commit
+ * Currently the server runs and waits for files to be created and written into a directory on disk by the
 player client.
 
 # web service - [TODO]
