@@ -86,7 +86,7 @@ class GameData:
 
         # try reading meta data file for game 
         try:
-            with open(self.data_path + '/data.yaml') as f:
+            with open(self.data_path + '/board.yaml') as f:
                 try:
                     board_meta_data = yaml.safe_load(f)
                     size_x = board_meta_data['board']['size_x']
@@ -306,7 +306,7 @@ class GameData:
                 'size_y' : self.board.size_y
             }
         }
-        with open(self.data_path + '/data.yaml', 'w') as file:
+        with open(self.data_path + '/board.yaml', 'w') as file:
             yaml.safe_dump(board_meta_data, file)
 
         # pick up board files created by players and merge them into the board
