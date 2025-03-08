@@ -29,3 +29,10 @@ player client.
   * https://pypi.org/project/board using `pip install board`
   * pyaml `pip install pyaml`
   * To test do: `cd test/; ./test.sh`
+
+# TODO
+
+  * add and `initgame.py` script to do the initial setup of the game, strip that    out of the server
+  * separate all the DB storage out of the `GameData.py` class and rename,
+    create dedicated objects for data returned from the DB.
+
