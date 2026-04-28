@@ -7,6 +7,7 @@ Tests core module functionality without requiring Unix/Linux tools
 from BoardGameConcept import UnitType, Board, Player, Empty
 from GameData import GameData
 
+
 def test_imports():
     """Test that all modules can be imported"""
     print("\n[TEST 1] Module Imports")
@@ -21,6 +22,7 @@ def test_imports():
     except Exception as e:
         print(f"✗ Import failed: {e}")
         return False
+
 
 def test_player_creation():
     """Test Player instantiation"""
@@ -38,6 +40,7 @@ def test_player_creation():
         print(f"✗ Player creation failed: {e}")
         return False
 
+
 def test_unit_type_creation():
     """Test UnitType instantiation with various stats"""
     print("\n[TEST 3] UnitType Creation")
@@ -45,21 +48,21 @@ def test_unit_type_creation():
         knight = UnitType('Knight', 'K', 7, 8, 50)
         pawn = UnitType('Pawn', 'P', 3, 4, 30)
         rook = UnitType('Rook', 'R', 10, 10, 100)
-        
+
         assert knight.name == 'Knight'
         assert knight.symbol == 'K'
         assert knight.attack == 7
         assert knight.health == 8
         assert knight.energy == 50
-        
+
         assert pawn.name == 'Pawn'
         assert pawn.symbol == 'P'
         assert pawn.attack == 3
-        
+
         assert rook.attack == 10
         assert rook.health == 10
         assert rook.energy == 100
-        
+
         print(f"✓ Created Knight (A=7, H=8, E=50)")
         print(f"✓ Created Pawn (A=3, H=4, E=30)")
         print(f"✓ Created Rook (A=10, H=10, E=100)")
@@ -68,6 +71,7 @@ def test_unit_type_creation():
         print(f"✗ UnitType creation failed: {e}")
         return False
 
+
 def test_unit_type_constraints():
     """Test UnitType validation constraints"""
     print("\n[TEST 4] UnitType Validation Constraints")
@@ -75,7 +79,7 @@ def test_unit_type_constraints():
         # Valid unit
         valid_unit = UnitType('Valid', 'V', 5, 5, 50)
         print(f"✓ Created valid unit with constrained values")
-        
+
         # Test invalid attack (too high)
         try:
             invalid_attack = UnitType('Invalid', 'I', 11, 5, 50)
@@ -83,7 +87,7 @@ def test_unit_type_constraints():
             return False
         except AssertionError:
             print(f"✓ Correctly rejected attack value > 10")
-        
+
         # Test invalid health (too high)
         try:
             invalid_health = UnitType('Invalid', 'I', 5, 11, 50)
@@ -91,7 +95,7 @@ def test_unit_type_constraints():
             return False
         except AssertionError:
             print(f"✓ Correctly rejected health value > 10")
-        
+
         # Test invalid energy (too high)
         try:
             invalid_energy = UnitType('Invalid', 'I', 5, 5, 101)
@@ -99,7 +103,7 @@ def test_unit_type_constraints():
             return False
         except AssertionError:
             print(f"✓ Correctly rejected energy value > 100")
-        
+
         # Test invalid symbol (must be single character)
         try:
             invalid_symbol = UnitType('Invalid', 'AB', 5, 5, 50)
@@ -107,11 +111,12 @@ def test_unit_type_constraints():
             return False
         except AssertionError:
             print(f"✓ Correctly rejected multi-character symbol")
-        
+
         return True
     except Exception as e:
         print(f"✗ Validation test failed: {e}")
         return False
+
 
 def test_board_creation():
     """Test Board instantiation with various sizes"""
@@ -120,14 +125,14 @@ def test_board_creation():
         board_4x4 = Board(4, 4)
         board_8x8 = Board(8, 8)
         board_10x10 = Board(10, 10)
-        
+
         assert board_4x4.size_x == 4
         assert board_4x4.size_y == 4
         assert board_8x8.size_x == 8
         assert board_8x8.size_y == 8
         assert board_10x10.size_x == 10
         assert board_10x10.size_y == 10
-        
+
         print(f"✓ Created Board 4x4")
         print(f"✓ Created Board 8x8")
         print(f"✓ Created Board 10x10")
@@ -135,6 +140,7 @@ def test_board_creation():
     except Exception as e:
         print(f"✗ Board creation failed: {e}")
         return False
+
 
 def test_empty_cell():
     """Test Empty cell representation"""
@@ -148,24 +154,26 @@ def test_empty_cell():
         print(f"✗ Empty cell test failed: {e}")
         return False
 
+
 def test_game_data_initialization():
     """Test GameData initialization"""
     print("\n[TEST 7] GameData Initialization")
     try:
         game_data = GameData('test-game-001', 0)
         print(f"✓ GameData initialized for game 'test-game-001'")
-        
+
         # Test accessing game data methods
         players = game_data.getPlayers()
         print(f"✓ getPlayers() method works")
-        
+
         new_game = game_data.getNewGame()
         print(f"✓ getNewGame() method works")
-        
+
         return True
     except Exception as e:
         print(f"✗ GameData initialization failed: {e}")
         return False
+
 
 def test_unit_type_state_constants():
     """Test UnitType state and direction constants"""
@@ -177,14 +185,23 @@ def test_unit_type_state_constants():
         assert UnitType.SOUTH == 3
         assert UnitType.WEST == 4
         assert UnitType.NONE == 0
-        print(f"✓ Direction constants: NORTH={UnitType.NORTH}, EAST={UnitType.EAST}, SOUTH={UnitType.SOUTH}, WEST={UnitType.WEST}")
-        
+        print(
+            f"✓ Direction constants: NORTH={
+                UnitType.NORTH}, EAST={
+                UnitType.EAST}, SOUTH={
+                UnitType.SOUTH}, WEST={
+                    UnitType.WEST}")
+
         # Test state constants
         assert UnitType.INITIAL == 0
         assert UnitType.MOVING == 1
         assert UnitType.NOP == 2
-        print(f"✓ State constants: INITIAL={UnitType.INITIAL}, MOVING={UnitType.MOVING}, NOP={UnitType.NOP}")
-        
+        print(
+            f"✓ State constants: INITIAL={
+                UnitType.INITIAL}, MOVING={
+                UnitType.MOVING}, NOP={
+                UnitType.NOP}")
+
         return True
     except Exception as e:
         print(f"✗ Constants test failed: {e}")
@@ -261,7 +278,7 @@ def main():
     print("=" * 70)
     print("BOARD GAME CONCEPT - AUTOMATED TEST SUITE")
     print("=" * 70)
-    
+
     results = []
     results.append(("Imports", test_imports()))
     results.append(("Player Creation", test_player_creation()))
@@ -269,32 +286,37 @@ def main():
     results.append(("UnitType Validation", test_unit_type_constraints()))
     results.append(("Board Creation", test_board_creation()))
     results.append(("Empty Cell", test_empty_cell()))
-    results.append(("GameData Initialization", test_game_data_initialization()))
+    results.append(
+        ("GameData Initialization",
+         test_game_data_initialization()))
     results.append(("UnitType Constants", test_unit_type_state_constants()))
-    results.append(("Attack on Occupied Cell", test_attack_on_entering_occupied_cell()))
-    results.append(("Simultaneous Move Combat", test_simultaneous_move_to_same_cell_attack()))
-    
+    results.append(("Attack on Occupied Cell",
+                    test_attack_on_entering_occupied_cell()))
+    results.append(("Simultaneous Move Combat",
+                    test_simultaneous_move_to_same_cell_attack()))
+
     # Print summary
     print("\n" + "=" * 70)
     print("TEST SUMMARY")
     print("=" * 70)
-    
+
     passed = sum(1 for _, result in results if result)
     total = len(results)
-    
+
     for test_name, result in results:
         status = "✓ PASSED" if result else "✗ FAILED"
         print(f"{status:12} {test_name}")
-    
+
     print("=" * 70)
     print(f"Results: {passed}/{total} tests passed")
-    
+
     if passed == total:
         print("\n✓ All tests passed!")
         return 0
     else:
         print(f"\n✗ {total - passed} test(s) failed")
         return 1
+
 
 if __name__ == '__main__':
     exit(main())

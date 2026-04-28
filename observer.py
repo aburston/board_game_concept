@@ -14,8 +14,10 @@ from GameData import GameData
 
 DEBUG = False
 
+
 def usage():
-   print("usage, observer.py <gameno>", file = sys.stderr)
+    print("usage, observer.py <gameno>", file=sys.stderr)
+
 
 def command_help():
     print("""
@@ -30,6 +32,7 @@ show board - shows the map of the board form the player's perspective
 help - display this information
 exit - exit the game client
     """)
+
 
 def main(argv):
 
@@ -76,18 +79,18 @@ def main(argv):
                 continue
 
             # show - board, units
-            elif tokens[0]=='show':
+            elif tokens[0] == 'show':
                 if DEBUG:
                     print(f"len(tokens): {len(tokens)}")
                 if len(tokens) == 1:
                     print("invalid show command")
                     continue
                 elif tokens[1] == 'board':
-                    if seen_board != None:
+                    if seen_board is not None:
                         if DEBUG:
                             print("showing seen board")
                         seen_board.print()
-                    elif board == None:
+                    elif board is None:
                         print("must create board - set size and commit")
                     else:
                         board.print(player_obj)
@@ -96,31 +99,41 @@ def main(argv):
                     for player in players.keys():
                         if 'types' in players[player].keys():
                             for types in players[player]['types'].keys():
-                                for unit_name in players[player]['types'].keys():
+                                for unit_name in players[player]['types'].keys(
+                                ):
                                     unit_type = players[player]['types'][unit_name]
-                                    print(f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
+                                    print(
+                                        f"player: {player}, name: {
+                                            unit_type['name']}, symbol: {
+                                            unit_type['symbol']}, attack: {
+                                            unit_type['attack']}, health: {
+                                            unit_type['health']}, energy: {
+                                            unit_type['energy']}")
 
                 elif tokens[1] == 'players':
                     for player in players.keys():
                         print(f"number: {player}")
                 elif tokens[1] == 'units':
-                    if seen_board != None:
+                    if seen_board is not None:
                         if DEBUG:
                             print("showing seen units")
                         print(seen_board.listUnits())
-                    elif board == None:
+                    elif board is None:
                         print("must create board - set size and commit")
                     else:
                         print(board.listUnits(player_obj))
                 elif tokens[1] == 'pending':
                     for player in players.keys():
                         if 'moves' in players[player].keys():
-                            print(f"player: {player}, moves: {players[player]['moves']}")
+                            print(
+                                f"player: {player}, moves: {
+                                    players[player]['moves']}")
                 else:
                     print("invalid show command")
                     continue
 
-            # committing the game saves all input data to yaml for the game setup step
+            # committing the game saves all input data to yaml for the game
+            # setup step
             elif tokens[0] == 'reload':
                 # reload the data
                 print("reloading")
@@ -131,5 +144,6 @@ def main(argv):
             else:
                 print("invalid command")
 
+
 if __name__ == "__main__":
-   main(sys.argv)
+    main(sys.argv)

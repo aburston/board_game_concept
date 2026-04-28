@@ -33,7 +33,8 @@ class InteractiveProcess:
         )
         self.output = ''
         self._lock = threading.Lock()
-        self._reader_thread = threading.Thread(target=self._read_output, daemon=True)
+        self._reader_thread = threading.Thread(
+            target=self._read_output, daemon=True)
         self._reader_thread.start()
 
     def _read_output(self):
@@ -58,13 +59,14 @@ class InteractiveProcess:
             if self.proc.poll() is not None:
                 with self._lock:
                     raise RuntimeError(
-                        f"Process exited unexpectedly (exit code {self.proc.returncode}). Output:\n{self.output}"
-                    )
+                        f"Process exited unexpectedly (exit code {
+                            self.proc.returncode}). Output:\n{
+                            self.output}")
             time.sleep(0.01)
         with self._lock:
             raise TimeoutError(
-                f"Timed out waiting for '{substring}'. Current output:\n{self.output}"
-            )
+                f"Timed out waiting for '{substring}'. Current output:\n{
+                    self.output}")
 
     def terminate(self):
         if self.proc.poll() is None:
@@ -101,12 +103,14 @@ class TestExpectEquivalent(unittest.TestCase):
         remove_games_dir()
 
     def start_server(self, args):
-        proc = InteractiveProcess([str(ROOT / 'server.py')] + args, cwd=TEST_DIR)
+        proc = InteractiveProcess(
+            [str(ROOT / 'server.py')] + args, cwd=TEST_DIR)
         self.processes.append(proc)
         return proc
 
     def start_client(self, game_number, player_number):
-        proc = InteractiveProcess([str(ROOT / 'client.py'), game_number, str(player_number)], cwd=TEST_DIR)
+        proc = InteractiveProcess(
+            [str(ROOT / 'client.py'), game_number, str(player_number)], cwd=TEST_DIR)
         self.processes.append(proc)
         return proc
 
@@ -187,7 +191,8 @@ class TestExpectEquivalent(unittest.TestCase):
         client2.send_line('commit')
         client2.read_until('waiting for turn to complete...')
 
-        # The server should transition out of wait-for-commit after both players have committed.
+        # The server should transition out of wait-for-commit after both
+        # players have committed.
         server.read_until('board: {', timeout=30)
         self.assertIn('board:', server.output)
 

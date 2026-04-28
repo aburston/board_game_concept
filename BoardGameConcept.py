@@ -5,9 +5,11 @@ import copy
 
 DEBUG = False
 
+
 class Empty:
     def __str__(self):
         return "#"
+
 
 class Player:
     def __init__(self, number):
@@ -20,17 +22,19 @@ class Player:
 #   speed: speed 10 is to move once per clock tick and 1 is to move once every 10th tick
 #   attack: damage per attack
 #   health: total amount of health
+
+
 class UnitType:
 
-    NONE = 0;
-    NORTH = 1;
-    EAST = 2;
-    SOUTH = 3;
-    WEST = 4;
+    NONE = 0
+    NORTH = 1
+    EAST = 2
+    SOUTH = 3
+    WEST = 4
 
-    INITIAL = 0;
-    MOVING = 1;
-    NOP = 2;
+    INITIAL = 0
+    MOVING = 1
+    NOP = 2
 
     def __init__(self, name, symbol, attack, health, energy):
         self.name = name
@@ -45,15 +49,18 @@ class UnitType:
 
         self.attack = attack
         assert isinstance(attack, int), "attack must be an integer value"
-        assert ((attack >= 1) and (attack <= 10)), "attack must be a value from 1 to 10"
+        assert ((attack >= 1) and (attack <= 10)
+                ), "attack must be a value from 1 to 10"
 
         self.health = health
         assert isinstance(health, int), "health must be an integer value"
-        assert ((health >= 1) and (health <= 10)), "health must be a value from 1 to 10"
+        assert ((health >= 1) and (health <= 10)
+                ), "health must be a value from 1 to 10"
 
         self.energy = energy
         assert isinstance(energy, int), "health must be an integer value"
-        assert ((energy >= 1) and (energy <= 100)), "energy must be a value from 1 to 100"
+        assert ((energy >= 1) and (energy <= 100)
+                ), "energy must be a value from 1 to 100"
 
         self.state = UnitType.INITIAL
         self.direction = UnitType.NONE
@@ -107,7 +114,9 @@ class UnitType:
     def preCommit(self):
         if self.state == UnitType.INITIAL:
             # make sure that location on the board is empty
-            assert type(self.board[self.x, self.y]) is Empty, f"can't add {self.name} to board at ({self.x},{self.y})"
+            assert type(self.board[self.x, self.y]) is Empty, (
+                f"can't add {self.name} to board at ({self.x},{self.y})"
+            )
         elif self.state == UnitType.MOVING:
             dest_x = self.x
             dest_y = self.y
@@ -150,9 +159,11 @@ class UnitType:
                     self.energy = energy
                     self.board[self.x, self.y] = Empty()
                     self.setCoords(dest_x, dest_y)
-                    self.board[self.x, self.y] = [ self ]
+                    self.board[self.x, self.y] = [self]
                     if DEBUG:
-                        print(f"preCommit: {self.name} move to [{self.x},{self.y}]")
+                        print(
+                            f"preCommit: {self.name} move to [{self.x},{self.y}]"
+                        )
             elif type(self.board[dest_x, dest_y]) is list:
                 energy = self.energy - (self.energy // 100 + 1)
                 # only act if the unit has enough energy
@@ -162,16 +173,20 @@ class UnitType:
                     self.setCoords(dest_x, dest_y)
                     self.board[dest_x, dest_y].append(self)
                     if DEBUG:
-                        print(f"preCommit: {self.name} added to list in [{self.x},{self.y}]")
+                        print(
+                            f"preCommit: {self.name} added to list in [{self.x},{self.y}]"
+                        )
             elif type(self.board[dest_x, dest_y]) is UnitType:
                 # moving into an occupied square starts a combat exchange
                 if self.energy >= self.attack:
                     target = self.board[dest_x, dest_y]
                     self.board[self.x, self.y] = Empty()
                     self.setCoords(dest_x, dest_y)
-                    self.board[dest_x, dest_y] = [ target, self ]
+                    self.board[dest_x, dest_y] = [target, self]
                     if DEBUG:
-                        print(f"preCommit: {self.name} engages {target.name} in [{self.x},{self.y}]")
+                        print(
+                            f"preCommit: {self.name} engages {target.name} in [{self.x},{self.y}]"
+                        )
             self.state = UnitType.NOP
             return
         else:
@@ -182,30 +197,45 @@ class UnitType:
     def commit(self):
         if self.state == UnitType.INITIAL:
             # make sure that location on the board is empty
-            assert type(self.board[self.x, self.y]) is Empty, f"can't add {self.name} to board at ({self.x},{self.y})"
+            assert type(self.board[self.x, self.y]) is Empty, (
+                f"can't add {self.name} to board at ({self.x},{self.y})"
+            )
             # add the unit to the board
             self.board[self.x, self.y] = self
             self.state = UnitType.NOP
         elif self.state == UnitType.MOVING:
-            assert not(self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state"
+            assert not (
+                self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state"
         else:
             if type(self.board[self.x, self.y]) is list:
                 unit_count = len(self.board[self.x, self.y])
                 if DEBUG:
-                    print(f"{self.name} commit process list in [{self.x},{self.y}]: {self.board[self.x, self.y]}")
+                    print(
+                        f"{self.name} commit process list in [{self.x},{self.y}]: "
+                        f"{self.board[self.x, self.y]}"
+                    )
                 while unit_count > 1:
                     if DEBUG:
-                        print(f"{self.name} commit process {unit_count} units in square [{self.x},{self.y}]")
+                        print(
+                            f"{self.name} commit process {unit_count} units in square "
+                            f"[{self.x},{self.y}]"
+                        )
                     for unit in self.board[self.x, self.y]:
                         for target in self.board[self.x, self.y]:
                             if DEBUG:
-                                print(f"{self.name} commit processing {unit.name} -> {target.name}")
-                            if not(unit is target):
+                                print(
+                                    f"{self.name} commit processing "
+                                    f"{unit.name} -> {target.name}"
+                                )
+                            if not (unit is target):
                                 energy = unit.energy - unit.attack
                                 if energy >= 0:
                                     unit.energy = energy
                                     if DEBUG:
-                                        print(f"commit: {target.name} attack {unit.name}")
+                                        print(
+                                            f"commit: {target.name} attack "
+                                            f"{unit.name}"
+                                        )
                                     target.incomingAttack(unit.attack)
                                     # populuate seen_by
                                     unit.seen_by.append(target)
@@ -214,10 +244,12 @@ class UnitType:
                         if unit.destroyed:
                             unit_count = unit_count - 1
                 for unit in self.board[self.x, self.y]:
-                    if unit.destroyed == False:
+                    if not unit.destroyed:
                         self.board[self.x, self.y] = unit
                         if DEBUG:
-                            print(f"{self.name} commit add unit to square [{self.x},{self.y}]")
+                            print(
+                                f"{self.name} commit add unit to square [{self.x},{self.y}]"
+                            )
                     else:
                         unit.on_board = False
                 if unit_count == 0:
@@ -227,30 +259,47 @@ class UnitType:
                     self.board[self.x, self.y] = Empty()
                     self.on_board = False
                     if DEBUG:
-                        print(f"{self.name} commit removing unit from square [{self.x},{self.y}]")
+                        print(
+                            f"{self.name} commit removing unit from square [{self.x},{self.y}]")
 
     def dump(self):
-
-        result = f"player: \"{self.player.number}\", type: \"{self.type_name}\", name: \"{self.name}\", symbol: \"{self.symbol}\", attack: \"{self.attack}\", health: \"{self.health}\", energy: \"{self.energy}\", x: {self.x}, y: {self.y}, state: {self.state}, direction: {self.direction}, destroyed: {self.destroyed}, on_board: {self.on_board}"
+        result = (
+            f'player: "{self.player.number}", '
+            f'type: "{self.type_name}", '
+            f'name: "{self.name}", '
+            f'symbol: "{self.symbol}", '
+            f'attack: "{self.attack}", '
+            f'health: "{self.health}", '
+            f'energy: "{self.energy}", '
+            f'x: {self.x}, y: {self.y}, '
+            f'state: {self.state}, direction: {self.direction}, '
+            f'destroyed: {self.destroyed}, on_board: {self.on_board}'
+        )
         if DEBUG:
             print(result)
-        return(result)
+        return result
 
     def __str__(self):
-        return(self.symbol)
+        return (self.symbol)
 
 # Board
 #   size_x: board size x
 #   size_y: board size y
+
+
 class Board:
     def __init__(self, size_x, size_y):
         self.size_x = size_x
         assert isinstance(size_x, int), "size_x must be an integer value"
-        assert ((size_x >= 2) and (size_x <= 10)), "size_x must be a value from 2 to 10"
+        assert (
+            (size_x >= 2) and (size_x <= 10)
+        ), "size_x must be a value from 2 to 10"
 
         self.size_y = size_y
         assert isinstance(size_y, int), "size_x must be an integer value"
-        assert ((size_y >= 2) and (size_y <= 10)), "size_y must be a value from 2 to 10"
+        assert (
+            (size_y >= 2) and (size_y <= 10)
+        ), "size_y must be a value from 2 to 10"
 
         self.board = board.Board((size_x, size_y))
         for x in range(0, size_x):
@@ -261,13 +310,25 @@ class Board:
         self.unit_dict = {}
         self.types = {}
 
-    def add(self, player, x, y, name, unit_type, health = None, energy = None, destroyed = False, on_board = True):
+    def add(
+            self,
+            player,
+            x,
+            y,
+            name,
+            unit_type,
+            health=None,
+            energy=None,
+            destroyed=False,
+            on_board=True):
         if DEBUG:
             print(type(unit_type))
             print(type(player))
-        assert x >= 0 and x < self.size_x and y >= 0 and y < self.size_y, f"coordinates ({x}, {y}) are out of bounds for this board"
+        assert (
+            x >= 0 and x < self.size_x and y >= 0 and y < self.size_y
+        ), f"coordinates ({x}, {y}) are out of bounds for this board"
         # add the unit to a dictionary of types organised by player
-        if not(player.number in self.types.keys()):
+        if not (player.number in self.types.keys()):
             self.types[player.number] = {}
         self.types[player.number][unit_type.name] = unit_type
         # make a shallow copy of the unit type to create a new unit instance
@@ -281,30 +342,33 @@ class Board:
         # keep a copy of the unit coords in the unit
         unit.setCoords(x, y)
         # if the health value has been supplied, set it
-        if health != None:
+        if health is not None:
             unit.setHealth(health)
         # if the energy value has been supplied, set it
-        if energy != None:
+        if energy is not None:
             unit.setEnergy(energy)
-        # mark the unit destroyed if required (needed when loading ongoing games)
+        # mark the unit destroyed if required (needed when loading ongoing
+        # games)
         unit.setDestroyed(destroyed)
         # mark the unit on the board (needed when loading ongoing games)
         unit.setOnBoard(on_board)
         # set the coordinates
-        unit.setCoords(x,y)
+        unit.setCoords(x, y)
         # add it to the unit list
         self.units.append(unit)
         # add it to the unit dict
         if name in self.unit_dict:
             for instance in self.unit_dict[name]:
-                assert instance.player != player, f"unit {name} already exists for {player.name}"
+                assert (
+                    instance.player != player
+                ), f"unit {name} already exists for {player.name}"
             self.unit_dict[name].append(unit)
         else:
             self.unit_dict[name] = [unit]
         # return the unit id
         return len(self.units)
 
-    def print(self, player = None):
+    def print(self, player=None):
         def _render_unit(unit):
             if type(unit) is Empty:
                 return unit.__str__()
@@ -312,25 +376,30 @@ class Board:
                 return unit.__str__()
             else:
                 return Empty().__str__()
-        if player == None:
+        if player is None:
             self.board.draw()
         else:
             self.board.draw(callback=_render_unit)
 
-    def listTypes(self, player = None):
+    def listTypes(self, player=None):
         typesStr = "types:\n"
         for player in self.types.keys():
             for type_name in self.types[player].keys():
                 unit_type = self.types[player][type_name]
-                typesStr = typesStr + f"- { player: \"{player}\", name: \"{unit_type.name}\", symbol: \"{unit_type.symbol}\", attack: \"{unit_type.attack}\", health: \"{unit_type.health}\", energy: \"{unit_type.energy}\" }\n"
-        return typesStr    
+                typesStr = typesStr + (
+                    f'- {{ player: "{player}", name: "{unit_type.name}", '
+                    f'symbol: "{unit_type.symbol}", attack: "{unit_type.attack}", '
+                    f'health: "{unit_type.health}", energy: "{unit_type.energy}" }}\n'
+                )
+        return typesStr
 
-    def listUnits(self, player = None):
+    def listUnits(self, player=None):
         # board information
-        units_str = "board: {" + f" size_x: {self.size_x}, size_y: {self.size_y}" + "}\n"
-        
+        units_str = "board: {" + \
+            f" size_x: {self.size_x}, size_y: {self.size_y}" + "}\n"
+
         # player making request
-        if player == None:
+        if player is None:
             units_str = units_str + f"player: {player}\n"
         else:
             units_str = units_str + f"player: {player.number}\n"
@@ -339,25 +408,28 @@ class Board:
         i = 0
         tmp_str = ""
         while i < len(self.units):
-            if player == None:
-                tmp_str = tmp_str + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
+            if player is None:
+                tmp_str = tmp_str + \
+                    "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             elif self.units[i].player == player:
-                tmp_str = tmp_str + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
+                tmp_str = tmp_str + \
+                    "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             else:
                 for seen in self.units[i].seen_by:
-                    #print(f"{player.name} {seen.player.number}")
+                    # print(f"{player.name} {seen.player.number}")
                     if (player.number == seen.player.number):
-                        tmp_str = tmp_str + "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
+                        tmp_str = tmp_str + \
+                            "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             i = i + 1
-        if tmp_str == "":    
+        if tmp_str == "":
             units_str = units_str + "units: None\n"
         else:
             units_str = units_str + "units:\n" + tmp_str
 
-        return units_str    
+        return units_str
 
-    def getUnitByName(self, name, player = None):
-        if player == None:
+    def getUnitByName(self, name, player=None):
+        if player is None:
             assert name in self.unit_dict, f"Unit {name} does not exist"
             return self.unit_dict[name]
         else:
@@ -365,10 +437,14 @@ class Board:
             for unit in self.unit_dict[name]:
                 if unit.player == player:
                     return [unit]
-            assert True, f"unit {name} does not exist"    
+            assert True, f"unit {name} does not exist"
 
     def getUnitById(self, index):
-        assert isinstance(index, int) and index >= 0 and index < len(self.units), f"Unit {index} does not exist"
+        assert (
+            isinstance(index, int)
+            and index >= 0
+            and index < len(self.units)
+        ), f"Unit {index} does not exist"
         return self.units[index]
 
     def getUnitByCoords(self, x, y):
@@ -388,6 +464,7 @@ class Board:
             if unit.on_board:
                 unit.commit()
 
+
 # class testing
 if __name__ == "__main__":
     white = UnitType("White", "W", 1, 2, 100)
@@ -396,10 +473,10 @@ if __name__ == "__main__":
     p1 = Player(1)
     p2 = Player(2)
 
-    b = Board(4,4)
+    b = Board(4, 4)
     b.print()
 
-    w1_id= b.add(p1, 0, 0, "w1", white)
+    w1_id = b.add(p1, 0, 0, "w1", white)
     b.add(p1, 0, 1, "w2", white)
     b.add(p1, 0, 2, "w3", white)
     b.add(p1, 0, 3, "w4", white)

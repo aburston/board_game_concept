@@ -9,6 +9,7 @@ import time
 
 DEBUG = False
 
+
 class GameData:
 
     def getUnprocessedMoves(self):
@@ -40,13 +41,13 @@ class GameData:
         return self.seen_board
 
     def getSizeX(self):
-        if self.board != None:
+        if self.board is not None:
             return self.board.size_x
         else:
             return 0
 
     def getSizeY(self):
-        if self.board != None:
+        if self.board is not None:
             return self.board.size_y
         else:
             return 0
@@ -79,12 +80,12 @@ class GameData:
         # reset unprocessed_moves
         self.unprocessed_moves = False
 
-        # if the game directory does not exist, create it    
-        if not(os.path.exists(self.data_path)):
+        # if the game directory does not exist, create it
+        if not (os.path.exists(self.data_path)):
             os.makedirs(self.data_path)
             os.makedirs(self.player_path)
 
-        # try reading meta data file for game 
+        # try reading meta data file for game
         try:
             with open(self.data_path + '/board.yaml') as f:
                 try:
@@ -95,15 +96,15 @@ class GameData:
                     if DEBUG:
                         print("Finished loading game meta data")
                 except yaml.YAMLError as e:
-                    print(e, file = sys.stderr)
+                    print(e, file=sys.stderr)
                     sys.exit(1)
         except Exception as e:
             if self.player_number == 0:
                 # if this is a new game request the game admin password
                 self.new_game = True
             else:
-                print(f"No game with path: {self.data_path}", file = sys.stderr)
-                print(e, file = sys.stderr)
+                print(f"No game with path: {self.data_path}", file=sys.stderr)
+                print(e, file=sys.stderr)
                 sys.exit(1)
 
         # load all the player files
@@ -111,15 +112,17 @@ class GameData:
             for player_file in os.listdir(self.player_path):
                 with open(self.player_path + '/' + player_file) as f:
                     if str(f).find("_units.yaml") != -1:
-                        if str(f).find(str(self.player_number) + "_units.yaml") != -1:
+                        if str(f).find(str(self.player_number) +
+                                       "_units.yaml") != -1:
                             if DEBUG:
                                 print("unprocessed player moves, " +
-                                    "waiting for game to complete the turn",
-                                    file = sys.stderr)
+                                      "waiting for game to complete the turn",
+                                      file=sys.stderr)
                             self.unprocessed_moves = True
                         continue
                     if str(f).find("commit_") != -1:
-                        if str(f).find("commit_" + str(self.player_number)) != -1:
+                        if str(f).find("commit_" +
+                                       str(self.player_number)) != -1:
                             self.new_game = False
                         continue
                     if str(f).find("_units_seen.yaml") != -1:
@@ -148,21 +151,24 @@ class GameData:
                                     int(unit_type['health']),
                                     int(unit_type['energy']))
                                 unit_type['obj'] = unit_type_obj
-                                self.players[number]['types'][unit_type['name']] = unit_type
+                                self.players[number]['types'][unit_type['name']
+                                                              ] = unit_type
 
                         # if this is player 0 the moves files could exist
-                        moves_file = self.player_path + '/' + str(player_data['number']) + '_units.yaml'
+                        moves_file = self.player_path + '/' + \
+                            str(player_data['number']) + '_units.yaml'
                         if os.path.exists(moves_file):
                             with open(moves_file) as g:
-                                self.players[number]['moves'] = yaml.safe_load(g)
+                                self.players[number]['moves'] = yaml.safe_load(
+                                    g)
                                 if DEBUG:
                                     print(self.players[number]['moves'])
 
                     except yaml.YAMLError as exc:
-                        print(exc, file = sys.stderr)
+                        print(exc, file=sys.stderr)
                         sys.exit(1)
 
-        # load the units into the board                
+        # load the units into the board
         if os.path.exists(self.data_path + '/units.yaml'):
             if DEBUG:
                 print("loading units")
@@ -194,12 +200,13 @@ class GameData:
                         )
                         if DEBUG:
                             print(f"processing unit {name} setting " +
-                                f"health {unit['health']}, " +
-                                f"destroyed {unit['destroyed']}")
+                                  f"health {unit['health']}, " +
+                                  f"destroyed {unit['destroyed']}")
                     self.board.commit()
 
         # load the seen units into the visible board
-        if os.path.exists(self.player_path + '/' + str(self.player_number) + '_units_seen.yaml'):
+        if os.path.exists(self.player_path + '/' +
+                          str(self.player_number) + '_units_seen.yaml'):
             self.seen_board = Board(self.board.size_x, self.board.size_y)
             if DEBUG:
                 print("loading units seen")
@@ -220,7 +227,7 @@ class GameData:
                         x = unit['x']
                         y = unit['y']
                         self.seen_board.add(
-                            player, 
+                            player,
                             x, y,
                             name,
                             unit_type,
@@ -231,9 +238,9 @@ class GameData:
                         )
                         if DEBUG:
                             print(f"processing unit {name} setting " +
-                                f"health {unit['health']}, " +
-                                f"destroyed {unit['destroyed']}, " +
-                                f"on_board {unit['on_board']}")
+                                  f"health {unit['health']}, " +
+                                  f"destroyed {unit['destroyed']}, " +
+                                  f"on_board {unit['on_board']}")
                     self.seen_board.commit()
 
         if self.player_number in self.players.keys():
@@ -245,16 +252,18 @@ class GameData:
             # several show commands, etc
             self.player_obj = None
         else:
-           print(f"player {self.player_number} does not exist", file = sys.stderr)
-           sys.exit(1)
-
+            print(
+                f"player {
+                    self.player_number} does not exist",
+                file=sys.stderr)
+            sys.exit(1)
 
     def clientSave(self):
         # check the board size has been set
         if self.board.size_x <= 1 or self.board.size_y <= 1:
             print(f"the board size is too small ({self.board.size_x}, " +
-            f"{self.board.size_y})")
-            return(False)
+                  f"{self.board.size_y})")
+            return (False)
 
         # write the logged in player file only
         p = self.player_number
@@ -266,44 +275,48 @@ class GameData:
             'number': p,
             'types': types
         }
-        with open(self.player_path + '/'+ str(p) + '.yaml', 'w') as file:
+        with open(self.player_path + '/' + str(p) + '.yaml', 'w') as file:
             yaml.safe_dump(player_dict, file)
-        with open(self.player_path + '/'+ 'commit_' + str(self.player_number), 'w') as file:
+        with open(self.player_path + '/' + 'commit_' + str(self.player_number), 'w') as file:
             file.write("")
             file.close()
 
         # this creates files of unit creation or unit moves
-        player_units = self.board.listUnits(self.getPlayerObj(self.player_number))
+        player_units = self.board.listUnits(
+            self.getPlayerObj(self.player_number))
         if DEBUG:
             print("write moves/changes")
             print(player_units)
-        with open(self.player_path + '/'+ str(p) + '_units.yaml', 'w') as file:
+        with open(self.player_path + '/' + str(p) + '_units.yaml', 'w') as file:
             file.write(player_units)
             file.close()
 
         if DEBUG:
             print("save complete")
 
-        return(True)
+        return (True)
 
     def serverSave(self):
 
         # check the board size has been set
         if self.getSizeX() <= 1 or self.getSizeY() <= 1:
-            print(f"the board size is too small ({self.getSizeX()}, {self.getSizeY()})")
-            return(False)
+            print(
+                f"the board size is too small ({
+                    self.getSizeX()}, {
+                    self.getSizeY()})")
+            return (False)
 
         # add required directories
-        if not(os.path.exists(self.data_path)):
+        if not (os.path.exists(self.data_path)):
             os.makedirs(self.data_path)
-        if not(os.path.exists(self.player_path)):
+        if not (os.path.exists(self.player_path)):
             os.makedirs(self.player_path)
 
         # write the data file for the board
         board_meta_data = {
-            'board' : {
-                'size_x' : self.board.size_x,
-                'size_y' : self.board.size_y
+            'board': {
+                'size_x': self.board.size_x,
+                'size_y': self.board.size_y
             }
         }
         with open(self.data_path + '/board.yaml', 'w') as file:
@@ -313,9 +326,11 @@ class GameData:
         for player in self.players.keys():
             if 'moves' in self.players[player].keys():
                 if DEBUG:
-                    print(f"player: {player}, moves: {self.players[player]['moves']}")
+                    print(
+                        f"player: {player}, moves: {
+                            self.players[player]['moves']}")
                 units = self.players[player]['moves']['units']
-                if units == None:
+                if units is None:
                     continue
                 for unit in units:
                     name = unit['name']
@@ -326,9 +341,9 @@ class GameData:
                     direction = unit['direction']
                     if DEBUG:
                         print(f"processing unit {name} belonging to player {p_number} " +
-                            f"at ({x},{y}) {str(direction)}")
+                              f"at ({x},{y}) {str(direction)}")
                     player = self.players[p_number]['obj']
-                    #print(players[p_number]['types'])
+                    # print(players[p_number]['types'])
                     unit_type = self.players[p_number]['types'][unit['type']]['obj']
                     if state == UnitType.INITIAL:
                         self.board.add(player, x, y, name, unit_type)
@@ -347,13 +362,13 @@ class GameData:
                             print(f"NOP unit at ({x},{y}) {str(direction)}")
                     else:
                         assert False, (f"Invalid unit state {str(state)} " +
-                            "provided by player")
+                                       "provided by player")
 
         # resolve all moves and end the turn
         self.board.commit()
         for player_file in os.listdir(self.player_path):
-                if player_file.find("_units.yaml") != -1:
-                    os.remove(self.player_path + "/" + player_file)
+            if player_file.find("_units.yaml") != -1:
+                os.remove(self.player_path + "/" + player_file)
 
         # both admin and players can update the player info
         # write the individual player files
@@ -367,13 +382,13 @@ class GameData:
                 'number': p,
                 'types': types
             }
-            with open(self.player_path + '/'+ str(p) + '.yaml', 'w') as file:
+            with open(self.player_path + '/' + str(p) + '.yaml', 'w') as file:
                 yaml.safe_dump(player_dict, file)
                 file.close()
-            if 'units' in self.players[p]:    
+            if 'units' in self.players[p]:
                 units = self.players[p]['units']
-                with open(self.player_path + '/'+ str(p) + '_units.yaml', 'w') as file:
-                    yaml.safe_dump({ 'units': units }, file)
+                with open(self.player_path + '/' + str(p) + '_units.yaml', 'w') as file:
+                    yaml.safe_dump({'units': units}, file)
                     file.close()
 
         # write out the units information to disk
@@ -391,11 +406,11 @@ class GameData:
             if DEBUG:
                 print("write moves/changes")
                 print(player_units)
-            with open(self.player_path + '/'+ str(p) + '_units_seen.yaml', 'w') as file:
+            with open(self.player_path + '/' + str(p) + '_units_seen.yaml', 'w') as file:
                 file.write(player_units)
                 file.close()
 
-        return(True)
+        return (True)
 
     def waitForPlayerCommit(self):
         print("wait for player commit")
@@ -407,4 +422,3 @@ class GameData:
             if commit_count == len(self.players.keys()):
                 break
             time.sleep(10)
-
