@@ -164,17 +164,14 @@ class UnitType:
                     if DEBUG:
                         print(f"preCommit: {self.name} added to list in [{self.x},{self.y}]")
             elif type(self.board[dest_x, dest_y]) is UnitType:
-                energy = self.energy - self.attack
-                # only act if the unit has enough energy
-                if energy >= 0:
-                    self.energy = energy
+                # moving into an occupied square starts a combat exchange
+                if self.energy >= self.attack:
                     target = self.board[dest_x, dest_y]
-                    target.incomingAttack(self.attack)
-                    # populuate seen_by
-                    self.seen_by.append(target)
-                    target.seen_by.append(self)
+                    self.board[self.x, self.y] = Empty()
+                    self.setCoords(dest_x, dest_y)
+                    self.board[dest_x, dest_y] = [ target, self ]
                     if DEBUG:
-                        print(f"preCommit: {self.name} attack {target.name}")
+                        print(f"preCommit: {self.name} engages {target.name} in [{self.x},{self.y}]")
             self.state = UnitType.NOP
             return
         else:

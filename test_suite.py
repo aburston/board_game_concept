@@ -190,6 +190,73 @@ def test_unit_type_state_constants():
         print(f"✗ Constants test failed: {e}")
         return False
 
+
+def test_attack_on_entering_occupied_cell():
+    """Test attack resolution when a unit moves into an occupied cell"""
+    print("\n[TEST 9] Attack on Occupied Cell")
+    try:
+        attacker_type = UnitType('Attacker', 'A', 3, 5, 100)
+        defender_type = UnitType('Defender', 'D', 2, 4, 100)
+
+        p1 = Player(1)
+        p2 = Player(2)
+        board = Board(4, 2)
+        board.add(p1, 0, 0, 'a1', attacker_type)
+        board.add(p2, 1, 0, 'd1', defender_type)
+        board.commit()
+
+        attacker = board.getUnitByName('a1')[0]
+        defender = board.getUnitByName('d1')[0]
+        attacker.move(UnitType.EAST)
+        board.commit()
+
+        square = board.getUnitByCoords(1, 0)
+        assert type(square) is UnitType
+        assert square.name == 'a1'
+        assert square.player == p1
+        assert square.health == 3
+        assert defender.destroyed is True
+
+        print('✓ Combat on entry resolved and victor occupies the target cell')
+        return True
+    except Exception as e:
+        print(f"✗ Attack on occupied cell failed: {e}")
+        return False
+
+
+def test_simultaneous_move_to_same_cell_attack():
+    """Test attack resolution when two units move into the same empty cell"""
+    print("\n[TEST 10] Simultaneous Move into Same Cell")
+    try:
+        red_type = UnitType('Red', 'R', 4, 7, 100)
+        blue_type = UnitType('Blue', 'B', 3, 5, 100)
+
+        p1 = Player(1)
+        p2 = Player(2)
+        board = Board(4, 3)
+        board.add(p1, 0, 1, 'r1', red_type)
+        board.add(p2, 2, 1, 'b1', blue_type)
+        board.commit()
+
+        red = board.getUnitByName('r1')[0]
+        blue = board.getUnitByName('b1')[0]
+        red.move(UnitType.EAST)
+        blue.move(UnitType.WEST)
+        board.commit()
+
+        square = board.getUnitByCoords(1, 1)
+        assert type(square) is UnitType
+        assert square.name == 'r1'
+        assert square.player == p1
+        assert blue.destroyed is True
+
+        print('✓ Simultaneous move combat resolved with a single victor occupying the cell')
+        return True
+    except Exception as e:
+        print(f"✗ Simultaneous move attack failed: {e}")
+        return False
+
+
 def main():
     print("=" * 70)
     print("BOARD GAME CONCEPT - AUTOMATED TEST SUITE")
@@ -204,6 +271,8 @@ def main():
     results.append(("Empty Cell", test_empty_cell()))
     results.append(("GameData Initialization", test_game_data_initialization()))
     results.append(("UnitType Constants", test_unit_type_state_constants()))
+    results.append(("Attack on Occupied Cell", test_attack_on_entering_occupied_cell()))
+    results.append(("Simultaneous Move Combat", test_simultaneous_move_to_same_cell_attack()))
     
     # Print summary
     print("\n" + "=" * 70)
