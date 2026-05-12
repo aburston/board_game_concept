@@ -191,21 +191,14 @@ def test_unit_type_state_constants():
         assert UnitType.WEST == 4
         assert UnitType.NONE == 0
         print(
-            f"✓ Direction constants: NORTH={
-                UnitType.NORTH}, EAST={
-                UnitType.EAST}, SOUTH={
-                UnitType.SOUTH}, WEST={
-                    UnitType.WEST}")
+            f"✓ Direction constants: NORTH={UnitType.NORTH}, EAST={UnitType.EAST}, SOUTH={UnitType.SOUTH}, WEST={UnitType.WEST}")
 
         # Test state constants
         assert UnitType.INITIAL == 0
         assert UnitType.MOVING == 1
         assert UnitType.NOP == 2
         print(
-            f"✓ State constants: INITIAL={
-                UnitType.INITIAL}, MOVING={
-                UnitType.MOVING}, NOP={
-                UnitType.NOP}")
+            f"✓ State constants: INITIAL={UnitType.INITIAL}, MOVING={UnitType.MOVING}, NOP={UnitType.NOP}")
 
         return True
     except Exception as e:

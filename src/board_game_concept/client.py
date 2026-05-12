@@ -119,12 +119,7 @@ def main(argv):
                                 ):
                                     unit_type = players[player]['types'][unit_name]
                                     print(
-                                        f"player: {player}, name: {
-                                            unit_type['name']}, symbol: {
-                                            unit_type['symbol']}, attack: {
-                                            unit_type['attack']}, health: {
-                                            unit_type['health']}, energy: {
-                                            unit_type['energy']}")
+                                        f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
 
                 elif tokens[1] == 'players':
                     for player in players.keys():
@@ -188,9 +183,7 @@ def main(argv):
                         x = int(tokens[4])
                         y = int(tokens[5])
                         if DEBUG:
-                            print(
-                                f"{player_obj}, {x}, {y}, {name}, {
-                                    players[player_number]['types'][type_name]['obj']}")
+                            print(f"{player_obj}, {x}, {y}, {name}, {players[player_number]['types'][type_name]['obj']}")
                         board.add(
                             player_obj,
                             x,

@@ -103,12 +103,7 @@ def main(argv):
                                 ):
                                     unit_type = players[player]['types'][unit_name]
                                     print(
-                                        f"player: {player}, name: {
-                                            unit_type['name']}, symbol: {
-                                            unit_type['symbol']}, attack: {
-                                            unit_type['attack']}, health: {
-                                            unit_type['health']}, energy: {
-                                            unit_type['energy']}")
+                                        f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
 
                 elif tokens[1] == 'players':
                     for player in players.keys():
@@ -125,9 +120,7 @@ def main(argv):
                 elif tokens[1] == 'pending':
                     for player in players.keys():
                         if 'moves' in players[player].keys():
-                            print(
-                                f"player: {player}, moves: {
-                                    players[player]['moves']}")
+                            print(f"player: {player}, moves: {players[player]['moves']}")
                 else:
                     print("invalid show command")
                     continue

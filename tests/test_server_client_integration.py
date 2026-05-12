@@ -62,14 +62,11 @@ class InteractiveProcess:
             if self.proc.poll() is not None:
                 with self._lock:
                     raise RuntimeError(
-                        f"Process exited unexpectedly (exit code {
-                            self.proc.returncode}). Output:\n{
-                            self.output}")
+                        f"Process exited unexpectedly (exit code {self.proc.returncode}). Output:\n{self.output}")
             time.sleep(0.01)
         with self._lock:
             raise TimeoutError(
-                f"Timed out waiting for '{substring}'. Current output:\n{
-                    self.output}")
+                f"Timed out waiting for '{substring}'. Current output:\n{self.output}")
 
     def terminate(self):
         if self.proc.poll() is None:
