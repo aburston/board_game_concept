@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
-import board
+try:
+    import board
+except ImportError:
+    board = None
+
 import copy
 
 DEBUG = False
@@ -9,6 +13,26 @@ DEBUG = False
 class Empty:
     def __str__(self):
         return "#"
+
+
+class _FallbackBoard:
+    def __init__(self, dimensions):
+        self.size_x, self.size_y = dimensions
+        self._cells = {}
+
+    def __getitem__(self, key):
+        return self._cells.get(key, Empty())
+
+    def __setitem__(self, key, value):
+        self._cells[key] = value
+
+    def draw(self, callback=None):
+        for y in range(self.size_y):
+            row = ''
+            for x in range(self.size_x):
+                unit = self[x, y]
+                row += callback(unit) if callback is not None else str(unit)
+            print(row)
 
 
 class Player:
@@ -301,7 +325,7 @@ class Board:
             (size_y >= 2) and (size_y <= 10)
         ), "size_y must be a value from 2 to 10"
 
-        self.board = board.Board((size_x, size_y))
+        self.board = board.Board((size_x, size_y)) if board is not None else _FallbackBoard((size_x, size_y))
         for x in range(0, size_x):
             for y in range(0, size_y):
                 self.board[x, y] = Empty()

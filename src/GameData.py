@@ -1,7 +1,4 @@
-from BoardGameConcept import UnitType
-from BoardGameConcept import Board
-from BoardGameConcept import Player
-from BoardGameConcept import Empty
+from .BoardGameConcept import UnitType, Board, Player, Empty
 import sys
 import yaml
 import os
@@ -252,10 +249,7 @@ class GameData:
             # several show commands, etc
             self.player_obj = None
         else:
-            print(
-                f"player {
-                    self.player_number} does not exist",
-                file=sys.stderr)
+            print(f"player {self.player_number} does not exist", file=sys.stderr)
             sys.exit(1)
 
     def clientSave(self):
@@ -300,10 +294,7 @@ class GameData:
 
         # check the board size has been set
         if self.getSizeX() <= 1 or self.getSizeY() <= 1:
-            print(
-                f"the board size is too small ({
-                    self.getSizeX()}, {
-                    self.getSizeY()})")
+            print(f"the board size is too small ({self.getSizeX()}, {self.getSizeY()})")
             return (False)
 
         # add required directories
@@ -326,9 +317,7 @@ class GameData:
         for player in self.players.keys():
             if 'moves' in self.players[player].keys():
                 if DEBUG:
-                    print(
-                        f"player: {player}, moves: {
-                            self.players[player]['moves']}")
+                    print(f"player: {player}, moves: {self.players[player]['moves']}")
                 units = self.players[player]['moves']['units']
                 if units is None:
                     continue

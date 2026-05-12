@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "board_game_concept"
+version = "0.1.0"
+description = "Board game concept library and server/client framework."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["PyYAML"]
+authors = [{name = "Rose Burston"}]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["board_game_concept"]
+
+[project.scripts]
+board-game-client = "board_game_concept.client:main"
+board-game-server = "board_game_concept.server:main"
+board-game-observer = "board_game_concept.observer:main"
+board-game-test-suite = "board_game_concept.test_suite:main"
+
+[project.optional-dependencies]
+dev = ["pylint>=4.0.0,<5.0.0"]

@@ -28,11 +28,28 @@ player client.
   * Then activate the venv `source .venv/bin/activate`
   * https://pypi.org/project/board using `pip install board`
   * pyaml `pip install pyaml`
-  * To test do: `cd test/; ./test.sh`
+  * pytest using `pip install pytest`
+  * To run the new pytest suite from the project root:
+    * `pytest`
+    * `pytest tests/test_basic.py`
+  * Core library source is now located in `src/`.
+  * Legacy expect-based shell tests and `test/test.sh` have been removed; the Python tests now cover the same behavior.
+
+# Console scripts
+
+After installation, the package exposes these console scripts:
+
+  * `board-game-client` → runs the player client interface
+  * `board-game-server` → runs the game server/admin interface
+  * `board-game-observer` → runs the neutral game observer
+  * `board-game-test-suite` → runs the standalone package test harness
 
 # TODO
 
   * add and `initgame.py` script to do the initial setup of the game, strip that    out of the server
   * separate all the DB storage out of the `GameData.py` class and rename,
     create dedicated objects for data returned from the DB.
+
+  
+Note to check my clone... -R
 

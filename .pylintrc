@@ -1,0 +1,21 @@
+[MASTER]
+ignore=board_game_concept.egg-info
+init-hook='import sys; sys.path.append("src")'
+jobs=1
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    duplicate-code,
+    global-statement
+
+[FORMAT]
+max-line-length=100
+indent-string='    '
+
+[REPORTS]
+output-format=colorized
+score=no

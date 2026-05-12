@@ -9,7 +9,7 @@ from pathlib import Path
 from subprocess import Popen, PIPE
 
 ROOT = Path(__file__).resolve().parent.parent
-TEST_DIR = ROOT / 'test'
+TEST_DIR = ROOT / 'tests'
 GAMES_DIR = TEST_DIR / 'games'
 PYTHON = sys.executable
 
@@ -39,7 +39,10 @@ class InteractiveProcess:
 
     def _read_output(self):
         while True:
-            char = self.proc.stdout.read(1)
+            try:
+                char = self.proc.stdout.read(1)
+            except KeyboardInterrupt:
+                break
             if char == '':
                 break
             with self._lock:
@@ -59,14 +62,11 @@ class InteractiveProcess:
             if self.proc.poll() is not None:
                 with self._lock:
                     raise RuntimeError(
-                        f"Process exited unexpectedly (exit code {
-                            self.proc.returncode}). Output:\n{
-                            self.output}")
+                        f"Process exited unexpectedly (exit code {self.proc.returncode}). Output:\n{self.output}")
             time.sleep(0.01)
         with self._lock:
             raise TimeoutError(
-                f"Timed out waiting for '{substring}'. Current output:\n{
-                    self.output}")
+                f"Timed out waiting for '{substring}'. Current output:\n{self.output}")
 
     def terminate(self):
         if self.proc.poll() is None:
@@ -92,7 +92,7 @@ class InteractiveProcess:
             return substring in self.output
 
 
-class TestExpectEquivalent(unittest.TestCase):
+class TestServerClientIntegration(unittest.TestCase):
     def setUp(self):
         remove_games_dir()
         self.processes = []
@@ -104,13 +104,15 @@ class TestExpectEquivalent(unittest.TestCase):
 
     def start_server(self, args):
         proc = InteractiveProcess(
-            [str(ROOT / 'server.py')] + args, cwd=TEST_DIR)
+            [str(ROOT / 'src' / 'board_game_concept' / 'server.py')] + args,
+            cwd=TEST_DIR)
         self.processes.append(proc)
         return proc
 
     def start_client(self, game_number, player_number):
         proc = InteractiveProcess(
-            [str(ROOT / 'client.py'), game_number, str(player_number)], cwd=TEST_DIR)
+            [str(ROOT / 'src' / 'board_game_concept' / 'client.py'), game_number, str(player_number)],
+            cwd=TEST_DIR)
         self.processes.append(proc)
         return proc
 
