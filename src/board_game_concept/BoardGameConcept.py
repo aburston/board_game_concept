@@ -92,8 +92,8 @@ class UnitType:
         self.on_board = False
         self.seen_by = []
         self.player = None
-        # cell this unit vacated during the current turn's preCommit phase, so
-        # that an undecided contest can send it back where it came from
+        # square this unit vacated during the current turn's preCommit phase,
+        # so that an undecided contest can send it back where it came from
         self.moved_from = None
 
     def move(self, direction):
@@ -140,8 +140,8 @@ class UnitType:
     # trying to move simultaneously into the same square
     def preCommit(self):
         if self.state == UnitType.INITIAL:
-            # deployment is resolved in commit(), and may land on an occupied
-            # cell, which starts a contest rather than failing
+            # deployment is resolved in commit(). Board.add has already refused
+            # any deployment onto an occupied square
             pass
         elif self.state == UnitType.MOVING:
             dest_x = self.x
@@ -221,8 +221,8 @@ class UnitType:
         else:
             pass
 
-    # takes this unit out of the cell it holds, leaving behind anything else
-    # sharing that cell
+    # takes this unit out of the square it holds, leaving behind anything else
+    # sharing that square
     def vacate(self):
         cell = self.board[self.x, self.y]
         if not (type(cell) is list):
@@ -236,17 +236,18 @@ class UnitType:
         else:
             self.board[self.x, self.y] = remaining
 
-    # sends this unit back to the cell it left this turn, so that an undecided
-    # contest leaves the board as it was. Returns True if the unit retreated.
+    # sends this unit back to the square it left this turn, so that an
+    # undecided contest leaves the board as it was. Returns True if the unit
+    # retreated.
     def retreat(self):
         if self.moved_from is None:
-            # nothing to go back to: the unit was already holding this cell, or
-            # was deployed onto it this turn
+            # nothing to go back to: the unit was already holding this square,
+            # or was deployed onto it this turn
             return False
         from_x, from_y = self.moved_from
         if not (type(self.board[from_x, from_y]) is Empty):
-            # something else took the cell during this turn, so there is nowhere
-            # to go back to and the unit stays where it is
+            # something else took the square during this turn, so there is
+            # nowhere to go back to and the unit stays where it is
             return False
         self.setCoords(from_x, from_y)
         self.board[from_x, from_y] = self
@@ -255,10 +256,10 @@ class UnitType:
             print(f"retreat: {self.name} falls back to [{from_x},{from_y}]")
         return True
 
-    # resolves the contest in the cell this unit occupies. Attack rounds repeat
+    # resolves the contest in the square this unit occupies. Attack rounds repeat
     # until at most one contestant is left standing or a round lands no attacks,
     # which is what stops a contest nobody can win from spinning forever. There
-    # is friendly fire: a contestant attacks every other unit in the cell,
+    # is friendly fire: a contestant attacks every other unit in the square,
     # whoever owns it. Running out of energy never destroys a unit, it only
     # makes it inert.
     def resolveContest(self):
@@ -310,8 +311,8 @@ class UnitType:
 
         survivors = [unit for unit in contestants if not unit.destroyed]
         if len(survivors) > 1:
-            # nobody won the cell, so everyone who moved in goes back where it
-            # came from and the cell is left as it was
+            # nobody won the square, so everyone who moved in goes back where
+            # it came from and the square is left as it was
             survivors = [unit for unit in survivors if not unit.retreat()]
 
         if not survivors:
@@ -323,15 +324,17 @@ class UnitType:
                     f"{self.name} commit add unit to square [{cell_x},{cell_y}]"
                 )
         else:
-            # no survivor could fall back, so they share the cell
+            # no survivor could fall back, so they share the square
             self.board[cell_x, cell_y] = survivors
 
     # processes all arrays created in the precommit phase, by calculating attacks and marking units DESTROYED
     # removes all DESTROYED units from the board
     def commit(self):
         if self.state == UnitType.INITIAL:
-            # add the unit to the board, joining whatever already holds the
-            # cell rather than requiring it to be empty
+            # add the unit to the board. Board.add refuses to deploy onto an
+            # occupied square, so the square is empty unless a saved game is
+            # being restored, in which case the units it held are put back as
+            # they were
             occupant = self.board[self.x, self.y]
             if type(occupant) is Empty:
                 self.board[self.x, self.y] = self
@@ -340,10 +343,6 @@ class UnitType:
             else:
                 self.board[self.x, self.y] = [occupant, self]
             self.state = UnitType.NOP
-            if type(self.board[self.x, self.y]) is list:
-                # deploying onto an occupied cell contests it, and the contest
-                # is settled in this same turn
-                self.resolveContest()
         elif self.state == UnitType.MOVING:
             assert not (
                 self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state"
@@ -416,13 +415,20 @@ class Board:
             health=None,
             energy=None,
             destroyed=False,
-            on_board=True):
+            on_board=True,
+            restoring=False):
         if DEBUG:
             print(type(unit_type))
             print(type(player))
         assert (
             x >= 0 and x < self.size_x and y >= 0 and y < self.size_y
         ), f"coordinates ({x}, {y}) are out of bounds for this board"
+        # a brand new unit may only be deployed onto a free square. Restoring a
+        # saved game is not a deployment: it puts back whatever was there,
+        # including a square more than one unit ended up sharing
+        assert (
+            restoring or self.squareIsFree(x, y)
+        ), f"can't deploy {name} at ({x}, {y}), that square is occupied"
         # add the unit to a dictionary of types organised by player
         if not (player.number in self.types.keys()):
             self.types[player.number] = {}
@@ -469,8 +475,8 @@ class Board:
             if type(cell) is Empty:
                 return cell.__str__()
             if type(cell) is list:
-                # a contested cell holds several units: show one of them rather
-                # than the repr of the list
+                # a contested square holds several units: show one of them
+                # rather than the repr of the list
                 occupants = [unit for unit in cell if not unit.destroyed]
                 if not occupants:
                     return Empty().__str__()
@@ -554,8 +560,23 @@ class Board:
     def getUnitByCoords(self, x, y):
         return self.board[x, y]
 
+    # a square is free when nothing holds it and nothing is waiting to deploy
+    # onto it, which matters because deployments are only placed on the board
+    # when the turn is resolved
+    def squareIsFree(self, x, y):
+        if not (type(self.board[x, y]) is Empty):
+            return False
+        for unit in self.units:
+            if (unit.state == UnitType.INITIAL
+                    and unit.on_board
+                    and not unit.destroyed
+                    and unit.x == x
+                    and unit.y == y):
+                return False
+        return True
+
     def commit(self):
-        # clear the seen_by list and the previous turn's origin cell in each
+        # clear the seen_by list and the previous turn's origin square in each
         # unit on the board
         for unit in self.units:
             if unit.on_board:

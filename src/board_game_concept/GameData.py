@@ -193,7 +193,8 @@ class GameData:
                             int(unit['health']),
                             int(unit['energy']),
                             bool(unit['destroyed']),
-                            bool(unit['on_board'])
+                            bool(unit['on_board']),
+                            restoring=True
                         )
                         if DEBUG:
                             print(f"processing unit {name} setting " +
@@ -231,7 +232,8 @@ class GameData:
                             int(unit['health']),
                             int(unit['energy']),
                             bool(unit['destroyed']),
-                            bool(unit['on_board'])
+                            bool(unit['on_board']),
+                            restoring=True
                         )
                         if DEBUG:
                             print(f"processing unit {name} setting " +
@@ -335,7 +337,13 @@ class GameData:
                     # print(players[p_number]['types'])
                     unit_type = self.players[p_number]['types'][unit['type']]['obj']
                     if state == UnitType.INITIAL:
-                        self.board.add(player, x, y, name, unit_type)
+                        try:
+                            self.board.add(player, x, y, name, unit_type)
+                        except AssertionError as e:
+                            # reject the order and resolve the turn without it
+                            print(f"rejected deployment from player "
+                                  f"{p_number}: {e}", file=sys.stderr)
+                            continue
                     elif state == UnitType.MOVING:
                         # resolve the order against the unit it names, not
                         # against the cell, which may hold several units
@@ -348,7 +356,17 @@ class GameData:
                         if DEBUG:
                             print(type(actual_unit))
                         if isinstance(actual_unit, Empty):
-                            self.board.add(player, x, y, name, unit_type)
+                            # a unit the player has created but the server has
+                            # not placed yet: this is its deployment
+                            try:
+                                self.board.add(
+                                    player, x, y, name, unit_type)
+                            except AssertionError as e:
+                                # reject the order and resolve the turn
+                                # without it
+                                print(f"rejected deployment from player "
+                                      f"{p_number}: {e}", file=sys.stderr)
+                                continue
                         if DEBUG:
                             print(f"NOP unit at ({x},{y}) {str(direction)}")
                     else:

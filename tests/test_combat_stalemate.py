@@ -1,11 +1,14 @@
-"""Regression coverage for the contested-cell rules.
+"""Regression coverage for the contested-square rules.
 
 Combat ends when a round lands no attacks, running out of energy makes a unit
 inert rather than dead, and a contest nobody wins sends every unit that moved in
-back to the cell it came from.
+back to the square it came from. Deploying a brand new unit onto a square that
+is already taken is illegal and refused.
 """
 
 import threading
+
+import pytest
 
 from board_game_concept import UnitType, Board, Player, Empty
 
@@ -231,8 +234,10 @@ def test_friendly_fire_units_do_not_spare_their_own_side():
     assert o2.destroyed is True
 
 
-def test_deploying_onto_an_occupied_cell_is_a_contest_not_a_crash():
-    # issue #1: this used to raise an uncaught AssertionError
+def test_deploying_onto_an_occupied_cell_is_rejected():
+    # issue #1: this used to raise an uncaught AssertionError out of the turn
+    # and kill the session. Deployment onto a taken square is illegal, and is
+    # now refused when the unit is created
     holder_type = UnitType('Holder', 'H', 2, 3, 100)
     comer_type = UnitType('Comer', 'C', 5, 6, 100)
 
@@ -242,59 +247,120 @@ def test_deploying_onto_an_occupied_cell_is_a_contest_not_a_crash():
     board.add(p1, 1, 1, 'h1', holder_type)
     board.commit()
 
-    board.add(p2, 1, 1, 'c1', comer_type)
-    board.commit()
+    with pytest.raises(AssertionError, match='occupied'):
+        board.add(p2, 1, 1, 'c1', comer_type)
 
+    # the square is untouched and the turn still resolves
     holder = board.getUnitByName('h1')[0]
-    comer = board.getUnitByName('c1')[0]
-    assert holder.destroyed is True
-    assert board.getUnitByCoords(1, 1) is comer
+    board.commit()
+    assert board.getUnitByCoords(1, 1) is holder
+    assert holder.destroyed is False
 
 
-def test_deploying_two_of_your_own_units_onto_one_cell_is_handled():
-    # issue #1 as reported: a player adding two units at the same location
+def test_deploying_two_of_your_own_units_onto_one_square_is_rejected():
+    # issue #1 as reported: a player adding two units at the same location.
+    # The second is refused before the turn is resolved, while both are still
+    # waiting to be placed
     naught_type = UnitType('Naught', 'O', 1, 1, 10)
 
     p1 = Player(1)
     board = Board(4, 4)
     board.add(p1, 0, 0, 'o1', naught_type)
-    board.add(p1, 0, 0, 'o2', naught_type)
+
+    with pytest.raises(AssertionError, match='occupied'):
+        board.add(p1, 0, 0, 'o2', naught_type)
+
     board.commit()
-
-    o1 = board.getUnitByName('o1')[0]
-    o2 = board.getUnitByName('o2')[0]
-    # they contest the cell rather than crashing the turn
-    assert o1.destroyed or o2.destroyed
-    board.print()
-    board.print(p1)
+    assert board.getUnitByCoords(0, 0) is board.getUnitByName('o1')[0]
 
 
-def _inert_stack_board():
-    """A cell two spent units share because neither can attack or fall back."""
-    inert_type = UnitType('Inert', 'I', 9, 5, 1)
-    other_type = UnitType('Other', 'T', 9, 5, 1)
+def test_deployment_is_rejected_out_of_bounds_before_the_occupancy_check():
+    naught_type = UnitType('Naught', 'O', 1, 1, 10)
+    p1 = Player(1)
+    board = Board(4, 4)
+
+    with pytest.raises(AssertionError, match='out of bounds'):
+        board.add(p1, 4, 0, 'o1', naught_type)
+
+
+def test_a_rejected_deployment_leaves_no_trace_of_the_unit():
+    naught_type = UnitType('Naught', 'O', 1, 1, 10)
+    p1 = Player(1)
+    board = Board(4, 4)
+    board.add(p1, 0, 0, 'o1', naught_type)
+
+    with pytest.raises(AssertionError):
+        board.add(p1, 0, 0, 'o2', naught_type)
+
+    # the refused unit was never registered
+    assert len(board.units) == 1
+    assert 'o2' not in board.unit_dict
+
+
+def test_moving_onto_an_occupied_square_is_still_allowed():
+    # a move into a held square is combat, not a deployment, and stays legal
+    attacker_type = UnitType('Attacker', 'A', 3, 5, 100)
+    defender_type = UnitType('Defender', 'D', 2, 4, 100)
 
     p1 = Player(1)
     p2 = Player(2)
-    board = Board(4, 3)
-    board.add(p1, 1, 1, 'i1', inert_type)
-    board.add(p2, 1, 1, 't1', other_type)
+    board = Board(4, 2)
+    board.add(p1, 0, 0, 'a1', attacker_type)
+    board.add(p2, 1, 0, 'd1', defender_type)
+    board.commit()
+
+    attacker = board.getUnitByName('a1')[0]
+    defender = board.getUnitByName('d1')[0]
+    attacker.move(UnitType.EAST)
+    board.commit()
+
+    assert defender.destroyed is True
+    assert board.getUnitByCoords(1, 0) is attacker
+
+
+def _shared_cell_board():
+    """A square two units share because neither of them can fall back.
+
+    Deployment onto a taken square is illegal, so the only way a square ends up
+    holding more than one unit is a contest nobody won in which every survivor
+    found the square it came from already taken.
+    """
+    aye_type = UnitType('Aye', 'A', 5, 5, 2)
+    bee_type = UnitType('Bee', 'B', 5, 5, 1)
+    cee_type = UnitType('Cee', 'C', 5, 5, 1)
+    dee_type = UnitType('Dee', 'D', 5, 5, 1)
+
+    p1 = Player(1)
+    p2 = Player(2)
+    board = Board(3, 3)
+    board.add(p1, 0, 0, 'a1', aye_type)
+    board.add(p2, 2, 0, 'b1', bee_type)
+    board.add(p1, 0, 1, 'c1', cee_type)
+    board.add(p2, 2, 1, 'd1', dee_type)
+    board.commit()
+
+    # a1 and b1 contest the middle of the top row and neither can attack, while
+    # c1 and d1 move into the squares they came from
+    board.getUnitByName('a1')[0].move(UnitType.EAST)
+    board.getUnitByName('b1')[0].move(UnitType.WEST)
+    board.getUnitByName('c1')[0].move(UnitType.NORTH)
+    board.getUnitByName('d1')[0].move(UnitType.NORTH)
     board.commit()
     return board, p1, p2
 
 
-def test_units_that_cannot_fall_back_share_the_cell():
-    board, _, _ = _inert_stack_board()
-    cell = board.getUnitByCoords(1, 1)
+def test_units_that_cannot_fall_back_share_the_square():
+    board, _, _ = _shared_cell_board()
+    cell = board.getUnitByCoords(1, 0)
 
     assert isinstance(cell, list)
-    assert sorted(unit.name for unit in cell) == ['i1', 't1']
+    assert sorted(unit.name for unit in cell) == ['a1', 'b1']
     assert all(unit.destroyed is False for unit in cell)
     assert all(unit.on_board is True for unit in cell)
 
 
-def test_shared_cell_renders_without_failing(capsys):
-    board, p1, p2 = _inert_stack_board()
+def test_shared_square_renders_without_failing(capsys):
+    board, p1, p2 = _shared_cell_board()
 
     board.print()
     full = capsys.readouterr().out
@@ -303,22 +369,28 @@ def test_shared_cell_renders_without_failing(capsys):
 
     board.print(p1)
     for_p1 = capsys.readouterr().out
-    # the player sees their own unit in the shared cell
-    assert 'I' in for_p1
-    assert 'T' not in for_p1
+    # the player sees their own unit in the shared square, and none of the
+    # other player's units anywhere
+    assert 'A' in for_p1
+    assert 'C' in for_p1
+    assert 'B' not in for_p1
+    assert 'D' not in for_p1
 
     board.print(p2)
     for_p2 = capsys.readouterr().out
-    assert 'T' in for_p2
-    assert 'I' not in for_p2
+    assert 'B' in for_p2
+    assert 'D' in for_p2
+    assert 'A' not in for_p2
+    assert 'C' not in for_p2
 
 
-def test_shared_cell_survives_a_save_and_load_round_trip():
+def test_shared_square_survives_a_save_and_load_round_trip():
     # reload a game the way GameData does: read back the units it wrote with
-    # listUnits and replay them onto a fresh board
+    # listUnits and replay them onto a fresh board. Restoring is not a
+    # deployment, so the occupancy rule does not refuse the shared square
     import yaml
 
-    board, _, _ = _inert_stack_board()
+    board, _, _ = _shared_cell_board()
     saved = yaml.safe_load(board.listUnits())
 
     players = {}
@@ -327,37 +399,43 @@ def test_shared_cell_survives_a_save_and_load_round_trip():
     for unit in saved['units']:
         number = unit['player']
         players.setdefault(number, Player(number))
+        # GameData rebuilds types from the player's type definitions and
+        # then overrides health and energy per unit, so a unit that has spent
+        # all its energy still reloads
         types.setdefault(unit['type'], UnitType(
-            unit['type'], unit['symbol'], int(unit['attack']),
-            int(unit['health']), int(unit['energy'])))
+            unit['type'], unit['symbol'], int(unit['attack']), 5, 2))
         reloaded.add(
             players[number], unit['x'], unit['y'], unit['name'],
             types[unit['type']], int(unit['health']), int(unit['energy']),
-            bool(unit['destroyed']), bool(unit['on_board']))
+            bool(unit['destroyed']), bool(unit['on_board']),
+            restoring=True)
     reloaded.commit()
 
-    cell = reloaded.getUnitByCoords(1, 1)
+    cell = reloaded.getUnitByCoords(1, 0)
     assert isinstance(cell, list)
-    assert sorted(unit.name for unit in cell) == ['i1', 't1']
+    assert sorted(unit.name for unit in cell) == ['a1', 'b1']
+    assert all(unit.destroyed is False for unit in cell)
 
 
-def test_a_move_order_applies_to_the_named_unit_on_a_shared_cell():
-    # getUnitByCoords returns a list for a shared cell and has no move method,
-    # so the server resolves an order against the unit it names
-    board, p1, p2 = _inert_stack_board()
-    assert isinstance(board.getUnitByCoords(1, 1), list)
+def test_a_move_order_applies_to_the_named_unit_on_a_shared_square():
+    # getUnitByCoords returns a list for a shared square and has no move
+    # method, so the server resolves an order against the unit it names
+    board, p1, p2 = _shared_cell_board()
+    assert isinstance(board.getUnitByCoords(1, 0), list)
 
-    i1 = board.getUnitByName('i1', p1)[0]
-    t1 = board.getUnitByName('t1', p2)[0]
-    assert i1.name == 'i1' and i1.player is p1
-    assert t1.name == 't1' and t1.player is p2
+    a1 = board.getUnitByName('a1', p1)[0]
+    b1 = board.getUnitByName('b1', p2)[0]
+    assert a1.name == 'a1' and a1.player is p1
+    assert b1.name == 'b1' and b1.player is p2
 
-    # i1 has energy 1, enough to pay the cost of one move
-    i1.move(UnitType.EAST)
+    # a1 still has the energy to pay for one move
+    a1.move(UnitType.SOUTH)
     board.commit()
 
-    assert (i1.x, i1.y) == (2, 1)
-    assert board.getUnitByCoords(2, 1) is i1
-    # the unit left behind is unaffected and now holds the cell alone
-    assert board.getUnitByCoords(1, 1) is t1
-    assert (t1.x, t1.y) == (1, 1)
+    assert (a1.x, a1.y) == (1, 1)
+    assert board.getUnitByCoords(1, 1) is a1
+    # the unit left behind is unaffected and now holds the square alone
+    assert board.getUnitByCoords(1, 0) is b1
+    assert (b1.x, b1.y) == (1, 0)
+    assert b1.destroyed is False
+    assert b1.on_board is True

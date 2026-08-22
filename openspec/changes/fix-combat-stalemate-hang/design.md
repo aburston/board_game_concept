@@ -3,12 +3,14 @@
 See `proposal.md` — Why. Two rules from the owner shape everything below:
 
 1. **Energy exhaustion makes a unit inert, never dead. Only health destroys a unit.** An
-   inert unit stays on the board and holds its cell until an opponent kills it.
+   inert unit stays on the board and holds its square until an opponent kills it.
 2. **When units contest a square and exhaust themselves, they all retreat and nobody wins.**
    The move is undone rather than settled.
+3. **Moving onto an occupied square is combat, but deploying a brand new unit onto one is
+   illegal.** The two are different acts and are ruled on differently.
 
 There is also **friendly fire**: units do not tell their own side from anyone else's. Every
-unit in a contested cell attacks every other unit in it. The engine already behaves this
+unit in a contested square attacks every other unit in it. The engine already behaves this
 way; the specs now say so.
 
 Three properties of the current engine were verified against the code rather than assumed:
@@ -16,10 +18,10 @@ Three properties of the current engine were verified against the code rather tha
 - Movement costs `energy // 100 + 1`, which is `1` even at zero energy. A unit needs at
   least 1 energy to move, but a unit too spent to *attack* can usually still *move*. So an
   inert unit is not permanently stuck: it can walk away next turn.
-- A cell holds an `Empty`, a single unit, or a list. The list was only ever meant to exist
+- A square holds an `Empty`, a single unit, or a list. The list was only ever meant to exist
   transiently during turn resolution.
 - Combat is the only thing that reduces health, and it only happens between units sharing a
-  cell.
+  square.
 
 ## Goals / Non-Goals
 
@@ -33,15 +35,16 @@ Three properties of the current engine were verified against the code rather tha
 
 - Energy regeneration. Energy remains non-renewable.
 - A win condition. Still unimplemented; see `SPEC_COVERAGE.md`.
-- Fixing issue #1 as such. This change relaxes the placement assertion that makes issue #1
-  crash, but does not otherwise address how deployment conflicts are reported.
+- Reporting a rejected deployment back to the player who ordered it. The crash in issue #1 is
+  fixed and the server logs the rejection, but there is no channel that carries the refusal
+  to that player's client, and adding one is a change of its own.
 - Deduplicating the stale `src/BoardGameConcept.py` and `src/GameData.py` copies.
 
 ## Decisions
 
 ### Terminate combat on a round that deals no damage
 
-Track whether any attack landed during a round. If none did, combat for that cell ends. This
+Track whether any attack landed during a round. If none did, combat for that square ends. This
 is the narrowest possible termination condition: it fires exactly when the loop would
 otherwise spin, and never when combat is still progressing. Because the loop only exits with
 more than one survivor when *no* contestant could pay for an attack, the outcome is
@@ -55,60 +58,83 @@ attrition between high-health units, and the cap would be arbitrary.
 Replace the running `unit_count` decrement with a recount of undestroyed contestants at the
 top of each round. The old code subtracts one for every destroyed unit it finds, every round,
 so a unit destroyed in round 1 is counted again in round 2. With three contestants and two
-rounds the count reaches zero while a unit is still standing, and the cell is then wrongly
+rounds the count reaches zero while a unit is still standing, and the square is then wrongly
 emptied — a live unit vanishes from the board.
 
 ### Attacks in a round are drawn from the units standing at the start of that round
 
 A unit destroyed mid-round still lands its own attack that round, preserving the
 simultaneous-exchange semantics the existing tests pin down. A unit destroyed in an *earlier*
-round no longer attacks at all, which the old code got wrong: it iterated the whole cell
-every round, so corpses kept fighting.
+round no longer attacks at all, which the old code got wrong: it iterated every unit in the
+square each round, so corpses kept fighting.
 
 ### An undecided contest retreats the movers
 
-Each unit records the cell it vacated during `preCommit`. When combat ends with more than one
-survivor, every survivor that has such a record is put back there and the contested cell is
+Each unit records the square it vacated during `preCommit`. When combat ends with more than one
+survivor, every survivor that has such a record is put back there and the contested square is
 handed to whoever is left — the defender who never moved, or `Empty` if nobody stayed.
 
 The retreat is the move being undone, so it costs no further energy. The energy already spent
 moving in and attacking is *not* refunded: the unit made the attempt.
 
-Two units cannot collide while retreating, because distinct units left distinct cells. If a
+Two units cannot collide while retreating, because distinct units left distinct squares. If a
 unit's origin was taken by a third unit during the same turn, there is nowhere to go back to
-and it stays in the contested cell.
+and it stays in the contested square.
 
 *Alternatives considered:*
 
 - *Destroy the exhausted units.* Kills by energy, which rule 1 forbids.
-- *Leave the survivors stacked in the contested cell.* Rejected under rule 2, and it created
+- *Leave the survivors stacked in the contested square.* Rejected under rule 2, and it created
   a permanent obstacle no one could clear: stacked inert units can neither die nor separate.
 
-### Shared cells remain legal, as a residual case
+### Deployment onto a taken square is refused where the unit is created
 
-Retreat empties the contested cell in the ordinary case, but not always. A unit deployed onto
-an occupied cell never moved, so it has nothing to fall back to; nor does a unit whose origin
-was taken. Those survivors share the cell, so every path that reads a cell must still cope
-with one:
+`Board.add` is the single choke point every deployment goes through — the client's
+`add unit`, and the server applying a player's order — so the rule lives there. It refuses a
+square that is already held, or that another unit is already waiting to be placed on, which
+is the case issue #1 actually reports: two units created in the same turn, neither on the
+board yet, both claiming one square. `Board.squareIsFree` checks both.
 
-- `Board.print` renders a shared cell via a representative unit — the player's own unit under
+The refusal has to be recoverable, not fatal. The client already reports an error from
+`add unit` and carries on. The server catches the refusal, logs it, and resolves the turn
+without that order, so one player's bad order cannot stall the game for everyone.
+
+Restoring a saved game goes through the same `Board.add` but is not a deployment: it puts
+back whatever the save held, including a shared square. `restoring=True` marks that path.
+
+*Alternative considered:* checking in the client and the server separately, leaving the engine
+permissive. Rejected — two copies of the rule, and the engine would still accept a state it
+considers illegal.
+
+### Shared squares remain legal, as a residual case
+
+Retreat empties the contested square in the ordinary case, but not always. A unit whose origin
+was taken by a third unit during the same turn has nowhere to go back to. Those survivors
+share the square, so every path that reads a square must still cope with one:
+
+- `Board.print` renders a shared square via a representative unit — the player's own unit under
   a player view, otherwise any occupant — instead of raising or printing an object repr.
-- Placement and the load path no longer assert the cell is empty.
+- The load path is exempt from the placement rule, so a save holding a shared square reloads
+  as it was.
 - The server applies a move order to the unit it names, looked up by name and owning player,
-  rather than to `getUnitByCoords(x, y)`, which returns a list for a shared cell and has no
+  rather than to `getUnitByCoords(x, y)`, which returns a list for a shared square and has no
   `move` method.
-- Leaving a cell removes only the departing unit. The old code assigned `Empty()` over the
-  whole cell, which took any unit sharing it off the board.
+- Leaving a square removes only the departing unit. The old code assigned `Empty()` over the
+  whole square, which took any unit sharing it off the board.
 
 ## Risks / Trade-offs
 
 - **Retreating hands the square back to a defender that could not fight either.** → Intended:
   nobody wins, and the status quo is the defender's. An attacker that wants the square must
   come back with enough energy.
-- **Relaxing the placement assertion removes a guard that currently catches genuine bugs.** →
-  The assertion never reported cleanly anyway — it crashed the session, which is issue #1.
-  Regression tests cover the paths it used to guard.
-- **A shared cell of mutually inert units is still possible.** → Rare, and no longer a
-  deadlock: a unit with any energy at all can move away next turn.
+- **A refused deployment is reported to the server's error stream, not to the player who
+  ordered it.** → The player's unit simply does not appear after the turn. Better than the
+  crash it replaces, but the reporting gap keeps issue #1 open; see `SPEC_COVERAGE.md`.
+- **Two players can still race for the same empty square on the first turn**, since neither
+  can see the other's units when ordering. → One deployment wins and the other is refused.
+  Which one wins depends on the order the server reads the player files in.
+- **A shared square is still possible**, when a survivor of an undecided contest finds the
+  square it came from taken. → Rare, and no longer a deadlock: a unit with any energy at all
+  can move away next turn. Rendering, the load path and move orders all handle it.
 - **Existing saved games are unaffected**, since no file format changes. A save written before
   this change loads identically after it.

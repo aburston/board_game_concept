@@ -3,8 +3,9 @@
 ### Requirement: Deployment On First Resolution
 
 The system SHALL place newly created units onto the board when the turn is
-resolved. Deployment SHALL NOT require the target cell to be empty; a unit
-deployed onto an occupied cell contests it.
+resolved. Deploying a brand new unit onto a square that is already taken is
+illegal: the system SHALL refuse the deployment and SHALL resolve the turn
+without it, rather than failing the turn.
 
 #### Scenario: Deploying a new unit
 
@@ -12,15 +13,28 @@ deployed onto an occupied cell contests it.
 - **THEN** the unit is placed at its assigned coordinates
 - **AND** the unit moves to the `NOP` state
 
-#### Scenario: Deploying onto an occupied cell
+#### Scenario: Deploying onto an occupied square
 
-- **WHEN** a unit in the `INITIAL` state is resolved and its assigned cell already holds one or more units
-- **THEN** the unit joins that cell
-- **AND** the contest is resolved in the combat phase of the same turn
-- **AND** the turn continues normally for all other units
+- **WHEN** a unit is deployed at coordinates that already hold a unit
+- **THEN** the deployment is refused with an error naming the unit and the square
+- **AND** no unit is created
+- **AND** the unit already holding the square is unaffected
 
-#### Scenario: Deploying two units of the same player onto one cell
+#### Scenario: Deploying two units onto one square in the same turn
 
-- **WHEN** a player deploys two of their own units at the same coordinates
-- **THEN** the turn resolves without raising
-- **AND** the two units contest the cell under friendly fire
+- **WHEN** two units are deployed at the same coordinates before the turn is resolved
+- **THEN** the first is accepted and the second is refused
+- **AND** the turn resolves with only the first on that square
+
+#### Scenario: Two players deploying onto one square in the same turn
+
+- **WHEN** two players each deploy a unit onto the same square on the same turn, neither able to see the other's units
+- **THEN** the server refuses one of the two deployments
+- **AND** the server reports the rejection
+- **AND** the turn is resolved for every other unit
+
+#### Scenario: Deployment is not movement
+
+- **WHEN** a unit already on the board is ordered to move into a square another unit holds
+- **THEN** the order is allowed
+- **AND** the two units contest the square

@@ -2,7 +2,7 @@
 
 ### Requirement: Combat Runs To A Decision
 
-The system SHALL repeat attack rounds in a contested cell until either at most
+The system SHALL repeat attack rounds in a contested square until either at most
 one unit remains undestroyed or a round deals no damage, and SHALL terminate
 within the turn in every case.
 
@@ -12,22 +12,22 @@ within the turn in every case.
 - **THEN** rounds repeat until the defender is destroyed
 - **AND** the attacker survives with health 1
 
-#### Scenario: Stronger unit takes the cell
+#### Scenario: Stronger unit takes the square
 
-- **WHEN** a unit with attack 4 and health 7 contests a cell with a unit with attack 3 and health 5
+- **WHEN** a unit with attack 4 and health 7 contests a square with a unit with attack 3 and health 5
 - **THEN** the weaker unit is destroyed
-- **AND** the stronger unit holds the cell
+- **AND** the stronger unit holds the square
 
 #### Scenario: Undecided when no contestant can attack
 
 - **WHEN** a round begins in which every surviving contestant has less energy than its attack value
 - **THEN** no damage is dealt
-- **AND** combat ends for that cell
+- **AND** combat ends for that square
 - **AND** no unit is destroyed
 
 #### Scenario: Termination is guaranteed
 
-- **WHEN** combat is resolved in any contested cell
+- **WHEN** combat is resolved in any contested square
 - **THEN** resolution completes in a bounded number of rounds
 - **AND** the turn proceeds regardless of whether the contest was decided
 
@@ -51,51 +51,51 @@ unit.
 
 - **WHEN** a unit's energy falls below what it needs to act
 - **THEN** the unit is not destroyed
-- **AND** it remains on the board holding its cell
+- **AND** it remains on the board holding its square
 
-### Requirement: Cell Ownership After Combat
+### Requirement: Square Ownership After Combat
 
 The system SHALL leave the surviving unit in sole possession of the contested
-cell when the contest is decided, SHALL empty the cell when no unit survives,
-and SHALL return every survivor that moved into the cell to the cell it came
+square when the contest is decided, SHALL empty the square when no unit survives,
+and SHALL return every survivor that moved into the square to the square it came
 from when the contest is undecided.
 
 #### Scenario: One survivor
 
-- **WHEN** combat leaves exactly one undestroyed unit in a cell
-- **THEN** that unit alone occupies the cell
+- **WHEN** combat leaves exactly one undestroyed unit in a square
+- **THEN** that unit alone occupies the square
 
 #### Scenario: No survivors
 
-- **WHEN** combat destroys every unit contesting a cell
-- **THEN** the cell becomes empty
+- **WHEN** combat destroys every unit contesting a square
+- **THEN** the square becomes empty
 
 #### Scenario: Undecided contest between units that all moved in
 
-- **WHEN** combat ends undecided and every survivor moved into the cell this turn
-- **THEN** each survivor is returned to the cell it came from
+- **WHEN** combat ends undecided and every survivor moved into the square this turn
+- **THEN** each survivor is returned to the square it came from
 - **AND** no survivor is destroyed
-- **AND** the contested cell is left empty
+- **AND** the contested square is left empty
 
-#### Scenario: Undecided contest against a unit that held the cell
+#### Scenario: Undecided contest against a unit that held the square
 
-- **WHEN** combat ends undecided between a unit that moved in and a unit already holding the cell
-- **THEN** the unit that moved in is returned to the cell it came from
-- **AND** the unit that held the cell keeps it
+- **WHEN** combat ends undecided between a unit that moved in and a unit already holding the square
+- **THEN** the unit that moved in is returned to the square it came from
+- **AND** the unit that held the square keeps it
 
 #### Scenario: Survivor with nowhere to fall back
 
-- **WHEN** combat ends undecided and a survivor neither moved this turn nor can return to the cell it left
-- **THEN** that survivor remains in the contested cell
+- **WHEN** combat ends undecided and a survivor cannot return to the square it left, because another unit moved into that square during the same turn
+- **THEN** that survivor remains in the contested square
 - **AND** it remains on the board
-- **AND** the cell is treated as occupied by any unit attempting to enter it
+- **AND** the square is treated as occupied by any unit attempting to enter it
 
 ## ADDED Requirements
 
 ### Requirement: Inert Units
 
 The system SHALL treat a unit that can no longer pay for an action as inert
-rather than removed: it stays on the board, holds its cell, obstructs movement,
+rather than removed: it stays on the board, holds its square, obstructs movement,
 and can only be cleared by an opponent destroying it.
 
 #### Scenario: Inert unit cannot attack
@@ -107,8 +107,8 @@ and can only be cleared by an opponent destroying it.
 
 #### Scenario: Inert unit still blocks
 
-- **WHEN** another unit attempts to enter the cell an inert unit holds
-- **THEN** the cell is treated as occupied and entering it requires an attack
+- **WHEN** another unit attempts to enter the square an inert unit holds
+- **THEN** the square is treated as occupied and entering it requires an attack
 
 #### Scenario: Inert unit can still be destroyed
 
@@ -118,19 +118,19 @@ and can only be cleared by an opponent destroying it.
 
 ### Requirement: Friendly Fire
 
-The system SHALL have every unit in a contested cell attack every other unit in
-that cell, without regard to which player owns it.
+The system SHALL have every unit in a contested square attack every other unit in
+that square, without regard to which player owns it.
 
-#### Scenario: Units of the same player contest a cell
+#### Scenario: Units of the same player contest a square
 
-- **WHEN** two units belonging to the same player contest a cell
+- **WHEN** two units belonging to the same player contest a square
 - **THEN** they attack each other on the same terms as units of opposing players
 - **AND** either may be destroyed
 
 #### Scenario: Attacks are not limited to opponents
 
-- **WHEN** a cell is contested by units of more than one player
-- **THEN** each unit attacks every other unit in the cell regardless of owner
+- **WHEN** a square is contested by units of more than one player
+- **THEN** each unit attacks every other unit in the square regardless of owner
 
 ### Requirement: Attackers Are The Units Standing At The Start Of A Round
 

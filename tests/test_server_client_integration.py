@@ -285,6 +285,81 @@ class TestServerClientIntegration(unittest.TestCase):
         self.assertFalse(by_name['s1']['destroyed'])
         self.assertFalse(by_name['t1']['destroyed'])
 
+    def test_two_players_deploying_onto_the_same_square(self):
+        # issue #1: on the first turn neither player can see the other's units,
+        # so both may claim the same square. The server used to die on an
+        # assertion; it now refuses the second deployment and resolves the turn
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Cross X 1 1 10')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x1 1 1')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('waiting for turn to complete...')
+
+        client2 = self.start_client('test-01', 2)
+        client2.read_until('client.py> ')
+        client2.send_line('add type Naught O 1 1 10')
+        client2.read_until('client.py> ')
+        client2.send_line('add unit Naught o1 1 1')
+        client2.read_until('client.py> ')
+        client2.send_line('commit')
+        client2.read_until('waiting for turn to complete...')
+
+        # the turn resolves rather than taking the server down
+        self.read_until_count(server, 'commit complete', 2)
+
+        units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
+        units = yaml.safe_load(units_file.read_text())['units']
+
+        # exactly one of the two deployments was accepted
+        self.assertEqual(len(units), 1)
+        self.assertEqual((units[0]['x'], units[0]['y']), (1, 1))
+        self.assertIn(units[0]['name'], ('x1', 'o1'))
+
+    def test_a_client_refuses_to_deploy_onto_a_square_it_already_holds(self):
+        # the same rule, caught at the client before anything is sent
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Cross X 1 1 10')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x1 0 0')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x2 0 0')
+        client1.read_until('error creating new unit')
+
+        self.assertIn('occupied', client1.output)
+        # the client is still usable afterwards
+        client1.send_line('add unit Cross x3 1 0')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('commit complete')
+
     def test_server_auto_load_equivalent(self):
         server = self.start_server(['-g', 'test-04'])
         server.read_until('server.py> ')

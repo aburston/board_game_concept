@@ -33,18 +33,23 @@ implementation diverged from them. Each was reproduced against
 fixed; the spec deltas describing the behaviour they now have live in
 `openspec/changes/fix-combat-stalemate-hang/` until that change is archived.
 
-### 1. Deploying onto an occupied cell crashes (issue #1) — fixed
+### 1. Deploying onto an occupied square crashes (issue #1) — crash fixed
 
 `UnitType.preCommit` and `UnitType.commit` raised an uncaught `AssertionError`
-(`can't add <name> to board at (x,y)`) when a unit was deployed onto a cell that
-already held one, which propagated and terminated the session rather than being
-reported.
+(`can't add <name> to board at (x,y)`) when a unit was deployed onto a square
+that already held one, which propagated out of turn resolution and terminated
+the session rather than being reported.
 
-Addressed by the `fix-combat-stalemate-hang` change: deployment no longer
-requires an empty cell. A unit deployed onto an occupied cell joins it and the
-contest is resolved in the combat phase of the same turn. The change does not
-otherwise alter how deployment conflicts are reported to the player, so issue #1
-stays open for that.
+Addressed by the `fix-combat-stalemate-hang` change. Deploying a brand new unit
+onto a square that is already taken — or already claimed by a unit waiting to be
+placed, which is the case the issue reports — is illegal, and `Board.add` now
+refuses it before any state is mutated. The client reports the refusal and stays
+usable; the server logs it and resolves the turn without that order. Moving onto
+an occupied square is unaffected: that is combat, and stays legal.
+
+Still open: the refusal reaches the server's error stream, not the player who
+ordered it. From that player's side the unit simply never appears. Carrying the
+rejection back to the client needs a channel that does not exist yet.
 
 ### 2. A contest neither unit can win hangs the server (issue #2) — fixed
 
@@ -59,9 +64,9 @@ cell.
 
 Addressed by the `fix-combat-stalemate-hang` change: combat ends when a round
 lands no attacks, and an undecided contest returns every unit that moved in to
-the cell it came from, so nobody wins the square. The same change fixes a
-survivor-count bug that emptied a contested cell out from under a unit that was
-still standing, and stops units destroyed in an earlier round from attacking in
+the square it came from, so nobody wins the square. The same change fixes a
+survivor-count bug that emptied a contested square out from under a unit that
+was still standing, and stops units destroyed in an earlier round from attacking in
 later ones.
 
 ### 3. Duplicate unit name raises the wrong error (issue #3)

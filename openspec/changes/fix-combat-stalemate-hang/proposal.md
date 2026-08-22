@@ -12,9 +12,13 @@ on the board, blocks the cell it holds, and can only be removed by an opponent r
 health to zero.
 
 The rule for an undecided contest is that **nobody wins the square**: every unit that moved
-into it goes back to the cell it came from, and the board is left as it was. Units that were
-not moving — the defender already standing there, or a unit deployed onto the cell this turn
-— have nowhere to fall back to and stay put.
+into it goes back to the square it came from, and the board is left as it was. A defender
+that was already standing there never moved, so it has nowhere to fall back to and keeps the
+square.
+
+Moving into a square another unit holds stays legal — that is combat. Deploying a **brand new
+unit** onto a square that is already taken is a different thing, and is now **illegal**:
+it is refused when the unit is created, which is what issue #1 asks for.
 
 ## What Changes
 
@@ -31,12 +35,16 @@ not moving — the defender already standing there, or a unit deployed onto the 
   own attack that round.
 - Leaving a cell removes only the departing unit, rather than clearing the cell outright and
   taking any unit sharing it off the board with it.
-- **BREAKING (state model)**: a board cell may hold more than one unit beyond turn
-  resolution, in the residual case where no contestant can fall back — every survivor was
-  either already standing there or was deployed onto the cell. Board rendering, unit
-  placement and game load all tolerate such a cell instead of raising.
+- Deploying a brand new unit onto a square that is already held, or already claimed by a
+  unit waiting to be placed, is refused with a clear error instead of raising an uncaught
+  assertion out of turn resolution. The server rejects such an order, reports it, and
+  resolves the turn without it. Restoring a saved game is not a deployment and is exempt.
+- **BREAKING (state model)**: a board square may hold more than one unit beyond turn
+  resolution, in the residual case where a survivor of an undecided contest cannot fall back
+  because another unit took the square it came from during the same turn. Board rendering
+  and game load tolerate such a square instead of raising.
 - The server resolves a player's move order against the named unit rather than against
-  whatever `getUnitByCoords` returns, which is a list for a shared cell.
+  whatever `getUnitByCoords` returns, which is a list for a shared square.
 
 ## Capabilities
 
@@ -50,23 +58,27 @@ None.
   it runs until at most one unit remains is replaced by an explicit undecided outcome in
   which the movers retreat, and exhaustion is stated never to destroy a unit. Friendly fire
   is stated explicitly: a contestant attacks every other unit in the cell whoever owns it.
-- `board-model`: a cell may hold multiple units; placement no longer requires an empty cell;
-  rendering defines what a shared cell displays; leaving a cell does not disturb the units
-  still in it.
-- `turn-commit`: deploying onto an occupied cell no longer fails.
-- `game-persistence`: a saved game containing a shared cell reloads faithfully, and the
-  server applies move orders by unit identity rather than by cell contents.
+- `board-model`: placement requires a free square and says so as a rule rather than an
+  assertion, while restoring a saved game is exempt; a square may hold multiple units;
+  rendering defines what a shared square displays; leaving a square does not disturb the
+  units still in it.
+- `turn-commit`: deploying onto an occupied square is illegal and refused, and the turn
+  resolves without the refused order rather than failing.
+- `game-persistence`: a saved game containing a shared square reloads faithfully, and the
+  server applies move orders by unit identity rather than by square contents.
 
 ## Impact
 
 - `src/board_game_concept/BoardGameConcept.py` — `UnitType.commit`, `UnitType.preCommit`,
-  new `UnitType.resolveContest`, `UnitType.retreat` and `UnitType.vacate`, `Board.print`,
-  `Board.commit`.
-- `src/board_game_concept/GameData.py` — move-order application in `serverSave`.
+  new `UnitType.resolveContest`, `UnitType.retreat` and `UnitType.vacate`, `Board.add`,
+  new `Board.squareIsFree`, `Board.print`, `Board.commit`.
+- `src/board_game_concept/GameData.py` — order application and the load path in `serverSave`
+  and `load`.
 - `tests/test_combat_stalemate.py` — regression coverage for the hang, the retreat, the
   survivor count, rendering and a shared-cell save/load round trip.
-- Overlaps issue #1: the placement assertion this change has to relax is the same assertion
-  that makes issue #1 crash, so deploying onto an occupied cell now resolves as a contest
-  instead of killing the session.
+- Fixes issue #1's crash: the assertion that killed the session is replaced by a rule
+  enforced where the unit is created, so the client reports the refusal and the server
+  resolves the turn without the order. Issue #1 stays open for telling the *player* their
+  deployment was rejected; today the server only reports it on its own error stream.
 - `src/BoardGameConcept.py` and `src/GameData.py` are stale duplicates outside the package
   and are deliberately left untouched; see `SPEC_COVERAGE.md`.

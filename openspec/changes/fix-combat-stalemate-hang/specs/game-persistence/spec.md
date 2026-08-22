@@ -3,7 +3,7 @@
 ### Requirement: Unit State Persistence
 
 The system SHALL persist the full state of every unit on the board and restore
-it on load, including units already destroyed and units sharing a cell.
+it on load, including units already destroyed and units sharing a square.
 
 #### Scenario: Saving units
 
@@ -15,17 +15,18 @@ it on load, including units already destroyed and units sharing a cell.
 - **WHEN** a game is loaded and `data/units.yaml` exists
 - **THEN** each unit is recreated on the board with its stored health, energy, destroyed flag, and on-board flag
 
-#### Scenario: Restoring a shared cell
+#### Scenario: Restoring a shared square
 
-- **WHEN** a saved game holds several units on one cell
-- **THEN** loading it restores every one of those units to that cell
+- **WHEN** a saved game holds several units on one square
+- **THEN** loading it restores every one of those units to that square
 - **AND** loading does not fail
+- **AND** the rule refusing deployment onto an occupied square does not apply
 
 ### Requirement: Order Publication
 
 The system SHALL have players publish pending orders as a per-player file that
 the server consumes when resolving a turn, and SHALL apply each order to the
-unit it names rather than to whatever occupies the cell.
+unit it names rather than to whatever occupies the square.
 
 #### Scenario: Player publishes orders
 
@@ -44,8 +45,8 @@ unit it names rather than to whatever occupies the cell.
 - **WHEN** a player publishes an order with a state that is not `INITIAL`, `MOVING`, or `NOP`
 - **THEN** the server rejects it as invalid
 
-#### Scenario: Applying an order to a unit on a shared cell
+#### Scenario: Applying an order to a unit on a shared square
 
-- **WHEN** the server applies a move order for a unit whose cell holds several units
+- **WHEN** the server applies a move order for a unit whose square holds several units
 - **THEN** the order is applied to the named unit belonging to the ordering player
-- **AND** the other units in that cell are unaffected
+- **AND** the other units in that square are unaffected
