@@ -5,6 +5,7 @@ import shutil
 import signal
 import unittest
 import threading
+import yaml
 from pathlib import Path
 from subprocess import Popen, PIPE
 
@@ -197,6 +198,263 @@ class TestServerClientIntegration(unittest.TestCase):
         # players have committed.
         server.read_until('board: {', timeout=30)
         self.assertIn('board:', server.output)
+
+    def read_until_count(self, proc, substring, count, timeout=90):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with proc._lock:
+                if proc.output.count(substring) >= count:
+                    return proc.output
+            if proc.proc.poll() is not None:
+                with proc._lock:
+                    raise RuntimeError(
+                        f"Server exited unexpectedly (exit code {proc.proc.returncode}). "
+                        f"Output:\n{proc.output}")
+            time.sleep(0.05)
+        with proc._lock:
+            raise TimeoutError(
+                f"Timed out waiting for {count} occurrences of '{substring}'. "
+                f"Current output:\n{proc.output}")
+
+    def test_two_units_moving_onto_the_same_square_resolve_the_turn(self):
+        # issue #2: two units too spent to attack, ordered onto the same square,
+        # used to spin forever in the server's commit and block every player.
+        # The server prints "commit complete" once per resolved turn: the
+        # interactive setup, then the deployment, then the contested move.
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        # attack 5 with energy 1: enough energy to move once, never enough to
+        # attack, so neither unit can win the square
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Spent S 5 1 1')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Spent s1 0 1')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('waiting for turn to complete...')
+
+        client2 = self.start_client('test-01', 2)
+        client2.read_until('client.py> ')
+        client2.send_line('add type Spent T 5 1 1')
+        client2.read_until('client.py> ')
+        client2.send_line('add unit Spent t1 2 1')
+        client2.read_until('client.py> ')
+        client2.send_line('commit')
+        client2.read_until('waiting for turn to complete...')
+
+        # the deployment turn resolves
+        self.read_until_count(server, 'commit complete', 2)
+
+        # now order both units onto the middle square
+        client1b = self.start_client('test-01', 1)
+        client1b.read_until('client.py> ')
+        client1b.send_line('move s1 east')
+        client1b.read_until('client.py> ')
+        client1b.send_line('commit')
+        client1b.read_until('waiting for turn to complete...')
+
+        client2b = self.start_client('test-01', 2)
+        client2b.read_until('client.py> ')
+        client2b.send_line('move t1 west')
+        client2b.read_until('client.py> ')
+        client2b.send_line('commit')
+        client2b.read_until('waiting for turn to complete...')
+
+        # the contested turn resolves rather than spinning
+        self.read_until_count(server, 'commit complete', 3)
+
+        # nobody won the contested square: both units fell back to where they
+        # started, and neither was destroyed
+        units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
+        units = yaml.safe_load(units_file.read_text())['units']
+        by_name = {unit['name']: unit for unit in units}
+
+        self.assertEqual((by_name['s1']['x'], by_name['s1']['y']), (0, 1))
+        self.assertEqual((by_name['t1']['x'], by_name['t1']['y']), (2, 1))
+        self.assertFalse(by_name['s1']['destroyed'])
+        self.assertFalse(by_name['t1']['destroyed'])
+
+    def test_two_players_deploying_onto_the_same_square(self):
+        # issue #1: on the first turn neither player can see the other's units,
+        # so both may claim the same square. The server used to die on an
+        # assertion; it now refuses the second deployment and resolves the turn
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Cross X 1 1 10')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x1 1 1')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('waiting for turn to complete...')
+
+        client2 = self.start_client('test-01', 2)
+        client2.read_until('client.py> ')
+        client2.send_line('add type Naught O 1 1 10')
+        client2.read_until('client.py> ')
+        client2.send_line('add unit Naught o1 1 1')
+        client2.read_until('client.py> ')
+        client2.send_line('commit')
+        client2.read_until('waiting for turn to complete...')
+
+        # the turn resolves rather than taking the server down
+        self.read_until_count(server, 'commit complete', 2)
+
+        units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
+        units = yaml.safe_load(units_file.read_text())['units']
+
+        # exactly one of the two deployments was accepted
+        self.assertEqual(len(units), 1)
+        self.assertEqual((units[0]['x'], units[0]['y']), (1, 1))
+        self.assertIn(units[0]['name'], ('x1', 'o1'))
+
+        # and the player whose order was refused is told, by name and square
+        accepted = units[0]['name']
+        loser, loser_unit = (2, 'o1') if accepted == 'x1' else (1, 'x1')
+        players_dir = GAMES_DIR / '_test-01' / 'players'
+
+        refused = yaml.safe_load(
+            (players_dir / f'{loser}_rejected.yaml').read_text())['rejected']
+        self.assertEqual(len(refused), 1)
+        self.assertEqual(refused[0]['unit'], loser_unit)
+        self.assertEqual((refused[0]['x'], refused[0]['y']), (1, 1))
+        self.assertIn('occupied', refused[0]['reason'])
+
+        # the player who got the square is told nothing
+        winner = 1 if loser == 2 else 2
+        self.assertEqual(yaml.safe_load(
+            (players_dir / f'{winner}_rejected.yaml').read_text())['rejected'],
+            [])
+
+        # and the refused player sees it when they next log in
+        loser_client = self.start_client('test-01', loser)
+        loser_client.read_until('client.py> ')
+        self.assertIn('rejected last turn', loser_client.output)
+        self.assertIn(loser_unit, loser_client.output)
+        self.assertIn('occupied', loser_client.output)
+
+        # a later turn in which nothing is refused clears the report, so
+        # rejections describe the last turn rather than accumulating
+        loser_client.send_line('commit')
+        loser_client.read_until('commit complete')
+
+        winner_client = self.start_client('test-01', winner)
+        winner_client.read_until('client.py> ')
+        self.assertNotIn('rejected last turn', winner_client.output)
+        winner_client.send_line('commit')
+        winner_client.read_until('commit complete')
+
+        self.read_until_count(server, 'commit complete', 3)
+        self.assertEqual(yaml.safe_load(
+            (players_dir / f'{loser}_rejected.yaml').read_text())['rejected'],
+            [])
+
+    def test_an_order_with_an_invalid_state_is_rejected_not_fatal(self):
+        # game-persistence requires the server to reject an order whose state
+        # is not INITIAL, MOVING or NOP. It used to assert and take the server
+        # down with it
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Cross X 1 1 10')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x1 0 0')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('waiting for turn to complete...')
+
+        # corrupt player 1's published order while the server is still waiting
+        # on player 2, so it is read exactly once, as published
+        orders_file = GAMES_DIR / '_test-01' / 'players' / '1_units.yaml'
+        orders = yaml.safe_load(orders_file.read_text())
+        orders['units'][0]['state'] = 99
+        orders_file.write_text(yaml.safe_dump(orders))
+
+        client2 = self.start_client('test-01', 2)
+        client2.read_until('client.py> ')
+        client2.send_line('add type Naught O 1 1 10')
+        client2.read_until('client.py> ')
+        client2.send_line('add unit Naught o1 2 2')
+        client2.read_until('client.py> ')
+        client2.send_line('commit')
+        client2.read_until('waiting for turn to complete...')
+
+        # the turn still resolves, without the invalid order
+        self.read_until_count(server, 'commit complete', 2)
+
+        units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
+        units = yaml.safe_load(units_file.read_text())['units']
+        self.assertEqual([unit['name'] for unit in units], ['o1'])
+
+        players_dir = GAMES_DIR / '_test-01' / 'players'
+        refused = yaml.safe_load(
+            (players_dir / '1_rejected.yaml').read_text())['rejected']
+        self.assertEqual(len(refused), 1)
+        self.assertEqual(refused[0]['unit'], 'x1')
+        self.assertIn('invalid unit state', refused[0]['reason'])
+
+    def test_a_client_refuses_to_deploy_onto_a_square_it_already_holds(self):
+        # the same rule, caught at the client before anything is sent
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Cross X 1 1 10')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x1 0 0')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x2 0 0')
+        client1.read_until('error creating new unit')
+
+        self.assertIn('occupied', client1.output)
+        # the client is still usable afterwards
+        client1.send_line('add unit Cross x3 1 0')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('commit complete')
 
     def test_server_auto_load_equivalent(self):
         server = self.start_server(['-g', 'test-04'])
