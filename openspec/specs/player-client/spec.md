@@ -76,7 +76,8 @@ The system SHALL let a player define unit types during setup via
 ### Requirement: Deploying Units
 
 The system SHALL let a player deploy units during setup via
-`add unit <type> <name> <x> <y>`.
+`add unit <type> <name> <x> <y>`, and SHALL refuse a deployment onto a cell
+the client already knows is taken, without ending the session.
 
 #### Scenario: Deploying a unit
 
@@ -102,6 +103,12 @@ The system SHALL let a player deploy units during setup via
 
 - **WHEN** `add unit` names an unknown type, or gives coordinates outside the board, or reuses one of the player's unit names
 - **THEN** the client reports the error and takes no action
+
+#### Scenario: Deploying onto a cell the player already holds
+
+- **WHEN** `add unit` names coordinates the player has already placed a unit on
+- **THEN** the client reports that the cell is occupied and takes no action
+- **AND** the session continues and accepts further commands
 
 ### Requirement: Ordering Movement
 
@@ -194,3 +201,24 @@ client waits for the turn to be resolved.
 
 - **WHEN** the server has resolved the turn
 - **THEN** the client reloads the game and resumes accepting orders
+
+### Requirement: Reporting Rejected Orders
+
+The system SHALL show the player any order the server refused when it last
+resolved a turn, before taking their next command.
+
+#### Scenario: An order was rejected
+
+- **WHEN** the client starts a session and the server refused one or more of that player's orders on the last resolved turn
+- **THEN** the client reports how many were rejected
+- **AND** names the unit, its coordinates, and the reason for each
+
+#### Scenario: Nothing was rejected
+
+- **WHEN** the client starts a session and none of that player's orders were refused
+- **THEN** the client reports nothing and prompts as usual
+
+#### Scenario: Rejections describe only the last resolved turn
+
+- **WHEN** a turn is resolved in which none of a player's orders are refused
+- **THEN** any rejection from an earlier turn is no longer reported to them

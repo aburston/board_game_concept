@@ -3,7 +3,7 @@
 ### Requirement: Unit State Persistence
 
 The system SHALL persist the full state of every unit on the board and restore
-it on load, including units already destroyed and units sharing a square.
+it on load, including units already destroyed and units sharing a cell.
 
 #### Scenario: Saving units
 
@@ -15,18 +15,18 @@ it on load, including units already destroyed and units sharing a square.
 - **WHEN** a game is loaded and `data/units.yaml` exists
 - **THEN** each unit is recreated on the board with its stored health, energy, destroyed flag, and on-board flag
 
-#### Scenario: Restoring a shared square
+#### Scenario: Restoring a shared cell
 
-- **WHEN** a saved game holds several units on one square
-- **THEN** loading it restores every one of those units to that square
+- **WHEN** a saved game holds several units on one cell
+- **THEN** loading it restores every one of those units to that cell
 - **AND** loading does not fail
-- **AND** the rule refusing deployment onto an occupied square does not apply
+- **AND** the rule refusing deployment onto an occupied cell does not apply
 
 ### Requirement: Order Publication
 
 The system SHALL have players publish pending orders as a per-player file that
 the server consumes when resolving a turn, and SHALL apply each order to the
-unit it names rather than to whatever occupies the square.
+unit it names rather than to whatever occupies the cell.
 
 #### Scenario: Player publishes orders
 
@@ -59,11 +59,11 @@ unit it names rather than to whatever occupies the square.
 - **THEN** the server rejects the order
 - **AND** resolves the turn without it
 
-#### Scenario: Applying an order to a unit on a shared square
+#### Scenario: Applying an order to a unit on a shared cell
 
-- **WHEN** the server applies a move order for a unit whose square holds several units
+- **WHEN** the server applies a move order for a unit whose cell holds several units
 - **THEN** the order is applied to the named unit belonging to the ordering player
-- **AND** the other units in that square are unaffected
+- **AND** the other units in that cell are unaffected
 
 ## ADDED Requirements
 

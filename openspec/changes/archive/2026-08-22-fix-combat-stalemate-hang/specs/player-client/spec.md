@@ -3,7 +3,7 @@
 ### Requirement: Deploying Units
 
 The system SHALL let a player deploy units during setup via
-`add unit <type> <name> <x> <y>`, and SHALL refuse a deployment onto a square
+`add unit <type> <name> <x> <y>`, and SHALL refuse a deployment onto a cell
 the client already knows is taken, without ending the session.
 
 #### Scenario: Deploying a unit
@@ -31,10 +31,10 @@ the client already knows is taken, without ending the session.
 - **WHEN** `add unit` names an unknown type, or gives coordinates outside the board, or reuses one of the player's unit names
 - **THEN** the client reports the error and takes no action
 
-#### Scenario: Deploying onto a square the player already holds
+#### Scenario: Deploying onto a cell the player already holds
 
 - **WHEN** `add unit` names coordinates the player has already placed a unit on
-- **THEN** the client reports that the square is occupied and takes no action
+- **THEN** the client reports that the cell is occupied and takes no action
 - **AND** the session continues and accepts further commands
 
 ## ADDED Requirements

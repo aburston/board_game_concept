@@ -51,4 +51,5 @@
 - [x] 7.2 Confirm the reported scenarios fail against the unmodified engine: the stalemate hangs, deployment onto an occupied square asserts, and the three-way contest empties the square out from under the survivor
 - [x] 7.3 Run the CI lint gate (`flake8 --select=E9,F63,F7,F82`) and confirm it is clean
 - [x] 7.4 Confirm the suite passes with the real `board` package installed, as CI installs it from `requirements.txt`
-- [ ] 7.5 Run `openspec validate --specs --strict` — not run: the `openspec` CLI is not installed in this environment
+- [x] 7.5 Run `openspec validate --specs --strict` and confirm the main specs validate: 10 passed, 0 failed
+- [x] 7.6 Run `openspec validate --changes --strict` and confirm this change's deltas validate

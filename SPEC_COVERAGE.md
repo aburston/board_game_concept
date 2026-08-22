@@ -30,8 +30,9 @@ openspec validate --specs --strict
 The specs describe intended behaviour. The following are places where the
 implementation diverged from them. Each was reproduced against
 `src/board_game_concept/` rather than inferred from reading. Two have since been
-fixed; the spec deltas describing the behaviour they now have live in
-`openspec/changes/fix-combat-stalemate-hang/` until that change is archived.
+fixed, and the specs under `openspec/specs/` describe the behaviour they now
+have; the change that made them is archived under
+`openspec/changes/archive/2026-08-22-fix-combat-stalemate-hang/`.
 
 ### 1. Deploying onto an occupied square crashes (issue #1) — fixed
 
@@ -96,6 +97,12 @@ rather than added; the enemy-type lookup on the seen-board load path in
   aspirational; no such code exists.
 
 ## Housekeeping
+
+The specs call a board position a **cell**; the source calls it a **square**
+(`Board.squareIsFree`, and comments predating these specs). Both terms mean the
+same thing. Aligning them is a terminology sweep across all ten capabilities,
+which no behavioural change should carry, so it is left as its own job.
+
 
 `src/BoardGameConcept.py` and `src/GameData.py` are byte-identical copies of the
 modules inside `src/board_game_concept/`. Only the package copies are importable

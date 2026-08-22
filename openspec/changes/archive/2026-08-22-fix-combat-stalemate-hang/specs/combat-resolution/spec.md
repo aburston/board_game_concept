@@ -1,83 +1,4 @@
-# combat-resolution Specification
-
-## Purpose
-
-Combat happens wherever more than one unit ends up in the same cell, whether by
-attacking a standing unit or by two units moving into the same empty cell at
-once. Combat is simultaneous and runs to a decision within the turn: it repeats
-until at most one unit is left standing in the cell.
-
-## Requirements
-
-### Requirement: Contested Cells Trigger Combat
-
-The system SHALL resolve combat in every cell holding more than one unit at the
-end of the movement phase.
-
-#### Scenario: Attacker enters an occupied cell
-
-- **WHEN** a unit moves into a cell held by an enemy unit
-- **THEN** combat is resolved between them in that cell
-
-#### Scenario: Two units enter the same empty cell
-
-- **WHEN** two units move into the same empty cell in the same turn
-- **THEN** combat is resolved between them in that cell
-
-### Requirement: Simultaneous Attack Exchange
-
-The system SHALL have every unit standing in a contested cell at the start of a
-round attack every other unit standing there, with all attacks in a round
-applying regardless of the damage those attacks receive in the same round.
-
-#### Scenario: Both units strike
-
-- **WHEN** two units contest a cell
-- **THEN** each deals its attack value in damage to the other
-- **AND** neither is spared by having been damaged in the same round
-
-#### Scenario: A unit does not attack itself
-
-- **WHEN** attacks are resolved in a contested cell
-- **THEN** no unit attacks itself
-
-### Requirement: Attacking Costs Energy
-
-The system SHALL charge a unit its attack value in energy for each attack it
-makes, and SHALL prevent the unit from attacking when it cannot pay.
-
-#### Scenario: Paying to attack
-
-- **WHEN** a unit attacks
-- **THEN** its energy is reduced by its attack value
-
-#### Scenario: Exhausted unit cannot attack
-
-- **WHEN** a unit's energy is below its attack value
-- **THEN** it deals no damage
-- **AND** its energy is unchanged
-
-### Requirement: Damage And Destruction
-
-The system SHALL subtract incoming damage from a unit's health and SHALL destroy
-the unit when its health is exhausted. Health is the only thing that destroys a
-unit.
-
-#### Scenario: Taking damage
-
-- **WHEN** a unit takes damage
-- **THEN** its health is reduced by the attack value
-
-#### Scenario: Health exhausted
-
-- **WHEN** a unit's health reaches zero or below
-- **THEN** the unit is marked destroyed
-
-#### Scenario: Running out of energy does not destroy a unit
-
-- **WHEN** a unit's energy falls below what it needs to act
-- **THEN** the unit is not destroyed
-- **AND** it remains on the board holding its cell
+## MODIFIED Requirements
 
 ### Requirement: Combat Runs To A Decision
 
@@ -109,6 +30,64 @@ within the turn in every case.
 - **WHEN** combat is resolved in any contested cell
 - **THEN** resolution completes in a bounded number of rounds
 - **AND** the turn proceeds regardless of whether the contest was decided
+
+### Requirement: Simultaneous Attack Exchange
+
+The system SHALL have every unit standing in a contested cell at the start of a
+round attack every other unit standing there, with all attacks in a round
+applying regardless of the damage those attacks receive in the same round.
+
+#### Scenario: Both units strike
+
+- **WHEN** two units contest a cell
+- **THEN** each deals its attack value in damage to the other
+- **AND** neither is spared by having been damaged in the same round
+
+#### Scenario: A unit does not attack itself
+
+- **WHEN** attacks are resolved in a contested cell
+- **THEN** no unit attacks itself
+
+### Requirement: Destroyed Units Leave The Board
+
+The system SHALL remove destroyed units from play, marking them as no longer on
+the board and taking them out of the cell they held without disturbing any unit
+still standing in it.
+
+#### Scenario: Removing a destroyed unit
+
+- **WHEN** a unit is destroyed
+- **THEN** it is marked as not on the board
+- **AND** it no longer occupies a cell
+- **AND** it is not considered for movement or combat in later turns
+
+#### Scenario: A destroyed unit sharing a cell
+
+- **WHEN** a unit is destroyed in a cell another unit still holds
+- **THEN** the destroyed unit is taken out of that cell
+- **AND** the unit still standing remains in that cell and on the board
+
+### Requirement: Damage And Destruction
+
+The system SHALL subtract incoming damage from a unit's health and SHALL destroy
+the unit when its health is exhausted. Health is the only thing that destroys a
+unit.
+
+#### Scenario: Taking damage
+
+- **WHEN** a unit takes damage
+- **THEN** its health is reduced by the attack value
+
+#### Scenario: Health exhausted
+
+- **WHEN** a unit's health reaches zero or below
+- **THEN** the unit is marked destroyed
+
+#### Scenario: Running out of energy does not destroy a unit
+
+- **WHEN** a unit's energy falls below what it needs to act
+- **THEN** the unit is not destroyed
+- **AND** it remains on the board holding its cell
 
 ### Requirement: Cell Ownership After Combat
 
@@ -147,24 +126,7 @@ from when the contest is undecided.
 - **AND** it remains on the board
 - **AND** the cell is treated as occupied by any unit attempting to enter it
 
-### Requirement: Destroyed Units Leave The Board
-
-The system SHALL remove destroyed units from play, marking them as no longer on
-the board and taking them out of the cell they held without disturbing any unit
-still standing in it.
-
-#### Scenario: Removing a destroyed unit
-
-- **WHEN** a unit is destroyed
-- **THEN** it is marked as not on the board
-- **AND** it no longer occupies a cell
-- **AND** it is not considered for movement or combat in later turns
-
-#### Scenario: A destroyed unit sharing a cell
-
-- **WHEN** a unit is destroyed in a cell another unit still holds
-- **THEN** the destroyed unit is taken out of that cell
-- **AND** the unit still standing remains in that cell and on the board
+## ADDED Requirements
 
 ### Requirement: Inert Units
 

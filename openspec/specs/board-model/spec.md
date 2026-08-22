@@ -37,7 +37,10 @@ renders as `#`.
 ### Requirement: Unit Placement
 
 The system SHALL place a unit on the board by copying a unit type, binding it to
-a player, a name, and a coordinate pair.
+a player, a name, and a coordinate pair. Placement SHALL require the target
+cell to be free: neither held by a unit nor already claimed by a unit waiting
+to be placed. Restoring a saved game is not a placement and SHALL NOT be subject
+to that rule.
 
 #### Scenario: Placing a unit
 
@@ -55,6 +58,24 @@ a player, a name, and a coordinate pair.
 
 - **WHEN** a unit of a previously unseen type is placed by a player
 - **THEN** that type is recorded under that player's set of known types
+
+#### Scenario: Placing onto an occupied cell is rejected
+
+- **WHEN** a unit is placed at coordinates already holding one or more units
+- **THEN** placement fails with an error naming the unit and the cell
+- **AND** the unit is not registered in the board's unit list
+
+#### Scenario: Placing onto a cell another unit is waiting to occupy
+
+- **WHEN** a unit is placed at coordinates another unit has been placed at but the turn has not yet been resolved
+- **THEN** placement fails with the same error
+- **AND** the unit placed first keeps its claim on the cell
+
+#### Scenario: Restoring a saved game onto occupied cells
+
+- **WHEN** a saved game is restored and two of its units share a cell
+- **THEN** both are recreated on that cell
+- **AND** the occupancy rule does not refuse either of them
 
 ### Requirement: Unit Name Uniqueness Per Player
 
@@ -104,7 +125,7 @@ coordinate.
 ### Requirement: Board Rendering
 
 The system SHALL render the board either in full or from a single player's
-perspective.
+perspective, and SHALL render a cell holding several units without failing.
 
 #### Scenario: Full board rendering
 
@@ -117,6 +138,19 @@ perspective.
 - **THEN** that player's units are drawn using their symbols
 - **AND** all other cells are drawn as empty
 
+#### Scenario: Rendering a shared cell in full
+
+- **WHEN** a cell holding several units is rendered with no player given
+- **THEN** the cell is drawn using the symbol of one of the units it holds
+- **AND** no raw object representation is emitted
+
+#### Scenario: Rendering a shared cell for a player
+
+- **WHEN** a cell holding several units is rendered for a given player
+- **THEN** the cell is drawn using that player's unit if one of the units is theirs
+- **AND** otherwise the cell is drawn as empty
+- **AND** rendering does not fail
+
 ### Requirement: Optional Board Backend
 
 The system SHALL use the third-party `board` library for cell storage when it is
@@ -127,3 +161,19 @@ that the game runs without that optional dependency.
 
 - **WHEN** the `board` library is not installed
 - **THEN** the board still stores, retrieves, and draws cells identically
+
+### Requirement: Leaving A Cell
+
+The system SHALL remove only the departing unit when a unit leaves a cell, and
+SHALL leave any other unit in that cell where it is.
+
+#### Scenario: Last unit leaves a cell
+
+- **WHEN** the only unit in a cell moves away or is destroyed
+- **THEN** the cell becomes empty
+
+#### Scenario: One of several units leaves a shared cell
+
+- **WHEN** a unit moves out of a cell it shares with another unit
+- **THEN** the unit that stays remains in that cell
+- **AND** it remains on the board
