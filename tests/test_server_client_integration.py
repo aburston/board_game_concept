@@ -456,6 +456,80 @@ class TestServerClientIntegration(unittest.TestCase):
         client1.send_line('commit')
         client1.read_until('commit complete')
 
+    def test_client_reads_a_view_of_a_unit_it_fought_for_several_rounds(self):
+        # issue #3: a fight lasting several rounds recorded the same contact
+        # once per attack, so the view written for each player named the enemy
+        # unit once per attack and the client died restoring it a second time
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        # attack 1 against health 3 and 10: several rounds of attrition before
+        # the cross wins the square
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Cross X 1 10 100')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x1 0 1')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('waiting for turn to complete...')
+
+        client2 = self.start_client('test-01', 2)
+        client2.read_until('client.py> ')
+        client2.send_line('add type Naught O 1 3 100')
+        client2.read_until('client.py> ')
+        client2.send_line('add unit Naught o1 2 1')
+        client2.read_until('client.py> ')
+        client2.send_line('commit')
+        client2.read_until('waiting for turn to complete...')
+
+        # the deployment turn resolves
+        self.read_until_count(server, 'commit complete', 2)
+
+        # order the units into the same square, so that they fight
+        client1b = self.start_client('test-01', 1)
+        client1b.read_until('client.py> ')
+        client1b.send_line('move x1 east')
+        client1b.read_until('client.py> ')
+        client1b.send_line('commit')
+        client1b.read_until('waiting for turn to complete...')
+
+        client2b = self.start_client('test-01', 2)
+        client2b.read_until('client.py> ')
+        client2b.send_line('move o1 west')
+        client2b.read_until('client.py> ')
+        client2b.send_line('commit')
+        client2b.read_until('waiting for turn to complete...')
+
+        # the fight resolves
+        self.read_until_count(server, 'commit complete', 3)
+
+        # the view written for the winner names the enemy it fought once
+        players_dir = GAMES_DIR / '_test-01' / 'players'
+        seen = yaml.safe_load(
+            (players_dir / '1_units_seen.yaml').read_text())['units']
+        self.assertEqual(
+            sorted(unit['name'] for unit in seen), ['o1', 'x1'])
+
+        # and a client reading that view starts and lists the enemy once,
+        # rather than dying on the second copy of it
+        client1c = self.start_client('test-01', 1)
+        client1c.read_until('client.py> ')
+        client1c.send_line('show units')
+        # wait for the prompt that follows the listing, not the one before it
+        self.read_until_count(client1c, 'client.py> ', 2, timeout=15)
+        self.assertNotIn('already exists', client1c.output)
+        self.assertEqual(client1c.output.count('name: "o1"'), 1)
+
     def test_server_auto_load_equivalent(self):
         server = self.start_server(['-g', 'test-04'])
         server.read_until('server.py> ')

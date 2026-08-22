@@ -72,19 +72,24 @@ survivor-count bug that emptied a contested square out from under a unit that
 was still standing, and stops units destroyed in an earlier round from attacking in
 later ones.
 
-### 3. Duplicate unit name raises the wrong error (issue #3)
+### 3. A unit seen more than once crashed the client (issue #3)
 
-`board-model` requires that reusing a unit name within one player's forces fails
-with a duplicate-name error. `Board.add` does detect the duplicate, but its
-assertion message interpolates `player.name`, and `Player` defines only
-`number`. Evaluating the message raises
-`AttributeError: 'Player' object has no attribute 'name'`, so the real cause is
-never reported to the player.
+`visibility` requires contact to reveal an enemy unit to the player who made it.
+Contact was recorded once per attack rather than once per unit, so two units
+that fought over several rounds recorded each other many times; the per-player
+view then named the enemy once per contact, and the client died restoring a unit
+it had already restored. The report the player saw was misleading twice over:
+`Board.add`'s duplicate-name assertion interpolated `player.name` while `Player`
+defines only `number`, so evaluating the message raised
+`AttributeError: 'Player' object has no attribute 'name'` over the top of it.
 
-This is the most likely source of the confusing "already exists" report in
-issue #3, though the issue describes it arising when units are *encountered*
-rather than added; the enemy-type lookup on the seen-board load path in
-`GameData.load` is a second candidate and has not been ruled out.
+Reproduction: two units with more health than one round of attacks can spend
+moved into the same cell, and a client for either player was then started.
+
+Addressed by the `fix-duplicate-seen-units` change: contact is recorded once per
+unit, a view names each unit it reveals once, restoring a unit the board already
+holds puts the saved state back into it rather than failing, and the
+duplicate-name error names the player by number.
 
 ## Documented but not implemented
 
@@ -104,7 +109,8 @@ same thing. Aligning them is a terminology sweep across all ten capabilities,
 which no behavioural change should carry, so it is left as its own job.
 
 
-`src/BoardGameConcept.py` and `src/GameData.py` are byte-identical copies of the
-modules inside `src/board_game_concept/`. Only the package copies are importable
+`src/BoardGameConcept.py` and `src/GameData.py` are stale copies of the modules
+inside `src/board_game_concept/`, left behind by the restructure and drifting
+further from them with each fix. Only the package copies are importable
 via `pyproject.toml`, which packages `board_game_concept` from `src/`. The
 top-level copies are stale duplicates and are not covered by these specs.
