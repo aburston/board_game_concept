@@ -4,7 +4,7 @@ Written against the current code, before anything moves. See design.md —
 Decision 11. A scenario that fails here has found a divergence, not a
 regression: record it, do not fix it.
 
-- [ ] 1.1 Add `tests/test_cli_server_surface.py` covering the `game-server`
+- [x] 1.1 Add `tests/test_cli_server_surface.py` covering the `game-server`
       scenarios — blank input, unrecognised command, help, exit, board sizing
       and its refusals, adding players, loading board and player files, each
       `show` subcommand, incomplete `show`, commit and its refusal. Verify the
