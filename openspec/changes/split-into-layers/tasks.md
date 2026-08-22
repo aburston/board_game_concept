@@ -9,7 +9,7 @@ regression: record it, do not fix it.
       and its refusals, adding players, loading board and player files, each
       `show` subcommand, incomplete `show`, commit and its refusal. Verify the
       new file passes, or record the failures under task 1.4.
-- [ ] 1.2 Add `tests/test_cli_client_surface.py` covering the `player-client`
+- [x] 1.2 Add `tests/test_cli_client_surface.py` covering the `player-client`
       scenarios — startup and argument handling, blank input, unrecognised
       command, help, exit, defining types, deploying units, ordering moves and
       every refusal each of those has, the `show` subcommands, commit, and
