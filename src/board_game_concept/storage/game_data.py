@@ -4,7 +4,6 @@ from . import notify
 import sys
 import yaml
 import os
-import time
 
 DEBUG = False
 
@@ -265,13 +264,11 @@ class GameData:
                                   f"on_board {unit['on_board']}")
                     self.seen_board.commit()
 
+        # the session must belong to a player this game knows about, or to
+        # the administrator, who is player 0 and holds no units
         if self.player_number in self.players.keys():
-            # set the player_obj to provide context that limits visibility on
-            # several show commands, etc
-            player_obj = self.players[self.player_number]['obj']
+            pass
         elif self.player_number == 0:
-            # set the player_obj to provide context that limits visibility on
-            # several show commands, etc
             self.player_obj = None
         else:
             print(f"player {self.player_number} does not exist", file=sys.stderr)

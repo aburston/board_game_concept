@@ -108,23 +108,23 @@ Each restores what the spec already requires (design.md — Decision 13).
 
 ## 5. Grammar, parser and commands
 
-- [ ] 5.1 Add `cli/grammar.py` and `cli/parser.py` — a hand-written recursive
+- [x] 5.1 Add `cli/grammar.py` and `cli/parser.py` — a hand-written recursive
       descent parser over the current grammar, structured for the nesting it
       does not yet have (design.md — Decision 5). Verify with a new
       `tests/test_parser.py` covering every production and every arity and
       keyword error, with no game state involved.
-- [ ] 5.2 Add `service/commands.py` holding one command object per production,
+- [x] 5.2 Add `service/commands.py` holding one command object per production,
       as a uniform tree with a visitor (design.md — Decision 6). Verify the
       parser tests assert on command objects rather than on strings.
-- [ ] 5.3 Add `cli/roles.py` naming which commands each of the three roles may
+- [x] 5.3 Add `cli/roles.py` naming which commands each of the three roles may
       run, replacing the per-REPL role checks. Verify the observer
       characterisation test still refuses mutating commands with the same
       message.
-- [ ] 5.4 Have all three CLIs parse to command objects and then run their
+- [x] 5.4 Have all three CLIs parse to command objects and then run their
       existing code paths unchanged. Verify every characterisation test from
       task 1 passes with no edit, including the two divergences still marked
       xfail.
-- [ ] 5.5 Generate each role's `help` output from the grammar and its role
+- [x] 5.5 Generate each role's `help` output from the grammar and its role
       table, replacing the three hand-written strings. Verify the help
       scenarios in all three characterisation tests still pass.
 

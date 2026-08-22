@@ -1,7 +1,6 @@
 import copy
 
 from .cell import Empty
-from .player import Player
 from .unit import UnitType
 
 

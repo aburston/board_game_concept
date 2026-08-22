@@ -1,45 +1,26 @@
 #!/usr/bin/env python3
 
 import sys
-import yaml
-import os
-import time
-from getpass import getpass
 from pathlib import Path
 
 if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import UnitType, Board, Player, Empty, GameData
+from board_game_concept import UnitType, GameData
 from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
+from board_game_concept.cli import roles
+from board_game_concept.cli.help import print_help
+from board_game_concept.cli.parser import ParseError, parse
+
+ROLE = roles.CLIENT
 
 DEBUG = False
 
 
 def usage():
     print("client.py <gameno> <player_number>", file=sys.stderr)
-
-
-def command_help():
-    print("""
-add type <name> <symbol> <attack> <health> <energy>
-add unit <type> <name> <x> <y>
-
-show player - show player information
-show types - show types, this includes any enemy types seen
-show units - show units, this includes any enemy units that the player has seen in the last turn
-
-show board - shows the map of the board form the player's perspective
-
-move <unit_id/unit_name> <north|south|east|west> - move a unit in the specified direction, players can only move their own units
-
-commit - commit actions taken, this can't be undone
-
-help - display this information
-exit - exit the game client
-    """)
 
 
 def main(argv=None):
@@ -102,190 +83,127 @@ def main(argv=None):
         # interactive mode
         while True:
 
-            # read line from stdin + tokenize it
+            # read a line and make sense of it
             print(f"{argv[0]}> ", flush=True, end='')
             line = sys.stdin.readline().rstrip()
-            tokens = line.split()
-
-            # ignore empty lines
-            if len(tokens) == 0:
+            try:
+                command = parse(line)
+            except ParseError as error:
+                print(error.message)
                 continue
 
-            # command help
-            elif tokens[0] == 'help':
-                command_help()
+            # a blank line is not a command
+            if command is None:
                 continue
 
-            # show - board, units
-            elif tokens[0] == 'show':
-                if DEBUG:
-                    print(f"len(tokens): {len(tokens)}")
-                if len(tokens) == 1:
-                    print("invalid show command")
-                    continue
-                elif tokens[1] == 'board':
+            if not ROLE.allows(command):
+                print(ROLE.refusal(command))
+                continue
+
+            if command.kind == 'help':
+                print_help(ROLE)
+
+            elif command.kind == 'show':
+                if command.subject == 'board':
                     if seen_board is not None:
-                        if DEBUG:
-                            print("showing seen board")
                         print_board(seen_board)
                     elif board is None:
                         print("must create board - set size and commit")
                     else:
                         print_board(board, player_obj)
 
-                elif tokens[1] == 'types':
+                elif command.subject == 'types':
                     for player in players.keys():
                         if 'types' in players[player].keys():
-                            for types in players[player]['types'].keys():
-                                for unit_name in players[player]['types'].keys(
-                                ):
-                                    unit_type = players[player]['types'][unit_name]
-                                    print(
-                                        f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
+                            for unit_name in players[player]['types'].keys():
+                                unit_type = players[player]['types'][unit_name]
+                                print(
+                                    f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
 
-                elif tokens[1] == 'players':
+                elif command.subject == 'players':
                     for player in players.keys():
                         print(f"number: {player}")
-                elif tokens[1] == 'units':
+
+                elif command.subject == 'units':
                     if seen_board is not None:
-                        if DEBUG:
-                            print("showing seen units")
                         print(serialise_units(seen_board))
                     elif board is None:
                         print("must create board - set size and commit")
                     else:
                         print(serialise_units(board, player_obj))
-                else:
-                    print("invalid show command")
+
+            elif command.kind == 'add_type':
+                if not new_game:
+                    print("can't add types after first turn")
+                    continue
+                try:
+                    obj = UnitType(command.name, command.symbol, command.attack,
+                                   command.health, command.energy)
+                except Exception as e:
+                    print(f"error adding unit type: {e}")
+                    continue
+                players[player_number]['types'][command.name] = {
+                    'name': command.name,
+                    'symbol': command.symbol,
+                    'attack': command.attack,
+                    'health': command.health,
+                    'energy': command.energy,
+                    'obj': obj,
+                }
+
+            elif command.kind == 'add_unit':
+                if board is None:
+                    print("board must be loaded in order to place units")
+                    continue
+                if not new_game:
+                    print("can't add units after first turn")
+                    continue
+                try:
+                    unit_type = players[player_number]['types'][command.type_name]['obj']
+                    board.add(player_obj, command.x, command.y, command.name,
+                              unit_type)
+                    board.commit()
+                    # the view published by the server is what the player is
+                    # shown, so a unit deployed this turn has to be put there
+                    # too or it stays invisible to its own owner until the turn
+                    # resolves. Only the player's own unit is added, so nothing
+                    # the server has not revealed becomes visible.
+                    if seen_board is not None:
+                        seen_board.add(player_obj, command.x, command.y,
+                                       command.name, unit_type)
+                        seen_board.commit()
+                except Exception as e:
+                    print(f"error creating new unit {e}")
                     continue
 
-            # add - player, type, unit
-            elif tokens[0] == 'add':
-                if len(tokens) == 1:
-                    print("invalid add command")
-                    continue
-                elif tokens[1] == 'type':
-                    if len(tokens) != 7:
-                        print("must provide 5 args for type")
-                        continue
-                    if not new_game:
-                        print("can't add types after first turn")
-                        continue
-                    try:
-                        type_name = tokens[2]
-                        symbol = tokens[3]
-                        attack = tokens[4]
-                        health = tokens[5]
-                        energy = tokens[6]
-                        obj = UnitType(type_name, symbol, int(
-                            attack), int(health), int(energy))
-                        players[player_number]['types'][type_name] = {}
-                        players[player_number]['types'][type_name]['name'] = type_name
-                        players[player_number]['types'][type_name]['symbol'] = symbol
-                        players[player_number]['types'][type_name]['attack'] = attack
-                        players[player_number]['types'][type_name]['health'] = health
-                        players[player_number]['types'][type_name]['energy'] = energy
-                        players[player_number]['types'][type_name]['obj'] = obj
-                    except Exception as e:
-                        print(f"error adding unit type: {e}")
-                        continue
-                elif tokens[1] == 'unit':
-                    if len(tokens) != 6:
-                        print("must provide 4 args for unit")
-                        continue
-                    if board is None:
-                        print("board must be loaded in order to place units")
-                        continue
-                    if not new_game:
-                        print("can't add units after first turn")
-                        continue
-                    try:
-                        type_name = tokens[2]
-                        name = tokens[3]
-                        x = int(tokens[4])
-                        y = int(tokens[5])
-                        if DEBUG:
-                            print(f"{player_obj}, {x}, {y}, {name}, {players[player_number]['types'][type_name]['obj']}")
-                        board.add(
-                            player_obj,
-                            x,
-                            y,
-                            name,
-                            players[player_number]['types'][type_name]['obj'])
-                        board.commit()
-                        # the view published by the server is what the player
-                        # is shown, so a unit deployed this turn has to be put
-                        # there too or it stays invisible to its own owner
-                        # until a turn containing it has been resolved. Only
-                        # the player's own unit is added, so nothing the
-                        # server has not already revealed becomes visible.
-                        if seen_board is not None:
-                            seen_board.add(
-                                player_obj,
-                                x,
-                                y,
-                                name,
-                                players[player_number]['types'][type_name]['obj'])
-                            seen_board.commit()
-                    except Exception as e:
-                        print(f"error creating new unit {e}")
-                        continue
-                else:
-                    print("invalid add command")
-                    continue
-
-            # move - unit
-            elif tokens[0] == 'move':
-                if len(tokens) != 3:
-                    print("must provide 2 args for move")
-                    continue
-                elif board is None:
+            elif command.kind == 'move':
+                if board is None:
                     print("board must be loaded in order to move units")
                     continue
-                elif new_game:
+                if new_game:
                     print("can't move units until after the first turn is complete")
                     continue
                 try:
-                    unit_name = tokens[1]
-                    direction = tokens[2]
-                    # TODO - make sure you implment rules to make this unique
-                    # per player
-                    unit = board.getUnitByName(unit_name)[0]
+                    unit = board.getUnitByName(command.unit)[0]
                     if player_number != unit.player.number:
                         print("can't move units belonging to other players")
                         continue
                     if not unit.on_board:
                         print("can't move units not on the board")
                         continue
-                    if direction == 'north':
-                        direction = UnitType.NORTH
-                    elif direction == 'south':
-                        direction = UnitType.SOUTH
-                    elif direction == 'east':
-                        direction = UnitType.EAST
-                    elif direction == 'west':
-                        direction = UnitType.WEST
-                    else:
-                        print(f"invalid direction {direction}")
-                        continue
-                    unit.move(direction)
+                    unit.move(command.direction)
                     print(serialise_units(board, player_obj))
                 except Exception as e:
                     print(f"error moving unit {e}")
                     continue
 
-            # commiting the game saves all input data to yaml for the game
-            # setup step
-            elif tokens[0] == 'commit':
+            elif command.kind == 'commit':
                 if data.clientSave():
                     print("commit complete")
                     break
 
-            # leave
-            elif tokens[0] == 'exit':
+            elif command.kind == 'exit':
                 sys.exit(0)
-            else:
-                print("invalid command")
 
 
 if __name__ == "__main__":

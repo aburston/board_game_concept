@@ -2,8 +2,6 @@
 
 import sys
 import yaml
-import os
-import time
 import argparse
 from pathlib import Path
 
@@ -11,9 +9,14 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import UnitType, Board, Player, Empty, GameData
+from board_game_concept import Board, Player, GameData
 from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
+from board_game_concept.cli import roles
+from board_game_concept.cli.help import print_help
+from board_game_concept.cli.parser import ParseError, parse
+
+ROLE = roles.SERVER
 
 DEBUG = False
 
@@ -23,21 +26,6 @@ def usage():
         "usage, server.py <gameno> [<boardfile>] [<playerfile 1>] ... [<playerfile n>]",
         file=sys.stderr)
 
-
-def command_help():
-    print("""
-add player <number> - add a new player to the game, only player 0 i.e. the game admin can do this
-load board <board_file> - loads the board size from a file
-load player <player_file> - loads the player data, player types and player units from a file
-set board <size_x> <size_y> - set the size of the board at the beginning of the game, only player 0 can do this before the start of the game
-show board - show the board
-show player - show player information
-show types - show player defined unit types
-commit - commit actions taken, this can't be undone
-
-help - display this information
-exit - exit the game client
-    """)
 
 # load board <board_file> - loads the board size from a file
 
@@ -131,189 +119,124 @@ def main(argv=None):
 
         # interactive mode
         while new_game:
-            # read line from stdin + tokenize it
+            # read a line and make sense of it
             print(f"{argv[0]}> ", flush=True, end='')
             line = sys.stdin.readline().rstrip()
-            tokens = line.split()
-
-            # ignore empty lines
-            if len(tokens) == 0:
+            try:
+                command = parse(line)
+            except ParseError as error:
+                print(error.message)
                 continue
 
-            # command help
-            elif tokens[0] == 'help':
-                command_help()
+            # a blank line is not a command
+            if command is None:
                 continue
 
-            # show - board, units
-            elif tokens[0] == 'show':
-                if DEBUG:
-                    print(f"len(tokens): {len(tokens)}")
-                if len(tokens) == 1:
-                    print("invalid show command")
-                    continue
-                elif tokens[1] == 'board':
+            if not ROLE.allows(command):
+                print(ROLE.refusal(command))
+                continue
+
+            if command.kind == 'help':
+                print_help(ROLE)
+
+            elif command.kind == 'show':
+                if command.subject == 'board':
                     show_board(data, player_number)
-                elif tokens[1] == 'types':
+
+                elif command.subject == 'types':
                     for player in players.keys():
                         if 'types' in players[player].keys():
-                            for types in players[player]['types'].keys():
-                                for unit_name in players[player]['types'].keys(
-                                ):
-                                    unit_type = players[player]['types'][unit_name]
-                                    print(
-                                        f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
+                            for unit_name in players[player]['types'].keys():
+                                unit_type = players[player]['types'][unit_name]
+                                print(
+                                    f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
 
-                elif tokens[1] == 'players':
+                elif command.subject == 'players':
                     for player in players.keys():
                         print(f"number: {player}")
-                elif tokens[1] == 'units':
+
+                elif command.subject == 'units':
                     if seen_board is not None:
-                        if DEBUG:
-                            print("showing seen units")
                         print(serialise_units(seen_board))
                     elif board is None:
                         print("must create board - set size and commit")
                     else:
                         print(serialise_units(board, player_obj))
-                elif tokens[1] == 'pending':
+
+                elif command.subject == 'pending':
                     for player in players.keys():
                         if 'moves' in players[player].keys():
                             print(f"player: {player}, moves: {players[player]['moves']}")
-                else:
-                    print("invalid show command")
-                    continue
 
-            # set - size, player
-            elif tokens[0] == 'set':
-                if DEBUG:
-                    print(f"len(tokens): {len(tokens)}")
-                if len(tokens) == 1:
-                    print("invalid set command")
+            elif command.kind == 'set_board':
+                if board is not None:
+                    print("can't resize an existing board")
                     continue
-                elif tokens[1] == 'board':
-                    if player_number != 0:
-                        print("only the game admin (player 0) can set board size")
-                        continue
-                    if board is not None:
-                        print("can't resize an existing board")
-                        continue
-                    if len(tokens) != 4:
-                        print("must provide x and y for size")
-                        continue
-                    try:
-                        size_x = int(tokens[2])
-                        size_y = int(tokens[3])
-                    except ValueError:
-                        print("x and y must be a numbers")
-                        continue
-                    if size_x < 2:
-                        print("x must be greater than 1")
-                        continue
-                    if size_y < 2:
-                        print("y must be greater than 1")
-                        continue
-                    # the board has its own limits beyond the minimum, and
-                    # reports them itself
-                    try:
-                        board = Board(size_x, size_y)
-                    except AssertionError as e:
-                        print(e)
-                        continue
-                    data.setBoard(board)
-                else:
-                    print("invalid set command")
+                size_x = command.size_x
+                size_y = command.size_y
+                if size_x < 2:
+                    print("x must be greater than 1")
                     continue
+                if size_y < 2:
+                    print("y must be greater than 1")
+                    continue
+                # the board has its own limits beyond the minimum, and
+                # reports them itself
+                try:
+                    board = Board(size_x, size_y)
+                except AssertionError as e:
+                    print(e)
+                    continue
+                data.setBoard(board)
 
-            # add - player, type, unit
-            elif tokens[0] == 'add':
-                if len(tokens) < 2:
-                    print("invalid add command")
+            elif command.kind == 'add_player':
+                if new_game is False:
+                    print("can't add players to an existing game")
                     continue
-                elif tokens[1] == 'player':
-                    if len(tokens) != 3:
-                        print("must provide 1 arg for player")
-                    elif new_game == False:
-                        print("can't add players to an existing game")
-                    else:
-                        try:
-                            number = int(tokens[2])
-                        except ValueError:
-                            print("player number must be a number")
-                            continue
-                        players[number] = {
-                            'obj': Player(number),
-                            'types': {}
-                        }
-                else:
-                    print("invalid add command")
-                    continue
+                players[command.number] = {
+                    'obj': Player(command.number),
+                    'types': {}
+                }
 
-            # load - player
-            elif tokens[0] == 'load':
-                if len(tokens) < 2:
-                    print("invalid load command")
+            elif command.kind == 'load_player':
+                if new_game is False:
+                    print("can't add players to an existing game")
                     continue
-                elif tokens[1] == 'player':
-                    if len(tokens) != 3:
-                        print("must provide 1 args for load player")
-                    elif new_game == False:
-                        print("can't add players to an existing game")
-                    else:
-                        player_data = {}
-                        try:
-                            with open(tokens[2]) as f:
-                                player_data = yaml.safe_load(f)
-                                if DEBUG:
-                                    print("finished player data")
-                        except Exception as e:
-                            print(f"Error loading player file {tokens[2]} {e}")
-                            continue
-                        number = int(player_data['number'])
-                        players[number] = {
-                            'obj': Player(number),
-                            'types': player_data['types'],
-                            'units': player_data['units']
-                        }
-                elif tokens[1] == 'board':
-                    if len(tokens) != 3:
-                        print("must provide 1 args for load board")
-                    else:
-                        board_data = {}
-                        try:
-                            with open(tokens[2]) as f:
-                                board_data = yaml.safe_load(f)
-                                if DEBUG:
-                                    print("finished player data")
-                        except Exception as e:
-                            print(f"Error loading player file {tokens[2]} {e}")
-                            continue
-                        size_x = int(board_data['board']['size_x'])
-                        size_y = int(board_data['board']['size_y'])
-                        # immediately create the board object
-                        board = Board(size_x, size_y)
-                        data.setBoard(board)
-
-                else:
-                    print("invalid load command")
+                try:
+                    with open(command.path) as f:
+                        player_data = yaml.safe_load(f)
+                except Exception as e:
+                    print(f"Error loading player file {command.path} {e}")
                     continue
+                number = int(player_data['number'])
+                players[number] = {
+                    'obj': Player(number),
+                    'types': player_data['types'],
+                    'units': player_data['units']
+                }
 
-            # committing the game saves all input data to yaml for the game
-            # setup step
-            elif tokens[0] == 'commit':
+            elif command.kind == 'load_board':
+                try:
+                    with open(command.path) as f:
+                        board_data = yaml.safe_load(f)
+                except Exception as e:
+                    print(f"Error loading player file {command.path} {e}")
+                    continue
+                size_x = int(board_data['board']['size_x'])
+                size_y = int(board_data['board']['size_y'])
+                board = Board(size_x, size_y)
+                data.setBoard(board)
+
+            elif command.kind == 'commit':
                 # do all the commit actions for the first commit
                 if data.serverSave():
                     print("commit complete")
                     break
-                else:
-                    # commit failed, go back to interactive prompt to resolve
-                    # problems
-                    continue
-            # leave
-            elif tokens[0] == 'exit':
+                # commit failed, go back to the prompt to resolve the problem
+                continue
+
+            elif command.kind == 'exit':
                 sys.exit(0)
-            else:
-                print("invalid command")
 
         # do all the commit actions, this will be run when the server is
         # non-interactive
