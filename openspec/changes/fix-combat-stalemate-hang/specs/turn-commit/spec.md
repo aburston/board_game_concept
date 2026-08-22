@@ -18,3 +18,9 @@ deployed onto an occupied cell contests it.
 - **THEN** the unit joins that cell
 - **AND** the contest is resolved in the combat phase of the same turn
 - **AND** the turn continues normally for all other units
+
+#### Scenario: Deploying two units of the same player onto one cell
+
+- **WHEN** a player deploys two of their own units at the same coordinates
+- **THEN** the turn resolves without raising
+- **AND** the two units contest the cell under friendly fire

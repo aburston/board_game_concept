@@ -46,15 +46,33 @@ perspective, and SHALL render a cell holding several units without failing.
 - **THEN** that player's units are drawn using their symbols
 - **AND** all other cells are drawn as empty
 
-#### Scenario: Rendering a stacked cell in full
+#### Scenario: Rendering a shared cell in full
 
 - **WHEN** a cell holding several units is rendered with no player given
 - **THEN** the cell is drawn using the symbol of one of the units it holds
 - **AND** no raw object representation is emitted
 
-#### Scenario: Rendering a stacked cell for a player
+#### Scenario: Rendering a shared cell for a player
 
 - **WHEN** a cell holding several units is rendered for a given player
 - **THEN** the cell is drawn using that player's unit if one of the units is theirs
 - **AND** otherwise the cell is drawn as empty
 - **AND** rendering does not fail
+
+## ADDED Requirements
+
+### Requirement: Leaving A Cell
+
+The system SHALL remove only the departing unit when a unit leaves a cell, and
+SHALL leave any other unit in that cell where it is.
+
+#### Scenario: Last unit leaves a cell
+
+- **WHEN** the only unit in a cell moves away or is destroyed
+- **THEN** the cell becomes empty
+
+#### Scenario: One of several units leaves a shared cell
+
+- **WHEN** a unit moves out of a cell it shares with another unit
+- **THEN** the unit that stays remains in that cell
+- **AND** it remains on the board

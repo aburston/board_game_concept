@@ -92,6 +92,9 @@ class UnitType:
         self.on_board = False
         self.seen_by = []
         self.player = None
+        # cell this unit vacated during the current turn's preCommit phase, so
+        # that an undecided contest can send it back where it came from
+        self.moved_from = None
 
     def move(self, direction):
         self.state = UnitType.MOVING
@@ -137,10 +140,9 @@ class UnitType:
     # trying to move simultaneously into the same square
     def preCommit(self):
         if self.state == UnitType.INITIAL:
-            # make sure that location on the board is empty
-            assert type(self.board[self.x, self.y]) is Empty, (
-                f"can't add {self.name} to board at ({self.x},{self.y})"
-            )
+            # deployment is resolved in commit(), and may land on an occupied
+            # cell, which starts a contest rather than failing
+            pass
         elif self.state == UnitType.MOVING:
             dest_x = self.x
             dest_y = self.y
@@ -181,7 +183,8 @@ class UnitType:
                 # only act if the unit has enough energy
                 if energy >= 0:
                     self.energy = energy
-                    self.board[self.x, self.y] = Empty()
+                    self.vacate()
+                    self.moved_from = (self.x, self.y)
                     self.setCoords(dest_x, dest_y)
                     self.board[self.x, self.y] = [self]
                     if DEBUG:
@@ -193,7 +196,8 @@ class UnitType:
                 # only act if the unit has enough energy
                 if energy >= 0:
                     self.energy = energy
-                    self.board[self.x, self.y] = Empty()
+                    self.vacate()
+                    self.moved_from = (self.x, self.y)
                     self.setCoords(dest_x, dest_y)
                     self.board[dest_x, dest_y].append(self)
                     if DEBUG:
@@ -204,7 +208,8 @@ class UnitType:
                 # moving into an occupied square starts a combat exchange
                 if self.energy >= self.attack:
                     target = self.board[dest_x, dest_y]
-                    self.board[self.x, self.y] = Empty()
+                    self.vacate()
+                    self.moved_from = (self.x, self.y)
                     self.setCoords(dest_x, dest_y)
                     self.board[dest_x, dest_y] = [target, self]
                     if DEBUG:
@@ -216,71 +221,138 @@ class UnitType:
         else:
             pass
 
+    # takes this unit out of the cell it holds, leaving behind anything else
+    # sharing that cell
+    def vacate(self):
+        cell = self.board[self.x, self.y]
+        if not (type(cell) is list):
+            self.board[self.x, self.y] = Empty()
+            return
+        remaining = [unit for unit in cell if unit is not self]
+        if not remaining:
+            self.board[self.x, self.y] = Empty()
+        elif len(remaining) == 1:
+            self.board[self.x, self.y] = remaining[0]
+        else:
+            self.board[self.x, self.y] = remaining
+
+    # sends this unit back to the cell it left this turn, so that an undecided
+    # contest leaves the board as it was. Returns True if the unit retreated.
+    def retreat(self):
+        if self.moved_from is None:
+            # nothing to go back to: the unit was already holding this cell, or
+            # was deployed onto it this turn
+            return False
+        from_x, from_y = self.moved_from
+        if not (type(self.board[from_x, from_y]) is Empty):
+            # something else took the cell during this turn, so there is nowhere
+            # to go back to and the unit stays where it is
+            return False
+        self.setCoords(from_x, from_y)
+        self.board[from_x, from_y] = self
+        self.moved_from = None
+        if DEBUG:
+            print(f"retreat: {self.name} falls back to [{from_x},{from_y}]")
+        return True
+
+    # resolves the contest in the cell this unit occupies. Attack rounds repeat
+    # until at most one contestant is left standing or a round lands no attacks,
+    # which is what stops a contest nobody can win from spinning forever. There
+    # is friendly fire: a contestant attacks every other unit in the cell,
+    # whoever owns it. Running out of energy never destroys a unit, it only
+    # makes it inert.
+    def resolveContest(self):
+        cell_x = self.x
+        cell_y = self.y
+        contestants = self.board[cell_x, cell_y]
+        if DEBUG:
+            print(
+                f"{self.name} commit process list in [{cell_x},{cell_y}]: "
+                f"{contestants}"
+            )
+        while True:
+            # recount the survivors afresh each round, rather than decrementing
+            # a running total that counts the same casualty again every round
+            standing = [unit for unit in contestants if not unit.destroyed]
+            if len(standing) < 2:
+                break
+            if DEBUG:
+                print(
+                    f"{self.name} commit process {len(standing)} units in square "
+                    f"[{cell_x},{cell_y}]"
+                )
+            attacked = False
+            # attackers and targets are the units standing at the start of the
+            # round, so a unit destroyed mid-round still lands its own attack
+            for unit in standing:
+                for target in standing:
+                    if unit is target:
+                        continue
+                    energy = unit.energy - unit.attack
+                    if energy < 0:
+                        # too spent to attack: inert, but not destroyed
+                        continue
+                    unit.energy = energy
+                    if DEBUG:
+                        print(f"commit: {unit.name} attack {target.name}")
+                    target.incomingAttack(unit.attack)
+                    # populuate seen_by
+                    unit.seen_by.append(target)
+                    target.seen_by.append(unit)
+                    attacked = True
+            if not attacked:
+                # no contestant can pay for an attack, so the contest is over
+                break
+
+        for unit in contestants:
+            if unit.destroyed:
+                unit.on_board = False
+
+        survivors = [unit for unit in contestants if not unit.destroyed]
+        if len(survivors) > 1:
+            # nobody won the cell, so everyone who moved in goes back where it
+            # came from and the cell is left as it was
+            survivors = [unit for unit in survivors if not unit.retreat()]
+
+        if not survivors:
+            self.board[cell_x, cell_y] = Empty()
+        elif len(survivors) == 1:
+            self.board[cell_x, cell_y] = survivors[0]
+            if DEBUG:
+                print(
+                    f"{self.name} commit add unit to square [{cell_x},{cell_y}]"
+                )
+        else:
+            # no survivor could fall back, so they share the cell
+            self.board[cell_x, cell_y] = survivors
+
     # processes all arrays created in the precommit phase, by calculating attacks and marking units DESTROYED
     # removes all DESTROYED units from the board
     def commit(self):
         if self.state == UnitType.INITIAL:
-            # make sure that location on the board is empty
-            assert type(self.board[self.x, self.y]) is Empty, (
-                f"can't add {self.name} to board at ({self.x},{self.y})"
-            )
-            # add the unit to the board
-            self.board[self.x, self.y] = self
+            # add the unit to the board, joining whatever already holds the
+            # cell rather than requiring it to be empty
+            occupant = self.board[self.x, self.y]
+            if type(occupant) is Empty:
+                self.board[self.x, self.y] = self
+            elif type(occupant) is list:
+                occupant.append(self)
+            else:
+                self.board[self.x, self.y] = [occupant, self]
             self.state = UnitType.NOP
+            if type(self.board[self.x, self.y]) is list:
+                # deploying onto an occupied cell contests it, and the contest
+                # is settled in this same turn
+                self.resolveContest()
         elif self.state == UnitType.MOVING:
             assert not (
                 self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state"
         else:
             if type(self.board[self.x, self.y]) is list:
-                unit_count = len(self.board[self.x, self.y])
-                if DEBUG:
-                    print(
-                        f"{self.name} commit process list in [{self.x},{self.y}]: "
-                        f"{self.board[self.x, self.y]}"
-                    )
-                while unit_count > 1:
-                    if DEBUG:
-                        print(
-                            f"{self.name} commit process {unit_count} units in square "
-                            f"[{self.x},{self.y}]"
-                        )
-                    for unit in self.board[self.x, self.y]:
-                        for target in self.board[self.x, self.y]:
-                            if DEBUG:
-                                print(
-                                    f"{self.name} commit processing "
-                                    f"{unit.name} -> {target.name}"
-                                )
-                            if not (unit is target):
-                                energy = unit.energy - unit.attack
-                                if energy >= 0:
-                                    unit.energy = energy
-                                    if DEBUG:
-                                        print(
-                                            f"commit: {target.name} attack "
-                                            f"{unit.name}"
-                                        )
-                                    target.incomingAttack(unit.attack)
-                                    # populuate seen_by
-                                    unit.seen_by.append(target)
-                                    target.seen_by.append(unit)
-                    for unit in self.board[self.x, self.y]:
-                        if unit.destroyed:
-                            unit_count = unit_count - 1
-                for unit in self.board[self.x, self.y]:
-                    if not unit.destroyed:
-                        self.board[self.x, self.y] = unit
-                        if DEBUG:
-                            print(
-                                f"{self.name} commit add unit to square [{self.x},{self.y}]"
-                            )
-                    else:
-                        unit.on_board = False
-                if unit_count == 0:
-                    self.board[self.x, self.y] = Empty()
+                self.resolveContest()
             else:
                 if self.destroyed:
-                    self.board[self.x, self.y] = Empty()
+                    self.vacate()
                     self.on_board = False
                     if DEBUG:
                         print(
@@ -393,17 +465,25 @@ class Board:
         return len(self.units)
 
     def print(self, player=None):
-        def _render_unit(unit):
-            if type(unit) is Empty:
-                return unit.__str__()
-            elif unit.player == player:
-                return unit.__str__()
-            else:
+        def _render_cell(cell):
+            if type(cell) is Empty:
+                return cell.__str__()
+            if type(cell) is list:
+                # a contested cell holds several units: show one of them rather
+                # than the repr of the list
+                occupants = [unit for unit in cell if not unit.destroyed]
+                if not occupants:
+                    return Empty().__str__()
+                if player is None:
+                    return occupants[0].__str__()
+                for unit in occupants:
+                    if unit.player == player:
+                        return unit.__str__()
                 return Empty().__str__()
-        if player is None:
-            self.board.draw()
-        else:
-            self.board.draw(callback=_render_unit)
+            if player is None or cell.player == player:
+                return cell.__str__()
+            return Empty().__str__()
+        self.board.draw(callback=_render_cell)
 
     def listTypes(self, player=None):
         typesStr = "types:\n"
@@ -475,10 +555,12 @@ class Board:
         return self.board[x, y]
 
     def commit(self):
-        # clear the seen_by list in each unit on the board
+        # clear the seen_by list and the previous turn's origin cell in each
+        # unit on the board
         for unit in self.units:
             if unit.on_board:
                 unit.seen_by = []
+                unit.moved_from = None
         # pre_commit the actions required
         for unit in self.units:
             if unit.on_board:

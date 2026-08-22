@@ -28,27 +28,41 @@ openspec validate --specs --strict
 ## Known divergences
 
 The specs describe intended behaviour. The following are places where the
-current implementation does not meet them. Each was reproduced against
-`src/board_game_concept/` rather than inferred from reading.
+implementation diverged from them. Each was reproduced against
+`src/board_game_concept/` rather than inferred from reading. Two have since been
+fixed; the spec deltas describing the behaviour they now have live in
+`openspec/changes/fix-combat-stalemate-hang/` until that change is archived.
 
-### 1. Deploying onto an occupied cell crashes (issue #1)
+### 1. Deploying onto an occupied cell crashes (issue #1) — fixed
 
-`turn-commit` requires that deploying a unit onto a non-empty cell fails
-cleanly. In practice it raises an uncaught `AssertionError`
-(`can't add <name> to board at (x,y)`) out of `UnitType.preCommit`, which
-propagates and terminates the session rather than being reported.
+`UnitType.preCommit` and `UnitType.commit` raised an uncaught `AssertionError`
+(`can't add <name> to board at (x,y)`) when a unit was deployed onto a cell that
+already held one, which propagated and terminated the session rather than being
+reported.
 
-### 2. A contest neither unit can win hangs the server (issue #2)
+Addressed by the `fix-combat-stalemate-hang` change: deployment no longer
+requires an empty cell. A unit deployed onto an occupied cell joins it and the
+contest is resolved in the combat phase of the same turn. The change does not
+otherwise alter how deployment conflicts are reported to the player, so issue #1
+stays open for that.
 
-`combat-resolution` requires that combat runs to a decision within the turn.
-`UnitType.commit` loops `while unit_count > 1`, and `unit_count` only decreases
-when a unit is destroyed. Two units that contest a cell but cannot damage each
-other — for example, both with energy below their attack value — never reduce
-the count, and the loop never terminates. This is an unbounded spin, not a slow
-turn: the server stops making progress.
+### 2. A contest neither unit can win hangs the server (issue #2) — fixed
 
-Reproduction: two units with `energy = 1` and `attack = 5` moved into the same
+`UnitType.commit` looped `while unit_count > 1`, and `unit_count` only decreased
+when a unit was destroyed. Two units that contested a cell but could not damage
+each other — for example, both with energy below their attack value — never
+reduced the count, and the loop never terminated. This was an unbounded spin,
+not a slow turn: the server stopped making progress.
+
+Reproduction: two units with energy below their attack value moved into the same
 cell.
+
+Addressed by the `fix-combat-stalemate-hang` change: combat ends when a round
+lands no attacks, and an undecided contest returns every unit that moved in to
+the cell it came from, so nobody wins the square. The same change fixes a
+survivor-count bug that emptied a contested cell out from under a unit that was
+still standing, and stops units destroyed in an earlier round from attacking in
+later ones.
 
 ### 3. Duplicate unit name raises the wrong error (issue #3)
 

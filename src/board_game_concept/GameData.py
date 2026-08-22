@@ -337,7 +337,9 @@ class GameData:
                     if state == UnitType.INITIAL:
                         self.board.add(player, x, y, name, unit_type)
                     elif state == UnitType.MOVING:
-                        actual_unit = self.board.getUnitByCoords(x, y)
+                        # resolve the order against the unit it names, not
+                        # against the cell, which may hold several units
+                        actual_unit = self.board.getUnitByName(name, player)[0]
                         actual_unit.move(direction)
                         if DEBUG:
                             print(f"moving unit at ({x},{y}) {str(direction)}")

@@ -18,7 +18,7 @@ within the turn in every case.
 - **THEN** the weaker unit is destroyed
 - **AND** the stronger unit holds the cell
 
-#### Scenario: Stalemate when no contestant can attack
+#### Scenario: Undecided when no contestant can attack
 
 - **WHEN** a round begins in which every surviving contestant has less energy than its attack value
 - **THEN** no damage is dealt
@@ -57,7 +57,8 @@ unit.
 
 The system SHALL leave the surviving unit in sole possession of the contested
 cell when the contest is decided, SHALL empty the cell when no unit survives,
-and SHALL leave the survivors stacked in the cell when the contest is undecided.
+and SHALL return every survivor that moved into the cell to the cell it came
+from when the contest is undecided.
 
 #### Scenario: One survivor
 
@@ -69,25 +70,40 @@ and SHALL leave the survivors stacked in the cell when the contest is undecided.
 - **WHEN** combat destroys every unit contesting a cell
 - **THEN** the cell becomes empty
 
-#### Scenario: Undecided contest leaves units stacked
+#### Scenario: Undecided contest between units that all moved in
 
-- **WHEN** combat ends in stalemate with more than one unit surviving
-- **THEN** every survivor remains in that cell
-- **AND** each survivor remains on the board
+- **WHEN** combat ends undecided and every survivor moved into the cell this turn
+- **THEN** each survivor is returned to the cell it came from
+- **AND** no survivor is destroyed
+- **AND** the contested cell is left empty
+
+#### Scenario: Undecided contest against a unit that held the cell
+
+- **WHEN** combat ends undecided between a unit that moved in and a unit already holding the cell
+- **THEN** the unit that moved in is returned to the cell it came from
+- **AND** the unit that held the cell keeps it
+
+#### Scenario: Survivor with nowhere to fall back
+
+- **WHEN** combat ends undecided and a survivor neither moved this turn nor can return to the cell it left
+- **THEN** that survivor remains in the contested cell
+- **AND** it remains on the board
 - **AND** the cell is treated as occupied by any unit attempting to enter it
 
 ## ADDED Requirements
 
 ### Requirement: Inert Units
 
-The system SHALL treat a unit that can no longer pay for any action as inert
-rather than removed: it holds its cell, obstructs movement, and can only be
-cleared by an opponent destroying it.
+The system SHALL treat a unit that can no longer pay for an action as inert
+rather than removed: it stays on the board, holds its cell, obstructs movement,
+and can only be cleared by an opponent destroying it.
 
-#### Scenario: Inert unit cannot act
+#### Scenario: Inert unit cannot attack
 
-- **WHEN** a unit's energy is below both its attack value and the cost of moving
-- **THEN** it cannot attack and cannot move
+- **WHEN** a unit's energy is below its attack value
+- **THEN** it cannot attack
+- **AND** it is not destroyed
+- **AND** it stays on the board
 
 #### Scenario: Inert unit still blocks
 
@@ -99,3 +115,35 @@ cleared by an opponent destroying it.
 - **WHEN** an opponent with enough energy attacks an inert unit
 - **THEN** the inert unit takes damage as normal
 - **AND** it is destroyed once its health is exhausted
+
+### Requirement: Friendly Fire
+
+The system SHALL have every unit in a contested cell attack every other unit in
+that cell, without regard to which player owns it.
+
+#### Scenario: Units of the same player contest a cell
+
+- **WHEN** two units belonging to the same player contest a cell
+- **THEN** they attack each other on the same terms as units of opposing players
+- **AND** either may be destroyed
+
+#### Scenario: Attacks are not limited to opponents
+
+- **WHEN** a cell is contested by units of more than one player
+- **THEN** each unit attacks every other unit in the cell regardless of owner
+
+### Requirement: Attackers Are The Units Standing At The Start Of A Round
+
+The system SHALL draw both attackers and targets for a round from the units
+undestroyed when that round begins, so that a unit destroyed during a round
+still lands its own attack for that round and takes no part in later rounds.
+
+#### Scenario: A unit destroyed mid-round still strikes
+
+- **WHEN** a unit is destroyed by an attack during a round
+- **THEN** its own attack for that round is still applied
+
+#### Scenario: A destroyed unit takes no part in later rounds
+
+- **WHEN** a round begins after a unit has been destroyed
+- **THEN** that unit neither attacks nor is attacked

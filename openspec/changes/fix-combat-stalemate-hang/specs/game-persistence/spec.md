@@ -15,7 +15,7 @@ it on load, including units already destroyed and units sharing a cell.
 - **WHEN** a game is loaded and `data/units.yaml` exists
 - **THEN** each unit is recreated on the board with its stored health, energy, destroyed flag, and on-board flag
 
-#### Scenario: Restoring a stacked cell
+#### Scenario: Restoring a shared cell
 
 - **WHEN** a saved game holds several units on one cell
 - **THEN** loading it restores every one of those units to that cell
@@ -44,7 +44,7 @@ unit it names rather than to whatever occupies the cell.
 - **WHEN** a player publishes an order with a state that is not `INITIAL`, `MOVING`, or `NOP`
 - **THEN** the server rejects it as invalid
 
-#### Scenario: Applying an order to a unit on a stacked cell
+#### Scenario: Applying an order to a unit on a shared cell
 
 - **WHEN** the server applies a move order for a unit whose cell holds several units
 - **THEN** the order is applied to the named unit belonging to the ordering player

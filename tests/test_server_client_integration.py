@@ -5,6 +5,7 @@ import shutil
 import signal
 import unittest
 import threading
+import yaml
 from pathlib import Path
 from subprocess import Popen, PIPE
 
@@ -197,6 +198,92 @@ class TestServerClientIntegration(unittest.TestCase):
         # players have committed.
         server.read_until('board: {', timeout=30)
         self.assertIn('board:', server.output)
+
+    def read_until_count(self, proc, substring, count, timeout=90):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with proc._lock:
+                if proc.output.count(substring) >= count:
+                    return proc.output
+            if proc.proc.poll() is not None:
+                with proc._lock:
+                    raise RuntimeError(
+                        f"Server exited unexpectedly (exit code {proc.proc.returncode}). "
+                        f"Output:\n{proc.output}")
+            time.sleep(0.05)
+        with proc._lock:
+            raise TimeoutError(
+                f"Timed out waiting for {count} occurrences of '{substring}'. "
+                f"Current output:\n{proc.output}")
+
+    def test_two_units_moving_onto_the_same_square_resolve_the_turn(self):
+        # issue #2: two units too spent to attack, ordered onto the same square,
+        # used to spin forever in the server's commit and block every player.
+        # The server prints "commit complete" once per resolved turn: the
+        # interactive setup, then the deployment, then the contested move.
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        # attack 5 with energy 1: enough energy to move once, never enough to
+        # attack, so neither unit can win the square
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Spent S 5 1 1')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Spent s1 0 1')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('waiting for turn to complete...')
+
+        client2 = self.start_client('test-01', 2)
+        client2.read_until('client.py> ')
+        client2.send_line('add type Spent T 5 1 1')
+        client2.read_until('client.py> ')
+        client2.send_line('add unit Spent t1 2 1')
+        client2.read_until('client.py> ')
+        client2.send_line('commit')
+        client2.read_until('waiting for turn to complete...')
+
+        # the deployment turn resolves
+        self.read_until_count(server, 'commit complete', 2)
+
+        # now order both units onto the middle square
+        client1b = self.start_client('test-01', 1)
+        client1b.read_until('client.py> ')
+        client1b.send_line('move s1 east')
+        client1b.read_until('client.py> ')
+        client1b.send_line('commit')
+        client1b.read_until('waiting for turn to complete...')
+
+        client2b = self.start_client('test-01', 2)
+        client2b.read_until('client.py> ')
+        client2b.send_line('move t1 west')
+        client2b.read_until('client.py> ')
+        client2b.send_line('commit')
+        client2b.read_until('waiting for turn to complete...')
+
+        # the contested turn resolves rather than spinning
+        self.read_until_count(server, 'commit complete', 3)
+
+        # nobody won the contested square: both units fell back to where they
+        # started, and neither was destroyed
+        units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
+        units = yaml.safe_load(units_file.read_text())['units']
+        by_name = {unit['name']: unit for unit in units}
+
+        self.assertEqual((by_name['s1']['x'], by_name['s1']['y']), (0, 1))
+        self.assertEqual((by_name['t1']['x'], by_name['t1']['y']), (2, 1))
+        self.assertFalse(by_name['s1']['destroyed'])
+        self.assertFalse(by_name['t1']['destroyed'])
 
     def test_server_auto_load_equivalent(self):
         server = self.start_server(['-g', 'test-04'])
