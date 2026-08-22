@@ -328,9 +328,6 @@ Steps 5–7 are the ones that need step 1 to have happened.
 None of these change the approach, the sequence, or the interfaces above; all
 can be answered while the work is in flight.
 
-- `Board.listTypes` (`BoardGameConcept.py:515`) is called from nowhere, and
-  shadows its own `player` parameter in its loop. Delete it during step 4 or
-  leave it for a cleanup change?
 - `src/board_game_concept/test_suite.py` and its `board-game-test-suite` console
   script duplicate `tests/test_basic.py` in a hand-rolled harness. It keeps
   working under Decision 2 either way. Retire it, or keep it?

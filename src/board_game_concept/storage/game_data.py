@@ -1,4 +1,5 @@
 from ..domain import UnitType, Board, Player, Empty
+from .serialise import serialise_units
 import sys
 import yaml
 import os
@@ -299,8 +300,8 @@ class GameData:
             file.close()
 
         # this creates files of unit creation or unit moves
-        player_units = self.board.listUnits(
-            self.getPlayerObj(self.player_number))
+        player_units = serialise_units(
+            self.board, self.getPlayerObj(self.player_number))
         if DEBUG:
             print("write moves/changes")
             print(player_units)
@@ -357,7 +358,7 @@ class GameData:
                 if DEBUG:
                     print(f"player: {player}, moves: {self.players[player]['moves']}")
                 units = self.players[player]['moves']['units']
-                # listUnits writes "units: None" for a player holding no
+                # serialise_units writes "units: None" for a player holding no
                 # units, which YAML reads back as the string, not as null
                 if not units or units == 'None':
                     continue
@@ -451,7 +452,7 @@ class GameData:
 
         # write out the units information to disk
         # this writes the master board units, i.e. everything
-        all_units = self.board.listUnits()
+        all_units = serialise_units(self.board)
         with open(self.data_path + '/units.yaml', 'w') as file:
             file.write(all_units)
             file.close()
@@ -460,7 +461,7 @@ class GameData:
             print("updating player units seen based on the commit outcome")
         for p in self.players.keys():
             player_obj = self.players[p]['obj']
-            player_units = self.board.listUnits(player_obj)
+            player_units = serialise_units(self.board, player_obj)
             if DEBUG:
                 print("write moves/changes")
                 print(player_units)

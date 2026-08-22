@@ -10,6 +10,7 @@ import threading
 
 import pytest
 
+from board_game_concept.storage.serialise import serialise_units
 from board_game_concept import UnitType, Board, Player, Empty
 
 
@@ -359,16 +360,16 @@ def test_units_that_cannot_fall_back_share_the_square():
     assert all(unit.on_board is True for unit in cell)
 
 
-def test_shared_square_renders_without_failing(capsys):
+def test_shared_square_renders_without_failing():
+    from board_game_concept.cli.render import render_board
+
     board, p1, p2 = _shared_cell_board()
 
-    board.print()
-    full = capsys.readouterr().out
+    full = render_board(board)
     assert 'object at' not in full
     assert '[' not in full
 
-    board.print(p1)
-    for_p1 = capsys.readouterr().out
+    for_p1 = render_board(board, p1)
     # the player sees their own unit in the shared square, and none of the
     # other player's units anywhere
     assert 'A' in for_p1
@@ -376,8 +377,7 @@ def test_shared_square_renders_without_failing(capsys):
     assert 'B' not in for_p1
     assert 'D' not in for_p1
 
-    board.print(p2)
-    for_p2 = capsys.readouterr().out
+    for_p2 = render_board(board, p2)
     assert 'B' in for_p2
     assert 'D' in for_p2
     assert 'A' not in for_p2
@@ -386,12 +386,12 @@ def test_shared_square_renders_without_failing(capsys):
 
 def test_shared_square_survives_a_save_and_load_round_trip():
     # reload a game the way GameData does: read back the units it wrote with
-    # listUnits and replay them onto a fresh board. Restoring is not a
+    # serialise_units and replay them onto a fresh board. Restoring is not a
     # deployment, so the occupancy rule does not refuse the shared square
     import yaml
 
     board, _, _ = _shared_cell_board()
-    saved = yaml.safe_load(board.listUnits())
+    saved = yaml.safe_load(serialise_units(board))
 
     players = {}
     types = {}

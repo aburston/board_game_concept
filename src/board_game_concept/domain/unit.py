@@ -325,24 +325,5 @@ class UnitType:
                         print(
                             f"{self.name} commit removing unit from square [{self.x},{self.y}]")
 
-    def dump(self):
-        result = (
-            f'player: "{self.player.number}", '
-            f'type: "{self.type_name}", '
-            f'name: "{self.name}", '
-            f'symbol: "{self.symbol}", '
-            f'attack: "{self.attack}", '
-            f'health: "{self.health}", '
-            f'energy: "{self.energy}", '
-            f'x: {self.x}, y: {self.y}, '
-            f'state: {self.state}, direction: {self.direction}, '
-            f'destroyed: {self.destroyed}, on_board: {self.on_board}'
-        )
-        if DEBUG:
-            print(result)
-        return result
-
     def __str__(self):
         return (self.symbol)
-
-# Board

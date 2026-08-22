@@ -79,12 +79,12 @@ Each restores what the spec already requires (design.md — Decision 13).
 
 ## 4. Purify the engine
 
-- [ ] 4.1 Add `cli/render.py` drawing the bordered grid (design.md — Decision
+- [x] 4.1 Add `cli/render.py` drawing the bordered grid (design.md — Decision
       12), remove `Board.print` and move its callers to the renderer, and delete
       the `board` import, `_FallbackBoard` and the `board` line in
       `requirements.txt`. Verify the characterisation tests still match the same
       board output and that `import board` appears nowhere.
-- [ ] 4.2 Add `storage/serialise.py` holding the units and types YAML writers,
+- [x] 4.2 Add `storage/serialise.py` holding the units and types YAML writers,
       remove `Board.listUnits` and `UnitType.dump`, and move their five test
       call sites onto the serialiser (design.md — Decision 3). Verify the units
       a game writes still round-trip through a save and load.

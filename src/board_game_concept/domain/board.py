@@ -1,8 +1,3 @@
-try:
-    import board
-except ImportError:
-    board = None
-
 import copy
 
 from .cell import Empty
@@ -12,9 +7,17 @@ from .unit import UnitType
 DEBUG = False
 
 
-class _FallbackBoard:
-    def __init__(self, dimensions):
-        self.size_x, self.size_y = dimensions
+class _Grid:
+    """What each square of the board holds, addressed as grid[x, y].
+
+    A unit is handed this object when it is placed and moves itself between
+    squares through it, so it stays a plain mapping with no behaviour of its
+    own.
+    """
+
+    def __init__(self, size_x, size_y):
+        self.size_x = size_x
+        self.size_y = size_y
         self._cells = {}
 
     def __getitem__(self, key):
@@ -23,15 +26,8 @@ class _FallbackBoard:
     def __setitem__(self, key, value):
         self._cells[key] = value
 
-    def draw(self, callback=None):
-        for y in range(self.size_y):
-            row = ''
-            for x in range(self.size_x):
-                unit = self[x, y]
-                row += callback(unit) if callback is not None else str(unit)
-            print(row)
 
-
+# Board
 #   size_x: board size x
 #   size_y: board size y
 
@@ -50,7 +46,7 @@ class Board:
             (size_y >= 2) and (size_y <= 10)
         ), "size_y must be a value from 2 to 10"
 
-        self.board = board.Board((size_x, size_y)) if board is not None else _FallbackBoard((size_x, size_y))
+        self.board = _Grid(size_x, size_y)
         for x in range(0, size_x):
             for y in range(0, size_y):
                 self.board[x, y] = Empty()
@@ -141,75 +137,15 @@ class Board:
         # return the unit id
         return len(self.units)
 
-    def print(self, player=None):
-        def _render_cell(cell):
-            if type(cell) is Empty:
-                return cell.__str__()
-            if type(cell) is list:
-                # a contested square holds several units: show one of them
-                # rather than the repr of the list
-                occupants = [unit for unit in cell if not unit.destroyed]
-                if not occupants:
-                    return Empty().__str__()
-                if player is None:
-                    return occupants[0].__str__()
-                for unit in occupants:
-                    if unit.player == player:
-                        return unit.__str__()
-                return Empty().__str__()
-            if player is None or cell.player == player:
-                return cell.__str__()
-            return Empty().__str__()
-        self.board.draw(callback=_render_cell)
+    def rows(self):
+        """The squares of the board, row by row, as whatever occupies them.
 
-    def listTypes(self, player=None):
-        typesStr = "types:\n"
-        for player in self.types.keys():
-            for type_name in self.types[player].keys():
-                unit_type = self.types[player][type_name]
-                typesStr = typesStr + (
-                    f'- {{ player: "{player}", name: "{unit_type.name}", '
-                    f'symbol: "{unit_type.symbol}", attack: "{unit_type.attack}", '
-                    f'health: "{unit_type.health}", energy: "{unit_type.energy}" }}\n'
-                )
-        return typesStr
-
-    def listUnits(self, player=None):
-        # board information
-        units_str = "board: {" + \
-            f" size_x: {self.size_x}, size_y: {self.size_y}" + "}\n"
-
-        # player making request
-        if player is None:
-            units_str = units_str + f"player: {player}\n"
-        else:
-            units_str = units_str + f"player: {player.number}\n"
-
-        # units seen by player
-        i = 0
-        tmp_str = ""
-        while i < len(self.units):
-            if player is None:
-                tmp_str = tmp_str + \
-                    "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
-            elif self.units[i].player == player:
-                tmp_str = tmp_str + \
-                    "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
-            else:
-                # a unit seen by several of this player's units is still one
-                # unit, so it is listed once
-                for seen in self.units[i].seen_by:
-                    if (player.number == seen.player.number):
-                        tmp_str = tmp_str + \
-                            "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
-                        break
-            i = i + 1
-        if tmp_str == "":
-            units_str = units_str + "units: None\n"
-        else:
-            units_str = units_str + "units:\n" + tmp_str
-
-        return units_str
+        A square holds an Empty, a unit, or - while a contest is unresolved -
+        a list of the units on it. Deciding what any of those should look like
+        belongs to whoever is displaying the board, not here.
+        """
+        return [[self.board[x, y] for x in range(self.size_x)]
+                for y in range(self.size_y)]
 
     def getUnitByName(self, name, player=None):
         if player is None:

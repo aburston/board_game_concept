@@ -12,6 +12,8 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import UnitType, Board, Player, Empty, GameData
+from board_game_concept.cli.render import print_board
+from board_game_concept.storage.serialise import serialise_units
 
 DEBUG = False
 
@@ -67,11 +69,11 @@ def show_board(data, player_number):
     if seen_board is not None:
         if DEBUG:
             print("showing seen board")
-        seen_board.print()
+        print_board(seen_board)
     elif board is None:
         print("must create board - set size and commit")
     else:
-        board.print(player_obj)
+        print_board(board, player_obj)
 
 # show player - show player information
 
@@ -169,11 +171,11 @@ def main(argv=None):
                     if seen_board is not None:
                         if DEBUG:
                             print("showing seen units")
-                        print(seen_board.listUnits())
+                        print(serialise_units(seen_board))
                     elif board is None:
                         print("must create board - set size and commit")
                     else:
-                        print(board.listUnits(player_obj))
+                        print(serialise_units(board, player_obj))
                 elif tokens[1] == 'pending':
                     for player in players.keys():
                         if 'moves' in players[player].keys():
@@ -329,8 +331,8 @@ def main(argv=None):
         data.waitForPlayerCommit()
 
         # log board + units
-        board.print()
-        print(board.listUnits())
+        print_board(board)
+        print(serialise_units(board))
 
 
 # run main()
