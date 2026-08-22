@@ -297,9 +297,13 @@ class UnitType:
                     if DEBUG:
                         print(f"commit: {unit.name} attack {target.name}")
                     target.incomingAttack(unit.attack)
-                    # populuate seen_by
-                    unit.seen_by.append(target)
-                    target.seen_by.append(unit)
+                    # populate seen_by, recording each contestant once however
+                    # many rounds of attacks the contest takes: a unit listed
+                    # twice is reported twice to the players who saw it
+                    if target not in unit.seen_by:
+                        unit.seen_by.append(target)
+                    if unit not in target.seen_by:
+                        target.seen_by.append(unit)
                     attacked = True
             if not attacked:
                 # no contestant can pay for an attack, so the contest is over
@@ -429,6 +433,23 @@ class Board:
         assert (
             restoring or self.squareIsFree(x, y)
         ), f"can't deploy {name} at ({x}, {y}), that square is occupied"
+        # restoring a unit the board already holds for this player is not a
+        # second unit: a player can be told about the same unit more than once,
+        # so put the saved state back into the unit that is already there
+        # rather than refusing the whole load
+        if restoring:
+            existing = self.findUnit(name, player)
+            if existing is not None:
+                self.types.setdefault(player.number, {})[
+                    unit_type.name] = unit_type
+                existing.setCoords(x, y)
+                if health is not None:
+                    existing.setHealth(health)
+                if energy is not None:
+                    existing.setEnergy(energy)
+                existing.setDestroyed(destroyed)
+                existing.setOnBoard(on_board)
+                return self.units.index(existing) + 1
         # add the unit to a dictionary of types organised by player
         if not (player.number in self.types.keys()):
             self.types[player.number] = {}
@@ -463,7 +484,7 @@ class Board:
             for instance in self.unit_dict[name]:
                 assert (
                     instance.player != player
-                ), f"unit {name} already exists for {player.name}"
+                ), f"unit {name} already exists for player {player.number}"
             self.unit_dict[name].append(unit)
         else:
             self.unit_dict[name] = [unit]
@@ -525,11 +546,13 @@ class Board:
                 tmp_str = tmp_str + \
                     "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
             else:
+                # a unit seen by several of this player's units is still one
+                # unit, so it is listed once
                 for seen in self.units[i].seen_by:
-                    # print(f"{player.name} {seen.player.number}")
                     if (player.number == seen.player.number):
                         tmp_str = tmp_str + \
                             "  - { " + f"id: {i}, " + self.units[i].dump() + " }\n"
+                        break
             i = i + 1
         if tmp_str == "":
             units_str = units_str + "units: None\n"
@@ -550,6 +573,15 @@ class Board:
             assert False, (
                 f"unit {name} does not exist for player {player.number}"
             )
+
+    # the unit this player holds by this name, or None if it holds no such
+    # unit. Unlike getUnitByName this answers rather than asserting, so callers
+    # can ask whether a unit is already known
+    def findUnit(self, name, player):
+        for unit in self.unit_dict.get(name, []):
+            if unit.player == player:
+                return unit
+        return None
 
     def getUnitById(self, index):
         assert (
