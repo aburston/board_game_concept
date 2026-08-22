@@ -7,7 +7,7 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import GameData
+from board_game_concept import Game, YamlGameRepository
 from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
@@ -41,7 +41,7 @@ def main(argv=None):
         sys.exit(1)
 
     # initialize the data object
-    data = GameData(gameno, player_number)
+    data = Game(YamlGameRepository(gameno), player_number)
 
     while True:
 
@@ -52,9 +52,6 @@ def main(argv=None):
         player_obj = data.getPlayerObj(player_number)
         board = data.getBoard()
         seen_board = data.getSeenBoard()
-        size_x = data.getSizeX()
-        size_y = data.getSizeY()
-        new_game = data.getNewGame()
 
         # interactive mode
         while True:

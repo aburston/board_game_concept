@@ -1,10 +1,12 @@
 from .domain import UnitType, Board, Player, Empty
-from .storage.game_data import GameData
+from .service.game import Game
+from .storage.yaml_repository import YamlGameRepository
 
 __all__ = [
     'UnitType',
     'Board',
     'Player',
     'Empty',
-    'GameData',
+    'Game',
+    'YamlGameRepository',
 ]

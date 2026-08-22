@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import yaml
 import argparse
 from pathlib import Path
 
@@ -9,7 +8,7 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import Board, Player, GameData
+from board_game_concept import Game, YamlGameRepository
 from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
@@ -104,7 +103,7 @@ def main(argv=None):
     args = parser.parse_args()
 
     # initialize data object
-    data = GameData(args.game_number, player_number)
+    data = Game(YamlGameRepository(args.game_number), player_number)
 
     while True:
 
@@ -115,8 +114,6 @@ def main(argv=None):
         player_obj = data.getPlayerObj(player_number)
         board = data.getBoard()
         seen_board = data.getSeenBoard()
-        size_x = data.getSizeX()
-        size_y = data.getSizeY()
         new_game = data.getNewGame()
 
         # interactive mode

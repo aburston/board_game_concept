@@ -149,25 +149,25 @@ Each restores what the spec already requires (design.md — Decision 13).
 
 ## 7. Repository port
 
-- [ ] 7.1 Add `storage/repository.py` defining the `GameRepository` interface and
+- [x] 7.1 Add `storage/repository.py` defining the `GameRepository` interface and
       `storage/yaml_repository.py` implementing it over the current file layout.
       Verify a game directory written before this task loads after it and that
       the files written are byte-identical.
-- [ ] 7.2 Move the commit barrier and the order-consumption cycle into
+- [x] 7.2 Move the commit barrier and the order-consumption cycle into
       `service/turn.py`, leaving the repository holding only reads and writes
       (design.md — Decision 10). Verify
       `tests/test_server_client_integration.py` passes unedited.
-- [ ] 7.3 Retire `GameData`, moving its callers onto the repository and the
+- [x] 7.3 Retire `GameData`, moving its callers onto the repository and the
       turn coordinator directly. Verify nothing imports `GameData` and the whole
       suite passes.
-- [ ] 7.4 Make the game base path a constructor argument defaulting to
+- [x] 7.4 Make the game base path a constructor argument defaulting to
       `os.getcwd()`. Verify `GameData(gameno, player_number)` still resolves
       `games/_<gameno>` under the working directory, and that a test can point
       it at a temporary directory without `chdir`.
 
 ## 8. Finish
 
-- [ ] 8.1 Rewrite `MODULE_DESCRIPTION.md` to describe the four packages instead
+- [x] 8.1 Rewrite `MODULE_DESCRIPTION.md` to describe the four packages instead
       of the three modules. Verify every path it names exists.
 - [ ] 8.2 Run the full suite, `flake8 . --select=E9,F63,F7,F82` as CI does, and
       `pylint` against the configured `.pylintrc`. Verify the suite is green and
