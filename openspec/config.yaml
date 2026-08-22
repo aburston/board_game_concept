@@ -1,0 +1,56 @@
+schema: spec-driven
+
+context: |
+  Board Game Concept: a turn-based, simultaneous-commit strategy game where
+  players design their own unit types, deploy them, and order them each turn.
+
+  Tech stack: Python 3.10+, PyYAML, pytest. Optional `board` library for cell
+  storage, with a built-in fallback grid when it is absent.
+
+  Layout: the importable package is `src/board_game_concept/`. Core engine in
+  `BoardGameConcept.py` (Empty, Player, UnitType, Board); persistence and the
+  on-disk game database in `GameData.py`; three CLI roles in `server.py`
+  (player 0, the admin and commit authority), `client.py` (a player), and
+  `observer.py` (read-only). Console scripts: board-game-server,
+  board-game-client, board-game-observer, board-game-test-suite.
+
+  Storage is YAML files under `games/_<gameno>/`. The filesystem is also the
+  transport between server and clients: players publish orders by writing files
+  and the server publishes results the same way.
+
+  Domain notes: turns are simultaneous and gated on every player committing.
+  Combat is simultaneous multi-round attrition in any cell holding more than one
+  unit. Visibility is contact-based and recomputed each turn.
+
+  See SPEC_COVERAGE.md for known divergences between these specs and the code.
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
