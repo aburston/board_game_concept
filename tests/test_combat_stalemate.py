@@ -234,7 +234,7 @@ def test_friendly_fire_units_do_not_spare_their_own_side():
     assert o2.destroyed is True
 
 
-def test_deploying_onto_an_occupied_cell_is_rejected():
+def test_deploying_onto_an_occupied_square_is_rejected():
     # issue #1: this used to raise an uncaught AssertionError out of the turn
     # and kill the session. Deployment onto a taken square is illegal, and is
     # now refused when the unit is created
