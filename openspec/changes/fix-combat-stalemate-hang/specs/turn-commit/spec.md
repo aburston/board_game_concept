@@ -30,7 +30,7 @@ without it, rather than failing the turn.
 
 - **WHEN** two players each deploy a unit onto the same square on the same turn, neither able to see the other's units
 - **THEN** the server refuses one of the two deployments
-- **AND** the server reports the rejection
+- **AND** publishes the rejection to the player whose order was refused
 - **AND** the turn is resolved for every other unit
 
 #### Scenario: Deployment is not movement

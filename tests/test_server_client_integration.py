@@ -330,6 +330,102 @@ class TestServerClientIntegration(unittest.TestCase):
         self.assertEqual((units[0]['x'], units[0]['y']), (1, 1))
         self.assertIn(units[0]['name'], ('x1', 'o1'))
 
+        # and the player whose order was refused is told, by name and square
+        accepted = units[0]['name']
+        loser, loser_unit = (2, 'o1') if accepted == 'x1' else (1, 'x1')
+        players_dir = GAMES_DIR / '_test-01' / 'players'
+
+        refused = yaml.safe_load(
+            (players_dir / f'{loser}_rejected.yaml').read_text())['rejected']
+        self.assertEqual(len(refused), 1)
+        self.assertEqual(refused[0]['unit'], loser_unit)
+        self.assertEqual((refused[0]['x'], refused[0]['y']), (1, 1))
+        self.assertIn('occupied', refused[0]['reason'])
+
+        # the player who got the square is told nothing
+        winner = 1 if loser == 2 else 2
+        self.assertEqual(yaml.safe_load(
+            (players_dir / f'{winner}_rejected.yaml').read_text())['rejected'],
+            [])
+
+        # and the refused player sees it when they next log in
+        loser_client = self.start_client('test-01', loser)
+        loser_client.read_until('client.py> ')
+        self.assertIn('rejected last turn', loser_client.output)
+        self.assertIn(loser_unit, loser_client.output)
+        self.assertIn('occupied', loser_client.output)
+
+        # a later turn in which nothing is refused clears the report, so
+        # rejections describe the last turn rather than accumulating
+        loser_client.send_line('commit')
+        loser_client.read_until('commit complete')
+
+        winner_client = self.start_client('test-01', winner)
+        winner_client.read_until('client.py> ')
+        self.assertNotIn('rejected last turn', winner_client.output)
+        winner_client.send_line('commit')
+        winner_client.read_until('commit complete')
+
+        self.read_until_count(server, 'commit complete', 3)
+        self.assertEqual(yaml.safe_load(
+            (players_dir / f'{loser}_rejected.yaml').read_text())['rejected'],
+            [])
+
+    def test_an_order_with_an_invalid_state_is_rejected_not_fatal(self):
+        # game-persistence requires the server to reject an order whose state
+        # is not INITIAL, MOVING or NOP. It used to assert and take the server
+        # down with it
+        server = self.start_server(['-g', 'test-01'])
+        server.read_until('server.py> ')
+
+        server.send_line('set board 3 3')
+        server.read_until('server.py> ')
+        server.send_line('add player 1')
+        server.read_until('server.py> ')
+        server.send_line('add player 2')
+        server.read_until('server.py> ')
+        server.send_line('commit')
+        server.read_until('wait for player commit')
+
+        client1 = self.start_client('test-01', 1)
+        client1.read_until('client.py> ')
+        client1.send_line('add type Cross X 1 1 10')
+        client1.read_until('client.py> ')
+        client1.send_line('add unit Cross x1 0 0')
+        client1.read_until('client.py> ')
+        client1.send_line('commit')
+        client1.read_until('waiting for turn to complete...')
+
+        # corrupt player 1's published order while the server is still waiting
+        # on player 2, so it is read exactly once, as published
+        orders_file = GAMES_DIR / '_test-01' / 'players' / '1_units.yaml'
+        orders = yaml.safe_load(orders_file.read_text())
+        orders['units'][0]['state'] = 99
+        orders_file.write_text(yaml.safe_dump(orders))
+
+        client2 = self.start_client('test-01', 2)
+        client2.read_until('client.py> ')
+        client2.send_line('add type Naught O 1 1 10')
+        client2.read_until('client.py> ')
+        client2.send_line('add unit Naught o1 2 2')
+        client2.read_until('client.py> ')
+        client2.send_line('commit')
+        client2.read_until('waiting for turn to complete...')
+
+        # the turn still resolves, without the invalid order
+        self.read_until_count(server, 'commit complete', 2)
+
+        units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
+        units = yaml.safe_load(units_file.read_text())['units']
+        self.assertEqual([unit['name'] for unit in units], ['o1'])
+
+        players_dir = GAMES_DIR / '_test-01' / 'players'
+        refused = yaml.safe_load(
+            (players_dir / '1_rejected.yaml').read_text())['rejected']
+        self.assertEqual(len(refused), 1)
+        self.assertEqual(refused[0]['unit'], 'x1')
+        self.assertIn('invalid unit state', refused[0]['reason'])
+
     def test_a_client_refuses_to_deploy_onto_a_square_it_already_holds(self):
         # the same rule, caught at the client before anything is sent
         server = self.start_server(['-g', 'test-01'])

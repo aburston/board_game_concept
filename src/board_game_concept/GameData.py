@@ -12,6 +12,9 @@ class GameData:
     def getUnprocessedMoves(self):
         return self.unprocessed_moves
 
+    def getRejected(self):
+        return self.rejected
+
     def getPlayerObj(self, player_number):
         if self.player_number == 0:
             player_obj = None
@@ -66,6 +69,8 @@ class GameData:
         self.seen_board = None
         self.board = None
         self.unprocessed_moves = False
+        # orders the server refused when it last resolved a turn
+        self.rejected = []
         # XXX need a new name for this flag
         if player_number == 0:
             self.new_game = False
@@ -125,6 +130,9 @@ class GameData:
                     if str(f).find("_units_seen.yaml") != -1:
                         # skip these files
                         continue
+                    if str(f).find("_rejected.yaml") != -1:
+                        # read separately, below
+                        continue
                     try:
                         player_data = yaml.safe_load(f)
                         if DEBUG:
@@ -164,6 +172,16 @@ class GameData:
                     except yaml.YAMLError as exc:
                         print(exc, file=sys.stderr)
                         sys.exit(1)
+
+        # pick up any orders the server refused when it last resolved a turn
+        self.rejected = []
+        rejected_file = (self.player_path + '/' +
+                         str(self.player_number) + '_rejected.yaml')
+        if os.path.exists(rejected_file):
+            with open(rejected_file) as f:
+                rejected_data = yaml.safe_load(f)
+                if rejected_data is not None:
+                    self.rejected = rejected_data.get('rejected') or []
 
         # load the units into the board
         if os.path.exists(self.data_path + '/units.yaml'):
@@ -315,13 +333,30 @@ class GameData:
         with open(self.data_path + '/board.yaml', 'w') as file:
             yaml.safe_dump(board_meta_data, file)
 
+        # orders refused this turn, collected per player so that each player
+        # can be told what the server would not do for them
+        rejected = {}
+
+        def reject(p_number, unit, reason):
+            print(f"rejected order from player {p_number}: {reason}",
+                  file=sys.stderr)
+            rejected.setdefault(p_number, []).append({
+                'unit': str(unit['name']),
+                'type': str(unit['type']),
+                'x': int(unit['x']),
+                'y': int(unit['y']),
+                'reason': str(reason)
+            })
+
         # pick up board files created by players and merge them into the board
         for player in self.players.keys():
             if 'moves' in self.players[player].keys():
                 if DEBUG:
                     print(f"player: {player}, moves: {self.players[player]['moves']}")
                 units = self.players[player]['moves']['units']
-                if units is None:
+                # listUnits writes "units: None" for a player holding no
+                # units, which YAML reads back as the string, not as null
+                if not units or units == 'None':
                     continue
                 for unit in units:
                     name = unit['name']
@@ -340,14 +375,18 @@ class GameData:
                         try:
                             self.board.add(player, x, y, name, unit_type)
                         except AssertionError as e:
-                            # reject the order and resolve the turn without it
-                            print(f"rejected deployment from player "
-                                  f"{p_number}: {e}", file=sys.stderr)
+                            # refuse the order and resolve the turn without it
+                            reject(p_number, unit, e)
                             continue
                     elif state == UnitType.MOVING:
                         # resolve the order against the unit it names, not
-                        # against the cell, which may hold several units
-                        actual_unit = self.board.getUnitByName(name, player)[0]
+                        # against the square, which may hold several units
+                        try:
+                            actual_unit = self.board.getUnitByName(
+                                name, player)[0]
+                        except AssertionError as e:
+                            reject(p_number, unit, e)
+                            continue
                         actual_unit.move(direction)
                         if DEBUG:
                             print(f"moving unit at ({x},{y}) {str(direction)}")
@@ -362,16 +401,18 @@ class GameData:
                                 self.board.add(
                                     player, x, y, name, unit_type)
                             except AssertionError as e:
-                                # reject the order and resolve the turn
+                                # refuse the order and resolve the turn
                                 # without it
-                                print(f"rejected deployment from player "
-                                      f"{p_number}: {e}", file=sys.stderr)
+                                reject(p_number, unit, e)
                                 continue
                         if DEBUG:
                             print(f"NOP unit at ({x},{y}) {str(direction)}")
                     else:
-                        assert False, (f"Invalid unit state {str(state)} " +
-                                       "provided by player")
+                        # an order the server cannot make sense of is refused,
+                        # rather than taking the turn down with it
+                        reject(p_number, unit,
+                               f"invalid unit state {str(state)}")
+                        continue
 
         # resolve all moves and end the turn
         self.board.commit()
@@ -399,6 +440,11 @@ class GameData:
                 with open(self.player_path + '/' + str(p) + '_units.yaml', 'w') as file:
                     yaml.safe_dump({'units': units}, file)
                     file.close()
+            # written every turn, so it always describes the turn just
+            # resolved rather than accumulating stale refusals
+            with open(self.player_path + '/' + str(p) + '_rejected.yaml', 'w') as file:
+                yaml.safe_dump({'rejected': rejected.get(p, [])}, file)
+                file.close()
 
         # write out the units information to disk
         # this writes the master board units, i.e. everything

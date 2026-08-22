@@ -77,6 +77,14 @@ def main(argv):
             # restart the loop
             continue
 
+        # report anything the server refused when it resolved the last turn
+        rejected = data.getRejected()
+        if rejected:
+            print(f"{len(rejected)} order(s) rejected last turn:")
+            for order in rejected:
+                print(f"  - {order['unit']} at "
+                      f"({order['x']},{order['y']}): {order['reason']}")
+
         # interactive mode
         while True:
 

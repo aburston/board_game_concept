@@ -35,9 +35,9 @@ Three properties of the current engine were verified against the code rather tha
 
 - Energy regeneration. Energy remains non-renewable.
 - A win condition. Still unimplemented; see `SPEC_COVERAGE.md`.
-- Reporting a rejected deployment back to the player who ordered it. The crash in issue #1 is
-  fixed and the server logs the rejection, but there is no channel that carries the refusal
-  to that player's client, and adding one is a change of its own.
+- A rejection channel richer than "what was refused last turn". Anything else the server might
+  want to tell a player — combat reports, a win notice — would want a general notices file;
+  this carries refused orders only.
 - Deduplicating the stale `src/BoardGameConcept.py` and `src/GameData.py` copies.
 
 ## Decisions
@@ -105,6 +105,38 @@ back whatever the save held, including a shared square. `restoring=True` marks t
 *Alternative considered:* checking in the client and the server separately, leaving the engine
 permissive. Rejected — two copies of the rule, and the engine would still accept a state it
 considers illegal.
+
+### A refused order is published back to the player who gave it
+
+A refusal the player never sees is barely better than a silent drop: their unit simply does not
+appear and nothing says why. The server writes `players/<number>_rejected.yaml` naming the
+unit, its square and the reason, and the client reports it before taking the next command.
+
+The file travels the same way every other server-to-player message already does, and is written
+for **every** player on **every** resolved turn — empty when nothing was refused. That is what
+makes it describe the turn just resolved rather than accumulating, and it means neither side
+has to delete it. The client's player-file scan skips it, the way it already skips
+`_units_seen.yaml`.
+
+A refused deployment is dropped, not held: no unit of that name exists on the server, and the
+player is free to place it elsewhere on a later turn. Holding it pending would need a unit that
+exists but is on no square, which the save format has no room for.
+
+*Alternative considered:* a general notices file for any server-to-player message. Rejected for
+now — nothing else needs one yet, and the shape a win notice or a combat report wants is not
+yet known.
+
+### Nothing a single player does may stop the turn
+
+Refusing an order is only useful if the refusal is survivable, so every path that reads a
+player's published orders now refuses rather than asserts: an unknown order state, and a move
+naming a unit the player does not own. Both used to abort turn resolution for everyone.
+
+The same rule turned up a bug that predates this change. `listUnits` writes `units: None` for a
+player holding no units, and YAML reads that back as the *string* `"None"`, not as null. The
+load path knew this and compared against the string; the turn resolver tested `is None`, so it
+fell through and iterated the characters of `"None"`. Any player with no units killed the
+server on commit — and a player whose only deployment was refused is exactly such a player.
 
 ### Shared squares remain legal, as a residual case
 

@@ -33,7 +33,7 @@ implementation diverged from them. Each was reproduced against
 fixed; the spec deltas describing the behaviour they now have live in
 `openspec/changes/fix-combat-stalemate-hang/` until that change is archived.
 
-### 1. Deploying onto an occupied square crashes (issue #1) — crash fixed
+### 1. Deploying onto an occupied square crashes (issue #1) — fixed
 
 `UnitType.preCommit` and `UnitType.commit` raised an uncaught `AssertionError`
 (`can't add <name> to board at (x,y)`) when a unit was deployed onto a square
@@ -47,9 +47,11 @@ refuses it before any state is mutated. The client reports the refusal and stays
 usable; the server logs it and resolves the turn without that order. Moving onto
 an occupied square is unaffected: that is combat, and stays legal.
 
-Still open: the refusal reaches the server's error stream, not the player who
-ordered it. From that player's side the unit simply never appears. Carrying the
-rejection back to the client needs a channel that does not exist yet.
+The refusal is reported back to the player who gave the order. The server
+publishes what it refused as `players/<number>_rejected.yaml` and the client
+prints it before taking the next command, naming the unit, its square and the
+reason. The refused unit is dropped rather than held, so the player is free to
+place it somewhere else on a later turn.
 
 ### 2. A contest neither unit can win hangs the server (issue #2) — fixed
 

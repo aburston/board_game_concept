@@ -25,20 +25,30 @@
 - [x] 3.5 Verify end to end that a client refuses a second unit on a square it already holds and stays usable afterwards
 - [x] 3.6 Add a test that moving onto an occupied square is still allowed and still resolves as combat
 
-## 4. Persistence
+## 4. Telling the player what was refused
 
-- [x] 4.1 Apply the server's move orders to the named unit belonging to the ordering player instead of `getUnitByCoords`; verify with a test that a move order applies correctly when the unit's square is shared
-- [x] 4.2 Add a save/load round-trip test proving a game containing a shared square reloads with every unit restored to that square
+- [x] 4.1 Collect refused orders per player while resolving a turn, and publish them as `players/<number>_rejected.yaml`, written for every player on every turn so it describes the turn just resolved
+- [x] 4.2 Skip the rejection files in the client's player-file scan, the way `_units_seen.yaml` is skipped, and read them separately into the game data
+- [x] 4.3 Report refused orders in the client before it takes the next command, naming the unit, its square and the reason
+- [x] 4.4 Refuse an order with an unknown state through the same channel, replacing the assertion that aborted the turn; verify end to end with a published order carrying an invalid state
+- [x] 4.5 Refuse a move order naming a unit the player does not own, and fix `getUnitByName` asserting `True` on the miss path, which always passed and returned `None`
+- [x] 4.6 Treat `units: None` as no orders when resolving a turn, matching the load path: YAML reads it back as a string, so a player holding no units used to kill the server on commit
+- [x] 4.7 Verify end to end that the refused player sees the report on next login, that the accepted player sees nothing, and that a later clean turn clears it
 
-## 5. Friendly fire
+## 5. Persistence
 
-- [x] 5.1 Confirm against the code that combat does not distinguish friendly units from enemy units, and state it in the `combat-resolution` spec
-- [x] 5.2 Add a test that two units of the same player contesting a square attack each other
+- [x] 5.1 Apply the server's move orders to the named unit belonging to the ordering player instead of `getUnitByCoords`; verify with a test that a move order applies correctly when the unit's square is shared
+- [x] 5.2 Add a save/load round-trip test proving a game containing a shared square reloads with every unit restored to that square
 
-## 6. Verification
+## 6. Friendly fire
 
-- [x] 6.1 Run the full test suite and confirm all tests pass, including the 14 that existed before this change
-- [x] 6.2 Confirm the reported scenarios fail against the unmodified engine: the stalemate hangs, deployment onto an occupied square asserts, and the three-way contest empties the square out from under the survivor
-- [x] 6.3 Run the CI lint gate (`flake8 --select=E9,F63,F7,F82`) and confirm it is clean
-- [x] 6.4 Confirm the suite passes with the real `board` package installed, as CI installs it from `requirements.txt`
-- [ ] 6.5 Run `openspec validate --specs --strict` — not run: the `openspec` CLI is not installed in this environment
+- [x] 6.1 Confirm against the code that combat does not distinguish friendly units from enemy units, and state it in the `combat-resolution` spec
+- [x] 6.2 Add a test that two units of the same player contesting a square attack each other
+
+## 7. Verification
+
+- [x] 7.1 Run the full test suite and confirm all tests pass, including the 14 that existed before this change
+- [x] 7.2 Confirm the reported scenarios fail against the unmodified engine: the stalemate hangs, deployment onto an occupied square asserts, and the three-way contest empties the square out from under the survivor
+- [x] 7.3 Run the CI lint gate (`flake8 --select=E9,F63,F7,F82`) and confirm it is clean
+- [x] 7.4 Confirm the suite passes with the real `board` package installed, as CI installs it from `requirements.txt`
+- [ ] 7.5 Run `openspec validate --specs --strict` — not run: the `openspec` CLI is not installed in this environment

@@ -37,8 +37,18 @@ it is refused when the unit is created, which is what issue #1 asks for.
   taking any unit sharing it off the board with it.
 - Deploying a brand new unit onto a square that is already held, or already claimed by a
   unit waiting to be placed, is refused with a clear error instead of raising an uncaught
-  assertion out of turn resolution. The server rejects such an order, reports it, and
-  resolves the turn without it. Restoring a saved game is not a deployment and is exempt.
+  assertion out of turn resolution. The server rejects such an order and resolves the turn
+  without it. Restoring a saved game is not a deployment and is exempt.
+- A refused order is published back to the player who gave it, as
+  `players/<number>_rejected.yaml`, and the client reports it before taking their next
+  command. The file is written for every player on every resolved turn, so it always
+  describes the turn just resolved.
+- An order the server cannot make sense of — an unknown state, or a move naming a unit the
+  player does not own — is refused through the same channel rather than asserting and taking
+  the turn down.
+- A player holding no units can commit without killing the server. `listUnits` writes
+  `units: None`, which YAML reads back as the string `"None"`; the load path already knew
+  that and the turn resolver did not.
 - **BREAKING (state model)**: a board square may hold more than one unit beyond turn
   resolution, in the residual case where a survivor of an undecided contest cannot fall back
   because another unit took the square it came from during the same turn. Board rendering
@@ -64,6 +74,8 @@ None.
   units still in it.
 - `turn-commit`: deploying onto an occupied square is illegal and refused, and the turn
   resolves without the refused order rather than failing.
+- `player-client`: the client refuses a deployment onto a square it knows is taken, and
+  reports any order the server refused on the last resolved turn.
 - `game-persistence`: a saved game containing a shared square reloads faithfully, and the
   server applies move orders by unit identity rather than by square contents.
 
@@ -72,13 +84,12 @@ None.
 - `src/board_game_concept/BoardGameConcept.py` — `UnitType.commit`, `UnitType.preCommit`,
   new `UnitType.resolveContest`, `UnitType.retreat` and `UnitType.vacate`, `Board.add`,
   new `Board.squareIsFree`, `Board.print`, `Board.commit`.
-- `src/board_game_concept/GameData.py` — order application and the load path in `serverSave`
-  and `load`.
+- `src/board_game_concept/GameData.py` — order application, order rejection and the load
+  path in `serverSave` and `load`.
+- `src/board_game_concept/client.py` — reporting refused orders at the start of a session.
 - `tests/test_combat_stalemate.py` — regression coverage for the hang, the retreat, the
   survivor count, rendering and a shared-cell save/load round trip.
-- Fixes issue #1's crash: the assertion that killed the session is replaced by a rule
-  enforced where the unit is created, so the client reports the refusal and the server
-  resolves the turn without the order. Issue #1 stays open for telling the *player* their
-  deployment was rejected; today the server only reports it on its own error stream.
+- Fixes issue #1: the assertion that killed the session is replaced by a rule enforced where
+  the unit is created, and a rejected order is now reported to the player who gave it.
 - `src/BoardGameConcept.py` and `src/GameData.py` are stale duplicates outside the package
   and are deliberately left untouched; see `SPEC_COVERAGE.md`.

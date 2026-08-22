@@ -547,7 +547,9 @@ class Board:
             for unit in self.unit_dict[name]:
                 if unit.player == player:
                     return [unit]
-            assert True, f"unit {name} does not exist"
+            assert False, (
+                f"unit {name} does not exist for player {player.number}"
+            )
 
     def getUnitById(self, index):
         assert (
