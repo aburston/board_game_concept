@@ -47,7 +47,7 @@ Each restores what the spec already requires (design.md — Decision 13).
       `load player` unloadable, so the observer died on startup and the server
       would have died on its next turn. Verify the observer opens such a game
       and lists its units.
-- [ ] 1a.5 Record all six in `SPEC_COVERAGE.md` under Known divergences, in
+- [x] 1a.5 Record all five in `SPEC_COVERAGE.md` under Known divergences, in
       the style of the existing entries, each marked fixed and naming the
       scenario that found it. Verify every divergence listed has a test.
 

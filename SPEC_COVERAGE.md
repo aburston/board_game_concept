@@ -25,14 +25,33 @@ Validate them with:
 openspec validate --specs --strict
 ```
 
+The scenarios in `player-client`, `game-server` and `game-observer` are covered
+one for one by `tests/test_cli_client_surface.py`,
+`tests/test_cli_server_surface.py` and `tests/test_cli_observer_surface.py`,
+which drive each role as a subprocess and assert what it prints. Run them with:
+
+```
+pytest tests/test_cli_client_surface.py tests/test_cli_server_surface.py tests/test_cli_observer_surface.py
+```
+
+They are slow — the commit barrier polls, so a test that waits for a turn to
+resolve waits in real seconds — and they are what any change to the command
+surface is checked against.
+
 ## Known divergences
 
 The specs describe intended behaviour. The following are places where the
 implementation diverged from them. Each was reproduced against
-`src/board_game_concept/` rather than inferred from reading. Two have since been
-fixed, and the specs under `openspec/specs/` describe the behaviour they now
-have; the change that made them is archived under
-`openspec/changes/archive/2026-08-22-fix-combat-stalemate-hang/`.
+`src/board_game_concept/` rather than inferred from reading, and all have since
+been fixed, so the specs under `openspec/specs/` describe the behaviour the code
+now has.
+
+The first three were reported as issues and fixed by changes now archived under
+`openspec/changes/archive/`. The rest were found by writing the scenarios in
+`player-client`, `game-server` and `game-observer` out as tests — one per
+scenario, driving each role as a subprocess — before the `split-into-layers`
+change began moving anything. Each entry names the scenario that found it; every
+one has a test in `tests/test_cli_*_surface.py`.
 
 ### 1. Deploying onto an occupied square crashes (issue #1) — fixed
 
@@ -72,7 +91,7 @@ survivor-count bug that emptied a contested square out from under a unit that
 was still standing, and stops units destroyed in an earlier round from attacking in
 later ones.
 
-### 3. A unit seen more than once crashed the client (issue #3)
+### 3. A unit seen more than once crashed the client (issue #3) — fixed
 
 `visibility` requires contact to reveal an enemy unit to the player who made it.
 Contact was recorded once per attack rather than once per unit, so two units
@@ -90,6 +109,97 @@ Addressed by the `fix-duplicate-seen-units` change: contact is recorded once per
 unit, a view names each unit it reveals once, restoring a unit the board already
 holds puts the saved state back into it rather than failing, and the
 duplicate-name error names the player by number.
+
+### 4. A bare `add` or `load` kills the server — fixed
+
+`game-server` requires the server to report that one argument is required when
+`add player`, `load board` or `load player` is given the wrong number of them.
+The arity guard on both verbs tested `len(tokens) == 2`, which is true of
+`add player` but not of a bare `add`, so the shorter form fell past the guard to
+`tokens[1]` and raised an uncaught `IndexError` that ended the session. The same
+guard meant `add player` and `load player` — the case it was presumably written
+for — reported a generic "invalid add command" instead of the arity message the
+scenario asks for.
+
+Reproduction: `add` or `load` alone at the server prompt.
+
+Addressed by the `split-into-layers` change: the guard tests `len(tokens) < 2`,
+so a bare verb is reported and each subcommand reaches its own arity check.
+
+Found by: `game-server` — Registering Players / Wrong argument count, and
+Loading Configuration From Files / Wrong argument count.
+
+### 5. `show players` dies on a field nothing sets — fixed
+
+`game-server` requires `show players` to list the registered players. It printed
+an `email` field instead, which nothing anywhere sets: not `add player`, not
+`load player`, not `GameData.load`. The only other trace of the idea was an empty
+`add_player(name, email)` stub. With no players registered the loop body never
+ran and the command appeared to work, so the `KeyError` surfaced only once the
+game had a player in it — which is to say, always in a real game and never in a
+smoke test.
+
+Reproduction: `add player 1`, then `show players`.
+
+Addressed by the `split-into-layers` change: the command prints the player
+number, as the client and observer already did, and the stub is removed.
+
+### 6. A board dimension below the minimum is reported as non-numeric — fixed
+
+`game-server` requires a dimension below 2 to be reported as needing to be
+greater than 1. `Board` asserts its own limits, and the constructor call sat
+inside a `try` whose `except BaseException` reported "x and y must be a
+numbers", so an out-of-range dimension was reported as though it were not a
+number at all. The two checks written for the case, below that block, were
+unreachable.
+
+Reproduction: `set board 1 1`.
+
+Addressed by the `split-into-layers` change: the dimensions are parsed, then
+range checked, then used to construct the board, and the board is left to report
+its own upper limit.
+
+### 7. A unit a player has just deployed is invisible to them — fixed
+
+`player-client` requires `show units` to list the player's own units and
+`add unit` to place one. The client draws the view the server last published in
+preference to its own board, so a unit deployed during setup appeared in neither
+`show board` nor `show units` until a turn containing it had been resolved. Its
+owner had no way to see what they had placed.
+
+That precedence is deliberate and could not simply be reversed: the published
+view is what limits a player's visibility, while the client holds the whole board
+in memory, so drawing the local board instead would have shown every player every
+enemy position.
+
+Reproduction: deploy a unit in a game the server has already committed, then
+`show board`.
+
+Addressed by the `split-into-layers` change: a unit the player deploys is added
+to the published view as well as to the local board. Only the player's own unit
+is mirrored, so nothing the server has not already revealed becomes visible.
+
+### 8. A game set up with `load player` cannot be reopened — fixed
+
+`game-observer` requires the observer to open a game and display it. A player
+file records its number as an integer, while `UnitType.dump` writes that number
+back into `data/units.yaml` as a quoted string. A game set up through
+`load player` was therefore keyed by integers but described by unit records
+naming strings, and rebuilding the board looked each unit's player up under a key
+that was not there, raising `KeyError`.
+
+The observer died on startup. The server would have died the same way on its next
+load, one commit barrier past the point any test had reached, so the crash lived
+behind a passing suite.
+
+Reproduction: `load player player_1.yaml`, `commit`, then start the observer
+against that game.
+
+Addressed by the `split-into-layers` change: player numbers are converted to
+integers at every point they are read — the server prompt, a loaded player file,
+a unit dump and the client's argument — and `Player` asserts that it holds one,
+so the two ways of creating a game can no longer disagree about what a player is
+called.
 
 ## Documented but not implemented
 
