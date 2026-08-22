@@ -264,6 +264,33 @@ class UnattendedTurnCycle(CliTestCase):
         server.read_until('wait for player commit')
         self.assertIsNone(server.proc.poll())
 
+    def test_the_turn_loop_logs_the_board_and_keeps_going(self):
+        # the whole cycle, end to end: the sole player's commit satisfies the
+        # barrier, the server resolves the turn, logs what it resolved, and
+        # goes back to waiting. Nothing checked this before, so a stale
+        # reference here killed the server after the first turn without a
+        # single test noticing
+        server = self.established_game(players=(1,))
+        server.read_until('wait for player commit')
+
+        client = self.start_client('test-01', 1)
+        client.read_until('client.py> ')
+        client.send_line('add type Cross X 1 1 10')
+        client.read_until_count('client.py> ', 2)
+        client.send_line('add unit Cross x1 0 0')
+        client.read_until_count('client.py> ', 3)
+        client.send_line('commit')
+
+        # the barrier lifts, the server logs the board it was holding, and
+        # goes round again: resolving the turn and waiting for the next one.
+        # The log runs a turn behind the orders, which is why it is the return
+        # to waiting that says the cycle is still turning
+        server.read_until('+-+-+-+-+', timeout=60)
+        server.read_until_count('commit complete', 2, timeout=60)
+        server.read_until_count('wait for player commit', 2, timeout=60)
+        self.assertIsNone(server.proc.poll())
+        self.assertNotIn('Traceback', server.errors)
+
 
 if __name__ == '__main__':
     unittest.main()

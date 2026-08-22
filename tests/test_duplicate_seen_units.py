@@ -123,15 +123,15 @@ def test_restoring_a_view_that_names_a_unit_twice_loads():
     published = serialise_units(board, p1)
     doubled = yaml.safe_load(published)
     doubled['units'] = doubled['units'] + [
-        unit for unit in doubled['units'] if unit['player'] == '2']
+        unit for unit in doubled['units'] if unit['player'] == 2]
 
     seen_board = Board(3, 3)
     _restore(
         seen_board,
         yaml.safe_dump(doubled),
-        {'1': p1, '2': p2},
-        {'1': UnitType('Red', 'R', 1, 10, 100),
-         '2': UnitType('Blue', 'B', 1, 10, 100)})
+        {1: p1, 2: p2},
+        {1: UnitType('Red', 'R', 1, 10, 100),
+         2: UnitType('Blue', 'B', 1, 10, 100)})
 
     assert sorted(unit.name for unit in seen_board.units) == ['b1', 'r1']
 

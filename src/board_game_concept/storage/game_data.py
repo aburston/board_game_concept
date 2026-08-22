@@ -1,4 +1,5 @@
 from ..domain import UnitType, Board, Player, Empty
+from ..service.errors import NoSuchGame, NoSuchPlayer, UnreadableGame
 from .serialise import serialise_units
 from . import notify
 import sys
@@ -99,83 +100,90 @@ class GameData:
                     if DEBUG:
                         print("Finished loading game meta data")
                 except yaml.YAMLError as e:
-                    print(e, file=sys.stderr)
-                    sys.exit(1)
+                    raise UnreadableGame(
+                        f"could not read the board for the game at "
+                        f"{self.data_path}", e) from e
         except Exception as e:
             if self.player_number == 0:
                 # if this is a new game request the game admin password
                 self.new_game = True
             else:
-                print(f"No game with path: {self.data_path}", file=sys.stderr)
-                print(e, file=sys.stderr)
-                sys.exit(1)
+                raise NoSuchGame(
+                    f"No game with path: {self.data_path}", e) from e
 
         # load all the player files
         if os.path.exists(self.player_path):
             for player_file in os.listdir(self.player_path):
-                with open(self.player_path + '/' + player_file) as f:
-                    if str(f).find("_units.yaml") != -1:
-                        if str(f).find(str(self.player_number) +
-                                       "_units.yaml") != -1:
-                            if DEBUG:
-                                print("unprocessed player moves, " +
-                                      "waiting for game to complete the turn",
-                                      file=sys.stderr)
-                            self.unprocessed_moves = True
-                        continue
-                    if str(f).find("commit_") != -1:
-                        if str(f).find("commit_" +
-                                       str(self.player_number)) != -1:
-                            self.new_game = False
-                        continue
-                    if str(f).find("_units_seen.yaml") != -1:
-                        # skip these files
-                        continue
-                    if str(f).find("_rejected.yaml") != -1:
-                        # read separately, below
-                        continue
-                    try:
-                        player_data = yaml.safe_load(f)
+                # what a file is, is decided by its name rather than by
+                # opening it and searching the repr of the file object, which
+                # is how this used to be done. Opening a file only to skip it
+                # is also a race the game can lose: the server deletes order
+                # files as it resolves a turn, so one listed a moment ago may
+                # be gone by the time it is opened
+                if player_file.endswith("_units.yaml"):
+                    if player_file == f"{self.player_number}_units.yaml":
                         if DEBUG:
-                            print(player_data)
-                        # player numbers reach us as integers from a loaded
-                        # player file and as strings from a unit dump, so they
-                        # are converted once, here, and are integers below
-                        number = int(player_data['number'])
-                        obj = Player(number)
-                        self.players[number] = {
-                            'number': number,
-                            'obj': obj,
-                            'types': {}
-                        }
-                        if 'types' in player_data.keys():
-                            for unit_type_name in player_data['types'].keys():
-                                unit_type = player_data['types'][unit_type_name]
-                                if DEBUG:
-                                    print(unit_type)
-                                unit_type_obj = UnitType(
-                                    unit_type['name'],
-                                    unit_type['symbol'],
-                                    int(unit_type['attack']),
-                                    int(unit_type['health']),
-                                    int(unit_type['energy']))
-                                unit_type['obj'] = unit_type_obj
-                                self.players[number]['types'][unit_type['name']
-                                                              ] = unit_type
+                            print("unprocessed player moves, " +
+                                  "waiting for game to complete the turn",
+                                  file=sys.stderr)
+                        self.unprocessed_moves = True
+                    continue
+                if player_file.startswith("commit_"):
+                    if player_file == f"commit_{self.player_number}":
+                        self.new_game = False
+                    continue
+                if player_file.endswith("_units_seen.yaml"):
+                    # a player's view, loaded further down
+                    continue
+                if player_file.endswith("_rejected.yaml"):
+                    # read separately, below
+                    continue
 
-                        # if this is player 0 the moves files could exist
-                        moves_file = self.player_path + '/' + \
-                            str(number) + '_units.yaml'
-                        if os.path.exists(moves_file):
-                            with open(moves_file) as g:
-                                self.players[number]['moves'] = yaml.safe_load(
-                                    g)
-                                if DEBUG:
-                                    print(self.players[number]['moves'])
+                try:
+                    with open(self.player_path + '/' + player_file) as f:
+                        player_data = yaml.safe_load(f)
+                except FileNotFoundError:
+                    # gone between listing the directory and opening it
+                    continue
+                except yaml.YAMLError as exc:
+                    raise UnreadableGame(
+                        f"could not read a player file for the game at "
+                        f"{self.player_path}", exc) from exc
 
-                    except yaml.YAMLError as exc:
-                        print(exc, file=sys.stderr)
-                        sys.exit(1)
+                if DEBUG:
+                    print(player_data)
+                number = int(player_data['number'])
+                self.players[number] = {
+                    'number': number,
+                    'obj': Player(number),
+                    'types': {}
+                }
+                for unit_type_name in (player_data.get('types') or {}):
+                    unit_type = player_data['types'][unit_type_name]
+                    # a player file can be written by hand, so its statistics
+                    # are converted here, at the edge, and are numbers
+                    # everywhere below
+                    unit_type['obj'] = UnitType(
+                        unit_type['name'],
+                        unit_type['symbol'],
+                        int(unit_type['attack']),
+                        int(unit_type['health']),
+                        int(unit_type['energy']))
+                    self.players[number]['types'][unit_type['name']] = unit_type
+
+                # orders this player has published and the server has not yet
+                # consumed, which the server merges when it resolves the turn
+                moves_file = (self.player_path + '/' + str(number) +
+                              '_units.yaml')
+                try:
+                    with open(moves_file) as g:
+                        self.players[number]['moves'] = yaml.safe_load(g)
+                except FileNotFoundError:
+                    pass
+                except yaml.YAMLError as exc:
+                    raise UnreadableGame(
+                        f"could not read the orders published by player "
+                        f"{number}", exc) from exc
 
         # pick up any orders the server refused when it last resolved a turn
         self.rejected = []
@@ -212,8 +220,8 @@ class GameData:
                             x, y,
                             name,
                             unit_type,
-                            int(unit['health']),
-                            int(unit['energy']),
+                            unit['health'],
+                            unit['energy'],
                             bool(unit['destroyed']),
                             bool(unit['on_board']),
                             restoring=True
@@ -251,8 +259,8 @@ class GameData:
                             x, y,
                             name,
                             unit_type,
-                            int(unit['health']),
-                            int(unit['energy']),
+                            unit['health'],
+                            unit['energy'],
                             bool(unit['destroyed']),
                             bool(unit['on_board']),
                             restoring=True
@@ -271,8 +279,8 @@ class GameData:
         elif self.player_number == 0:
             self.player_obj = None
         else:
-            print(f"player {self.player_number} does not exist", file=sys.stderr)
-            sys.exit(1)
+            raise NoSuchPlayer(
+                f"player {self.player_number} does not exist")
 
     def clientSave(self):
         # check the board size has been set

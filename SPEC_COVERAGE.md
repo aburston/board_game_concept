@@ -216,6 +216,30 @@ Addressed by the `split-into-layers` change: `main` defaults its argument to
 `sys.argv`. Each role now has a test that calls `main()` with no arguments the
 way the generated wrapper does.
 
+### 10. Loading a game races the server deleting orders — fixed
+
+`game-persistence` requires the server to remove each player's pending order
+file once it has resolved a turn, and requires a client loading a game to
+notice its own orders are still pending. Loading opened every file in the
+players directory and then decided what it was by searching the repr of the
+open file object for a substring of its name — so it opened files it only
+meant to skip, including the order files the server deletes as it resolves.
+A file listed a moment earlier could be gone by the time it was opened, and
+the load died of `FileNotFoundError`.
+
+The window is small, which is why this never showed while both sides waited
+whole seconds for each other. Signalling closed those gaps and the race began
+to fire.
+
+Reproduction: run a client through a commit while the server resolves the turn,
+repeatedly.
+
+Addressed by the `split-into-layers` change: a file is classified by its name,
+so the files that are only skipped are never opened, and the two that are read
+tolerate having been removed since the directory was listed. Matching on the
+name also made the match exact, where searching for a substring meant
+`commit_1` matched `commit_11` and one player could be mistaken for another.
+
 ## Documented but not implemented
 
 - **Win condition.** `README.md` and `MODULE_DESCRIPTION.md` both describe the

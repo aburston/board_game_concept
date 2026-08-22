@@ -130,20 +130,20 @@ Each restores what the spec already requires (design.md — Decision 13).
 
 ## 6. Service layer
 
-- [ ] 6.1 Add `service/errors.py` and replace the four `sys.exit` calls in
+- [x] 6.1 Add `service/errors.py` and replace the four `sys.exit` calls in
       `GameData.load` with raised errors the session loop catches and reports.
       Verify the messages reaching the terminal are unchanged and that
       `sys.exit` appears nowhere outside `cli/`.
-- [ ] 6.2 Add `service/games.py` with one function per command object, moving
+- [x] 6.2 Add `service/games.py` with one function per command object, moving
       the phase gating, ownership and occupancy rules out of the command loops
       (design.md — Decision 7). Verify the refusal scenarios in the
       characterisation tests pass with their current wording.
-- [ ] 6.4 Convert unit statistics to integers at the parser and drop the
+- [x] 6.4 Convert unit statistics to integers at the parser and drop the
       `int()` re-casting below it, so a unit dump carries numbers rather than
       quoted strings (design.md — Decision 9). Player numbers are already
       integers; see task 1a.6. Verify the statistics survive a save and load
       without being re-cast on the way in.
-- [ ] 6.3 Reduce the three CLIs to parse → service → render over a shared
+- [x] 6.3 Reduce the three CLIs to parse → service → render over a shared
       session loop in `cli/session.py`. Verify all characterisation tests and
       `tests/test_server_client_integration.py` pass with no edit.
 

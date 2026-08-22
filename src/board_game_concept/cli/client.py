@@ -12,7 +12,9 @@ from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.parser import ParseError, parse
+from board_game_concept.cli.session import load_game, read_command, report
+from board_game_concept.service import games
+from board_game_concept.service.errors import GameError
 
 ROLE = roles.CLIENT
 
@@ -51,7 +53,7 @@ def main(argv=None):
     while True:
 
         # load/reload the gamedata
-        data.load()
+        load_game(data)
 
         # set the fields used in the parser
         players = data.getPlayers()
@@ -83,27 +85,18 @@ def main(argv=None):
         # interactive mode
         while True:
 
-            # read a line and make sense of it
-            print(f"{argv[0]}> ", flush=True, end='')
-            line = sys.stdin.readline().rstrip()
-            try:
-                command = parse(line)
-            except ParseError as error:
-                print(error.message)
-                continue
-
-            # a blank line is not a command
+            command = read_command(argv[0], ROLE)
             if command is None:
-                continue
-
-            if not ROLE.allows(command):
-                print(ROLE.refusal(command))
                 continue
 
             if command.kind == 'help':
                 print_help(ROLE)
+                continue
 
-            elif command.kind == 'show':
+            if command.kind == 'exit':
+                sys.exit(0)
+
+            if command.kind == 'show':
                 if command.subject == 'board':
                     if seen_board is not None:
                         print_board(seen_board)
@@ -131,79 +124,27 @@ def main(argv=None):
                         print("must create board - set size and commit")
                     else:
                         print(serialise_units(board, player_obj))
+                continue
 
-            elif command.kind == 'add_type':
-                if not new_game:
-                    print("can't add types after first turn")
-                    continue
-                try:
-                    obj = UnitType(command.name, command.symbol, command.attack,
-                                   command.health, command.energy)
-                except Exception as e:
-                    print(f"error adding unit type: {e}")
-                    continue
-                players[player_number]['types'][command.name] = {
-                    'name': command.name,
-                    'symbol': command.symbol,
-                    'attack': command.attack,
-                    'health': command.health,
-                    'energy': command.energy,
-                    'obj': obj,
-                }
-
-            elif command.kind == 'add_unit':
-                if board is None:
-                    print("board must be loaded in order to place units")
-                    continue
-                if not new_game:
-                    print("can't add units after first turn")
-                    continue
-                try:
-                    unit_type = players[player_number]['types'][command.type_name]['obj']
-                    board.add(player_obj, command.x, command.y, command.name,
-                              unit_type)
-                    board.commit()
-                    # the view published by the server is what the player is
-                    # shown, so a unit deployed this turn has to be put there
-                    # too or it stays invisible to its own owner until the turn
-                    # resolves. Only the player's own unit is added, so nothing
-                    # the server has not revealed becomes visible.
-                    if seen_board is not None:
-                        seen_board.add(player_obj, command.x, command.y,
-                                       command.name, unit_type)
-                        seen_board.commit()
-                except Exception as e:
-                    print(f"error creating new unit {e}")
-                    continue
-
-            elif command.kind == 'move':
-                if board is None:
-                    print("board must be loaded in order to move units")
-                    continue
-                if new_game:
-                    print("can't move units until after the first turn is complete")
-                    continue
-                try:
-                    unit = board.getUnitByName(command.unit)[0]
-                    if player_number != unit.player.number:
-                        print("can't move units belonging to other players")
-                        continue
-                    if not unit.on_board:
-                        print("can't move units not on the board")
-                        continue
-                    unit.move(command.direction)
-                    print(serialise_units(board, player_obj))
-                except Exception as e:
-                    print(f"error moving unit {e}")
-                    continue
-
-            elif command.kind == 'commit':
+            if command.kind == 'commit':
                 if data.clientSave():
                     print("commit complete")
                     break
+                continue
 
-            elif command.kind == 'exit':
-                sys.exit(0)
+            # everything else is the service layer's to carry out or refuse
+            try:
+                if command.kind == 'add_type':
+                    games.define_type(data, command)
+                elif command.kind == 'add_unit':
+                    games.deploy_unit(data, command)
+                elif command.kind == 'move':
+                    games.order_move(data, command)
+                    # the order is read back so the player can see it took
+                    print(serialise_units(data.getBoard(), player_obj))
+            except GameError as error:
+                report(error)
+                continue
 
 
 if __name__ == "__main__":

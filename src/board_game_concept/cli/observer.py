@@ -12,7 +12,7 @@ from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.parser import ParseError, parse
+from board_game_concept.cli.session import load_game, read_command
 
 ROLE = roles.OBSERVER
 
@@ -46,7 +46,7 @@ def main(argv=None):
     while True:
 
         # load the gamedata
-        data.load()
+        load_game(data)
 
         players = data.getPlayers()
         player_obj = data.getPlayerObj(player_number)
@@ -58,22 +58,10 @@ def main(argv=None):
 
         # interactive mode
         while True:
-            # read a line and make sense of it
-            print(f"{argv[0]}> ", flush=True, end='')
-            line = sys.stdin.readline().rstrip()
-            try:
-                command = parse(line)
-            except ParseError as error:
-                print(error.message)
-                continue
-
-            # a blank line is not a command
+            # the observer watches; read_command refuses it everything
+            # that writes
+            command = read_command(argv[0], ROLE)
             if command is None:
-                continue
-
-            # the observer watches; it is refused everything that writes
-            if not ROLE.allows(command):
-                print(ROLE.refusal(command))
                 continue
 
             if command.kind == 'help':

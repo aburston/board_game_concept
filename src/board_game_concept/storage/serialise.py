@@ -8,14 +8,18 @@ serves both, and changing it changes both.
 
 def unit_fields(unit):
     """One unit as the body of a YAML flow mapping, without the braces."""
+    # numbers are written as numbers. They used to be quoted, so everything
+    # reading a unit back had to convert it again, and a player number that
+    # went out as text came back as text and no longer matched the integer the
+    # rest of the game knew the player by
     return (
-        f'player: "{unit.player.number}", '
+        f'player: {unit.player.number}, '
         f'type: "{unit.type_name}", '
         f'name: "{unit.name}", '
         f'symbol: "{unit.symbol}", '
-        f'attack: "{unit.attack}", '
-        f'health: "{unit.health}", '
-        f'energy: "{unit.energy}", '
+        f'attack: {unit.attack}, '
+        f'health: {unit.health}, '
+        f'energy: {unit.energy}, '
         f'x: {unit.x}, y: {unit.y}, '
         f'state: {unit.state}, direction: {unit.direction}, '
         f'destroyed: {unit.destroyed}, on_board: {unit.on_board}'

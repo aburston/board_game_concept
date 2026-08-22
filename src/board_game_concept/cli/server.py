@@ -14,7 +14,9 @@ from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.parser import ParseError, parse
+from board_game_concept.cli.session import load_game, read_command, report
+from board_game_concept.service import games
+from board_game_concept.service.errors import GameError
 
 ROLE = roles.SERVER
 
@@ -107,7 +109,7 @@ def main(argv=None):
     while True:
 
         # load the gamedata
-        data.load()
+        load_game(data)
 
         players = data.getPlayers()
         player_obj = data.getPlayerObj(player_number)
@@ -119,27 +121,18 @@ def main(argv=None):
 
         # interactive mode
         while new_game:
-            # read a line and make sense of it
-            print(f"{argv[0]}> ", flush=True, end='')
-            line = sys.stdin.readline().rstrip()
-            try:
-                command = parse(line)
-            except ParseError as error:
-                print(error.message)
-                continue
-
-            # a blank line is not a command
+            command = read_command(argv[0], ROLE)
             if command is None:
-                continue
-
-            if not ROLE.allows(command):
-                print(ROLE.refusal(command))
                 continue
 
             if command.kind == 'help':
                 print_help(ROLE)
+                continue
 
-            elif command.kind == 'show':
+            if command.kind == 'exit':
+                sys.exit(0)
+
+            if command.kind == 'show':
                 if command.subject == 'board':
                     show_board(data, player_number)
 
@@ -156,6 +149,8 @@ def main(argv=None):
                         print(f"number: {player}")
 
                 elif command.subject == 'units':
+                    seen_board = data.getSeenBoard()
+                    board = data.getBoard()
                     if seen_board is not None:
                         print(serialise_units(seen_board))
                     elif board is None:
@@ -167,67 +162,9 @@ def main(argv=None):
                     for player in players.keys():
                         if 'moves' in players[player].keys():
                             print(f"player: {player}, moves: {players[player]['moves']}")
+                continue
 
-            elif command.kind == 'set_board':
-                if board is not None:
-                    print("can't resize an existing board")
-                    continue
-                size_x = command.size_x
-                size_y = command.size_y
-                if size_x < 2:
-                    print("x must be greater than 1")
-                    continue
-                if size_y < 2:
-                    print("y must be greater than 1")
-                    continue
-                # the board has its own limits beyond the minimum, and
-                # reports them itself
-                try:
-                    board = Board(size_x, size_y)
-                except AssertionError as e:
-                    print(e)
-                    continue
-                data.setBoard(board)
-
-            elif command.kind == 'add_player':
-                if new_game is False:
-                    print("can't add players to an existing game")
-                    continue
-                players[command.number] = {
-                    'obj': Player(command.number),
-                    'types': {}
-                }
-
-            elif command.kind == 'load_player':
-                if new_game is False:
-                    print("can't add players to an existing game")
-                    continue
-                try:
-                    with open(command.path) as f:
-                        player_data = yaml.safe_load(f)
-                except Exception as e:
-                    print(f"Error loading player file {command.path} {e}")
-                    continue
-                number = int(player_data['number'])
-                players[number] = {
-                    'obj': Player(number),
-                    'types': player_data['types'],
-                    'units': player_data['units']
-                }
-
-            elif command.kind == 'load_board':
-                try:
-                    with open(command.path) as f:
-                        board_data = yaml.safe_load(f)
-                except Exception as e:
-                    print(f"Error loading player file {command.path} {e}")
-                    continue
-                size_x = int(board_data['board']['size_x'])
-                size_y = int(board_data['board']['size_y'])
-                board = Board(size_x, size_y)
-                data.setBoard(board)
-
-            elif command.kind == 'commit':
+            if command.kind == 'commit':
                 # do all the commit actions for the first commit
                 if data.serverSave():
                     print("commit complete")
@@ -235,8 +172,19 @@ def main(argv=None):
                 # commit failed, go back to the prompt to resolve the problem
                 continue
 
-            elif command.kind == 'exit':
-                sys.exit(0)
+            # everything else is the service layer's to carry out or refuse
+            try:
+                if command.kind == 'set_board':
+                    games.set_board_size(data, command)
+                elif command.kind == 'add_player':
+                    games.add_player(data, command)
+                elif command.kind == 'load_board':
+                    games.load_board(data, command)
+                elif command.kind == 'load_player':
+                    games.load_player(data, command)
+            except GameError as error:
+                report(error)
+                continue
 
         # do all the commit actions, this will be run when the server is
         # non-interactive
@@ -253,9 +201,12 @@ def main(argv=None):
         # wait for player commits before restarting the load and commit cycle
         data.waitForPlayerCommit()
 
-        # log board + units
-        print_board(board)
-        print(serialise_units(board))
+        # log board + units. Read the board back rather than using the one
+        # loaded at the top of the loop: setting or loading a board during
+        # setup replaces it, and the local would still be the old one
+        resolved = data.getBoard()
+        print_board(resolved)
+        print(serialise_units(resolved))
 
 
 # run main()
