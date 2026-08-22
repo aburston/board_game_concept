@@ -16,9 +16,13 @@ See `proposal.md` — Why. The constraints that shape the approach:
   and `game-observer` carry roughly eighty scenarios between them, covering
   argument counts, invalid input, phase gating and role restrictions. They are
   written; they are largely untested.
-- **`board` is optional and usually absent.** `BoardGameConcept.py` falls back to
-  `_FallbackBoard` when the import fails, and the package is not installed in
-  this environment. `requirements.txt` lists it, `pyproject.toml` does not.
+- **The optional `board` package decides how the board is drawn, and CI installs
+  it.** `BoardGameConcept.py` delegates drawing to `board` when the import
+  succeeds and to `_FallbackBoard` when it does not, and the two render
+  differently: `'+-+-+-+\n|X|#|#|\n...'` against `'X##\n###\n'`.
+  `requirements.txt` lists `board` and the CI workflow installs it, while
+  `pyproject.toml` does not, so `pip install .` gets the fallback. The same
+  command prints a different board in the two environments today.
 
 ## Goals / Non-Goals
 
@@ -202,6 +206,33 @@ The base path becomes a constructor argument defaulting to `os.getcwd()`, so
 `GameData(gameno, player_number)` behaves as it does now while a caller that is
 not a CLI can pass a path.
 
+### 12. The renderer draws the bordered grid, and the `board` dependency goes
+
+Drawing is currently delegated to whichever of two renderers is installed, so
+`show board` prints one thing under CI and another under `pip install .`. Once
+rendering moves into `cli/render.py` there is one renderer, and it has to pick
+one of the two outputs.
+
+It draws the bordered grid the `board` package produces:
+
+```
++-+-+-+
+|X|#|#|
++-+-+-+
+|#|#|#|
++-+-+-+
+```
+
+That is what CI produces, what `requirements.txt` asks for and what the README's
+setup instructions give you, so it is the output most runs see today. With
+nothing left calling `board.draw`, the optional import, `_FallbackBoard` and the
+`board` entry in `requirements.txt` all go, and every environment prints the
+same board.
+
+Alternative considered: reproduce `_FallbackBoard`'s plain rows, which is what a
+bare `pip install .` prints. Rejected — it changes output for CI and for anyone
+who followed the README, which is the larger population.
+
 ### 11. The spec scenarios become the characterisation suite
 
 The riskiest step is replacing the command loops, and it is the thinnest-covered:
@@ -230,14 +261,12 @@ a regression. Two are already known (`proposal.md` — What Changes), and belong
   named in this design as debt with a defined exit, and the follow-up change is
   small and mechanical. The alternative — editing the control group — is worse.
 
-- **Rendering currently depends on which `board` package is installed.**
-  `_FallbackBoard.draw` is what runs when `board` is absent, which is the case
-  here and in CI, but `requirements.txt` still lists `board` while
-  `pyproject.toml` does not. Anyone running with it installed may see different
-  output today → The renderer reproduces `_FallbackBoard`'s output, which
-  removes the variance. That is a behaviour change for an installed-`board`
-  environment, and is called out rather than hidden. The dependency mismatch
-  wants resolving separately.
+- **Dropping `_FallbackBoard` changes what a bare `pip install .` prints**
+  (Decision 12) → The bordered grid is what CI, `requirements.txt` and the
+  README's setup all produce today, so the environment whose output changes is
+  the one that was already the odd one out. Called out rather than hidden, and
+  the characterisation tests pin the chosen output so the divergence cannot
+  reappear.
 
 - **A refactor this size is unreviewable as one diff** → Sequenced as the
   Migration Plan below, one commit per step, suite green at each. Any step can

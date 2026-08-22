@@ -88,6 +88,11 @@ spec is written and `.openspec.yaml` sets `skip_specs: true`.
 - `src/BoardGameConcept.py`, `src/GameData.py`: deleted.
 - `pyproject.toml`: console script targets follow the moved entry points. No new
   dependency is added.
+- `requirements.txt`: the `board` entry is removed. Rendering stops being
+  delegated to that package, so nothing imports it, and the fallback grid it
+  was optional against goes with it. Every environment then draws the board the
+  same way — the bordered grid `board` produces today, which is what CI and the
+  README's setup already give.
 - `tests/test_basic.py`, `tests/test_combat_stalemate.py`,
   `tests/test_duplicate_seen_units.py`: import from `board_game_concept` and
   keep working unchanged, except where they assert on printed output.
