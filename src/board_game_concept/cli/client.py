@@ -85,7 +85,9 @@ def main(argv=None):
         # wait 5 seconds if there are unprocessed moves and then reload
         if unprocessed_moves:
             print("waiting for turn to complete...")
-            time.sleep(5)
+            # blocks until the server has taken the orders, rather than
+            # sleeping and looking again
+            data.waitForTurn()
             # restart the loop
             continue
 

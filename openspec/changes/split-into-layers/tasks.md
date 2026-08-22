@@ -93,6 +93,19 @@ Each restores what the spec already requires (design.md — Decision 13).
       the unconditional narration reaching the terminal is unchanged and no
       `print` remains in `domain/`.
 
+## 4a. Replace the polling with signalling
+
+- [x] 4a.1 Add `storage/notify.py`: a waiter that blocks on a FIFO until it is
+      signalled or times out, and a signal that never blocks and treats nobody
+      listening as ordinary. Verify a signal sent before the wait begins is not
+      lost, and that waiting gives up rather than blocking for ever.
+- [x] 4a.2 Have the server wait to be woken by a committing player instead of
+      counting order files every ten seconds, and the client wait to be woken by
+      a resolved turn instead of reloading every five. Both re-check the
+      condition they care about, so a lost signal costs latency and not
+      correctness. Verify a committed turn comes back in under a second where it
+      previously took up to fifteen.
+
 ## 5. Grammar, parser and commands
 
 - [ ] 5.1 Add `cli/grammar.py` and `cli/parser.py` — a hand-written recursive

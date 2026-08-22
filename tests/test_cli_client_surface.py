@@ -32,13 +32,9 @@ class ClientTestCase(CliTestCase):
         client = self.with_a_unit()
         client.send_line('commit')
         client.read_until('commit complete')
-        # the sole player's commit satisfies the barrier; the client reloads.
-        # The server polls for commits every ten seconds and the client polls
-        # for the resolved turn every five, so how long this takes depends on
-        # where in those two cycles the commit lands, and on how loaded the
-        # machine is. The tolerance is wide because of the polling, not because
-        # anything here is slow.
-        client.read_until_count(CLIENT_PROMPT, 4, timeout=180)
+        # the sole player's commit satisfies the barrier and the server
+        # signals the client, so this returns as soon as the turn is resolved
+        client.read_until_count(CLIENT_PROMPT, 4, timeout=60)
         return client
 
 

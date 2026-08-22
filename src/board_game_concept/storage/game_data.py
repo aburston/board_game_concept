@@ -1,5 +1,6 @@
 from ..domain import UnitType, Board, Player, Empty
 from .serialise import serialise_units
+from . import notify
 import sys
 import yaml
 import os
@@ -309,6 +310,10 @@ class GameData:
             file.write(player_units)
             file.close()
 
+        # tell the server there is something to look at, rather than leaving it
+        # to notice on its own
+        notify.signal(notify.wake_path(self.data_path, 'server'))
+
         if DEBUG:
             print("save complete")
 
@@ -469,15 +474,30 @@ class GameData:
                 file.write(player_units)
                 file.close()
 
+        # every player waiting on this turn can stop waiting
+        for p in self.players.keys():
+            notify.signal(notify.wake_path(self.data_path, str(p)))
+
         return (True)
+
+    def committedPlayerCount(self):
+        return len([player_file for player_file in os.listdir(self.player_path)
+                    if player_file.find("_units.yaml") != -1])
 
     def waitForPlayerCommit(self):
         print("wait for player commit")
-        while True:
-            commit_count = 0
-            for player_file in os.listdir(self.player_path):
-                if player_file.find("_units.yaml") != -1:
-                    commit_count = commit_count + 1
-            if commit_count == len(self.players.keys()):
-                break
-            time.sleep(10)
+        # the FIFO is opened before the first check, so a commit signalled from
+        # here on is buffered rather than lost, and one that arrived earlier is
+        # found by the check itself
+        with notify.Waiter(notify.wake_path(self.data_path, 'server')) as waiter:
+            while self.committedPlayerCount() != len(self.players.keys()):
+                waiter.wait()
+
+    def waitForTurn(self):
+        """Wait until the server has consumed this player's orders."""
+        orders = (self.player_path + '/' + str(self.player_number) +
+                  '_units.yaml')
+        with notify.Waiter(
+                notify.wake_path(self.data_path, str(self.player_number))) as waiter:
+            while os.path.exists(orders):
+                waiter.wait()

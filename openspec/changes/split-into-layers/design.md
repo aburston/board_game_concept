@@ -265,6 +265,35 @@ bugs alive.
 Each fix restores what the spec already requires. None of them changes what a
 role can do, and none needs a spec delta.
 
+### 14. Waiting is a blocked FIFO read over a re-checked condition
+
+Both sides of the file transport used to find out about each other by looking
+again on a timer: the server counted order files every ten seconds, the client
+reloaded every five. A turn therefore took up to fifteen seconds of dead time
+to come back, for work that takes milliseconds, and the test suite spent nearly
+all of its three minutes asleep.
+
+Each side now blocks on a FIFO under the game's `data` directory until the
+other signals it. The signal is a hint, not the truth: every waiter re-checks
+the condition it actually cares about before waiting and after each wake, and
+waiting has a five second backstop. A signal that is lost, duplicated or sent
+before anyone is waiting therefore costs a little latency and never
+correctness.
+
+The FIFOs live in `data` rather than beside the player files because loading a
+game opens every file in the players directory, and opening a FIFO there would
+block for ever.
+
+Alternatives considered: resolving the turn inside whichever process completes
+the barrier, which removes the wait entirely but makes the server stop being
+the commit authority — that belongs with the question of who resolves turns,
+which the API tier decides, not this change. And simply shortening the
+intervals, which reduces the symptom while keeping a spin.
+
+Not every platform has FIFOs. Where `os.mkfifo` is missing the waiter falls
+back to a short sleep, so the behaviour degrades to fast polling rather than
+breaking.
+
 ## Risks / Trade-offs
 
 - **Message wording drifts during the refactor and the integration tests fail

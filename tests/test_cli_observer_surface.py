@@ -184,8 +184,7 @@ class RefreshingTheView(ObserverTestCase):
         client.send_line('add unit Cross x1 0 0')
         client.read_until_count(CLIENT_PROMPT, 3)
         client.send_line('commit')
-        # see test_cli_client_surface for why this tolerance is wide
-        client.read_until_count(CLIENT_PROMPT, 4, timeout=180)
+        client.read_until_count(CLIENT_PROMPT, 4, timeout=60)
 
         observer.send_line('reload')
         observer.read_until('reloading')

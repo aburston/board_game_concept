@@ -34,9 +34,7 @@ which drive each role as a subprocess and assert what it prints. Run them with:
 pytest tests/test_cli_client_surface.py tests/test_cli_server_surface.py tests/test_cli_observer_surface.py
 ```
 
-They are slow — the commit barrier polls, so a test that waits for a turn to
-resolve waits in real seconds — and they are what any change to the command
-surface is checked against.
+They are what any change to the command surface is checked against.
 
 ## Known divergences
 
