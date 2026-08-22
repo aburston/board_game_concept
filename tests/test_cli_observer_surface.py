@@ -45,6 +45,12 @@ class ObserverInvocation(CliTestCase):
         self.assertNotEqual(0, observer.wait_for_exit())
         self.assertIn('usage, observer.py <gameno>', observer.errors)
 
+    def test_console_script_entry_point(self):
+        # the generated console script calls main() with no arguments at all
+        observer = self.start_entry_point('observer')
+        self.assertNotEqual(0, observer.wait_for_exit())
+        self.assertIn('usage, observer.py <gameno>', observer.errors)
+        self.assertNotIn('TypeError', observer.errors)
 
 class ObserverIsReadOnly(ObserverTestCase):
 

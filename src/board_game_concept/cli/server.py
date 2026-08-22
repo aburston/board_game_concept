@@ -8,7 +8,8 @@ import argparse
 from pathlib import Path
 
 if __package__ is None:
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    # launched as a script rather than imported, so put `src` on the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import UnitType, Board, Player, Empty, GameData
 
@@ -91,7 +92,12 @@ def commit():
     pass
 
 
-def main(argv):
+def main(argv=None):
+    # the console script entry point calls this with nothing, so fall back to
+    # the process arguments
+    if argv is None:
+        argv = sys.argv
+
 
     # the server is run as the administrator who is player 0
     player_number = 0

@@ -23,6 +23,12 @@ class ServerInvocation(CliTestCase):
         self.assertNotEqual(0, server.wait_for_exit())
         self.assertIn('game-number', server.errors)
 
+    def test_console_script_entry_point(self):
+        # the generated console script calls main() with no arguments at all
+        server = self.start_entry_point('server')
+        self.assertNotEqual(0, server.wait_for_exit())
+        self.assertIn('game-number', server.errors)
+        self.assertNotIn('TypeError', server.errors)
 
 class InteractiveSetupMode(CliTestCase):
 

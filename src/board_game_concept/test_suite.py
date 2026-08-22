@@ -229,7 +229,9 @@ def test_attack_on_entering_occupied_cell():
         assert type(square) is UnitType
         assert square.name == 'a1'
         assert square.player == p1
-        assert square.health == 3
+        # combat is multi-round attrition, so the attacker takes two rounds of
+        # the defender's attack before the defender falls
+        assert square.health == 1
         assert defender.destroyed is True
 
         print('✓ Combat on entry resolved and victor occupies the target cell')

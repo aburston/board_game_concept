@@ -20,7 +20,7 @@ GAMES_DIR = TEST_DIR / 'games'
 PYTHON = sys.executable
 
 # the one place that knows where the role entry points live
-CLI_DIR = ROOT / 'src' / 'board_game_concept'
+CLI_DIR = ROOT / 'src' / 'board_game_concept' / 'cli'
 SERVER = CLI_DIR / 'server.py'
 CLIENT = CLI_DIR / 'client.py'
 OBSERVER = CLI_DIR / 'observer.py'
@@ -177,6 +177,18 @@ class CliTestCase(unittest.TestCase):
 
     def start_observer_with_args(self, args):
         return self._start([OBSERVER] + list(args))
+
+    def start_entry_point(self, role):
+        """Call a role's main() with no arguments, as its console script does.
+
+        `pyproject.toml` declares `board-game-<role>` as `...cli.<role>:main`,
+        and setuptools generates a wrapper that calls it with nothing at all.
+        Run in a subprocess that puts `src` on the path itself, so this holds
+        whether or not the package happens to be installed.
+        """
+        code = (f"import sys; sys.path.insert(0, {str(ROOT / 'src')!r}); "
+                f"from board_game_concept.cli.{role} import main; main()")
+        return self._start(['-c', code])
 
     def at_prompt(self, proc, prompt):
         """Send nothing; just confirm the role is still asking for input."""

@@ -1,4 +1,4 @@
-from .BoardGameConcept import UnitType, Board, Player, Empty
+from ..domain import UnitType, Board, Player, Empty
 import sys
 import yaml
 import os

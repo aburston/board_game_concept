@@ -201,6 +201,23 @@ a unit dump and the client's argument — and `Player` asserts that it holds one
 so the two ways of creating a game can no longer disagree about what a player is
 called.
 
+### 9. The packaged console scripts cannot start anything — fixed
+
+`player-client`, `game-server` and `game-observer` each require their role to
+start when invoked with its arguments. `pyproject.toml` declares
+`board-game-server`, `board-game-client` and `board-game-observer` as the way to
+invoke them, and every one of those raised
+`TypeError: main() missing 1 required positional argument: 'argv'` and stopped.
+Each role's `main` took `argv`, while the console script setuptools generates
+calls it with nothing. Only launching the module files directly, as the tests
+did, ever worked.
+
+Reproduction: `pip install .`, then run `board-game-server`.
+
+Addressed by the `split-into-layers` change: `main` defaults its argument to
+`sys.argv`. Each role now has a test that calls `main()` with no arguments the
+way the generated wrapper does.
+
 ## Documented but not implemented
 
 - **Win condition.** `README.md` and `MODULE_DESCRIPTION.md` both describe the
@@ -219,8 +236,9 @@ same thing. Aligning them is a terminology sweep across all ten capabilities,
 which no behavioural change should carry, so it is left as its own job.
 
 
-`src/BoardGameConcept.py` and `src/GameData.py` are stale copies of the modules
-inside `src/board_game_concept/`, left behind by the restructure and drifting
-further from them with each fix. Only the package copies are importable
-via `pyproject.toml`, which packages `board_game_concept` from `src/`. The
-top-level copies are stale duplicates and are not covered by these specs.
+`src/board_game_concept/test_suite.py`, run by the `board-game-test-suite`
+console script, is a hand-rolled harness covering the same ground as
+`tests/test_basic.py`. It was not updated when `fix-combat-stalemate-hang` made
+combat multi-round attrition, so its attack test still expected one round of
+damage and had been failing 9/10 since. The expectation has been corrected.
+Whether the harness is worth keeping alongside pytest at all is open.

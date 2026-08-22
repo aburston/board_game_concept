@@ -1,5 +1,5 @@
-from .BoardGameConcept import UnitType, Board, Player, Empty
-from .GameData import GameData
+from .domain import UnitType, Board, Player, Empty
+from .storage.game_data import GameData
 
 __all__ = [
     'UnitType',

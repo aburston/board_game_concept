@@ -53,25 +53,25 @@ Each restores what the spec already requires (design.md — Decision 13).
 
 ## 2. Remove the stale duplicates
 
-- [ ] 2.1 Delete `src/BoardGameConcept.py` and `src/GameData.py`, left behind by
+- [x] 2.1 Delete `src/BoardGameConcept.py` and `src/GameData.py`, left behind by
       the restructure in `7a26b26`. Verify nothing imports them
       (`grep -rn "^import GameData\|^from GameData\|^import BoardGameConcept"`)
       and that `pytest` stays green.
 
 ## 3. Package layout
 
-- [ ] 3.1 Create the `domain`, `service`, `storage` and `cli` packages under
+- [x] 3.1 Create the `domain`, `service`, `storage` and `cli` packages under
       `src/board_game_concept/` and move `BoardGameConcept.py` and `GameData.py`
       into them with no logic change, splitting `BoardGameConcept.py` into
       `domain/board.py`, `domain/unit.py` and `domain/player.py`. Verify
       `pytest` is green with no test file edited.
-- [ ] 3.2 Re-export from `board_game_concept/__init__.py` whatever the new
+- [x] 3.2 Re-export from `board_game_concept/__init__.py` whatever the new
       layout makes sensible, and update `tests/test_basic.py`,
       `tests/test_combat_stalemate.py`, `tests/test_duplicate_seen_units.py` and
       `test_suite.py` to import from where things now live (design.md —
       Decision 2). Verify the whole suite passes and `board-game-test-suite`
       still runs.
-- [ ] 3.3 Move `server.py`, `client.py` and `observer.py` under `cli/` and point
+- [x] 3.3 Move `server.py`, `client.py` and `observer.py` under `cli/` and point
       the `pyproject.toml` console scripts at their new paths. Verify a
       `pip install -e .` exposes `board-game-server`, `board-game-client` and
       `board-game-observer`, and that the characterisation tests from task 1
