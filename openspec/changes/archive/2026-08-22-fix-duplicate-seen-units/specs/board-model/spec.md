@@ -23,7 +23,7 @@ name and player.
 #### Scenario: Restoring is not placement
 
 - **WHEN** a unit is placed rather than restored and that player already holds a unit with that name
-- **THEN** placement fails, as it does today
+- **THEN** placement fails
 
 ## MODIFIED Requirements
 
