@@ -59,12 +59,32 @@ class Parser:
 
     # --- the grammar itself
 
+    def _verbs(self):
+        """The words a command can start with, and what reads each.
+
+        Named one by one rather than looked up by building a method name from
+        the word typed: that made every `_parse_x` helper reachable as a verb,
+        so `add_player 1` was quietly accepted as a command the grammar does
+        not contain, and adding a helper would have invented another.
+        """
+        return {
+            'help': self._parse_help,
+            'exit': self._parse_exit,
+            'reload': self._parse_reload,
+            'commit': self._parse_commit,
+            'show': self._parse_show,
+            'set': self._parse_set,
+            'add': self._parse_add,
+            'load': self._parse_load,
+            'move': self._parse_move,
+        }
+
     def parse(self):
         """The command this line asks for, or None if the line is blank."""
         verb = self.tokens.peek()
         if verb is None:
             return None
-        parse_verb = getattr(self, f'_parse_{verb}', None)
+        parse_verb = self._verbs().get(verb)
         if parse_verb is None:
             raise ParseError(INVALID_COMMAND, self.tokens.position)
         self.tokens.take()
@@ -104,7 +124,11 @@ class Parser:
 
     def _parse_add(self):
         subject = self._subject('add', ('player', 'type', 'unit'))
-        return getattr(self, f'_parse_add_{subject}')()
+        return {
+            'player': self._parse_add_player,
+            'type': self._parse_add_type,
+            'unit': self._parse_add_unit,
+        }[subject]()
 
     def _parse_add_player(self):
         self._arity(1, 'must provide 1 arg for player')

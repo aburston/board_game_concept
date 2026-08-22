@@ -4,7 +4,6 @@ from .cell import Empty
 from .unit import UnitType
 
 
-
 class _Grid:
     """What each square of the board holds, addressed as grid[x, y].
 

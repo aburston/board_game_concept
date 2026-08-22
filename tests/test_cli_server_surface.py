@@ -30,6 +30,7 @@ class ServerInvocation(CliTestCase):
         self.assertIn('game-number', server.errors)
         self.assertNotIn('TypeError', server.errors)
 
+
 class InteractiveSetupMode(CliTestCase):
 
     def test_new_game_prompts(self):

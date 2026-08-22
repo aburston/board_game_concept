@@ -3,7 +3,6 @@ from .events import Event
 from .player import Player
 
 
-
 # Unit
 #   name: One or more character
 #   symbol: One single character

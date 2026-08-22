@@ -8,7 +8,8 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import Game, YamlGameRepository
-from board_game_concept.cli.render import print_board
+from board_game_concept.cli.render import (print_board, print_players,
+                                           print_types)
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
 from board_game_concept.cli.help import print_help
@@ -28,7 +29,6 @@ def main(argv=None):
     # the process arguments
     if argv is None:
         argv = sys.argv
-
 
     if DEBUG:
         print(f"len(argv): {len(argv)}")
@@ -74,16 +74,10 @@ def main(argv=None):
                         print_board(board, player_obj)
 
                 elif command.subject == 'types':
-                    for player in players.keys():
-                        if 'types' in players[player].keys():
-                            for unit_name in players[player]['types'].keys():
-                                unit_type = players[player]['types'][unit_name]
-                                print(
-                                    f"player: {player}, name: {unit_type['name']}, symbol: {unit_type['symbol']}, attack: {unit_type['attack']}, health: {unit_type['health']}, energy: {unit_type['energy']}")
+                    print_types(players)
 
                 elif command.subject == 'players':
-                    for player in players.keys():
-                        print(f"number: {player}")
+                    print_players(players)
 
                 elif command.subject == 'units':
                     if seen_board is not None:

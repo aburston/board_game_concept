@@ -240,6 +240,23 @@ tolerate having been removed since the directory was listed. Matching on the
 name also made the match exact, where searching for a substring meant
 `commit_1` matched `commit_11` and one player could be mistaken for another.
 
+## Unspecified, and worth deciding
+
+Found by playing a game through rather than by reading, and confirmed to
+behave identically before and after the `split-into-layers` change. Neither is
+a divergence, because no capability says what should happen; both are gaps in
+the rules rather than in the code.
+
+- **Two units can pass through each other.** A contest is a square holding more
+  than one unit, so two units approaching along a row and swapping squares in
+  the same turn never contest anything and end up behind each other. Whether
+  units should be able to trade places is a rule nobody has written down.
+- **Moving costs the two sides different amounts.** In that same exchange, one
+  unit spends a point of energy on a turn where the other spends none, because
+  a unit that vacates before the other has moved takes a different path through
+  resolution. The cost of a move should not depend on the order units happen to
+  be resolved in.
+
 ## Documented but not implemented
 
 - **Win condition.** `README.md` and `MODULE_DESCRIPTION.md` both describe the

@@ -52,6 +52,7 @@ class ObserverInvocation(CliTestCase):
         self.assertIn('usage, observer.py <gameno>', observer.errors)
         self.assertNotIn('TypeError', observer.errors)
 
+
 class ObserverIsReadOnly(ObserverTestCase):
 
     def test_no_mutating_commands(self):

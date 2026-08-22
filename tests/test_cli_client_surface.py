@@ -7,7 +7,7 @@ means here.
 
 import unittest
 
-from cli_harness import CliTestCase, CLIENT_PROMPT, SERVER_PROMPT
+from cli_harness import CliTestCase, CLIENT_PROMPT
 
 
 class ClientTestCase(CliTestCase):
@@ -61,6 +61,7 @@ class ClientInvocation(CliTestCase):
         self.assertNotEqual(0, client.wait_for_exit())
         self.assertIn('client.py <gameno> <player_number>', client.errors)
         self.assertNotIn('TypeError', client.errors)
+
 
 class ClientCommandLoop(ClientTestCase):
 

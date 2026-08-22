@@ -29,6 +29,14 @@ class TestBlankAndUnknown:
         assert refused('wibble') == 'invalid command'
         assert refused('wibble with arguments') == 'invalid command'
 
+    @pytest.mark.parametrize('line', [
+        'add_player 1', 'add_unit Cross x1 0 0', 'set_board 4 4',
+        'add_type Cross X 1 1 10', 'integer 1', 'subject show'])
+    def test_the_parser_own_methods_are_not_verbs(self, line):
+        # the verb used to be turned into a method name and looked up, so
+        # every helper was reachable as a command the grammar does not contain
+        assert refused(line) == 'invalid command'
+
 
 class TestBareCommands:
 

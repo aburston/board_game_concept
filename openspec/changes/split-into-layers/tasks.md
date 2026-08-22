@@ -169,6 +169,6 @@ Each restores what the spec already requires (design.md — Decision 13).
 
 - [x] 8.1 Rewrite `MODULE_DESCRIPTION.md` to describe the four packages instead
       of the three modules. Verify every path it names exists.
-- [ ] 8.2 Run the full suite, `flake8 . --select=E9,F63,F7,F82` as CI does, and
+- [x] 8.2 Run the full suite, `flake8 . --select=E9,F63,F7,F82` as CI does, and
       `pylint` against the configured `.pylintrc`. Verify the suite is green and
       lint reports nothing that was not already reported before the change.

@@ -53,3 +53,28 @@ def render_board(board, player=None):
 
 def print_board(board, player=None):
     print(render_board(board, player))
+
+
+def type_lines(players):
+    """Every unit type these players hold, one line each."""
+    lines = []
+    for number in players:
+        for type_name in players[number].get('types', {}):
+            unit_type = players[number]['types'][type_name]
+            lines.append(
+                f"player: {number}, name: {unit_type['name']}, "
+                f"symbol: {unit_type['symbol']}, "
+                f"attack: {unit_type['attack']}, "
+                f"health: {unit_type['health']}, "
+                f"energy: {unit_type['energy']}")
+    return lines
+
+
+def print_types(players):
+    for line in type_lines(players):
+        print(line)
+
+
+def print_players(players):
+    for number in players:
+        print(f"number: {number}")
