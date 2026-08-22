@@ -14,13 +14,12 @@ regression: record it, do not fix it.
       command, help, exit, defining types, deploying units, ordering moves and
       every refusal each of those has, the `show` subcommands, commit, and
       rejected-order reporting. Verify as for 1.1.
-- [ ] 1.3 Add `tests/test_cli_observer_surface.py` covering the `game-observer`
+- [x] 1.3 Add `tests/test_cli_observer_surface.py` covering the `game-observer`
       scenarios — startup, argument handling, refusal of mutating commands,
       help, exit, every `show` subcommand, incomplete `show`, and reload. Verify
       as for 1.1.
-- [ ] 1.4 Add `tests/test_cli_observer_surface.py` coverage for the reload and
-      read-only scenarios that need a resolved turn behind them. Verify the
-      observer sees the units the server published.
+- [x] 1.4 Cover the reload and read-only scenarios that need a resolved turn
+      behind them. Verify the observer sees the units the server published.
 
 ## 1a. Correct the divergences the characterisation found
 
@@ -41,7 +40,14 @@ Each restores what the spec already requires (design.md — Decision 13).
       published, so its owner can see it before the turn resolves. Verify
       `show board` draws it and `show units` lists it, and that no unit the
       server has not revealed becomes visible.
-- [ ] 1a.5 Record all five in `SPEC_COVERAGE.md` under Known divergences, in
+- [x] 1a.6 Normalise player numbers to integers at every point they are read —
+      the server prompt, a loaded player file, a unit dump and the client's
+      argument — and have `Player` insist on one. Pulled forward from task 6.4:
+      the mismatch is not cosmetic, it made any game created with
+      `load player` unloadable, so the observer died on startup and the server
+      would have died on its next turn. Verify the observer opens such a game
+      and lists its units.
+- [ ] 1a.5 Record all six in `SPEC_COVERAGE.md` under Known divergences, in
       the style of the existing entries, each marked fixed and naming the
       scenario that found it. Verify every divergence listed has a test.
 
@@ -119,11 +125,11 @@ Each restores what the spec already requires (design.md — Decision 13).
       the phase gating, ownership and occupancy rules out of the command loops
       (design.md — Decision 7). Verify the refusal scenarios in the
       characterisation tests pass with their current wording.
-- [ ] 6.4 Convert player numbers and unit statistics to integers at the parser,
-      and drop the `int()` re-casting below it (design.md — Decision 9). Verify
-      a game created through the server prompt and one loaded from
-      `tests/player_1.yaml` produce the same types, and that a client started
-      with a player number matches both.
+- [ ] 6.4 Convert unit statistics to integers at the parser and drop the
+      `int()` re-casting below it, so a unit dump carries numbers rather than
+      quoted strings (design.md — Decision 9). Player numbers are already
+      integers; see task 1a.6. Verify the statistics survive a save and load
+      without being re-cast on the way in.
 - [ ] 6.3 Reduce the three CLIs to parse → service → render over a shared
       session loop in `cli/session.py`. Verify all characterisation tests and
       `tests/test_server_client_integration.py` pass with no edit.

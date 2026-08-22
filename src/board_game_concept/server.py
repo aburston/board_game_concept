@@ -228,9 +228,13 @@ def main(argv):
                     elif new_game == False:
                         print("can't add players to an existing game")
                     else:
-                        number = tokens[2]
+                        try:
+                            number = int(tokens[2])
+                        except ValueError:
+                            print("player number must be a number")
+                            continue
                         players[number] = {
-                            'obj': Player(tokens[2]),
+                            'obj': Player(number),
                             'types': {}
                         }
                 else:
@@ -257,8 +261,9 @@ def main(argv):
                         except Exception as e:
                             print(f"Error loading player file {tokens[2]} {e}")
                             continue
-                        players[player_data['number']] = {
-                            'obj': Player(player_data['number']),
+                        number = int(player_data['number'])
+                        players[number] = {
+                            'obj': Player(number),
                             'types': player_data['types'],
                             'units': player_data['units']
                         }

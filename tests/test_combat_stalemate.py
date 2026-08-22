@@ -397,7 +397,9 @@ def test_shared_square_survives_a_save_and_load_round_trip():
     types = {}
     reloaded = Board(board.size_x, board.size_y)
     for unit in saved['units']:
-        number = unit['player']
+        # a unit dump writes the player number as text; GameData converts it
+        # back on the way in, and so does this
+        number = int(unit['player'])
         players.setdefault(number, Player(number))
         # GameData rebuilds types from the player's type definitions and
         # then overrides health and energy per unit, so a unit that has spent

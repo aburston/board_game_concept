@@ -15,8 +15,8 @@ def _fighting_board():
     red_type = UnitType('Red', 'R', 1, 10, 100)
     blue_type = UnitType('Blue', 'B', 1, 10, 100)
 
-    p1 = Player('1')
-    p2 = Player('2')
+    p1 = Player(1)
+    p2 = Player(2)
     board = Board(3, 3)
     board.add(p1, 0, 1, 'r1', red_type)
     board.add(p2, 2, 1, 'b1', blue_type)
@@ -68,8 +68,8 @@ def test_a_view_names_an_enemy_engaged_by_several_units_once():
     red_type = UnitType('Red', 'R', 1, 10, 100)
     blue_type = UnitType('Blue', 'B', 1, 10, 100)
 
-    p1 = Player('1')
-    p2 = Player('2')
+    p1 = Player(1)
+    p2 = Player(2)
     board = Board(3, 3)
     board.add(p1, 0, 1, 'r1', red_type)
     board.add(p1, 1, 0, 'r2', red_type)
@@ -99,7 +99,7 @@ def test_find_unit_answers_rather_than_asserting():
 
 def test_restoring_a_unit_the_board_already_holds_updates_it():
     red_type = UnitType('Red', 'R', 1, 10, 100)
-    p1 = Player('1')
+    p1 = Player(1)
     board = Board(3, 3)
 
     board.add(p1, 0, 0, 'r1', red_type, 10, 100, False, True, restoring=True)
@@ -137,8 +137,8 @@ def test_restoring_a_view_that_names_a_unit_twice_loads():
 
 def test_placing_a_name_a_player_already_holds_still_fails():
     red_type = UnitType('Red', 'R', 1, 10, 100)
-    p1 = Player('1')
-    p2 = Player('2')
+    p1 = Player(1)
+    p2 = Player(2)
     board = Board(3, 3)
     board.add(p1, 0, 0, 'r1', red_type)
 

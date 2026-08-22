@@ -137,7 +137,10 @@ class GameData:
                         player_data = yaml.safe_load(f)
                         if DEBUG:
                             print(player_data)
-                        number = player_data['number']
+                        # player numbers reach us as integers from a loaded
+                        # player file and as strings from a unit dump, so they
+                        # are converted once, here, and are integers below
+                        number = int(player_data['number'])
                         obj = Player(number)
                         self.players[number] = {
                             'number': number,
@@ -161,7 +164,7 @@ class GameData:
 
                         # if this is player 0 the moves files could exist
                         moves_file = self.player_path + '/' + \
-                            str(player_data['number']) + '_units.yaml'
+                            str(number) + '_units.yaml'
                         if os.path.exists(moves_file):
                             with open(moves_file) as g:
                                 self.players[number]['moves'] = yaml.safe_load(
@@ -196,7 +199,7 @@ class GameData:
                         name = unit['name']
                         if DEBUG:
                             print(f"processing unit {name}")
-                        p_number = unit['player']
+                        p_number = int(unit['player'])
                         if DEBUG:
                             print(self.players[p_number]['types'])
                         player = self.players[p_number]['obj']
@@ -235,7 +238,7 @@ class GameData:
                         name = unit['name']
                         if DEBUG:
                             print(f"processing seen unit {name}")
-                        p_number = unit['player']
+                        p_number = int(unit['player'])
                         if DEBUG:
                             print(self.players[p_number]['types'])
                         player = self.players[p_number]['obj']
@@ -360,7 +363,7 @@ class GameData:
                     continue
                 for unit in units:
                     name = unit['name']
-                    p_number = unit['player']
+                    p_number = int(unit['player'])
                     x = unit['x']
                     y = unit['y']
                     state = unit['state']

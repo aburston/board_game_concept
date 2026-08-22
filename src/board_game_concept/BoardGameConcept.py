@@ -38,7 +38,8 @@ class _FallbackBoard:
 class Player:
     def __init__(self, number):
         self.number = number
-        assert (len(str(number)) >= 1), "number must be one or more character"
+        assert isinstance(number, int), "number must be an integer value"
+        assert (number >= 0), "number must not be negative"
 
 # Unit
 #   name: One or more character

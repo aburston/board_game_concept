@@ -46,7 +46,11 @@ def main(argv):
 
     if len(argv) == 3:
         gameno = argv[1]
-        player_number = argv[2]
+        try:
+            player_number = int(argv[2])
+        except ValueError:
+            usage()
+            sys.exit(1)
     else:
         usage()
         sys.exit(1)
