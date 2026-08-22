@@ -97,3 +97,60 @@ def test_a_units_numbers_survive_a_round_trip_as_numbers():
     assert written['health'] == 7
     assert written['energy'] == 40
     assert written['x'] == 1 and written['y'] == 2
+
+
+def _facing_pair(attacker_energy=40, defender_energy=40):
+    board = Board(4, 2)
+    p1, p2 = Player(1), Player(2)
+    board.add(p1, 0, 0, 'a', UnitType('A', 'A', 3, 6, attacker_energy))
+    board.add(p2, 1, 0, 'b', UnitType('B', 'B', 3, 6, defender_energy))
+    board.commit()
+    return board
+
+
+def test_engaging_a_standing_unit_costs_a_move():
+    """unit-movement: every resolved move is charged for, engaging included."""
+    board = _facing_pair()
+    attacker = board.getUnitByName('a')[0]
+    before = attacker.energy
+
+    attacker.move(UnitType.EAST)
+    board.commit()
+
+    # one move at E // 100 + 1, and then the attacks the contest landed
+    spent = before - attacker.energy
+    assert spent >= 1, "engaging a standing unit was free"
+
+
+def test_crossing_open_ground_and_engaging_cost_the_same_move():
+    open_ground = Board(4, 2)
+    p1 = Player(1)
+    open_ground.add(p1, 0, 0, 'lone', UnitType('A', 'A', 3, 6, 40))
+    open_ground.commit()
+    open_ground.getUnitByName('lone')[0].move(UnitType.EAST)
+    open_ground.commit()
+    crossing_cost = 40 - open_ground.getUnitByName('lone')[0].energy
+
+    # the same move, but onto a square somebody is standing on. Read the cost
+    # from the event log's own accounting rather than after combat has taken
+    # its share
+    engaging = _facing_pair()
+    attacker = engaging.getUnitByName('a')[0]
+    attacker.move(UnitType.EAST)
+    energy_before = attacker.energy
+    events = engaging.commit()
+    attacks_landed = sum(1 for e in events
+                         if e.kind == 'attacked' and e.detail['unit'] == 'a')
+    engaging_cost = (energy_before - attacker.energy
+                     - attacks_landed * attacker.attack)
+    assert engaging_cost == crossing_cost
+
+
+def test_a_unit_too_spent_to_pay_for_the_move_does_not_engage():
+    board = _facing_pair(attacker_energy=1)
+    attacker = board.getUnitByName('a')[0]
+    # enough to pay for the move, but not to attack, so no engagement starts
+    attacker.move(UnitType.EAST)
+    board.commit()
+    assert (attacker.x, attacker.y) == (0, 0)
+    assert attacker.energy == 1

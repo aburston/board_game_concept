@@ -240,22 +240,38 @@ tolerate having been removed since the directory was listed. Matching on the
 name also made the match exact, where searching for a substring meant
 `commit_1` matched `commit_11` and one player could be mistaken for another.
 
+### 11. Starting a fight was the one move nobody paid for — fixed
+
+`unit-movement` requires every resolved move to be charged `E // 100 + 1` and
+refused when the unit cannot pay. `UnitType.preCommit` resolves a move down one
+of three branches, chosen by what stands on the destination square. Two of them
+charged for the move. The third — moving onto a square a unit is standing on,
+which is how a fight starts — tested that the mover had the energy to attack
+and then moved it for nothing.
+
+A unit crossing open ground paid for every step; one that kept meeting
+opponents advanced for free. Two units walking toward each other along a row
+finished having paid different amounts for the same journey, decided by which
+of them the turn resolved first.
+
+Reproduction: put two units a few squares apart on one row, order them toward
+each other for three turns, and compare their energy.
+
+Addressed by the `charge-for-engaging` change: engaging is charged like any
+other move, and is refused when the mover cannot pay, as well as when it has
+too little energy to attack. `unit-movement` gains a scenario saying so, since
+the requirement covering it was general enough to be read as not applying.
+
 ## Unspecified, and worth deciding
 
-Found by playing a game through rather than by reading, and confirmed to
-behave identically before and after the `split-into-layers` change. Neither is
-a divergence, because no capability says what should happen; both are gaps in
-the rules rather than in the code.
-
 - **Two units can pass through each other.** A contest is a square holding more
-  than one unit, so two units approaching along a row and swapping squares in
-  the same turn never contest anything and end up behind each other. Whether
-  units should be able to trade places is a rule nobody has written down.
-- **Moving costs the two sides different amounts.** In that same exchange, one
-  unit spends a point of energy on a turn where the other spends none, because
-  a unit that vacates before the other has moved takes a different path through
-  resolution. The cost of a move should not depend on the order units happen to
-  be resolved in.
+  than one unit, so two units approaching along a row swap squares and end up
+  behind each other, having never contested anything. What happens is that the
+  first of them engages the second, and then the second's own order is
+  resolved and it walks out of the engagement into the square the first has
+  just left. Whether a unit already in contention may leave it, and whether two
+  units may trade places, are rules nobody has written down. Confirmed to
+  behave the same way before and after the `split-into-layers` change.
 
 ## Documented but not implemented
 

@@ -166,8 +166,14 @@ class UnitType:
                         events.append(Event(
                             'joined', unit=self.name, x=self.x, y=self.y))
             elif type(self.board[dest_x, dest_y]) is UnitType:
-                # moving into an occupied square starts a combat exchange
-                if self.energy >= self.attack:
+                # moving into an occupied square starts a combat exchange.
+                # Engaging is still a move, and is charged for like one: this
+                # used to be the one way onto a square that cost nothing, so a
+                # unit that kept meeting opponents moved for free while one
+                # crossing open ground paid every step
+                cost = self.energy // 100 + 1
+                if self.energy >= self.attack and self.energy - cost >= 0:
+                    self.energy = self.energy - cost
                     target = self.board[dest_x, dest_y]
                     self.vacate()
                     self.moved_from = (self.x, self.y)
