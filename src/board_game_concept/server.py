@@ -36,13 +36,6 @@ help - display this information
 exit - exit the game client
     """)
 
-# add player <name> <email> - add a new player to the game, only player 0
-# i.e. the game admin can do this
-
-
-def add_player(name, email):
-    pass
-
 # load board <board_file> - loads the board size from a file
 
 
@@ -165,7 +158,7 @@ def main(argv):
 
                 elif tokens[1] == 'players':
                     for player in players.keys():
-                        print(f"name: {player}, email: {players[player]['email']}")
+                        print(f"number: {player}")
                 elif tokens[1] == 'units':
                     if seen_board is not None:
                         if DEBUG:
@@ -203,23 +196,30 @@ def main(argv):
                     try:
                         size_x = int(tokens[2])
                         size_y = int(tokens[3])
-                        # immediately create the board object
-                        board = Board(size_x, size_y)
-                        data.setBoard(board)
-                    except BaseException:
+                    except ValueError:
                         print("x and y must be a numbers")
                         continue
                     if size_x < 2:
                         print("x must be greater than 1")
+                        continue
                     if size_y < 2:
                         print("y must be greater than 1")
+                        continue
+                    # the board has its own limits beyond the minimum, and
+                    # reports them itself
+                    try:
+                        board = Board(size_x, size_y)
+                    except AssertionError as e:
+                        print(e)
+                        continue
+                    data.setBoard(board)
                 else:
                     print("invalid set command")
                     continue
 
             # add - player, type, unit
             elif tokens[0] == 'add':
-                if len(tokens) == 2:
+                if len(tokens) < 2:
                     print("invalid add command")
                     continue
                 elif tokens[1] == 'player':
@@ -239,7 +239,7 @@ def main(argv):
 
             # load - player
             elif tokens[0] == 'load':
-                if len(tokens) == 2:
+                if len(tokens) < 2:
                     print("invalid load command")
                     continue
                 elif tokens[1] == 'player':

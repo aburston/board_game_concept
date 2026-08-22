@@ -43,19 +43,36 @@ format and the command surface all stay exactly as they are.
 - `GameData` SHALL be split behind a `GameRepository` interface, with today's
   YAML layout as its only implementation. File names, paths and contents are
   unchanged, and a game saved before this change loads after it.
-- `board_game_concept` SHALL keep exporting `UnitType`, `Board`, `Player`,
-  `Empty` and `GameData`, so existing imports keep working and the domain tests
-  do not move.
+- The import surface SHALL follow the new packages rather than being frozen at
+  today's names, and the unit tests SHALL be updated to import from where things
+  now live. The characterisation tests added first, which drive each role and
+  assert what it prints, are what shows behaviour is preserved.
+- Player numbers and unit statistics SHALL be stored as the integers they are.
+  Today `add player 1` records the string `'1'` while `load player` records the
+  integer `1`, and statistics round-trip as quoted strings. Games written before
+  this change will not load afterwards, and none needs to.
 - The stale copies `src/BoardGameConcept.py` and `src/GameData.py`, left behind
   by an earlier restructure and since diverged from the package, SHALL be
   removed. Nothing imports them.
 
-No behaviour change is intended. Two current failures stop happening as a
-consequence, because a grammar makes them impossible to express: `show players`
-at the server prompt raises `KeyError` on an `email` key nothing ever sets, and a
-bare `add` or `load` at the server prompt raises `IndexError` from an arity check
-that tests the wrong length. Both bring the code into line with the `game-server`
-capability as it is already written, so neither is a requirement change.
+No change to what any role can do is intended. Where the code contradicts its
+own spec, the code SHALL be corrected rather than the divergence carried through
+the refactor. Writing the CLI scenarios out as tests found five:
+
+- `show players` at the server prompt raised `KeyError` on an `email` field
+  nothing ever sets, as soon as any player was registered.
+- A bare `add` or `load` at the server prompt raised `IndexError`, from an arity
+  guard that tested the wrong length.
+- A board dimension below the minimum was reported as non-numeric, because the
+  assertion raised by the board was caught alongside a bad integer, leaving the
+  message about the minimum unreachable.
+- A unit a player deployed during setup was neither drawn by `show board` nor
+  listed by `show units`, because the view the server last published took
+  precedence over the player's own board. It became visible only once a turn
+  containing it had been resolved.
+
+Each restores what `game-server` or `player-client` already requires, so none is
+a requirement change and none needs a delta spec.
 
 Explicitly out of scope, each its own later change: SQLite or any other store;
 an HTTP API; a web interface; accounts, logins or any identity beyond the
@@ -94,13 +111,15 @@ spec is written and `.openspec.yaml` sets `skip_specs: true`.
   same way — the bordered grid `board` produces today, which is what CI and the
   README's setup already give.
 - `tests/test_basic.py`, `tests/test_combat_stalemate.py`,
-  `tests/test_duplicate_seen_units.py`: import from `board_game_concept` and
-  keep working unchanged, except where they assert on printed output.
-- `tests/test_server_client_integration.py`: the safety net for the whole
-  change, and it should need no edits. It drives the CLIs over stdin and matches
-  their output, so it covers the refactor end to end — but it exercises only
-  part of the command surface, and nothing of the observer. Characterisation
-  tests pinning the current output of every command, for every role, are
-  needed before the command loops are touched.
+  `tests/test_duplicate_seen_units.py`: imports follow the new layout, and the
+  five places that call `Board.print` or `Board.listUnits` move to the renderer
+  and the serialiser.
+- `tests/test_server_client_integration.py`: drives the CLIs over stdin and
+  matches their output, so it covers the refactor end to end, but it exercises
+  only part of the command surface and nothing of the observer.
+- `tests/cli_harness.py`, `tests/test_cli_*_surface.py`: new, and written first.
+  One test per scenario in the three CLI capabilities, driving each role as a
+  subprocess. This is the safety net the rest of the change is checked against,
+  which is why it comes before anything moves.
 - `MODULE_DESCRIPTION.md`: describes the current module layout and needs
   rewriting to match the new one.

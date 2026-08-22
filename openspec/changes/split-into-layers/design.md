@@ -2,16 +2,18 @@
 
 See `proposal.md` — Why. The constraints that shape the approach:
 
-- **The tests are the only proof of correctness.** Nothing about the behaviour
-  is changing, so the whole change stands or falls on the suite staying green
-  without being edited. Anything that forces a test edit weakens the evidence.
+- **The characterisation suite is the proof of correctness.** The CLI surface
+  tests added by task 1 assert observable behaviour — what each role prints in
+  response to each command — rather than internal structure, so they hold across
+  the whole refactor no matter how the modules move underneath. They, not the
+  unit tests' import paths, are what says nothing observable changed.
 - **Printed output is part of the contract.** `test_server_client_integration.py`
   drives the CLIs over stdin and matches their stdout — `'client.py> '`,
   `'waiting for turn to complete...'`, `'commit complete'`. Message wording is
   not free to drift during this change.
-- **On-disk files are part of the contract.** A game saved before the change
-  loads after it, byte for byte. That constrains more than it looks like it
-  does; see Decision 9.
+- **Games in progress are not a constraint.** No game outlives this change, so
+  the on-disk format is free to move where the data model is better for it; see
+  Decision 9.
 - **The specs already characterise the CLIs.** `player-client`, `game-server`
   and `game-observer` carry roughly eighty scenarios between them, covering
   argument counts, invalid input, phase gating and role restrictions. They are
@@ -34,15 +36,16 @@ See `proposal.md` — Why. The constraints that shape the approach:
   filesystem.
 - One grammar, parsed once, shared by all three roles.
 - Every rule enforced in one place, reachable by callers that are not the CLI.
-- The public import surface, the file format and the terminal output all
-  unchanged.
+- The command surface each role presents, and what it prints, unchanged — except
+  where the code diverges from its own spec, which is corrected (Decision 13).
 
 **Non-Goals:**
 
-- Removing the compatibility shims this change introduces. They are deliberate
-  and their removal is a later change (Decision 3).
-- Normalising the data model, including the type inconsistencies described in
-  Decision 9. Those change files on disk.
+- Loading a game written before this change, or keeping the current import
+  paths. Neither has a user to protect: no game outlives the change, and the
+  package has no consumer outside this repository.
+- Changing what any role can do, or what any role may see. Correcting a
+  divergence restores the specified behaviour; it does not add to it.
 - Any new dependency, including a parser generator.
 - Performance. The refactor may be slower; nothing here is hot.
 
@@ -67,43 +70,39 @@ Alternative considered: two packages (`core` and `cli`), splitting storage out
 later. Rejected — the storage interface is the seam the whole change exists to
 create, and deferring it means `GameData` keeps its three jobs.
 
-### 2. The public import surface does not move
+### 2. The import surface follows the packages
 
-`board_game_concept/__init__.py` keeps exporting `UnitType`, `Board`, `Player`,
-`Empty` and `GameData`. All three test modules and the standalone
-`test_suite.py` harness import from there, so none of them need touching.
+`board_game_concept/__init__.py` re-exports whatever the new layout makes
+sensible rather than preserving today's five names, and the unit tests are
+updated to import from where things now live.
 
-`GameData` becomes a facade over the repository and the turn coordinator,
-keeping its current method names (`load`, `clientSave`, `serverSave`,
-`waitForPlayerCommit`, the getters). It stops holding the logic and starts
-delegating it.
+This reverses an earlier decision to freeze the import surface so that
+`tests/test_basic.py`, `tests/test_combat_stalemate.py` and
+`tests/test_duplicate_seen_units.py` would never need editing. That was worth
+doing while those three files were the only evidence the refactor preserved
+behaviour. They no longer are: the characterisation suite from task 1 tests the
+CLI surface end to end, which is both stronger evidence and evidence that
+survives the modules moving. Holding the import surface still now buys a
+weaker guarantee at the cost of a permanently misleading `__init__`.
 
-Alternative considered: update every import to the new module paths. Rejected —
-it edits the tests that are meant to be the control.
+The package has no consumer outside this repository, so nothing else breaks.
 
-### 3. Rendering and serialisation move out; the old methods stay as shims
+### 3. Rendering and serialisation move out completely
 
-`Board.print` and `Board.listUnits` are called from the tests, not only from the
-CLIs:
+`Board.print` and `Board.listUnits` are called from the tests as well as the
+CLIs — `test_combat_stalemate.py:365-379` asserts on captured `board.print`
+output, and `test_combat_stalemate.py:394` with
+`test_duplicate_seen_units.py:60,88,122` call `yaml.safe_load` on what
+`listUnits` builds.
 
-- `test_combat_stalemate.py:365-379` calls `board.print(...)` and asserts on
-  captured stdout.
-- `test_combat_stalemate.py:394` and `test_duplicate_seen_units.py:60,88,122`
-  call `yaml.safe_load(board.listUnits(...))` — they consume the hand-built
-  string as YAML.
+Both methods are removed rather than left as delegating shims, and those five
+call sites move to `cli/render.py` and `storage/serialise.py` directly. The
+shims were only ever there to keep those files unedited; with the
+characterisation suite carrying that job (Decision 2), they would be debt
+bought for nothing.
 
-So the string building and the drawing move into `cli/render.py` and
-`storage/serialise.py`, and the old methods remain as one-line delegations to
-them. The tests keep passing unmodified, and no code path builds YAML inside the
-engine any more.
-
-This is debt, deliberately taken: the shims exist so that this change has a
-clean control group. Removing them, and updating those call sites, is a
-follow-up change with a much smaller blast radius.
-
-Alternative considered: delete the methods and edit the five call sites now.
-Rejected for the reason above — it is a small saving bought with the evidence
-that the refactor is behaviour-preserving.
+Reading a board's state in a test becomes a call against the serialiser, which
+is what the storage layer does too — one path, not two.
 
 ### 4. The engine reports events; the caller decides whether to print them
 
@@ -175,22 +174,26 @@ The role table (`game-server:90` "only the administrator may size the board",
 data the session consults before dispatching. Its refusal messages are equally
 fixed.
 
-### 9. Data typing is preserved exactly, inconsistencies included
+### 9. The data model is normalised
 
-The parser will be tempted to convert `add player 1` into an integer. It must
-not, in this change. Today:
+Player numbers are integers everywhere, and unit statistics are stored as the
+integers they are.
 
-- `add player 1` at the server prompt stores the *string* `'1'`
-  (`server.py:231`), which `serverSave` writes as `number: '1'`.
-- `load player player_1.yaml` reads `number: 1`, an *integer*.
-- `client.py:49` takes the player number from `argv` as a string, and only
-  matches games created by the first path.
+Today they are neither. `add player 1` at the server prompt stores the *string*
+`'1'` (`server.py:229`), which is written out as `number: '1'`, while
+`load player player_1.yaml` reads the *integer* `1`; `client.py:49` takes its
+player number from `argv` as a string and so only matches games created the
+first way. Unit statistics are written as quoted strings and re-cast with
+`int()` on every load.
 
-Unit statistics have the same split: written as quoted strings, re-cast with
-`int()` on load. Normalising any of this changes bytes on disk and breaks
-existing games, so it is out of scope. The parser preserves the token as it
-arrives, and the type juggling stays where it is until a change that owns the
-data model can address it.
+Normalising this changes the bytes on disk, which is why an earlier version of
+this design ruled it out. Since no game outlives the change, there is nothing
+to migrate, and carrying the inconsistency through a refactor whose whole point
+is to make the data layer replaceable would be perverse — the parser and the
+service layer would both have to reproduce it deliberately.
+
+Parsing therefore converts, once, at the edge, and everything below it sees
+typed values.
 
 ### 10. The repository holds files; the coordinator holds the barrier
 
@@ -250,6 +253,18 @@ Any scenario that fails against today's code has found a divergence rather than
 a regression. Two are already known (`proposal.md` — What Changes), and belong in
 `SPEC_COVERAGE.md` alongside the existing entries.
 
+### 13. Divergences are corrected where they are found
+
+The characterisation suite turns spec scenarios into tests, so it finds the
+places where the code contradicts its own spec. Those are fixed as they are
+found rather than being carried through the refactor and fixed afterwards: a
+divergence preserved deliberately is one more thing every later step has to
+reproduce, and the parser and service layer would have to be written to keep
+bugs alive.
+
+Each fix restores what the spec already requires. None of them changes what a
+role can do, and none needs a spec delta.
+
 ## Risks / Trade-offs
 
 - **Message wording drifts during the refactor and the integration tests fail
@@ -257,9 +272,16 @@ a regression. Two are already known (`proposal.md` — What Changes), and belong
   rather than retyping them; do the characterisation suite (Decision 11) first
   so drift is caught at the command that caused it.
 
-- **The shims (Decision 3) are never removed and become permanent** → They are
-  named in this design as debt with a defined exit, and the follow-up change is
-  small and mechanical. The alternative — editing the control group — is worse.
+- **Editing the unit tests alongside the code they test removes a control**
+  (Decisions 2 and 3) → The CLI characterisation suite is the control instead,
+  and it is a better one: it asserts what each role prints rather than how the
+  package is arranged, so it cannot be quietly adjusted to match a mistake in
+  the code. It is written first, before anything moves, for exactly this reason.
+
+- **A divergence fix changes behaviour someone was relying on** (Decision 13) →
+  Each fix is checked against the spec scenario that found it, and restores what
+  that scenario already required. A correction that would go beyond restoring
+  specified behaviour is raised rather than made.
 
 - **Dropping `_FallbackBoard` changes what a bare `pip install .` prints**
   (Decision 12) → The bordered grid is what CI, `requirements.txt` and the

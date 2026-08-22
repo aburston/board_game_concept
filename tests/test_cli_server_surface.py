@@ -9,7 +9,7 @@ permission to change behaviour during the split.
 
 import unittest
 
-from cli_harness import CliTestCase, SERVER_PROMPT, ProcessDied
+from cli_harness import CliTestCase, SERVER_PROMPT
 
 
 class ServerInvocation(CliTestCase):
@@ -97,16 +97,11 @@ class SettingBoardSize(CliTestCase):
         server.send_line('set board a b')
         server.read_until('x and y must be a numbers')
 
-    @unittest.expectedFailure
     def test_dimensions_below_the_minimum(self):
-        # divergence: Board() asserts, the assertion is caught by the same
-        # `except BaseException` as a bad integer, and the dimension is
-        # reported as non-numeric. The "must be greater than 1" branch below
-        # it is unreachable.
         server = self.start_server()
         server.read_until(SERVER_PROMPT)
         server.send_line('set board 1 1')
-        server.read_until('must be greater than 1', timeout=5)
+        server.read_until('x must be greater than 1')
 
 
 class RegisteringPlayers(CliTestCase):
@@ -134,14 +129,11 @@ class RegisteringPlayers(CliTestCase):
         server.send_line('add player 1 2')
         server.read_until('must provide 1 arg for player')
 
-    @unittest.expectedFailure
     def test_add_without_a_subject(self):
-        # divergence: the arity guard tests `len(tokens) == 2`, so a bare
-        # `add` falls through to tokens[1] and the server dies of IndexError
         server = self.start_server()
         server.read_until(SERVER_PROMPT)
         server.send_line('add')
-        server.read_until_count(SERVER_PROMPT, 2, timeout=5)
+        server.read_until('invalid add command')
 
 
 class LoadingConfiguration(CliTestCase):
@@ -174,16 +166,13 @@ class LoadingConfiguration(CliTestCase):
         server = self.start_server()
         server.read_until(SERVER_PROMPT)
         server.send_line('load player')
-        server.read_until('invalid load command')
+        server.read_until('must provide 1 args for load player')
 
-    @unittest.expectedFailure
     def test_load_without_a_subject(self):
-        # divergence: same arity guard as `add`; a bare `load` dies of
-        # IndexError rather than being reported
         server = self.start_server()
         server.read_until(SERVER_PROMPT)
         server.send_line('load')
-        server.read_until_count(SERVER_PROMPT, 2, timeout=5)
+        server.read_until('invalid load command')
 
 
 class ServerDisplayCommands(CliTestCase):
@@ -218,17 +207,12 @@ class ServerDisplayCommands(CliTestCase):
         server.send_line('show units')
         server.read_until('units:')
 
-    @unittest.expectedFailure
     def test_showing_players(self):
-        # divergence: the server prints an `email` field that nothing ever
-        # sets, so the command dies of KeyError as soon as any player is
-        # registered. With no players the loop body never runs and it appears
-        # to work.
         server = self._sized()
         server.send_line('add player 1')
         server.read_until_count(SERVER_PROMPT, 3)
         server.send_line('show players')
-        server.read_until_count(SERVER_PROMPT, 4, timeout=5)
+        server.read_until('number: 1')
 
     def test_showing_pending_orders(self):
         server = self._sized()

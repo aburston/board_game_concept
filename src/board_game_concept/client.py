@@ -199,6 +199,20 @@ def main(argv):
                             name,
                             players[player_number]['types'][type_name]['obj'])
                         board.commit()
+                        # the view published by the server is what the player
+                        # is shown, so a unit deployed this turn has to be put
+                        # there too or it stays invisible to its own owner
+                        # until a turn containing it has been resolved. Only
+                        # the player's own unit is added, so nothing the
+                        # server has not already revealed becomes visible.
+                        if seen_board is not None:
+                            seen_board.add(
+                                player_obj,
+                                x,
+                                y,
+                                name,
+                                players[player_number]['types'][type_name]['obj'])
+                            seen_board.commit()
                     except Exception as e:
                         print(f"error creating new unit {e}")
                         continue

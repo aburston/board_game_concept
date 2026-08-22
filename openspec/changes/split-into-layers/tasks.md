@@ -18,10 +18,32 @@ regression: record it, do not fix it.
       scenarios — startup, argument handling, refusal of mutating commands,
       help, exit, every `show` subcommand, incomplete `show`, and reload. Verify
       as for 1.1.
-- [ ] 1.4 Record every scenario that fails against the current code as a
-      divergence in `SPEC_COVERAGE.md`, in the style of the existing entries,
-      and mark the corresponding test `xfail` with a reason naming the
-      divergence. Verify `pytest` is green with the xfails in place.
+- [ ] 1.4 Add `tests/test_cli_observer_surface.py` coverage for the reload and
+      read-only scenarios that need a resolved turn behind them. Verify the
+      observer sees the units the server published.
+
+## 1a. Correct the divergences the characterisation found
+
+Each restores what the spec already requires (design.md — Decision 13).
+
+- [x] 1a.1 Fix the arity guard on `add` and `load` at the server prompt, which
+      tested `len(tokens) == 2` and let a bare verb reach `tokens[1]`. Verify
+      `add` and `load` alone are reported rather than raising `IndexError`.
+- [x] 1a.2 Replace the server's `show players` output, which printed an `email`
+      field nothing sets, with the player numbers the spec asks for, and drop
+      the dead `add_player(name, email)` stub. Verify `show players` lists a
+      registered player instead of raising `KeyError`.
+- [x] 1a.3 Validate board dimensions before constructing the board, so that a
+      dimension below the minimum is reported as such rather than as
+      non-numeric, and let the board report its own upper limit. Verify
+      `set board 1 1` reports the minimum and `set board 4 4` still works.
+- [x] 1a.4 Mirror a unit deployed during setup onto the view the server
+      published, so its owner can see it before the turn resolves. Verify
+      `show board` draws it and `show units` lists it, and that no unit the
+      server has not revealed becomes visible.
+- [ ] 1a.5 Record all five in `SPEC_COVERAGE.md` under Known divergences, in
+      the style of the existing entries, each marked fixed and naming the
+      scenario that found it. Verify every divergence listed has a test.
 
 ## 2. Remove the stale duplicates
 
@@ -37,10 +59,12 @@ regression: record it, do not fix it.
       into them with no logic change, splitting `BoardGameConcept.py` into
       `domain/board.py`, `domain/unit.py` and `domain/player.py`. Verify
       `pytest` is green with no test file edited.
-- [ ] 3.2 Keep `board_game_concept/__init__.py` exporting `UnitType`, `Board`,
-      `Player`, `Empty` and `GameData` (design.md — Decision 2). Verify
-      `python -c "from board_game_concept import UnitType, Board, Player, Empty, GameData"`
-      succeeds and `board-game-test-suite` still runs.
+- [ ] 3.2 Re-export from `board_game_concept/__init__.py` whatever the new
+      layout makes sensible, and update `tests/test_basic.py`,
+      `tests/test_combat_stalemate.py`, `tests/test_duplicate_seen_units.py` and
+      `test_suite.py` to import from where things now live (design.md —
+      Decision 2). Verify the whole suite passes and `board-game-test-suite`
+      still runs.
 - [ ] 3.3 Move `server.py`, `client.py` and `observer.py` under `cli/` and point
       the `pyproject.toml` console scripts at their new paths. Verify a
       `pip install -e .` exposes `board-game-server`, `board-game-client` and
@@ -50,14 +74,14 @@ regression: record it, do not fix it.
 ## 4. Purify the engine
 
 - [ ] 4.1 Add `cli/render.py` drawing the bordered grid (design.md — Decision
-      12), reduce `Board.print` to a shim that renders and prints, and delete
+      12), remove `Board.print` and move its callers to the renderer, and delete
       the `board` import, `_FallbackBoard` and the `board` line in
-      `requirements.txt`. Verify the server characterisation tests still match
-      the same board output and that `import board` appears nowhere.
+      `requirements.txt`. Verify the characterisation tests still match the same
+      board output and that `import board` appears nowhere.
 - [ ] 4.2 Add `storage/serialise.py` holding the units and types YAML writers,
-      and reduce `Board.listUnits` and `UnitType.dump` to shims over it
-      (design.md — Decision 3). Verify a game saved before this task loads after
-      it and `data/units.yaml` is byte-identical for the same board.
+      remove `Board.listUnits` and `UnitType.dump`, and move their five test
+      call sites onto the serialiser (design.md — Decision 3). Verify the units
+      a game writes still round-trip through a save and load.
 - [ ] 4.3 Add `domain/events.py` and have turn resolution return events instead
       of printing, with the CLI rendering them (design.md — Decision 4). Verify
       the unconditional narration reaching the terminal is unchanged and no
@@ -95,6 +119,11 @@ regression: record it, do not fix it.
       the phase gating, ownership and occupancy rules out of the command loops
       (design.md — Decision 7). Verify the refusal scenarios in the
       characterisation tests pass with their current wording.
+- [ ] 6.4 Convert player numbers and unit statistics to integers at the parser,
+      and drop the `int()` re-casting below it (design.md — Decision 9). Verify
+      a game created through the server prompt and one loaded from
+      `tests/player_1.yaml` produce the same types, and that a client started
+      with a player number matches both.
 - [ ] 6.3 Reduce the three CLIs to parse → service → render over a shared
       session loop in `cli/session.py`. Verify all characterisation tests and
       `tests/test_server_client_integration.py` pass with no edit.
@@ -109,9 +138,9 @@ regression: record it, do not fix it.
       `service/turn.py`, leaving the repository holding only reads and writes
       (design.md — Decision 10). Verify
       `tests/test_server_client_integration.py` passes unedited.
-- [ ] 7.3 Reduce `GameData` to a facade over the repository and the turn
-      coordinator, keeping its current method names. Verify
-      `tests/test_basic.py::test_game_data_initialization` passes unedited.
+- [ ] 7.3 Retire `GameData`, moving its callers onto the repository and the
+      turn coordinator directly. Verify nothing imports `GameData` and the whole
+      suite passes.
 - [ ] 7.4 Make the game base path a constructor argument defaulting to
       `os.getcwd()`. Verify `GameData(gameno, player_number)` still resolves
       `games/_<gameno>` under the working directory, and that a test can point
