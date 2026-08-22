@@ -4,7 +4,6 @@ from .cell import Empty
 from .player import Player
 from .unit import UnitType
 
-DEBUG = False
 
 
 class _Grid:
@@ -67,9 +66,6 @@ class Board:
             destroyed=False,
             on_board=True,
             restoring=False):
-        if DEBUG:
-            print(type(unit_type))
-            print(type(player))
         assert (
             x >= 0 and x < self.size_x and y >= 0 and y < self.size_y
         ), f"coordinates ({x}, {y}) are out of bounds for this board"
@@ -196,6 +192,12 @@ class Board:
         return True
 
     def commit(self):
+        """Resolve the turn, and report what happened while doing it.
+
+        The events come back in the order they occurred. Nothing here decides
+        whether they are shown, logged or dropped.
+        """
+        events = []
         # clear the seen_by list and the previous turn's origin square in each
         # unit on the board
         for unit in self.units:
@@ -205,8 +207,9 @@ class Board:
         # pre_commit the actions required
         for unit in self.units:
             if unit.on_board:
-                unit.preCommit()
+                unit.preCommit(events)
         # commit the changes
         for unit in self.units:
             if unit.on_board:
-                unit.commit()
+                unit.commit(events)
+        return events

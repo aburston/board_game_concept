@@ -1,7 +1,7 @@
 from .cell import Empty
+from .events import Event
 from .player import Player
 
-DEBUG = False
 
 
 # Unit
@@ -93,16 +93,16 @@ class UnitType:
         self.player = player
         assert (type(player) is Player), "player object must be provided"
 
-    def incomingAttack(self, attack):
-        if DEBUG:
-            print(f"incomingAttack: {self.name} being attacked")
+    def incomingAttack(self, attack, events=None):
         self.health = self.health - attack
         if self.health <= 0:
             self.destroyed = True
+            if events is not None:
+                events.append(Event('destroyed', unit=self.name))
 
     # calculates attacks and marks units as DESTROYED, creates arrays of units in squares where multiple units are
     # trying to move simultaneously into the same square
-    def preCommit(self):
+    def preCommit(self, events=None):
         if self.state == UnitType.INITIAL:
             # deployment is resolved in commit(). Board.add has already refused
             # any deployment onto an occupied square
@@ -151,10 +151,9 @@ class UnitType:
                     self.moved_from = (self.x, self.y)
                     self.setCoords(dest_x, dest_y)
                     self.board[self.x, self.y] = [self]
-                    if DEBUG:
-                        print(
-                            f"preCommit: {self.name} move to [{self.x},{self.y}]"
-                        )
+                    if events is not None:
+                        events.append(Event(
+                            'moved', unit=self.name, x=self.x, y=self.y))
             elif type(self.board[dest_x, dest_y]) is list:
                 energy = self.energy - (self.energy // 100 + 1)
                 # only act if the unit has enough energy
@@ -164,10 +163,9 @@ class UnitType:
                     self.moved_from = (self.x, self.y)
                     self.setCoords(dest_x, dest_y)
                     self.board[dest_x, dest_y].append(self)
-                    if DEBUG:
-                        print(
-                            f"preCommit: {self.name} added to list in [{self.x},{self.y}]"
-                        )
+                    if events is not None:
+                        events.append(Event(
+                            'joined', unit=self.name, x=self.x, y=self.y))
             elif type(self.board[dest_x, dest_y]) is UnitType:
                 # moving into an occupied square starts a combat exchange
                 if self.energy >= self.attack:
@@ -176,10 +174,10 @@ class UnitType:
                     self.moved_from = (self.x, self.y)
                     self.setCoords(dest_x, dest_y)
                     self.board[dest_x, dest_y] = [target, self]
-                    if DEBUG:
-                        print(
-                            f"preCommit: {self.name} engages {target.name} in [{self.x},{self.y}]"
-                        )
+                    if events is not None:
+                        events.append(Event(
+                            'engaged', unit=self.name, target=target.name,
+                            x=self.x, y=self.y))
             self.state = UnitType.NOP
             return
         else:
@@ -203,7 +201,7 @@ class UnitType:
     # sends this unit back to the square it left this turn, so that an
     # undecided contest leaves the board as it was. Returns True if the unit
     # retreated.
-    def retreat(self):
+    def retreat(self, events=None):
         if self.moved_from is None:
             # nothing to go back to: the unit was already holding this square,
             # or was deployed onto it this turn
@@ -216,8 +214,9 @@ class UnitType:
         self.setCoords(from_x, from_y)
         self.board[from_x, from_y] = self
         self.moved_from = None
-        if DEBUG:
-            print(f"retreat: {self.name} falls back to [{from_x},{from_y}]")
+        if events is not None:
+            events.append(Event(
+                'retreated', unit=self.name, x=from_x, y=from_y))
         return True
 
     # resolves the contest in the square this unit occupies. Attack rounds repeat
@@ -226,26 +225,19 @@ class UnitType:
     # is friendly fire: a contestant attacks every other unit in the square,
     # whoever owns it. Running out of energy never destroys a unit, it only
     # makes it inert.
-    def resolveContest(self):
+    def resolveContest(self, events=None):
         cell_x = self.x
         cell_y = self.y
         contestants = self.board[cell_x, cell_y]
-        if DEBUG:
-            print(
-                f"{self.name} commit process list in [{cell_x},{cell_y}]: "
-                f"{contestants}"
-            )
+        if events is not None:
+            events.append(Event(
+                'contested', x=cell_x, y=cell_y, units=len(contestants)))
         while True:
             # recount the survivors afresh each round, rather than decrementing
             # a running total that counts the same casualty again every round
             standing = [unit for unit in contestants if not unit.destroyed]
             if len(standing) < 2:
                 break
-            if DEBUG:
-                print(
-                    f"{self.name} commit process {len(standing)} units in square "
-                    f"[{cell_x},{cell_y}]"
-                )
             attacked = False
             # attackers and targets are the units standing at the start of the
             # round, so a unit destroyed mid-round still lands its own attack
@@ -258,9 +250,11 @@ class UnitType:
                         # too spent to attack: inert, but not destroyed
                         continue
                     unit.energy = energy
-                    if DEBUG:
-                        print(f"commit: {unit.name} attack {target.name}")
-                    target.incomingAttack(unit.attack)
+                    if events is not None:
+                        events.append(Event(
+                            'attacked', unit=unit.name, target=target.name,
+                            damage=unit.attack))
+                    target.incomingAttack(unit.attack, events)
                     # populate seen_by, recording each contestant once however
                     # many rounds of attacks the contest takes: a unit listed
                     # twice is reported twice to the players who saw it
@@ -281,23 +275,28 @@ class UnitType:
         if len(survivors) > 1:
             # nobody won the square, so everyone who moved in goes back where
             # it came from and the square is left as it was
-            survivors = [unit for unit in survivors if not unit.retreat()]
+            survivors = [unit for unit in survivors
+                         if not unit.retreat(events)]
 
         if not survivors:
             self.board[cell_x, cell_y] = Empty()
+            if events is not None:
+                events.append(Event('emptied', x=cell_x, y=cell_y))
         elif len(survivors) == 1:
             self.board[cell_x, cell_y] = survivors[0]
-            if DEBUG:
-                print(
-                    f"{self.name} commit add unit to square [{cell_x},{cell_y}]"
-                )
+            if events is not None:
+                events.append(Event(
+                    'held', unit=survivors[0].name, x=cell_x, y=cell_y))
         else:
             # no survivor could fall back, so they share the square
             self.board[cell_x, cell_y] = survivors
+            if events is not None:
+                events.append(Event(
+                    'shared', x=cell_x, y=cell_y, units=len(survivors)))
 
     # processes all arrays created in the precommit phase, by calculating attacks and marking units DESTROYED
     # removes all DESTROYED units from the board
-    def commit(self):
+    def commit(self, events=None):
         if self.state == UnitType.INITIAL:
             # add the unit to the board. Board.add refuses to deploy onto an
             # occupied square, so the square is empty unless a saved game is
@@ -311,19 +310,21 @@ class UnitType:
             else:
                 self.board[self.x, self.y] = [occupant, self]
             self.state = UnitType.NOP
+            if events is not None:
+                events.append(Event(
+                    'deployed', unit=self.name, x=self.x, y=self.y))
         elif self.state == UnitType.MOVING:
             assert not (
                 self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state"
         else:
             if type(self.board[self.x, self.y]) is list:
-                self.resolveContest()
+                self.resolveContest(events)
             else:
                 if self.destroyed:
                     self.vacate()
                     self.on_board = False
-                    if DEBUG:
-                        print(
-                            f"{self.name} commit removing unit from square [{self.x},{self.y}]")
+                    if events is not None:
+                        events.append(Event('removed', unit=self.name))
 
     def __str__(self):
         return (self.symbol)

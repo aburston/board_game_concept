@@ -88,7 +88,7 @@ Each restores what the spec already requires (design.md — Decision 13).
       remove `Board.listUnits` and `UnitType.dump`, and move their five test
       call sites onto the serialiser (design.md — Decision 3). Verify the units
       a game writes still round-trip through a save and load.
-- [ ] 4.3 Add `domain/events.py` and have turn resolution return events instead
+- [x] 4.3 Add `domain/events.py` and have turn resolution return events instead
       of printing, with the CLI rendering them (design.md — Decision 4). Verify
       the unconditional narration reaching the terminal is unchanged and no
       `print` remains in `domain/`.
