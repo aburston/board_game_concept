@@ -88,17 +88,17 @@ order file being what committing meant.
 
 ## 5. The behaviour this change exists for
 
-- [ ] 5.1 Add a test to `tests/test_server_client_integration.py` that kills a
+- [x] 5.1 Add a test to `tests/test_server_client_integration.py` that kills a
       client mid-setup and runs it again for the same game. Verify the types it
       defined and the units it deployed are restored, and that it can commit
       from there and have the server resolve the turn.
-- [ ] 5.2 Add the same for a client killed mid-turn holding a move order.
+- [x] 5.2 Add the same for a client killed mid-turn holding a move order.
       Verify the order is restored and listed against the unit, and that
       changing it before committing leaves only the later order in the turn.
-- [ ] 5.3 Add the same for the administrator killed during setup after sizing a
+- [x] 5.3 Add the same for the administrator killed during setup after sizing a
       board and registering players. Verify both are restored and setup can be
       committed from there.
-- [ ] 5.4 Verify a player who has drafted and not committed does not hold the
+- [x] 5.4 Verify a player who has drafted and not committed does not hold the
       turn open as though they had, and is still waited for: the barrier counts
       commits, and a draft is not one.
 
