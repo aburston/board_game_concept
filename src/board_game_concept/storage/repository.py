@@ -91,15 +91,28 @@ class GameRepository:
         """Discard every player's orders, the turn having consumed them."""
         raise NotImplementedError
 
-    def committed_players(self):
-        """The players whose orders are waiting to be resolved."""
+    def committed_players(self, turn=None):
+        """The players who have committed, for this turn if one is named.
+
+        Naming a turn is the question the commit barrier actually asks. Asking
+        without one is asking who has ever committed.
+        """
         raise NotImplementedError
 
-    def mark_committed(self, number):
-        """Record that this player has committed at least once."""
+    def mark_committed(self, number, turn=None):
+        """Record that this player has committed, and for which turn."""
         raise NotImplementedError
 
     def has_committed(self, number):
+        raise NotImplementedError
+
+    def clear_commits(self):
+        """Consume every player's commit, the turn having been resolved.
+
+        A commit belongs to the turn it was made for, the way orders do, and
+        is spent when that turn is resolved. Having ever committed is a
+        different fact and survives this.
+        """
         raise NotImplementedError
 
     # --- work a session has not committed yet

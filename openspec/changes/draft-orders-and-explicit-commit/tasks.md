@@ -69,17 +69,19 @@ The step that changes observable behaviour, and the one to review hardest.
 
 ## 4. The commit record
 
-Independent of groups 1–3 (design.md — Decision 7, which also records that this
-is a cleanup the API will want rather than something the CLI needs). If it is
-cut, nothing above moves.
+Independent of groups 1–3 (design.md — Decision 7). Implementing it showed the
+claim that it was cuttable to be wrong: see design.md — Decision 7a. A recorded
+commit has to be spent when its turn resolves, or a turn that advances nothing
+resolves itself for ever, and `load player` turned out to depend on writing an
+order file being what committing meant.
 
-- [ ] 4.1 Give `players/commit_<number>` a body recording the turn committed
+- [x] 4.1 Give `players/commit_<number>` a body recording the turn committed
       for, and have `committed_players()` read the markers and return those
       whose turn is the one now open, instead of listing order files. Verify
       the commit barrier still holds a turn open for a player who has not
       committed, still does not wait for an eliminated one, and that a player
       whose last commit was for an earlier turn is not counted.
-- [ ] 4.2 Verify `has_committed` still answers "has ever committed" from the
+- [x] 4.2 Verify `has_committed` still answers "has ever committed" from the
       same marker, so the setup gate that reads it is unchanged, and that a game
       created before this change — whose marker file is empty — still opens and
       resolves.

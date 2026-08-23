@@ -31,7 +31,7 @@ def publish(game):
     number = game.player_number
     repository = game.repository
     repository.write_player(number, _types_without_objects(game.players[number]))
-    repository.mark_committed(number)
+    repository.mark_committed(number, game.getTurnNumber())
     repository.write_orders(
         number, serialise_orders(game.board, game.getPlayerObj(number)))
 
@@ -220,6 +220,8 @@ def resolve(game):
     events = game.board.commit()
     _report_turn(game, events, reject)
     repository.clear_orders()
+    # the commits that opened this turn are spent with it
+    repository.clear_commits()
 
     # setup ends with a resolution of its own, before anything is on the board.
     # That is not a turn of the game and is not numbered as one
@@ -236,8 +238,12 @@ def resolve(game):
         repository.write_player(number, _types_without_objects(player))
         if 'units' in player:
             # units that came in with a loaded player file become that
-            # player's orders for the turn about to be resolved
+            # player's orders for the turn about to be resolved, and the
+            # server commits them on that player's behalf. Publishing orders
+            # for somebody without committing them would leave the turn held
+            # open for a player who has nobody to type `commit` for them
             repository.write_orders(number, _as_orders(player['units']))
+            repository.mark_committed(number, turn_number)
         # written every turn, so it always describes the turn just resolved
         # rather than accumulating stale refusals
         repository.write_rejections(number, rejected.get(number, []),
@@ -320,8 +326,10 @@ def wait_for_all_commits(game):
     # the waiter is opened before the first check, so a commit signalled from
     # here on is buffered rather than lost, and one that arrived earlier is
     # found by the check itself
+    turn_number = game.getTurnNumber()
     with game.repository.waiter('server') as waiter:
-        while not awaited.issubset(set(game.repository.committed_players())):
+        while not awaited.issubset(
+                set(game.repository.committed_players(turn_number))):
             waiter.wait()
 
 

@@ -330,4 +330,5 @@ class Game:
         return turn.wait_for_turn(self)
 
     def committedPlayerCount(self):
-        return len(self.repository.committed_players())
+        """How many players have committed for the turn now open."""
+        return len(self.repository.committed_players(self.turn_number))

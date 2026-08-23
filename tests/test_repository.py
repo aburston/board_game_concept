@@ -79,14 +79,54 @@ def test_orders_are_consumed_once(tmp_path):
     repository.write_orders(2, 'units: None\n')
     repository.write_view(1, 'units: None\n')
 
-    assert repository.committed_players() == [1, 2]
     assert repository.has_orders(1) is True
 
     repository.clear_orders()
-    assert repository.committed_players() == []
     assert repository.has_orders(1) is False
     # a player's view is not an order, and survives the turn
     assert repository.read_view(1) == []
+
+
+def test_committing_is_recorded_rather_than_inferred(tmp_path):
+    """Publishing orders is not what makes a player committed.
+
+    It used to be: `committed_players` listed the order files, so that a file
+    existing meant "committed for this turn" only because the server deletes
+    it when it resolves one. The fact lived in the absence of a deletion.
+    """
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_orders(1, 'units: None\n')
+
+    assert repository.committed_players() == []
+
+    repository.mark_committed(1, turn=3)
+    assert repository.committed_players() == [1]
+    assert repository.committed_players(3) == [1]
+
+
+def test_a_commit_belongs_to_the_turn_it_was_made_for(tmp_path):
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.mark_committed(1, turn=3)
+    repository.mark_committed(2, turn=4)
+
+    assert repository.committed_players(4) == [2]
+    # and having ever committed is still a question that can be asked
+    assert repository.has_committed(1) is True
+    assert repository.committed_players() == [1, 2]
+
+
+def test_a_marker_written_before_commits_recorded_a_turn(tmp_path):
+    """A game set up by an older version still opens and still resolves."""
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    with open(repository._commit_marker(1), 'w') as file:
+        file.write('')
+
+    assert repository.has_committed(1) is True
+    assert repository.committed_players() == [1]
+    assert repository.committed_players(0) == []
 
 
 def test_a_view_is_not_mistaken_for_an_order(tmp_path):

@@ -142,26 +142,58 @@ class YamlGameRepository(GameRepository):
                 except FileNotFoundError:
                     pass
 
-    def committed_players(self):
+    def committed_players(self, turn=None):
+        """The players whose commit stands for the turn now open.
+
+        Read from the commit markers rather than by listing order files. That
+        an order file exists means "committed for this turn" only because the
+        server deletes it when it resolves one - the fact was encoded in the
+        absence of a deletion, which is not a thing to ask a question of.
+        """
         if not os.path.exists(self.player_path):
             return []
         numbers = []
         for name in os.listdir(self.player_path):
-            if name.endswith('_units.yaml') and not name.endswith('_units_seen.yaml'):
-                stem = name[:-len('_units.yaml')]
-                if stem.isdigit():
-                    numbers.append(int(stem))
+            if not name.startswith('commit_'):
+                continue
+            stem = name[len('commit_'):]
+            if not stem.isdigit():
+                continue
+            if turn is not None and self._committed_turn(int(stem)) != turn:
+                continue
+            numbers.append(int(stem))
         return sorted(numbers)
 
     def _commit_marker(self, number):
         return os.path.join(self.player_path, f'commit_{number}')
 
-    def mark_committed(self, number):
+    def _committed_turn(self, number):
+        """The turn this player's commit was for, or None if it does not say.
+
+        A marker written before commits recorded a turn is empty. It still
+        means the player has committed at least once, which is all it ever
+        meant, so it is read as belonging to no particular turn rather than
+        as a game that cannot be opened.
+        """
+        recorded = self._read_yaml(self._commit_marker(number),
+                                   f'the commit by player {number}')
+        if not isinstance(recorded, dict):
+            return None
+        return recorded.get('turn')
+
+    def mark_committed(self, number, turn=None):
         with open(self._commit_marker(number), 'w') as file:
-            file.write("")
+            yaml.safe_dump({'turn': turn}, file)
 
     def has_committed(self, number):
         return os.path.exists(self._commit_marker(number))
+
+    def clear_commits(self):
+        # the marker stays, because it is also the record that this player has
+        # committed at some point, which is what ends setup for them. What is
+        # spent is the turn it was committed for
+        for number in self.committed_players():
+            self.mark_committed(number, None)
 
     # --- work a session has not committed yet
 

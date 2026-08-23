@@ -159,23 +159,46 @@ body: `{turn: N}`. `has_committed` remains "the file exists". `committed_players
 reads the markers and returns those whose turn is the current one, instead of
 listing order files.
 
-**This is not load-bearing for the CLI, and the proposal implies more than the
-code justifies.** With the draft in a separate file, "committed" is still
-exactly "`<n>_units.yaml` exists", and the barrier would keep working
-untouched. What is wrong today is subtler: that file means *committed for the
+What is wrong today is subtle: `<n>_units.yaml` means *committed for the
 current turn* only because `clear_orders` deletes it at resolution. The commit
 fact is encoded in the absence of a deletion.
 
-It is in scope anyway, for three reasons. It makes true a scenario
-`game-persistence` already asserts — that the marker "records that they have
-committed" — which today it does not, since the barrier ignores the marker
-and `has_committed` uses it to mean "has ever committed". It lets an
-idempotent `POST /commit` ask whether this player has committed *for this
-turn*, which is the question it needs answered and which no file's existence
-answers directly. And it is one file and one method, where splitting it out
-means editing `game-persistence` twice.
+It is in scope for three reasons. It makes true a scenario `game-persistence`
+already asserts — that the marker "records that they have committed" — which
+today it does not, since the barrier ignores the marker and `has_committed`
+uses it to mean "has ever committed". It lets an idempotent `POST /commit` ask
+whether this player has committed *for this turn*, which is the question it
+needs answered and which no file's existence answers directly. And it is one
+file and one method, where splitting it out means editing `game-persistence`
+twice.
 
-If it is cut, nothing else in this design moves.
+### 7a. Correction: the commit record is not separable, and a commit is spent
+
+An earlier draft of this document claimed decision 7 was a cleanup the CLI did
+not need, and that cutting it would move nothing else. Implementing it proved
+both halves wrong, and the reasons are worth keeping.
+
+**A commit is spent when its turn is resolved.** Orders are consumed at
+resolution; commits inferred from them were consumed with them, for free.
+Recording a commit separately means nothing consumes it, so a turn that
+resolves without advancing the turn number — every turn in which no unit
+reaches the board, including one where every deployment is refused — finds the
+barrier still satisfied by the commits that opened it and resolves again
+immediately, for ever. The port therefore gains `clear_commits`, called
+alongside `clear_orders`. The marker itself survives it, because the marker is
+also the record that this player has ever committed, which is what ends setup
+for them; what is spent is the turn it was made for.
+
+**`load player` depended on the coupling.** When the server loads a player file
+holding units, it writes those units as that player's orders for the turn about
+to be resolved. Under the old inference that also committed them, which is how
+those units ever reached the board: no client is involved and nobody types
+`commit` for them. Recording commits separately left the turn held open for a
+player who has nobody to commit on their behalf. Resolution now commits for
+them explicitly, which is what writing orders on someone's behalf always meant.
+
+So decision 7 is not cuttable after all. The claim survives in one narrower
+form: nothing in decisions 1–6 rests on it.
 
 ### 8. The administrator drafts too
 
