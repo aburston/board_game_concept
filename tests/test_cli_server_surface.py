@@ -206,26 +206,46 @@ class ServerDisplayCommands(CliTestCase):
         server = self._sized()
         server.send_line('load player player_1.yaml')
         server.read_until_count(SERVER_PROMPT, 3)
-        server.send_line('show types')
-        server.read_until('name: O')
+        lines = self.shown_table(server, SERVER_PROMPT, 'types')
+        assert lines[0].split() == [
+            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY']
+        assert lines[1].split() == ['1', 'O', 'O', '1', '1', '10']
 
     def test_showing_units(self):
+        # the server's prompt is setup, and a loaded player's units only reach
+        # the board when setup is committed, so there is nothing to list yet
         server = self._sized()
-        server.send_line('show units')
-        server.read_until('units:')
+        assert self.shown(server, SERVER_PROMPT, 'show units') == 'no units yet'
 
     def test_showing_players(self):
         server = self._sized()
         server.send_line('add player 1')
         server.read_until_count(SERVER_PROMPT, 3)
-        server.send_line('show players')
-        server.read_until('number: 1')
+        lines = self.shown_table(server, SERVER_PROMPT, 'players')
+        assert lines[0].split() == ['PLAYER', 'STATUS']
+        assert lines[1].split() == ['1', 'active']
 
     def test_showing_pending_orders(self):
         server = self._sized()
-        server.send_line('show pending')
+        assert self.shown(
+            server, SERVER_PROMPT, 'show pending') == 'no orders pending'
+
+    def test_showing_a_subject_as_json(self):
+        server = self._sized()
+        server.send_line('add player 1')
         server.read_until_count(SERVER_PROMPT, 3)
-        self.assertNotIn('invalid show command', server.since(SERVER_PROMPT))
+        assert self.shown_json(server, SERVER_PROMPT, 'players') == {
+            'players': [{'player': 1, 'status': 'active'}]}
+
+    def test_an_empty_subject_as_json_is_an_empty_list(self):
+        server = self._sized()
+        assert self.shown_json(server, SERVER_PROMPT, 'units') == {'units': []}
+
+    def test_a_trailing_word_that_is_not_json(self):
+        server = self._sized()
+        assert self.shown(
+            server, SERVER_PROMPT,
+            'show units wibble') == 'invalid show command'
 
     def test_incomplete_show_command(self):
         server = self._sized()

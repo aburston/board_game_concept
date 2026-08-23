@@ -69,6 +69,17 @@ Installing the package puts one command on your path per role:
 
 Each resolves a game against the directory you run it in, as `games/_<gameno>`.
 
+Inside a session, `show board`, `show types`, `show units`, `show players` and
+`show pending` print tables. Ending the command in `json` — `show units json` —
+prints the same thing as one JSON document instead, so a session can be driven
+by something other than a person:
+
+```
+bgcclient> show units
+PLAYER  NAME  TYPE   SYMBOL  ATTACK  HEALTH  ENERGY  X  Y  STATE    DIRECTION
+     1  x1    Cross  X            1       1      10  0  0  holding  -
+```
+
 The standalone test harness has no command of its own — it is developer tooling
 rather than something an installed game needs, so run it as a module:
 

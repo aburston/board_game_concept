@@ -62,6 +62,22 @@ class TestShow:
     def test_with_an_unknown_subject(self):
         assert refused('show wibble') == 'invalid show command'
 
+    def test_a_subject_is_shown_as_a_table_by_default(self):
+        assert parse('show units').format == 'table'
+
+    @pytest.mark.parametrize(
+        'subject', ['board', 'types', 'units', 'players', 'pending'])
+    def test_every_subject_can_be_asked_for_as_json(self, subject):
+        assert parse(f'show {subject} json') == commands.Show(
+            subject=subject, format='json')
+
+    def test_an_unknown_trailing_word_is_refused(self):
+        # it used to be ignored, so a mistyped `json` printed a table
+        assert refused('show units wibble') == 'invalid show command'
+
+    def test_a_trailing_word_after_json_is_refused(self):
+        assert refused('show units json wibble') == 'invalid show command'
+
 
 class TestSetBoard:
 

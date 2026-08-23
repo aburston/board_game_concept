@@ -8,10 +8,8 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import Game, YamlGameRepository
-from board_game_concept.cli.render import (print_board, print_players,
-                                           print_types)
-from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
+from board_game_concept.cli.show import perform_show, show_units
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (describe_outcome, load_game,
                                             read_command, report)
@@ -61,10 +59,8 @@ def main(argv=None):
         # load/reload the gamedata
         load_game(data)
 
-        # what this session shows; the rules are the service layer's, and
-        # it reads the game for itself
-        players = data.getPlayers()
-        board = data.getBoard()
+        # what this session shows is read where it is shown, so that a unit
+        # deployed or ordered since the game was loaded is in it
         unprocessed_moves = data.getUnprocessedMoves()
 
         # wait 5 seconds if there are unprocessed moves and then reload
@@ -108,23 +104,7 @@ def main(argv=None):
                 sys.exit(0)
 
             if command.kind == 'show':
-                if command.subject == 'board':
-                    if board is None:
-                        print("must create board - set size and commit")
-                    else:
-                        print_board(board)
-
-                elif command.subject == 'types':
-                    print_types(players)
-
-                elif command.subject == 'players':
-                    print_players(players, data.getEliminated())
-
-                elif command.subject == 'units':
-                    if board is None:
-                        print("must create board - set size and commit")
-                    else:
-                        print(serialise_units(board))
+                perform_show(data, command)
                 continue
 
             if out_of_it and command.kind in ('commit', 'move', 'add_type',
@@ -147,8 +127,9 @@ def main(argv=None):
                     games.deploy_unit(data, command)
                 elif command.kind == 'move':
                     games.order_move(data, command)
-                    # the order is read back so the player can see it took
-                    print(serialise_units(data.getBoard()))
+                    # the order is read back so the player can see it took,
+                    # as the same table `show units` would have given them
+                    show_units(data)
             except GameError as error:
                 report(error)
                 continue

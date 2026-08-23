@@ -9,10 +9,10 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import Game, YamlGameRepository
-from board_game_concept.cli.render import (print_board, print_players,
-                                           print_types)
+from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
+from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (describe_outcome, load_game,
                                             read_command, report)
@@ -27,54 +27,6 @@ ROLE = roles.SERVER
 PROGRAM = 'bgcserver'
 
 DEBUG = False
-
-
-# load board <board_file> - loads the board size from a file
-
-
-def load_board(board_file):
-    pass
-
-# load player <player_file> - loads the player data, player types and
-# player units from a file
-
-
-def load_player(player_file):
-    pass
-
-# set board <size_x> <size_y> - set the size of the board at the beginning
-# of the game, only player 0 can do this before the start of the game
-
-
-def set_board(size_x, size_y):
-    pass
-
-# show board - show the board
-
-
-def show_board(data):
-    board = data.getBoard()
-    if board is None:
-        print("must create board - set size and commit")
-        return
-    print_board(board)
-# show player - show player information
-
-
-def show_player(player_id):
-    pass
-
-# show types - show player defined unit types
-
-
-def show_types():
-    pass
-
-# commit - commit actions taken, this can't be undone
-
-
-def commit():
-    pass
 
 
 def main(argv=None):
@@ -103,8 +55,6 @@ def main(argv=None):
         # load the gamedata
         load_game(data)
 
-        players = data.getPlayers()
-        board = data.getBoard()
         new_game = data.getNewGame()
 
         # a decided game has no turn left to resolve, and waiting for commits
@@ -128,26 +78,7 @@ def main(argv=None):
                 sys.exit(0)
 
             if command.kind == 'show':
-                if command.subject == 'board':
-                    show_board(data)
-
-                elif command.subject == 'types':
-                    print_types(players)
-
-                elif command.subject == 'players':
-                    print_players(players, data.getEliminated())
-
-                elif command.subject == 'units':
-                    board = data.getBoard()
-                    if board is None:
-                        print("must create board - set size and commit")
-                    else:
-                        print(serialise_units(board))
-
-                elif command.subject == 'pending':
-                    for player in players.keys():
-                        if 'moves' in players[player].keys():
-                            print(f"player: {player}, moves: {players[player]['moves']}")
+                perform_show(data, command)
                 continue
 
             if command.kind == 'commit':
@@ -195,9 +126,9 @@ def main(argv=None):
         # wait for player commits before restarting the load and commit cycle
         data.waitForPlayerCommit()
 
-        # log board + units. Read the board back rather than using the one
-        # loaded at the top of the loop: setting or loading a board during
-        # setup replaces it, and the local would still be the old one
+        # log board + units. The board is read back rather than kept in a
+        # local: setting or loading a board during setup replaces it, and the
+        # local would still be the old one
         resolved = data.getBoard()
         print_board(resolved)
         print(serialise_units(resolved))

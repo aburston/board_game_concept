@@ -18,6 +18,10 @@ DIRECTIONS = {
 
 SHOW_SUBJECTS = ('board', 'types', 'units', 'players', 'pending')
 
+# the one word a `show` may end in, asking for the answer as JSON rather than
+# as a table
+SHOW_FORMAT = 'json'
+
 
 class Usage:
     """How one command is written, and what it does."""
@@ -45,15 +49,20 @@ USAGES = (
           'load a player, their types and their units, from a file'),
     Usage('set_board', 'set board <size_x> <size_y>',
           'set the size of the board, before the game starts'),
-    Usage('show', 'show board', 'show the board as you see it',
+    Usage('show', 'show board [json]',
+          'show the board as you see it, as a table or as JSON',
           subject='board'),
-    Usage('show', 'show types', 'show the unit types you know of',
+    Usage('show', 'show types [json]',
+          'show the unit types you know of, as a table or as JSON',
           subject='types'),
-    Usage('show', 'show units', 'show the units you know of',
+    Usage('show', 'show units [json]',
+          'show the units you know of, as a table or as JSON',
           subject='units'),
-    Usage('show', 'show players', 'show the registered players',
+    Usage('show', 'show players [json]',
+          'show the registered players, as a table or as JSON',
           subject='players'),
-    Usage('show', 'show pending', 'show the orders queued for the next turn',
+    Usage('show', 'show pending [json]',
+          'show the orders queued for the next turn, as a table or as JSON',
           subject='pending'),
     Usage('move', 'move <unit> <' + '|'.join(DIRECTIONS) + '>',
           'order one of your units to move'),

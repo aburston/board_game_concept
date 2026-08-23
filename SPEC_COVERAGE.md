@@ -481,6 +481,26 @@ Two questions are still open and are design choices rather than defects: energy
 never regenerating, and identical units always destroying each other. They are
 set out in Part 2 of `GAME_RULES.md`.
 
+## Left to a follow-up
+
+The `format-show-command-output` change gave every `show` subject a table and a
+`json` form, rendered from one view per subject in `cli/views.py`, and put the
+client's read-back after `move` through the same renderer. Two pieces of
+printing were deliberately left outside it, and are worth the same pass:
+
+- **The server's turn log.** The unattended cycle prints the grid and the
+  published YAML for each resolved turn. That is a log of what was published
+  rather than an answer to a command, and it is what `game-persistence`
+  describes, so it was left as it is.
+- **Prompts, refusals and status lines.** `commit complete`, `waiting for turn
+  to complete...`, the rejected-order list and the outcome line are unchanged.
+
+One word in `cli-output` is not reachable through the roles today: a unit's
+state reads `waiting` only while it is on a board and not yet deployed, and
+`deploy unit` resolves that at once for the session that gave it. The view
+still says `waiting` for such a unit, which is what the server's board holds
+mid-resolution and what a caller reading a board directly would see.
+
 ## Documented but not implemented
 
 - **Web service.** The Flask/REST API and SQLite backend in `README.md` are

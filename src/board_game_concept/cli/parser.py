@@ -14,7 +14,7 @@ is what lets the same parser serve a caller that is not a terminal.
 """
 
 from ..service import commands
-from .grammar import DIRECTIONS, SHOW_SUBJECTS
+from .grammar import DIRECTIONS, SHOW_FORMAT, SHOW_SUBJECTS
 
 INVALID_COMMAND = 'invalid command'
 
@@ -106,8 +106,16 @@ class Parser:
         subject = self.tokens.take()
         if subject not in SHOW_SUBJECTS:
             raise ParseError('invalid show command', self.tokens.position)
-        # anything after the subject is ignored, as it always has been
-        return commands.Show(subject=subject)
+        # `json` is the one word that may follow a subject. Everything else
+        # used to be ignored, which meant a mistyped `show units jsno` quietly
+        # printed the table the player had not asked for
+        show_format = 'table'
+        if not self.tokens.at_end():
+            word = self.tokens.take()
+            if word != SHOW_FORMAT or not self.tokens.at_end():
+                raise ParseError('invalid show command', self.tokens.position)
+            show_format = SHOW_FORMAT
+        return commands.Show(subject=subject, format=show_format)
 
     def _parse_set(self):
         subject = self._subject('set', ('board',))

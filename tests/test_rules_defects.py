@@ -127,12 +127,12 @@ def test_a_client_holds_no_record_of_an_unseen_enemy(tmp_path):
 
 
 def test_a_client_lists_no_enemy_type_before_contact(tmp_path):
-    from board_game_concept.cli.render import type_lines
+    from board_game_concept.cli.views import types_view
 
     harness = a_two_player_game(tmp_path)
     session = harness.session(1)
-    listed = type_lines(session.getPlayers())
-    assert all('Brute' not in line for line in listed), listed
+    listed = types_view(session.getPlayers())
+    assert all(entry['name'] != 'Brute' for entry in listed), listed
 
 
 # --- Q6: a name an opponent used first must not block your own order

@@ -8,6 +8,7 @@ is split into layers, and remain evidence that nothing observable changed.
 
 import os
 import sys
+import json
 import time
 import shutil
 import threading
@@ -216,6 +217,26 @@ class CliTestCase(unittest.TestCase):
         code = (f"import sys; sys.path.insert(0, {str(ROOT / 'src')!r}); "
                 f"from board_game_concept.cli.bgc{role} import main; main()")
         return self._start([PYTHON, '-c', code])
+
+    def shown(self, proc, prompt, command):
+        """Everything a role printed for one command, between two prompts.
+
+        This is exactly what a caller reading the session sees for the command
+        it typed, which is what makes it a fair way to check that a `json`
+        answer is a whole JSON document and nothing else.
+        """
+        before = proc.output.count(prompt)
+        proc.send_line(command)
+        proc.read_until_count(prompt, before + 1)
+        return proc.output.rsplit(prompt, 2)[-2].strip()
+
+    def shown_table(self, proc, prompt, subject):
+        """The lines of the table a `show` subject printed."""
+        return self.shown(proc, prompt, f'show {subject}').splitlines()
+
+    def shown_json(self, proc, prompt, subject):
+        """The document a `show <subject> json` printed, parsed."""
+        return json.loads(self.shown(proc, prompt, f'show {subject} json'))
 
     def at_prompt(self, proc, prompt):
         """Send nothing; just confirm the role is still asking for input."""
