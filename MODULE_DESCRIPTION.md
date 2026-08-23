@@ -7,8 +7,10 @@ types, deploy them, and order them each turn; the server waits for every player
 to commit, then resolves all their orders at once.
 
 `openspec/specs/` is the source of truth for what the game does.
-`SPEC_COVERAGE.md` records where the code has diverged from it and what was
-done about each. This file describes how the code is arranged.
+`GAME_RULES.md` reads those specs and the code back as one set of rules, and
+lists what is still unclear. `SPEC_COVERAGE.md` records where the code has
+diverged from the specs and what was done about each. This file describes how
+the code is arranged.
 
 ## Layout
 

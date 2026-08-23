@@ -1,6 +1,9 @@
 # board_game_concept
 Board game idea based on building and programming your own units
 
+`GAME_RULES.md` states the rules the game actually plays by, and lists where
+they are unclear or where two documents disagree.
+
  * Create your own units based on simple rules
  * Program each unit to play the game
  * Run the game automatically resolving the winner
