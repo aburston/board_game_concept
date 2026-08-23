@@ -575,6 +575,58 @@ state.
 
 Held by `tests/test_player_numbering.py` and `tests/test_identity_cli.py`.
 
+### 27. A player could stop waiting before the turn was published — fixed
+
+A client waits for its turn by testing whether its own order file is still
+there: `turn.wait_for_turn` blocks while `has_orders` is true, and
+`Game.load` reads `unprocessed_moves` from the same file. Resolution deleted
+that file near the start and published each player's view near the end, so a
+client arriving inside the window never waited at all — it found no orders,
+concluded the turn was over, and read a view belonging to the previous turn.
+
+The wake at the end was always correct. What was wrong is that a client which
+was not asleep for it had already been let go.
+
+Caught in the act: a client that had just committed its only unit redrew an
+empty board and then timed out waiting for that unit's symbol.
+
+```
+    bgcclient> commit complete
+    waiting for turn to complete...
+    bgcclient> +-+-+-+-+
+               |#|#|#|#|          <- no units
+               +-+-+-+-+
+```
+
+It showed twice in twenty-six runs of the suite. The ordering was unchanged
+since the `split-into-layers` change, so neither drafting nor the observer's
+numbering caused it; both only made it easier to see. This is the same file
+being deleted while the turn is still being written that produced number 10
+above.
+
+Reproduction: commit a turn and read the committing player's view at the moment
+their orders are removed.
+
+Addressed by the `wake-a-player-when-the-turn-is-published` change: resolution
+publishes everything the turn produced — the turn number, each player's file and
+refusals, the record of every unit, and every player's view — and only then
+removes the consumed orders. Nothing in that span reads an order file, because
+orders are applied from what `load` put in memory, which is what makes the
+deletion free to be last. The orders a `load player` file seeds for the *next*
+turn are written after the removal rather than before it; a removal placed after
+them erases them, and a game set up that way never gets its units onto the
+board.
+
+Held by `tests/test_turn_publication.py`, which asserts the order of the
+operations one resolution performs rather than racing it, and fails in
+milliseconds if the order is changed back.
+
+**Not addressed**: a reader that holds no orders is gated by nothing, so the
+administrator and the observer can still load while a file is midway through
+being written. That is a different defect — the atomicity of one write rather
+than the order of several — and its fix is writing to a temporary name and
+renaming, not reordering.
+
 ## Unspecified, and worth deciding
 
 Nothing, at present. The two entries that stood here — units passing through
