@@ -44,12 +44,14 @@ implementation diverged from them. Each was reproduced against
 been fixed, so the specs under `openspec/specs/` describe the behaviour the code
 now has.
 
-The first three were reported as issues and fixed by changes now archived under
-`openspec/changes/archive/`. The rest were found by writing the scenarios in
-`player-client`, `game-server` and `game-observer` out as tests — one per
-scenario, driving each role as a subprocess — before the `split-into-layers`
-change began moving anything. Each entry names the scenario that found it; every
-one has a test in `tests/test_cli_*_surface.py`.
+The first three were reported as issues. Numbers 4 to 10 were found by writing
+the scenarios in `player-client`, `game-server` and `game-observer` out as tests
+— one per scenario, driving each role as a subprocess — before the
+`split-into-layers` change began moving anything; each names the scenario that
+found it, and each has a test in `tests/test_cli_*_surface.py`. Number 11 was
+found by playing a game.
+
+Every change named below is archived under `openspec/changes/archive/`.
 
 ### 1. Deploying onto an occupied square crashes (issue #1) — fixed
 
