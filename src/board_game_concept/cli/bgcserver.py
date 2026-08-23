@@ -9,7 +9,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import Game, YamlGameRepository
-from board_game_concept.cli.render import print_board
+from board_game_concept.cli.render import print_board, print_dropped
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show
@@ -58,6 +58,9 @@ def main(argv=None):
 
         # load the gamedata
         load_game(data)
+
+        # anything the administrator drafted that could not be put back
+        print_dropped(data.getDropped())
 
         new_game = data.getNewGame()
 

@@ -11,6 +11,7 @@ from board_game_concept import Game, YamlGameRepository
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show, show_units
 from board_game_concept.cli.help import print_help
+from board_game_concept.cli.render import print_dropped
 from board_game_concept.cli.session import (describe_outcome, load_game,
                                             read_command, report)
 from board_game_concept.service import games
@@ -85,6 +86,10 @@ def main(argv=None):
             print(describe_outcome(outcome))
         elif out_of_it:
             print(f"player {player_number} is out of the game")
+
+        # anything of this player's own that could not be put back when their
+        # draft was restored, said before they are asked for anything else
+        print_dropped(data.getDropped())
 
         # report anything the server refused when it resolved the last turn
         rejected = data.getRejected()

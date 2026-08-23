@@ -42,26 +42,26 @@ green at the end of it with no test edited.
 
 The step that changes observable behaviour, and the one to review hardest.
 
-- [ ] 3.1 Replay the loading session's own draft at the end of `Game.load()`,
+- [x] 3.1 Replay the loading session's own draft at the end of `Game.load()`,
       after `_load_players` has set the setup gate the deployment and movement
       rules read (design.md — Decision 3). Verify that a draft of several
       deployments produces the same board as typing them in the same order —
       `deploy_unit` calls `board.commit()` per unit, so replay must not
       short-circuit it — and that a game with no draft loads byte-identically
       to before.
-- [ ] 3.2 Read only the draft belonging to the loading session, never another's
+- [x] 3.2 Read only the draft belonging to the loading session, never another's
       (design.md — Decision 6). Verify an administrator's and an observer's
       session opened against a game where a player holds a draft show nothing
       of it in `show units`, `show board` or `show pending`, and that `show
       pending` still lists committed orders as it does today.
-- [ ] 3.3 Discard a draft whose recorded turn is not the game's current turn,
+- [x] 3.3 Discard a draft whose recorded turn is not the game's current turn,
       rather than applying it. Verify a draft left from an earlier turn is
       dropped and the game opens with the published view alone.
-- [ ] 3.4 Drop a drafted command that can no longer be carried out, report it to
+- [x] 3.4 Drop a drafted command that can no longer be carried out, report it to
       its owner, and continue with the rest of the draft. Verify a draft holding
       one now-illegal command and two legal ones opens the game with the two
       applied, and that no draft can prevent a game from being opened.
-- [ ] 3.5 Clear the draft when its owner commits, the work having become their
+- [x] 3.5 Clear the draft when its owner commits, the work having become their
       published orders (design.md — Decision 4). Verify the file written to
       `players/<number>_units.yaml` is unchanged from before this change for the
       same sequence of commands, and that reopening after a commit restores

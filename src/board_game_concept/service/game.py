@@ -11,7 +11,7 @@ which this delegates to so that callers have one thing to talk to.
 from ..domain import Board, Player, UnitType
 from ..storage.serialise import restore_draft, serialise_draft
 from . import turn
-from .errors import NoSuchGame, NoSuchPlayer
+from .errors import GameDataError, GameError, NoSuchGame, NoSuchPlayer
 
 
 class Game:
@@ -31,6 +31,9 @@ class Game:
         self.unprocessed_moves = False
         # orders the server refused when it last resolved a turn
         self.rejected = []
+        # drafted commands that could no longer be carried out when the draft
+        # was restored, and so were dropped
+        self.dropped = []
         # how far the game has got: the last turn resolved, who is out of it,
         # and how it ended if it has
         self.turn_number = 0
@@ -128,6 +131,8 @@ class Game:
 
     def load(self):
         self.unprocessed_moves = False
+        self.dropped = []
+        self.draft = []
         self.repository.ensure()
 
         size = self.repository.read_board()
@@ -159,6 +164,68 @@ class Game:
         # administrator, who is player 0 and holds no units
         if self.player_number not in self.players and self.player_number != 0:
             raise NoSuchPlayer(f"player {self.player_number} does not exist")
+
+        # and last, whatever this session had done and not committed. It goes
+        # on top of the published view rather than into it, and it goes on
+        # after the players are loaded because the deployment and movement
+        # rules read the setup gate that loading them sets
+        self._replay_draft()
+
+    def _replay_draft(self):
+        """Put back what this session had done and not committed.
+
+        Only this session's own draft, never another's. The repository will
+        hand over any draft it is asked for, because a repository holds no
+        rules; not asking for somebody else's is this layer's part of the
+        bargain, as it already is for a player's file and a player's view.
+
+        A draft belongs to one turn. One stamped with another is work left
+        behind by a session that ended while a turn was being resolved, and is
+        discarded rather than replayed into a turn it was never meant for.
+
+        A command that can no longer be carried out is dropped and remembered,
+        and the rest of the draft is still restored. Refusing to open a game
+        because one drafted order went stale would make a draft a way to lock
+        yourself out of your own game.
+        """
+        # imported here because the service layer's command functions are what
+        # replay applies, and `games` is written against this class
+        from . import games
+
+        try:
+            draft = self.repository.read_draft(self.player_number)
+        except GameDataError as error:
+            # an unreadable draft is this session's own work and nobody
+            # else's, so it costs the draft rather than the game
+            self.dropped.append((None, error.message))
+            self.repository.clear_draft(self.player_number)
+            return
+
+        try:
+            restored = restore_draft(draft, self.turn_number)
+        except GameError as error:
+            self.dropped.append((None, error.message))
+            self.repository.clear_draft(self.player_number)
+            return
+
+        for command in restored:
+            try:
+                games.carry_out(self, command)
+            except GameError as error:
+                self.dropped.append((command, error.message))
+                continue
+            self.draft.append(command)
+
+        if self.dropped:
+            # what is written down is what was put back, so the draft does not
+            # keep offering a command that cannot be carried out
+            self.repository.write_draft(
+                self.player_number,
+                serialise_draft(self.draft, self.turn_number))
+
+    def getDropped(self):
+        """Drafted commands that could not be put back, and why."""
+        return self.dropped
 
     def _load_players(self):
         for number in self.repository.player_numbers():

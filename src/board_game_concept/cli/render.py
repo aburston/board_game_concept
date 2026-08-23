@@ -16,6 +16,7 @@ The board is drawn as a grid of single character squares between rules:
 
 from ..domain import Empty
 from . import views
+from .grammar import USAGES, Optional, Slot
 
 EMPTY_SQUARE = str(Empty())
 
@@ -153,3 +154,40 @@ def print_board_view(view):
         [[entry['symbol'], entry['player'], entry['type']]
          for entry in view['legend']],
         numeric=('PLAYER',)))
+
+
+def render_command(command):
+    """A command written the way the person who gave it typed it.
+
+    Read off the same grammar the parser works to, so a command reported back
+    reads as a line that could be typed again rather than as the language
+    talking about itself. The slots of a usage stand in for its command's
+    fields in the order both are written, which is what lets one description
+    serve the parser, `help`, completion and this.
+    """
+    for usage in USAGES:
+        if usage.kind != command.kind or usage.subject is not None:
+            continue
+        words, values = [], list(command.fields)
+        for word in usage.words:
+            if isinstance(word, str):
+                words.append(word)
+            elif isinstance(word, Optional):
+                continue
+            elif isinstance(word, Slot):
+                value = getattr(command, values.pop(0))
+                if word.kind == 'direction':
+                    value = views.direction_word(value) or value
+                words.append(str(value))
+        return ' '.join(words)
+    return command.kind
+
+
+def print_dropped(dropped):
+    """Say which drafted commands could not be put back, and why."""
+    if not dropped:
+        return
+    print(f"{len(dropped)} uncommitted command(s) could not be restored:")
+    for command, reason in dropped:
+        described = render_command(command) if command is not None else 'draft'
+        print(f"  - {described}: {reason}")
