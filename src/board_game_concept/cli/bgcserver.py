@@ -11,7 +11,7 @@ if __package__ is None:
 from board_game_concept import Game, YamlGameRepository
 from board_game_concept.cli.render import print_board
 from board_game_concept.storage.serialise import serialise_units
-from board_game_concept.cli import roles
+from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (describe_outcome, load_game,
@@ -49,6 +49,10 @@ def main(argv=None):
 
     # initialize data object
     data = Game(YamlGameRepository(args.game_number), player_number)
+
+    # completion for the setup prompt. The server owns no units and defines no
+    # types, so what it gains is the grammar and the paths `load` wants
+    complete.install(ROLE, complete.GameNames(data, player_number))
 
     while True:
 

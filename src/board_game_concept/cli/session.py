@@ -29,6 +29,38 @@ def load_game(data):
         sys.exit(1)
 
 
+def _read_line(prompt):
+    """One line of input, and whether there was one at all.
+
+    Two ways of reading, because there are two kinds of caller. A person gets
+    `input()`, which is the only call `readline` decorates - line editing,
+    history and the completion `complete.py` installed all hang off it. Anything
+    else gets the prompt and `sys.stdin.readline()` it has always got, so a
+    session driven by a pipe or a file reads exactly as it did before
+    completion existed and its transcript holds no terminal escape sequence.
+
+    Both conditions are checked before taking the first path: `readline` draws
+    the prompt and its edits on stdout, so a terminal on stdin with a pipe on
+    stdout is not a person and must take the plain path.
+
+    End of input is the case the two disagree about - `input()` raises
+    `EOFError`, `sys.stdin.readline()` returns the empty string - and both mean
+    the same thing here, which is `exit`. Stripping made the empty string and a
+    blank line the same, and a role reading from a pipe that had run dry was
+    told there was nothing to do, and prompted again, forever.
+    """
+    if sys.stdin.isatty() and sys.stdout.isatty():
+        try:
+            return input(f"{prompt}> "), True
+        except EOFError:
+            return None, False
+    print(f"{prompt}> ", flush=True, end='')
+    line = sys.stdin.readline()
+    if line == '':
+        return None, False
+    return line, True
+
+
 def read_command(prompt, role):
     """The next command from this role, or None if there is nothing to do.
 
@@ -37,14 +69,10 @@ def read_command(prompt, role):
     sees a command it is allowed to act on.
 
     Running out of input comes back as `exit`, which every role already ends
-    on. `readline` returns the empty string at end of input and a newline for a
-    blank line, and stripping made the two the same string - so a role reading
-    from a pipe that had run dry was told there was nothing to do, and prompted
-    again, and was told the same thing, forever.
+    on.
     """
-    print(f"{prompt}> ", flush=True, end='')
-    line = sys.stdin.readline()
-    if line == '':
+    line, read = _read_line(prompt)
+    if not read:
         # the prompt has already been written, so leave the cursor on a line of
         # its own the way a terminal does for Ctrl-D
         print()

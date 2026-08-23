@@ -44,6 +44,13 @@ leave that prompt once the game has been committed. When there is no more input
 to read, the session SHALL end as though `exit` had been entered, rather than
 treating the end of input as a blank line and prompting again.
 
+While that prompt is presented and the server's input is a terminal, the line
+SHALL be read with line editing and completion as `cli-completion` describes
+them, including completing file paths for `load board` and `load player`. When
+the input is not a terminal, the line SHALL be read as it was before completion
+existed. The unattended cycle the server runs after setup reads no commands and
+is unaffected.
+
 #### Scenario: New game
 
 - **WHEN** the server opens a game that has not yet been set up
@@ -79,6 +86,23 @@ treating the end of input as a blank line and prompting again.
 - **WHEN** the server's input ends during setup without `exit` being entered
 - **THEN** the server session ends with a success status
 - **AND** it does not prompt again
+
+#### Scenario: Completing a setup command
+
+- **WHEN** the server is run in a terminal during setup and completion is asked
+  for
+- **THEN** the setup commands it accepts at that point are offered
+
+#### Scenario: Completing a file to load
+
+- **WHEN** the server is run in a terminal and completion is asked for where
+  `load board` or `load player` expects a file
+- **THEN** matching paths in the working directory are offered
+
+#### Scenario: The unattended cycle is unaffected
+
+- **WHEN** the server has left setup and is resolving turns
+- **THEN** it reads no commands and completion plays no part
 
 ### Requirement: Setting Board Size
 

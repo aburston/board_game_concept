@@ -80,6 +80,35 @@ PLAYER  NAME  TYPE   SYMBOL  ATTACK  HEALTH  ENERGY  X  Y  STATE    DIRECTION
      1  x1    Cross  X            1       1      10  0  0  holding  -
 ```
 
+# Completion
+
+Inside a session, Tab completes what can be typed next. That is the commands
+the role you are running accepts, the `show` subjects it may ask for, the
+trailing `json`, the four directions — and the names only the game knows: your
+own units for `move`, and the types you have defined for `add unit`. A unit you
+deployed a moment ago completes without a reload. `load board` and `load
+player` complete paths.
+
+You get line editing and within-session history with it: arrow keys, Ctrl-A,
+and up-arrow to recall what you typed before.
+
+None of this happens when a session's input is not a terminal. Driven by a pipe
+or a file — which is how the test suite drives every role — a session prompts
+and answers exactly as it always has, with no editing and nothing but its own
+output in the transcript.
+
+For completing the commands themselves, source the script for your shell:
+
+```
+source completions/bgc.bash            # bash
+source completions/bgc.zsh             # zsh, after compinit
+```
+
+Then `bgcclient <TAB>` offers the game numbers under `games/`, a second `<TAB>`
+offers the players registered in that game, and `bgcserver -g <TAB>` offers
+game numbers. They are files to source; installing the package still puts three
+commands on your path and nothing else.
+
 The standalone test harness has no command of its own — it is developer tooling
 rather than something an installed game needs, so run it as a module:
 

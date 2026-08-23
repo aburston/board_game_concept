@@ -8,7 +8,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import Game, YamlGameRepository
-from board_game_concept.cli import roles
+from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show, show_units
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (describe_outcome, load_game,
@@ -52,6 +52,11 @@ def main(argv=None):
 
     # initialize the data object
     data = Game(YamlGameRepository(gameno), player_number)
+
+    # let a person at a terminal complete what they are typing. The names come
+    # from this game object, which is the same one the loop below reloads into,
+    # so a unit deployed during the session completes without a reload
+    complete.install(ROLE, complete.GameNames(data, player_number))
 
     # load the data
     while True:

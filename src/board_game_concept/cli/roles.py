@@ -16,6 +16,20 @@ class Role:
         self.kinds = frozenset(kinds)
         self.show_subjects = frozenset(show_subjects)
 
+    def offers(self, usage):
+        """Whether this role may run the command this usage describes.
+
+        The same two sets `allows` reads, asked of a usage rather than of a
+        command, so what is offered before a line is entered and what is
+        accepted after it cannot come apart. `help.py` lists by this, and
+        `complete.py` completes by it.
+        """
+        if usage.kind not in self.kinds:
+            return False
+        if usage.subject is not None:
+            return usage.subject in self.show_subjects
+        return True
+
     def allows(self, command):
         if command.kind not in self.kinds:
             return False

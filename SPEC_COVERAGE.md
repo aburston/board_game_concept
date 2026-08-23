@@ -19,6 +19,7 @@ source of truth for intended behaviour.
 | `game-server` | The `bgcserver` command surface and unattended turn cycle |
 | `game-observer` | The `bgcobserver` read-only command surface |
 | `game-outcome` | Player elimination, victory, draw, how a decided game stops, turn numbering |
+| `cli-completion` | What completes at each point in a session, where the candidates come from, and the shell completion for launching a role |
 
 Validate them with:
 
@@ -494,6 +495,20 @@ printing were deliberately left outside it, and are worth the same pass:
   describes, so it was left as it is.
 - **Prompts, refusals and status lines.** `commit complete`, `waiting for turn
   to complete...`, the rejected-order list and the outcome line are unchanged.
+
+The `add-cli-autocomplete` change left two things outside completion, both
+deliberately:
+
+- **Numbers and names being invented.** A coordinate, a statistic and the name
+  of a type being defined complete to nothing, because only the person typing
+  knows what they are. Completion offers what fits the grammar, not a guess.
+- **A history file.** History lasts as long as the session. Keeping it between
+  sessions would mean deciding where to write it and what one game may learn
+  about another, which is a separate question from completing a line.
+
+Completion also offers a name the game may still refuse: a unit with no energy
+left completes, and moving it may then be rejected. Completion answers what
+words fit where, and the service layer keeps deciding what may be done.
 
 One word in `cli-output` is not reachable through the roles today: a unit's
 state reads `waiting` only while it is on a board and not yet deployed, and
