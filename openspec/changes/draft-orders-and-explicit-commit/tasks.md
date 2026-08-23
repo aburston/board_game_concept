@@ -3,19 +3,19 @@
 Nothing reads a draft yet. The whole group is additive, and the suite must be
 green at the end of it with no test edited.
 
-- [ ] 1.1 Add a kind-to-class lookup in `service/commands.py` so a command can
+- [x] 1.1 Add a kind-to-class lookup in `service/commands.py` so a command can
       be rebuilt from its kind and fields, and command serialisation in
       `storage/serialise.py` alongside the existing writers (design.md —
       Decision 1). Verify with a round-trip test that every production in
       `grammar.USAGES` survives being written and read back as the command it
       parsed to, compared with the `__eq__` `Node` already has.
-- [ ] 1.2 Add `read_draft`, `write_draft` and `clear_draft` to
+- [x] 1.2 Add `read_draft`, `write_draft` and `clear_draft` to
       `GameRepository`, and implement them in `YamlGameRepository` over
       `players/<number>_draft.yaml`, recording the turn the draft was made for
       (design.md — Decision 5). Verify in `tests/test_repository.py` that a
       draft round-trips, that an absent draft reads as empty rather than as an
       error, and that clearing one twice is not an error.
-- [ ] 1.3 Verify the new file is invisible to the two places that classify
+- [x] 1.3 Verify the new file is invisible to the two places that classify
       files by name: `player_numbers()` must not read `1_draft.yaml` as a
       player, and `committed_players()` must not count it as published orders.
       Add both as explicit tests — this is the class of mistake that produced

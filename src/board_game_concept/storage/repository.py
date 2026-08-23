@@ -102,6 +102,25 @@ class GameRepository:
     def has_committed(self, number):
         raise NotImplementedError
 
+    # --- work a session has not committed yet
+
+    def read_draft(self, number):
+        """This session's uncommitted work, or None if it has none.
+
+        Read only for the session it belongs to. A repository will hand over
+        any draft it is asked for, because a repository holds no rules; not
+        asking for another player's is the caller's part of the bargain, the
+        same way a client reads its own view rather than the whole board.
+        """
+        raise NotImplementedError
+
+    def write_draft(self, number, draft):
+        raise NotImplementedError
+
+    def clear_draft(self, number):
+        """Discard this session's draft, committed or abandoned."""
+        raise NotImplementedError
+
     # --- refused orders
 
     def read_rejections(self, number):

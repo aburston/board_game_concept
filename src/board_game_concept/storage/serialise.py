@@ -5,6 +5,8 @@ back. The roles also print it verbatim for `show units`, so the same text
 serves both, and changing it changes both.
 """
 
+from ..service.commands import as_record, from_record
+
 
 def unit_fields(unit):
     """One unit as the body of a YAML flow mapping, without the braces."""
@@ -80,3 +82,29 @@ def serialise_units(board, player=None, in_play_only=False, turn=None):
         units_str = units_str + "units:\n" + listed
 
     return units_str
+
+
+def serialise_draft(commands, turn):
+    """A session's uncommitted commands, as the document a draft is kept as.
+
+    The turn is written with them because a draft belongs to one turn. A draft
+    found under a turn the game has moved past is work left behind by a session
+    that ended while the turn was being resolved, and is discarded rather than
+    replayed into a turn it was never meant for.
+    """
+    return {
+        'turn': turn,
+        'commands': [as_record(command) for command in commands],
+    }
+
+
+def restore_draft(draft, turn):
+    """The commands a draft holds, or none if it is not for this turn.
+
+    Reading a draft that is absent, empty, or stamped with another turn is
+    ordinary rather than an error: all three mean there is no work to restore.
+    """
+    if not draft or draft.get('turn') != turn:
+        return []
+    records = draft.get('commands') or []
+    return [from_record(record) for record in records]

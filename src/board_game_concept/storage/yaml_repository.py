@@ -163,6 +163,27 @@ class YamlGameRepository(GameRepository):
     def has_committed(self, number):
         return os.path.exists(self._commit_marker(number))
 
+    # --- work a session has not committed yet
+
+    def _draft_file(self, number):
+        return os.path.join(self.player_path, f'{number}_draft.yaml')
+
+    def read_draft(self, number):
+        return self._read_yaml(self._draft_file(number),
+                               f'the draft held by session {number}')
+
+    def write_draft(self, number, draft):
+        with open(self._draft_file(number), 'w') as file:
+            yaml.safe_dump(draft, file)
+
+    def clear_draft(self, number):
+        # a draft that is not there has already been discarded, which is what
+        # was being asked for
+        try:
+            os.remove(self._draft_file(number))
+        except FileNotFoundError:
+            pass
+
     # --- refused orders
 
     def _rejections_file(self, number):

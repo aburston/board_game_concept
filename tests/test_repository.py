@@ -138,3 +138,74 @@ def test_the_port_says_what_an_implementation_owes(tmp_path):
 
     with pytest.raises(NotImplementedError):
         Half().read_board()
+
+
+# --- work a session has not committed yet
+
+
+def test_a_draft_round_trips(tmp_path):
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    draft = {'turn': 2, 'commands': [{'kind': 'move', 'unit': 'x1',
+                                      'direction': 1}]}
+
+    repository.write_draft(1, draft)
+
+    assert repository.read_draft(1) == draft
+
+
+def test_a_draft_that_was_never_written_reads_as_nothing(tmp_path):
+    """An absent draft is a session with no work outstanding, not an error."""
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+
+    assert repository.read_draft(1) is None
+
+
+def test_a_draft_can_be_cleared_twice(tmp_path):
+    # committing clears a draft, and so does abandoning one. Neither has to
+    # know whether the other happened first
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_draft(1, {'turn': 0, 'commands': []})
+
+    repository.clear_draft(1)
+    repository.clear_draft(1)
+
+    assert repository.read_draft(1) is None
+
+
+def test_each_session_holds_its_own_draft(tmp_path):
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+
+    repository.write_draft(1, {'turn': 0, 'commands': [{'kind': 'commit'}]})
+    repository.write_draft(2, {'turn': 0, 'commands': []})
+
+    assert repository.read_draft(1)['commands'] == [{'kind': 'commit'}]
+    assert repository.read_draft(2)['commands'] == []
+
+
+def test_a_draft_is_not_mistaken_for_a_player(tmp_path):
+    """The two places that classify a player file by its name must skip it.
+
+    Reading a file by guessing at its name is what produced divergence 10 in
+    `SPEC_COVERAGE.md`, so a new file beside the player files is held to it
+    rather than left to inspection.
+    """
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_player(1, {})
+    repository.write_draft(1, {'turn': 0, 'commands': []})
+
+    assert repository.player_numbers() == [1]
+
+
+def test_a_draft_is_not_mistaken_for_published_orders(tmp_path):
+    """A player who has drafted and not committed has not committed."""
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_draft(1, {'turn': 0, 'commands': []})
+
+    assert repository.committed_players() == []
+    assert repository.has_orders(1) is False
