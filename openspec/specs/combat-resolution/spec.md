@@ -43,19 +43,40 @@ applying regardless of the damage those attacks receive in the same round.
 
 ### Requirement: Attacking Costs Energy
 
-The system SHALL charge a unit its attack value in energy for each attack it
-makes, and SHALL prevent the unit from attacking when it cannot pay.
+The system SHALL charge a unit its attack value in energy once for each round of
+a contest in which it attacks, however many opponents it strikes in that round,
+and SHALL prevent the unit from attacking when it cannot pay. A round SHALL be
+all or nothing: a unit that cannot pay makes no attack at all, so no opponent is
+favoured by where it happens to sit in the cell.
 
 #### Scenario: Paying to attack
 
 - **WHEN** a unit attacks
 - **THEN** its energy is reduced by its attack value
 
+#### Scenario: Paying once however many opponents there are
+
+- **WHEN** a unit attacks in a round of a contest against two or more opponents
+- **THEN** its energy is reduced by its attack value once
+- **AND** it deals its attack value in damage to every one of those opponents
+
 #### Scenario: Exhausted unit cannot attack
 
 - **WHEN** a unit's energy is below its attack value
 - **THEN** it deals no damage
 - **AND** its energy is unchanged
+
+#### Scenario: A round is all or nothing
+
+- **WHEN** a unit that cannot pay for a round contests a cell with two or more opponents
+- **THEN** it strikes none of them
+- **AND** which opponents it would have struck does not depend on the order the cell holds them in
+
+#### Scenario: Outlasting a crowd
+
+- **WHEN** a unit with energy for N rounds contests a cell against several opponents
+- **THEN** it can still attack in N rounds
+- **AND** the number of opponents does not shorten how long it can fight
 
 ### Requirement: Damage And Destruction
 
@@ -151,7 +172,8 @@ from when the contest is undecided.
 
 The system SHALL remove destroyed units from play, marking them as no longer on
 the board and taking them out of the cell they held without disturbing any unit
-still standing in it.
+still standing in it. A destroyed unit SHALL be kept as a record of what was
+lost, and SHALL never again act, be acted on, or occupy a cell.
 
 #### Scenario: Removing a destroyed unit
 
@@ -165,6 +187,12 @@ still standing in it.
 - **WHEN** a unit is destroyed in a cell another unit still holds
 - **THEN** the destroyed unit is taken out of that cell
 - **AND** the unit still standing remains in that cell and on the board
+
+#### Scenario: A destroyed unit is kept as a record
+
+- **WHEN** the units of a game are listed after one has been destroyed
+- **THEN** the destroyed unit is listed, marked destroyed and off the board
+- **AND** it is not drawn on any cell of the board
 
 ### Requirement: Inert Units
 
@@ -221,3 +249,56 @@ still lands its own attack for that round and takes no part in later rounds.
 
 - **WHEN** a round begins after a unit has been destroyed
 - **THEN** that unit neither attacks nor is attacked
+
+### Requirement: A Destroyed Unit Never Returns To Play
+
+The system SHALL treat destruction as final. A destroyed unit SHALL NOT be
+deployed, restored to the board, or recreated under its own name for the rest of
+the game, whatever a later order asks for, and no cell falling empty SHALL bring
+it back.
+
+#### Scenario: An order would put a destroyed unit back on the board
+
+- **WHEN** a turn is resolved and an order names a unit that has been destroyed
+- **THEN** the order is not carried out
+- **AND** no unit is created
+
+#### Scenario: The cell a unit died on falls empty
+
+- **WHEN** the cell a destroyed unit occupied when it died is empty at the start of a later turn
+- **THEN** the destroyed unit does not reappear on it
+- **AND** the cell stays empty unless a living unit moves onto it
+
+#### Scenario: Another unit takes the cell a unit died on
+
+- **WHEN** a living unit moves onto the cell a destroyed unit died on
+- **THEN** it holds that cell alone
+- **AND** the destroyed unit does not contest it
+
+#### Scenario: A destroyed unit's name is not reusable
+
+- **WHEN** a player attempts to create a new unit with the name of one of their destroyed units
+- **THEN** the attempt is refused
+- **AND** no unit is created
+
+#### Scenario: A destroyed unit survives a reload as destroyed
+
+- **WHEN** a game holding a destroyed unit is saved and loaded again
+- **THEN** that unit is still destroyed and still off the board
+- **AND** it takes no part in the next turn
+
+### Requirement: An Undecided Contest Is Reported
+
+The system SHALL tell every player whose unit was in a contest that ended
+undecided that it did so, naming the unit and the cell, so that a player can see
+why two units that met achieved nothing and stop paying to repeat it.
+
+#### Scenario: A contest neither side could decide
+
+- **WHEN** a contest ends with more than one unit undestroyed
+- **THEN** each contestant's owner is told that unit's contest ended undecided, and where
+
+#### Scenario: A contest that was decided
+
+- **WHEN** a contest ends with at most one unit undestroyed
+- **THEN** nothing is reported as undecided

@@ -35,7 +35,9 @@ The system SHALL offer the observer no command that alters game state.
 ### Requirement: Observer Command Loop
 
 The system SHALL read commands interactively, ignore blank input, and report
-unrecognised commands without ending the session.
+unrecognised commands without ending the session. When there is no more input to
+read, the session SHALL end as though `exit` had been entered, rather than
+treating the end of input as a blank line and prompting again.
 
 #### Scenario: Blank input
 
@@ -56,6 +58,12 @@ unrecognised commands without ending the session.
 
 - **WHEN** `exit` is entered
 - **THEN** the observer session ends
+
+#### Scenario: End of input
+
+- **WHEN** the observer's input ends without `exit` being entered
+- **THEN** the observer session ends with a success status
+- **AND** it does not prompt again
 
 ### Requirement: Observer Display Commands
 
@@ -105,3 +113,31 @@ resolved since the session started.
 
 - **WHEN** `reload` is entered
 - **THEN** the observer re-reads the game from disk and resumes at the prompt
+
+### Requirement: Observing A Decided Game
+
+The system SHALL let the observer see how far a game has got and how it ended,
+reporting the turn number it is showing and, once the game is decided, the
+winner or the draw.
+
+#### Scenario: Opening a decided game
+
+- **WHEN** the observer opens a game whose outcome has been written
+- **THEN** it reports the winner, or the draw, and the deciding turn number
+- **AND** it can still display the final board and units
+
+#### Scenario: Opening a game still being played
+
+- **WHEN** the observer opens a game that is not yet decided
+- **THEN** it reports no outcome
+- **AND** reports the number of the last turn resolved
+
+#### Scenario: Reloading onto a decided game
+
+- **WHEN** `reload` is entered and the game has been decided since the session started
+- **THEN** the observer reports the outcome after reloading
+
+#### Scenario: The observer never orders
+
+- **WHEN** a game is decided
+- **THEN** the observer's read-only command surface is unchanged

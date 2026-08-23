@@ -10,20 +10,29 @@ source of truth for intended behaviour.
 |---|---|
 | `unit-types` | Unit type definition, statistic ranges, state and direction constants |
 | `board-model` | Board creation, unit placement, name uniqueness, lookup, rendering |
-| `unit-movement` | Movement orders, edge handling, energy cost, entering occupied cells |
-| `combat-resolution` | Contested cells, simultaneous attack rounds, damage, destruction |
-| `turn-commit` | Two-phase turn resolution, the all-players commit barrier, setup vs play |
-| `visibility` | Own units always visible, enemies revealed by contact, per-player views |
+| `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, energy cost |
+| `combat-resolution` | Contested cells, simultaneous attack rounds, damage, destruction is final |
+| `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
+| `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given |
 | `game-persistence` | On-disk game layout, YAML formats, orders as transport |
 | `player-client` | The `board-game-client` command surface |
 | `game-server` | The `board-game-server` command surface and unattended turn cycle |
 | `game-observer` | The `board-game-observer` read-only command surface |
+| `game-outcome` | Player elimination, victory, draw, how a decided game stops, turn numbering |
 
 Validate them with:
 
 ```
 openspec validate --specs --strict
 ```
+
+The invariant every capability is written under is stated in `turn-commit` —
+**no randomness in the resolution of the rules**. `tests/test_determinism.py`
+holds the game to it: hundreds of random boards resolved against every ordering
+of their units, requiring one answer each, plus a check that nothing under
+`domain/` reaches for a random number generator, a clock, or an identity that
+varies between runs. Any proposed rule must be decidable from the board and the
+orders alone.
 
 The scenarios in `player-client`, `game-server` and `game-observer` are covered
 one for one by `tests/test_cli_client_surface.py`,
@@ -54,6 +63,8 @@ found by playing a game.
 Numbers 12 to 21 were found by reading the specs and the source back as one set
 of rules, which is `GAME_RULES.md`, and reproducing each candidate against the
 code rather than inferring it. All were fixed by the `fix-rules-defects` change.
+Numbers 22 and 23 were found afterwards, one by playing a game through the
+console scripts and one by questioning a rule.
 The gap that let the worst of them survive 227 passing tests is that nothing
 played a game on past a unit's death; `tests/test_full_game.py` does.
 
@@ -414,6 +425,52 @@ The last player standing wins, simultaneous elimination is a draw, eliminated
 players stop being waited for, and a decided game stops. Turns are numbered, and
 the number is written with every record published for a turn.
 
+### 22. A role read from a pipe spun forever at end of input — fixed
+
+`read_command` read a line with `sys.stdin.readline()`, which returns the empty
+string at end of input and a newline for a blank line. After stripping, the two
+were the same string, so a role whose input had run dry was told there was
+nothing to do, prompted again, and was told the same thing — forever, at
+whatever speed the terminal could print.
+
+It never showed to a person, who types `exit`. It made the roles unusable from a
+script: piping a set of commands into a client ran them and then filled the pipe
+with prompts.
+
+Reproduction: `printf 'help\n' | board-game-client <game> 1`.
+
+Addressed by the `end-session-on-eof` change: end of input comes back as the
+`exit` command, which every role already ends on, so the fix reaches all three
+without touching one of them. No capability had said what should happen at end
+of input, so the loop was free to do the wrong thing; all three now have a
+scenario saying it ends the session.
+
+### 23. A crowd drained a unit at a rate decided by who was standing in it — fixed
+
+`combat-resolution` charged a unit its attack value in energy "for each attack
+it makes", and a unit in a contested cell attacks every other unit in it. A
+three-way fight therefore cost twice the energy per round, a four-way three
+times, at a rate the unit did not choose and could not see coming.
+
+The same per-opponent charge left a rule decided by list position: a unit that
+could afford some but not all of its attacks struck whichever opponents came
+first in the cell. Three units with attack 2 and energy 2 — one strike each —
+produced six different damage distributions across the six orderings of the
+cell. That is the same order-dependence number 14 removed from movement, one
+layer down.
+
+Reproduction: three units of attack 2, health 10 and energy 2 contesting one
+cell, resolved against every ordering of the cell.
+
+Addressed by the `charge-attack-once-per-round` change: a unit pays its attack
+value once per round of a contest, however many it strikes, and a round is all
+or nothing — so there is no half-paid round left to hand out and no tiebreak to
+arbitrate. The same change writes the no-randomness invariant into `turn-commit`
+and enforces it with `tests/test_determinism.py`, which found two narration
+defects on its way past: whether a move read as "moves" or "engages" was decided
+by which mover was placed first, and a head-on collision named its two units in
+board order. Both are now decided from the plan rather than from loop order.
+
 ## Unspecified, and worth deciding
 
 Nothing, at present. The two entries that stood here — units passing through
@@ -436,7 +493,7 @@ energy never regenerating, identical units always destroying each other, and the
 
 The specs call a board position a **cell**; the source calls it a **square**
 (`Board.squareIsFree`, and comments predating these specs). Both terms mean the
-same thing. Aligning them is a terminology sweep across all ten capabilities,
+same thing. Aligning them is a terminology sweep across all eleven capabilities,
 which no behavioural change should carry, so it is left as its own job.
 
 

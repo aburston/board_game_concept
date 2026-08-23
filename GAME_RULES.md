@@ -391,9 +391,11 @@ die. With attack and health both capped at 1–10, a fight is decided purely by
 
 **Why it is still here.** It is deliberate, and it is what makes a contest's
 outcome independent of which unit is listed first — the same property the
-movement phase was rewritten to get (**R3.4**). Giving one side priority within
-a round would put an ordering rule back into the one place that no longer has
-one.
+movement phase was rewritten to get (**R3.4**), and now an invariant of the game
+(**R1.2**). Giving one side priority within a round would put an ordering rule
+back into a place that no longer has one, so any initiative rule has to decide
+the order from the units themselves rather than from where they stand in a
+list.
 
 **To decide.** Keep simultaneous resolution, or add an initiative statistic and
 accept that a fight then depends on it rather than on the two units alone.
@@ -404,9 +406,9 @@ accept that a fight then depends on it rather than on the two units alone.
 
 Both mean the same thing. The specs under `openspec/specs/` say **cell**; the
 source, the events a player reads, and this file say **square**. Aligning them
-is a mechanical rename across every capability with no behavioural content, and
-carrying it alongside a change that rewrote half those requirements would have
-made both harder to review. It is still its own job.
+is a mechanical rename across all eleven capabilities with no behavioural
+content, and carrying it alongside a change that rewrote half those
+requirements would have made both harder to review. It is still its own job.
 
 ---
 
