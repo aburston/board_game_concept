@@ -7,6 +7,7 @@ client died restoring a unit it had already restored.
 
 import yaml
 
+from board_game_concept.storage.serialise import serialise_units
 from board_game_concept import UnitType, Board, Player
 
 
@@ -15,8 +16,8 @@ def _fighting_board():
     red_type = UnitType('Red', 'R', 1, 10, 100)
     blue_type = UnitType('Blue', 'B', 1, 10, 100)
 
-    p1 = Player('1')
-    p2 = Player('2')
+    p1 = Player(1)
+    p2 = Player(2)
     board = Board(3, 3)
     board.add(p1, 0, 1, 'r1', red_type)
     board.add(p2, 2, 1, 'b1', blue_type)
@@ -57,7 +58,7 @@ def test_a_drawn_out_fight_records_each_unit_once():
 def test_a_view_names_a_unit_seen_repeatedly_once():
     board, p1, _, _, _ = _fighting_board()
 
-    view = yaml.safe_load(board.listUnits(p1))
+    view = yaml.safe_load(serialise_units(board, p1))
     names = [unit['name'] for unit in view['units']]
 
     assert sorted(names) == ['b1', 'r1']
@@ -68,8 +69,8 @@ def test_a_view_names_an_enemy_engaged_by_several_units_once():
     red_type = UnitType('Red', 'R', 1, 10, 100)
     blue_type = UnitType('Blue', 'B', 1, 10, 100)
 
-    p1 = Player('1')
-    p2 = Player('2')
+    p1 = Player(1)
+    p2 = Player(2)
     board = Board(3, 3)
     board.add(p1, 0, 1, 'r1', red_type)
     board.add(p1, 1, 0, 'r2', red_type)
@@ -85,7 +86,7 @@ def test_a_view_names_an_enemy_engaged_by_several_units_once():
     assert sorted(unit.name for unit in blue.seen_by) == ['r1', 'r2']
 
     names = [unit['name']
-             for unit in yaml.safe_load(board.listUnits(p1))['units']]
+             for unit in yaml.safe_load(serialise_units(board, p1))['units']]
     assert names.count('b1') == 1
 
 
@@ -99,7 +100,7 @@ def test_find_unit_answers_rather_than_asserting():
 
 def test_restoring_a_unit_the_board_already_holds_updates_it():
     red_type = UnitType('Red', 'R', 1, 10, 100)
-    p1 = Player('1')
+    p1 = Player(1)
     board = Board(3, 3)
 
     board.add(p1, 0, 0, 'r1', red_type, 10, 100, False, True, restoring=True)
@@ -119,26 +120,26 @@ def test_restoring_a_unit_the_board_already_holds_updates_it():
 def test_restoring_a_view_that_names_a_unit_twice_loads():
     # a view written by an older server names a unit once per contact made
     board, p1, p2, _, _ = _fighting_board()
-    published = board.listUnits(p1)
+    published = serialise_units(board, p1)
     doubled = yaml.safe_load(published)
     doubled['units'] = doubled['units'] + [
-        unit for unit in doubled['units'] if unit['player'] == '2']
+        unit for unit in doubled['units'] if unit['player'] == 2]
 
     seen_board = Board(3, 3)
     _restore(
         seen_board,
         yaml.safe_dump(doubled),
-        {'1': p1, '2': p2},
-        {'1': UnitType('Red', 'R', 1, 10, 100),
-         '2': UnitType('Blue', 'B', 1, 10, 100)})
+        {1: p1, 2: p2},
+        {1: UnitType('Red', 'R', 1, 10, 100),
+         2: UnitType('Blue', 'B', 1, 10, 100)})
 
     assert sorted(unit.name for unit in seen_board.units) == ['b1', 'r1']
 
 
 def test_placing_a_name_a_player_already_holds_still_fails():
     red_type = UnitType('Red', 'R', 1, 10, 100)
-    p1 = Player('1')
-    p2 = Player('2')
+    p1 = Player(1)
+    p2 = Player(2)
     board = Board(3, 3)
     board.add(p1, 0, 0, 'r1', red_type)
 

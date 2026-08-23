@@ -2,172 +2,155 @@
 
 ## Overview
 
-The **Board Game Concept** is a turn-based, multiplayer strategy game framework where players create custom unit types, deploy them on a shared board, and program their actions to compete autonomously. The project implements a client-server architecture that manages game state, validates moves, processes turns, and determines winners through automated game resolution.
+A turn-based, simultaneous-commit strategy game. Players design their own unit
+types, deploy them, and order them each turn; the server waits for every player
+to commit, then resolves all their orders at once.
 
-## Core Purpose
+`openspec/specs/` is the source of truth for what the game does.
+`SPEC_COVERAGE.md` records where the code has diverged from it and what was
+done about each. This file describes how the code is arranged.
 
-This module demonstrates:
-- **Custom Unit Creation**: Players define their own unit types with configurable stats (attack, health, energy, movement speed)
-- **Distributed Gameplay**: Multiple players interact through a centralized server that coordinates commits and turn resolution
-- **Autonomous Gameplay**: Once units are deployed and programmed, they execute their strategies automatically
-- **Game Observation**: Real-time observation of game state from a neutral perspective
+## Layout
 
-## Architecture Components
+```
+src/board_game_concept/
+    domain/     the rules of the game
+    service/    what a caller may ask of a game, and when
+    storage/    where a game is kept
+    cli/        the three interactive roles
+```
 
-### 1. **BoardGameConcept.py** - Core Game Engine
-Defines the fundamental game objects and rules:
+Each package depends only on the ones below it. Nothing in `domain` knows that
+games are stored anywhere or that anyone is watching; nothing in `service`
+names a file; nothing below `cli` reads a line of input or prints.
 
-- **Empty**: Represents unoccupied board spaces
-- **Player**: Player abstraction with unique player number identification
-- **UnitType**: Defines unit specifications including:
-  - Name and symbol (single character representation)
-  - Attack power (1-10 damage per attack)
-  - Health (total hit points)
-  - Energy (movement/action resource)
-  - Speed (frequency of movement: 1-10, where 10 = once per tick, 1 = once every 10 ticks)
-  - Direction constants (NORTH, EAST, SOUTH, WEST)
-  - State constants (INITIAL, MOVING, NOP for no-operation)
-- **Board**: Game board grid management with size configuration (customizable X and Y dimensions)
+The split exists so that the pieces can be replaced one at a time - a database
+in place of the YAML files, an HTTP API alongside the terminal - without
+touching the parts that do not care.
 
-### 2. **GameData.py** - Game State Manager
-Manages all persistent game data and provides data access methods:
+### domain - the rules
 
-- Maintains player information and unit definitions
-- Tracks board state and board visibility (what each player can see)
-- Stores unprocessed moves pending commit
-- Provides getter/setter methods for game state components
-- Handles data persistence to disk (YAML format)
-- Manages player-specific board views based on unit positions and visibility
+- **`cell.py`** - `Empty`, what a square holds when nothing else does.
+- **`player.py`** - `Player`, identified by an integer number.
+- **`unit.py`** - `UnitType`, which is both a type and, once copied onto the
+  board, a unit: name, symbol, attack, health, energy, plus the direction and
+  state constants. Holds movement, combat and contest resolution.
+- **`board.py`** - `Board`, the grid and the units on it. Placement, lookup,
+  visibility bookkeeping, and `commit`, which resolves a turn in two phases:
+  every unit moves, and only then is combat resolved in every contested square.
+- **`events.py`** - what happened while a turn was resolved. `Board.commit`
+  returns these in order; whoever called it decides whether to show them.
 
-### 3. **server.py** - Game Coordinator & Administrator
-The server runs continuously as player 0 (game administrator) and performs:
+The engine performs no I/O. It does not print, does not write YAML, and does
+not know how it is drawn.
 
-- **Game Initialization**: Loads board configuration and player data from files
-- **State Management**: Loads and maintains current game state from disk
-- **Turn Processing**: Waits for all players to commit their moves, then applies them simultaneously
-- **Synchronization**: Acts as the commit authority—applies actions only when all players have committed
-- **Game Resolution**: Determines game state after each turn (active units, winners, losers)
+### service - the use cases
 
-Command support includes:
-- `add player` - Register new players to the game
-- `load board` - Import board configuration from files
-- `load player` - Import player definitions and units
-- `set board` - Define board dimensions (before game start)
-- `show board` - Display current board state
-- `show player` - Display player information
-- `show types` - Display defined unit types
-- `commit` - Process all pending moves
+- **`commands.py`** - one node per thing a caller can ask for. Parsing produces
+  these and the service layer acts on them, so both are named for the same
+  thing. They carry their children, ready for a grammar that nests.
+- **`games.py`** - one function per command: sizing the board, registering
+  players, loading configuration, defining types, deploying units, ordering
+  moves. Each carries the command out or refuses it by raising. The rules about
+  *when* - only before the game starts, only after the first turn, only your
+  own units - are stated here, once.
+- **`game.py`** - `Game`, a game as one session sees it: the board, the
+  players, what this player can see, what was refused last turn. Knows how to
+  read a game through a repository.
+- **`turn.py`** - publishing orders, resolving a turn, and the commit barrier.
+  The barrier lives here because "every player has committed" is a rule about
+  the game, not a fact about files.
+- **`errors.py`** - what goes wrong, raised rather than printed, so a caller
+  that is not a terminal can decide what to do about it.
 
-### 4. **client.py** - Player Interface
-Provides interactive command-line interface for players (non-administrator):
+### storage - where a game is kept
 
-- **Unit Management**: Create and manage custom unit types
-- **Unit Deployment**: Place units on the board at specific coordinates
-- **Unit Commands**: Issue move commands (north, south, east, west) to units
-- **Information Display**: View player stats, unit types, units, and board state
-- **Commit Protocol**: Send final set of moves to server for processing
+- **`repository.py`** - `GameRepository`, the operations a game's storage has
+  to offer. Reads and writes, no rules. Everything above is written against
+  this rather than against a directory of YAML.
+- **`yaml_repository.py`** - the layout `game-persistence` describes: shared
+  data under `data`, per-player files under `players`, one directory per game
+  number. The only module that knows any of those names.
+- **`serialise.py`** - units as YAML. The on-disk format, which the roles also
+  print verbatim for `show units`.
+- **`notify.py`** - waking the other side of the file transport. Each side
+  blocks on a FIFO until the other signals; the signal is a hint over a
+  re-checked condition, so losing one costs latency and not correctness.
 
-Command support includes:
-- `add type` - Define new unit types with stats
-- `add unit` - Deploy a unit on the board
-- `show player` - View player information
-- `show types` - View all known unit types (own and observed enemy types)
-- `show units` - View all known units (own and observed enemy units)
-- `show board` - Display board from player's perspective
-- `move` - Issue movement commands to units
-- `commit` - Commit turn actions to server
+### cli - the three roles
 
-### 5. **observer.py** - Neutral Game Observer
-Provides read-only observation of game state:
+- **`grammar.py`** - the language all three roles share, described once.
+- **`parser.py`** - a recursive descent parser over it. Answers questions about
+  shape - how many arguments, which are numbers, which words are directions -
+  and never about the game.
+- **`roles.py`** - which part of the grammar each role may use. The observer is
+  read-only because it is not given the commands that write.
+- **`help.py`** - generated from the grammar and the role's table, so it lists
+  what the role will actually accept.
+- **`render.py`** - the board as a grid of squares between rules.
+- **`session.py`** - what all three sessions share: turning a line into a
+  command, reporting a refusal, and failing when the game cannot be read.
+- **`server.py`**, **`client.py`**, **`observer.py`** - the roles themselves,
+  reduced to what is genuinely theirs.
 
-- Monitors all game activity without player affiliation
-- Displays complete game state information
-- Tracks pending moves before commit
-- Updates dynamically as the game progresses
+## The three roles
 
-Command support includes:
-- `reload` - Refresh game data from disk
-- `show players` - Display all player information
-- `show types` - Display all unit types
-- `show units` - Display all units on board
-- `show pending` - Display actions queued for next commit
-- `show board` - Display full board state
+| | Who | Does |
+|---|---|---|
+| `board-game-server` | player 0, the administrator | sets the board size, registers players, then runs unattended as the commit authority |
+| `board-game-client` | one player | defines types, deploys units, orders moves, commits |
+| `board-game-observer` | nobody | watches, and can reload |
 
-## Game Flow
+`board-game-test-suite` runs a standalone harness covering the same ground as
+`tests/test_basic.py`.
 
-1. **Initialization Phase**:
-   - Server (player 0) loads board configuration and player data files
-   - Players are registered with their unit type definitions
-   - Board dimensions are set
+## How a turn goes
 
-2. **Unit Definition Phase**:
-   - Each player defines custom unit types using the client
-   - Units are created with specific attack, health, and energy values
+1. The administrator sizes the board and registers the players, then commits.
+   That first commit ends setup.
+2. Each player defines their unit types and deploys their units, then commits.
+   Committing publishes their orders and signals the server.
+3. The server waits until every player has committed, then applies all their
+   orders together, resolves movement, resolves combat in every contested
+   square, and publishes the result: the board, and what each player is
+   entitled to see.
+4. An order it will not carry out is refused and reported back to the player
+   who gave it, rather than taking the turn down.
+5. Players are woken, and order the next turn.
 
-3. **Deployment Phase**:
-   - Players deploy units on the board at specific coordinates
-   - Each player issues movement and action commands to their units
+## Storage
 
-4. **Commit Phase**:
-   - Players issue `commit` command to finalize their turn
-   - Server waits for all players to commit
-   - Once all commits received, server applies moves simultaneously
+Games live under `games/_<gameno>/`, split into `data` for what is shared and
+`players` for what is per-player. The filesystem is also the transport between
+the processes: a player publishes orders by writing a file, and the server
+publishes results the same way.
 
-5. **Resolution Phase**:
-   - Game rules are applied (movement, attacks, damage)
-   - Units with health ≤ 0 are eliminated
-   - Board state is updated for next turn
+Where that root is, is given to the repository rather than read from the
+process working directory.
 
-6. **Win Condition**:
-   - Game continues until only one player has functional units remaining
-   - Last player with a surviving unit wins
+## Testing
 
-## Data Persistence
+```
+pytest
+```
 
-- **YAML Format**: Game configuration and state stored in YAML files
-- **File-Based Storage**: Player configurations, board definitions, and game state use disk files
-- **Directory Structure**: Game data organized by game number for multi-game support
+- `tests/test_basic.py`, `test_combat_stalemate.py`,
+  `test_duplicate_seen_units.py`, `test_turn_events.py` - the engine.
+- `tests/test_parser.py` - the grammar, with no game behind it.
+- `tests/test_repository.py` - the storage seam.
+- `tests/test_turn_notification.py` - waking rather than polling.
+- `tests/test_cli_server_surface.py`, `test_cli_client_surface.py`,
+  `test_cli_observer_surface.py` - one test per scenario in the three CLI
+  capabilities, driving each role as a subprocess. These are what any change to
+  the command surface is checked against.
+- `tests/test_server_client_integration.py` - two roles against one game.
 
 ## Dependencies
 
-- **Python 3.x**: Core language
-- **PyYAML**: YAML file parsing and generation
-- **board**: Board game library for game mechanics
-- **expect**: Used in test suite for interactive testing automation
-- **dos2unix**: Line-ending conversion for cross-platform compatibility
+Python 3.10 or later and PyYAML. Nothing else.
 
-## Testing Framework
+## Not built yet
 
-- **Test Suite**: Automated tests using expect scripts for interactive command sequences
-- **Test Scenarios**:
-  - Server interactive startup
-  - Server interactive game load
-  - Player interactive setup
-  - Server automated load
-- **Test Data**: Sample board and player configuration files (board.yaml, player_1.yaml, player_2.yaml)
-
-## Key Design Patterns
-
-1. **Client-Server Architecture**: Distributed game coordination through centralized server
-2. **Observer Pattern**: Neutral observer monitors game state without player bias
-3. **State Machine**: Game progresses through defined phases (initialization → deployment → resolution)
-4. **Synchronization Protocol**: Atomic commits ensure simultaneous move processing
-5. **Visibility Model**: Players have limited board views based on their unit positions
-
-## Future Enhancements
-
-1. **Web Service Integration**: Flask-based REST API to expose CLI commands
-2. **Database Persistence**: Migration from file-based to SQLite storage
-3. **Game Initialization Script**: Dedicated setup utility (`initgame.py`)
-4. **Data Model Refactoring**: Separation of database concerns from GameData class
-
-## Use Cases
-
-- **Game Strategy Development**: Test and refine unit strategies
-- **AI Agent Training**: Program units with different AI strategies and observe competition
-- **Educational Platform**: Learn game design, distributed systems, and turn-based mechanics
-- **Multiplayer Gaming**: Support for multiple concurrent players over network (with web service)
-
-## Summary
-
-The Board Game Concept is a flexible, extensible framework for creating and hosting turn-based strategic games. It abstracts the complexity of multiplayer game coordination while providing a simple interface for players to define custom units and issue commands. The modular design allows for future enhancements while maintaining the core gameplay loop of simultaneous-move commitment and atomic turn resolution.
+The win condition, an HTTP API, a web interface, accounts, and the unit
+programming the README describes. See `SPEC_COVERAGE.md` for what is documented
+but absent.

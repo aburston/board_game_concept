@@ -10,7 +10,7 @@ from pathlib import Path
 if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from board_game_concept import UnitType, Board, Player, Empty, GameData
+from board_game_concept import UnitType, Board, Player, Empty, Game, YamlGameRepository
 
 
 def test_imports():
@@ -21,7 +21,8 @@ def test_imports():
         assert Board is not None
         assert Player is not None
         assert Empty is not None
-        assert GameData is not None
+        assert Game is not None
+        assert YamlGameRepository is not None
         print("✓ All modules imported successfully")
         return True
     except Exception as e:
@@ -161,11 +162,11 @@ def test_empty_cell():
 
 
 def test_game_data_initialization():
-    """Test GameData initialization"""
-    print("\n[TEST 7] GameData Initialization")
+    """Test opening a game"""
+    print("\n[TEST 7] Opening A Game")
     try:
-        game_data = GameData('test-game-001', 0)
-        print(f"✓ GameData initialized for game 'test-game-001'")
+        game_data = Game(YamlGameRepository('test-game-001'), 0)
+        print(f"✓ game 'test-game-001' opened")
 
         # Test accessing game data methods
         players = game_data.getPlayers()
@@ -176,7 +177,7 @@ def test_game_data_initialization():
 
         return True
     except Exception as e:
-        print(f"✗ GameData initialization failed: {e}")
+        print(f"✗ opening a game failed: {e}")
         return False
 
 
@@ -229,7 +230,9 @@ def test_attack_on_entering_occupied_cell():
         assert type(square) is UnitType
         assert square.name == 'a1'
         assert square.player == p1
-        assert square.health == 3
+        # combat is multi-round attrition, so the attacker takes two rounds of
+        # the defender's attack before the defender falls
+        assert square.health == 1
         assert defender.destroyed is True
 
         print('✓ Combat on entry resolved and victor occupies the target cell')
@@ -285,7 +288,7 @@ def main():
     results.append(("Board Creation", test_board_creation()))
     results.append(("Empty Cell", test_empty_cell()))
     results.append(
-        ("GameData Initialization",
+        ("Opening A Game",
          test_game_data_initialization()))
     results.append(("UnitType Constants", test_unit_type_state_constants()))
     results.append(("Attack on Occupied Cell",

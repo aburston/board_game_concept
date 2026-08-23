@@ -1,6 +1,6 @@
 import pytest
 
-from board_game_concept import UnitType, Board, Player, Empty, GameData
+from board_game_concept import UnitType, Board, Player, Empty, Game, YamlGameRepository
 
 
 def test_imports():
@@ -8,7 +8,8 @@ def test_imports():
     assert Board is not None
     assert Player is not None
     assert Empty is not None
-    assert GameData is not None
+    assert Game is not None
+    assert YamlGameRepository is not None
 
 
 def test_player_creation():
@@ -75,8 +76,8 @@ def test_empty_cell_representation():
     assert str(empty) == '#'
 
 
-def test_game_data_initialization():
-    game_data = GameData('test-game-001', 0)
+def test_opening_a_game():
+    game_data = Game(YamlGameRepository('test-game-001'), 0)
 
     assert game_data.getPlayers() == {}
     assert game_data.getNewGame() is False

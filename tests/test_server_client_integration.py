@@ -105,14 +105,14 @@ class TestServerClientIntegration(unittest.TestCase):
 
     def start_server(self, args):
         proc = InteractiveProcess(
-            [str(ROOT / 'src' / 'board_game_concept' / 'server.py')] + args,
+            [str(ROOT / 'src' / 'board_game_concept' / 'cli' / 'server.py')] + args,
             cwd=TEST_DIR)
         self.processes.append(proc)
         return proc
 
     def start_client(self, game_number, player_number):
         proc = InteractiveProcess(
-            [str(ROOT / 'src' / 'board_game_concept' / 'client.py'), game_number, str(player_number)],
+            [str(ROOT / 'src' / 'board_game_concept' / 'cli' / 'client.py'), game_number, str(player_number)],
             cwd=TEST_DIR)
         self.processes.append(proc)
         return proc

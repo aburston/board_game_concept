@@ -18,12 +18,12 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["board_game_concept"]
+include = ["board_game_concept", "board_game_concept.*"]
 
 [project.scripts]
-board-game-client = "board_game_concept.client:main"
-board-game-server = "board_game_concept.server:main"
-board-game-observer = "board_game_concept.observer:main"
+board-game-client = "board_game_concept.cli.client:main"
+board-game-server = "board_game_concept.cli.server:main"
+board-game-observer = "board_game_concept.cli.observer:main"
 board-game-test-suite = "board_game_concept.test_suite:main"
 
 [project.optional-dependencies]
