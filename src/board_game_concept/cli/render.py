@@ -75,6 +75,7 @@ def print_types(players):
         print(line)
 
 
-def print_players(players):
+def print_players(players, eliminated=()):
     for number in players:
-        print(f"number: {number}")
+        out = ', eliminated' if number in eliminated else ''
+        print(f"number: {number}{out}")

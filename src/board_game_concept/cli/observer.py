@@ -13,7 +13,8 @@ from board_game_concept.cli.render import (print_board, print_players,
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.session import load_game, read_command
+from board_game_concept.cli.session import (describe_outcome, load_game,
+                                            read_command)
 
 ROLE = roles.OBSERVER
 
@@ -49,9 +50,13 @@ def main(argv=None):
         load_game(data)
 
         players = data.getPlayers()
-        player_obj = data.getPlayerObj(player_number)
         board = data.getBoard()
-        seen_board = data.getSeenBoard()
+
+        outcome = data.getOutcome()
+        if outcome is not None:
+            print(describe_outcome(outcome))
+        else:
+            print(f"turn: {data.getTurnNumber()}")
 
         # interactive mode
         while True:
@@ -66,26 +71,22 @@ def main(argv=None):
 
             elif command.kind == 'show':
                 if command.subject == 'board':
-                    if seen_board is not None:
-                        print_board(seen_board)
-                    elif board is None:
+                    if board is None:
                         print("must create board - set size and commit")
                     else:
-                        print_board(board, player_obj)
+                        print_board(board)
 
                 elif command.subject == 'types':
                     print_types(players)
 
                 elif command.subject == 'players':
-                    print_players(players)
+                    print_players(players, data.getEliminated())
 
                 elif command.subject == 'units':
-                    if seen_board is not None:
-                        print(serialise_units(seen_board))
-                    elif board is None:
+                    if board is None:
                         print("must create board - set size and commit")
                     else:
-                        print(serialise_units(board, player_obj))
+                        print(serialise_units(board))
 
                 elif command.subject == 'pending':
                     for player in players.keys():

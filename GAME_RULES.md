@@ -1,15 +1,14 @@
 # The Rules of the Game
 
 Every rule the game actually plays by, stated in one place, in the order you
-meet them. Then a list of the places where the rules are unclear, weak, or
-where two documents say different things.
+meet them. Then the questions that are still open — the ones that are design
+choices rather than defects.
 
-Sources: `openspec/specs/` is the stated intent, `src/board_game_concept/` is
-what runs. Where they disagree, this file says so and says which is which.
-Every claim in Part 2 was reproduced against the code, not inferred from
-reading it; the reproduction is given with each one.
+Sources: `openspec/specs/` is the stated intent and `src/board_game_concept/` is
+what runs; the two agree. `SPEC_COVERAGE.md` records where they did not, and
+what was done about each.
 
-Rules are numbered `R1.1`, questions `Q1`, so you can point at one.
+Rules are numbered `R1.1`, open questions `Q1`, so you can point at one.
 
 ---
 
@@ -27,7 +26,8 @@ always resolves the same way.
 (player 0, the administrator, and the commit authority), one **client** per
 player, and any number of read-only **observers**.
 
-**R1.3** The game does not end. See **Q7**.
+**R1.3** The game ends when one player is the last with a unit left standing,
+or in a draw when the last players are wiped out together. See **R7**.
 
 ---
 
@@ -59,13 +59,14 @@ the game has started.
 | `energy` | integer, **1 to 100** |
 
 A type is rejected at the moment it is defined, not later during play. Types are
-private to the player who defined them — in intent; see **Q5**.
+private to the player who defined them: an opponent learns of one only by
+fighting a unit of it (**R6.2**).
 
 **R2.5 What the three statistics mean.**
 - **attack** — damage dealt per attack, *and* the energy that attack costs.
 - **health** — total damage the unit absorbs before it is destroyed.
 - **energy** — the single resource spent by both moving and attacking. It is
-  never replenished (**Q8**).
+  never replenished (**Q1**).
 
 **R2.6 Deploying units.** `add unit <type> <name> <x> <y>` creates one unit as a
 copy of one of your own types, at those coordinates. It is refused if:
@@ -76,8 +77,8 @@ copy of one of your own types, at those coordinates. It is refused if:
   deployed this turn.
 
 **R2.7 Unit names.** A name must be unique **within one player's** units. Two
-different players may both have a unit called `scout` — but see **Q6**, which is
-a live defect in exactly that case.
+different players may both have a unit called `scout`; an order is always
+resolved against the units the ordering player owns.
 
 **R2.8 Setup ends at your first commit.** Before your first `commit` you may
 define types and deploy units but may not order movement. After it you may order
@@ -89,9 +90,11 @@ reinforce later.
 ## R3. The turn
 
 **R3.1 Simultaneous commit.** Every player issues all their orders, then
-`commit`. The server holds the turn open until **every** registered player has
-committed, then applies all orders together. Nobody gains from committing early
-or late — in intent; see **Q3**.
+`commit`. The server holds the turn open until **every player still in the
+game** has committed, then applies all orders together. A player who has been
+eliminated (**R7.1**) is not waited for. Nobody gains from committing early or
+late, and nobody gains from the order the server happens to read the orders
+in.
 
 **R3.2 Commits are final.** Once you commit you cannot withdraw or amend. Your
 client blocks and waits for the server rather than accepting further orders.
@@ -100,27 +103,38 @@ client blocks and waits for the server rather than accepting further orders.
 cleared and its state returns to `NOP`. An order never carries over to the next
 turn. A unit given no order stays where it is.
 
-**R3.4 A turn resolves in two phases, in this order:**
-1. **Movement** — every unit on the board resolves its order, and squares that
-   end up holding more than one unit are collected.
-2. **Combat** — every one of those squares is fought out to a conclusion.
+**R3.4 A turn resolves in three phases, in this order:**
+1. **Deployment** — units waiting to be placed are put on the board.
+2. **Movement** — every unit's destination is worked out against the board *as
+   the turn began*, and then every move is applied at once. Squares that end up
+   holding more than one unit are collected.
+3. **Combat** — every one of those squares is fought out to a conclusion.
 
-Both phases complete inside the same turn. A fight never carries over.
+Because destinations are decided before any move is applied, the outcome of a
+turn never depends on the order the units happen to be held in. Both later
+phases complete inside the same turn: a fight never carries over.
 
 **R3.5 Deployment happens on the turn you commit it.** A newly created unit is
 placed on the board when the turn resolves. If its square is taken by then, the
 deployment is refused, no unit is created, and the turn resolves without it —
-the turn is not failed.
+the turn is not failed. When **two** deployments contend for one square in the
+same turn, **both** are refused, so neither player gains from being read
+first.
 
 **R3.6 A refused order does not stop the turn.** The server refuses the single
 order, records it against that player, and carries on. Each player is written a
 list of what was refused; the client prints it before taking the next command.
 The list describes only the turn just resolved — it does not accumulate.
 
-**R3.7 Not every failure is reported.** Only orders the server refuses while
-*applying* them produce a rejection. Orders that fail during the *movement
-phase* — a move nobody can pay for, a move off the board, an engagement refused
-for lack of energy — are dropped in silence. See **Q11**.
+**R3.7 Every order that does nothing says so.** Anything of yours the turn
+would not carry out is reported back to you: an order refused while it was
+being applied, a move nobody could pay for, a move off the board, and a contest
+of yours that ended undecided. Each names the unit, its square, and the reason.
+
+**R3.8 Turns are numbered.** Resolved turns count from 1, and the number is
+recorded with the board, with each player's view, and with each player's list of
+refused orders, so every record says which turn it describes. The
+administrator's commit that ends setup is not a turn and is not numbered.
 
 ---
 
@@ -138,41 +152,57 @@ No diagonals, no multi-square moves, no standing order.
 
 **R4.2 You may only order your own units, and only units on the board.**
 
-**R4.3 Moving costs energy.** The cost is `energy // 100 + 1`. Since energy is
-capped at 100, that is **1 for any unit with 0–99 energy, and 2 for a unit
-sitting at exactly 100**. In practice every move costs 1, except the very first
-move of a unit built with full 100 energy. See **Q4** — this formula almost
-certainly does not do what it looks like it does.
+**R4.3 Moving costs energy.** A move costs **1 energy**, always, whatever the
+unit finds at its destination. A unit's energy is therefore the number of
+actions it has left in it.
 
 **R4.4 You pay for every move that happens, including starting a fight.**
 Stepping onto an occupied square is charged exactly like stepping onto an empty
 one.
 
 **R4.5 If you cannot pay, you do not move.** The unit stays put and its energy
-is unchanged. The order is still consumed and is not retried next turn.
+is unchanged. The order is still consumed and is not retried next turn, and the
+refusal is reported to you.
 
 **R4.6 The board edge stops you.** A unit ordered off the board stays at the
-edge square, pays nothing, and its order is consumed. The turn continues
-normally for everyone else.
+edge square, pays nothing, and its order is consumed. The refusal is reported to
+you, and the turn continues normally for everyone else.
 
-**R4.7 What is on the destination square decides what happens:**
+**R4.7 What a unit finds where it lands decides what happens.** Because every
+destination is worked out before any move is applied, this is judged on where
+units *finish* the turn, not on where they started it:
 
-| Destination | Result |
+| The destination, once every move has been applied | Result |
 |---|---|
-| Empty | The unit moves in and its old square becomes empty. |
-| Already claimed by other units moving in this turn | The unit joins them; the square will be contested. |
-| Held by a standing unit | **Engagement.** The unit moves in and both are put in contention — but only if it has energy **≥ its attack value** *and* can pay the move cost. If either is short, nothing happens at all: no move, no fight, no message. |
+| Held by nobody else | The unit moves in alone and its old square becomes empty. |
+| Held by other units that also moved in | They contest the square. |
+| Held by a unit that did not move | They contest the square. |
 
-**R4.8 There is no way to stack with your own units.** Two of your own units on
+A unit needs only the fare — 1 energy — to arrive. A unit that cannot then
+afford to attack still arrives, and is inert in the fight it has walked into.
+
+**R4.8 A unit that follows another out of its square arrives cleanly.** If the
+unit standing in your destination is itself moving away this turn, you simply
+take the square: nothing is contested.
+
+**R4.9 Two units ordered into each other's squares collide.** They do not pass
+through one another. Neither completes its move, both pay the fare, and they
+fight where they stand:
+- one survivor → it completes its move into the square the loser held;
+- no survivor → both squares are left empty;
+- both survive → each stays in the square it started the turn in.
+
+**R4.10 There is no way to stack with your own units.** Two of your own units on
 one square fight each other (**R5.7**).
 
 ---
 
 ## R5. Combat
 
-**R5.1 A fight is any square holding more than one unit** at the end of the
-movement phase, however they got there — one attacking a standing unit, or
-several stepping into the same empty square at once.
+**R5.1 A fight is any square holding more than one unit** once every move has
+been applied, however they got there — one unit stepping onto another, or
+several stepping into the same empty square at once. A head-on collision
+(**R4.9**) is fought on the same terms.
 
 **R5.2 Combat runs in rounds, and it is simultaneous.** In each round, the units
 undestroyed **at the start of the round** each attack **every other** unit
@@ -207,21 +237,24 @@ will kill each other on exactly the same terms as enemies.
 | More than one survivor (**undecided**) | Every survivor that *moved in* this turn goes back to the square it came from. A survivor that was already standing there keeps the square. |
 | A survivor whose old square was taken during the turn | It stays on the contested square, on the board, and that square counts as occupied to anyone entering it. |
 
-**R5.9 Destroyed units leave the board.** They are marked off-board, taken out
-of their square without disturbing anyone still standing in it, and take no part
-in later movement or combat. They remain in the saved game and are still listed
-by `show units` with `destroyed: True`. See **Q1** — in practice they come back.
+**R5.9 Destruction is final.** A destroyed unit is marked off-board and taken
+out of its square without disturbing anyone still standing in it. It takes no
+part in any later turn, it can never be deployed or restored to the board, its
+name cannot be reused, and no square falling empty brings it back. It stays in
+the record as a casualty (**R6.6**).
 
 **R5.10 Inert units.** A unit whose energy has fallen below its attack value can
 no longer attack or defend itself, but is *not* removed. It stays on the board,
-holds its square, blocks movement, forces anyone entering to attack, and can
-only be cleared by being killed. See **Q8**.
+holds its square, blocks movement, and can only be cleared by being killed. It
+still keeps its owner in the game (**R7.1**). Energy is never replenished, so
+this is permanent — see **Q1**.
 
 **R5.11 Two consequences worth spelling out, because they decide how the game
 plays:**
 - **Identical units always destroy each other.** All attacks in a round land
   regardless of damage taken in that round, so a mirror match is mutual
   annihilation, never a win.
+  See **Q2** — this is a design choice, not an accident.
 - **A fight is decided entirely by `ceil(health ÷ attack)`** — how many rounds
   each side needs to kill the other. Equal counts kill both. Energy only decides
   whether a unit can fight at all.
@@ -233,31 +266,48 @@ plays:**
 **R6.1 You always see your own units,** wherever they are.
 
 **R6.2 You see an enemy unit only by fighting it.** Visibility is recorded when
-two units actually *exchange attacks* in a contested square. Merely being next
-to an enemy, or passing through it (**Q3**), reveals nothing.
+two units actually *exchange attacks*, whether in a contested square or in a
+head-on collision (**R4.9**). Merely being next to an enemy reveals nothing.
+Contact also reveals that unit's **type**, with the statistics its owner
+designed it with.
 
 **R6.3 Visibility is not cumulative.** Every unit's record of what it has seen is
 wiped at the start of each turn's resolution. An enemy you fought last turn and
 did not touch this turn drops off your board and out of `show units`.
 
-**R6.4 The server publishes each player a view** of what they may see, and the
-client draws that in preference to the full board. A unit fought by several of
-your units is still named once.
+**R6.4 The server publishes each player a view** of what they may see, and that
+view is the *only* board the client is given — it never reads the record of
+every unit. A unit fought by several of your units is still named once.
 
 **R6.5 The observer sees everything** — all units, all squares, all types,
 regardless of ownership or contact.
 
-**R6.6 Hidden information is presentation, not enforcement.** The client process
-loads the whole board, and `show types` lists every player's types. See **Q5**.
+**R6.6 Your casualties stay on your list.** Your own destroyed units keep being
+listed for you, marked destroyed and off the board, so you can see what you have
+lost. They are never drawn on a square. An enemy unit you destroyed appears in
+your view for that turn only, and drops out like any other contact (**R6.3**).
 
 ---
 
 ## R7. Ending the game
 
-**R7.1 There is no end.** No win, no loss, no draw, no turn limit, no
-game-over. The server's turn cycle runs until somebody stops it. `README.md`,
-`design.md` and `MODULE_DESCRIPTION.md` all describe a win condition; no
-capability specifies one and no code implements one. See **Q7**.
+**R7.1 You are eliminated when you have nothing left standing.** A player is out
+once every unit they own has been destroyed. A unit that is on the board and not
+destroyed keeps you in, whatever its energy: an inert unit is spent, not lost. A
+player who deployed nothing is out on the first turn with units on the board.
+
+**R7.2 The last player standing wins.** The game is decided at the end of the
+turn in which every other player becomes eliminated. If the last players are
+wiped out together, it is a **draw**.
+
+**R7.3 A game with fewer than two registered players is never decided.** There
+is nobody to be the last player standing against; a solo game is a sandbox.
+
+**R7.4 A decided game stops.** No further turn is resolved and no further order
+is accepted. The server reports the result and exits; a client reports it and
+refuses orders and commits, though it will still show you the final board; the
+observer reports it too. An eliminated player is told they are out and stops
+being waited for at the commit barrier.
 
 ---
 
@@ -286,349 +336,62 @@ continues.
 ---
 ---
 
-# Part 2 — What is not clear, and what is wrong
+# Part 2 — What is still open
 
-Ordered roughly by how much it matters. Each item says what happens today, how
-to see it, why it matters, and what you might decide instead.
-
----
-
-## Q1. Destroyed units come back to life
-
-**What happens.** Every turn, a client republishes *all* of its units as its
-order file — including its dead ones. A dead unit is republished in the `INITIAL`
-state, which the server reads as *deploy this unit*. While the square it died on
-is still occupied, the server refuses the order. The first turn that square is
-empty when orders are applied, the server **creates the unit again, at full
-health and full energy**, standing where it died.
-
-Worse, `Board.add` appends the unit to the board's unit list *before* it checks
-for a duplicate name, so even the "refused" case can leave a live unit behind.
-
-**Reproduction.** Two units of equal stats destroy each other on a square. Play
-one more turn in which nothing moves onto that square. The dead unit is on the
-board again, at full strength. Confirmed both ways: via mutual destruction (the
-duplicate-name path) and via a killer that walks away and leaves the square
-empty (the free-square path).
-
-**Why it matters.** It contradicts `combat-resolution` — *Destroyed Units Leave
-The Board*: "it is not considered for movement or combat in later turns" — and
-`game-persistence` — *A refused order leaves no unit behind*. It makes the game
-unplayable past the first casualty. All 227 tests pass, because nothing plays a
-game on past a unit's death.
-
-**To decide.** Presumably "dead is permanently dead". If so the fix has three
-parts: a client should not republish destroyed units as orders; a destroyed unit
-should never be restored in the `INITIAL` state; and `Board.add` should validate
-completely before it registers anything.
+The seventeen questions this file first raised were answered by the
+`fix-rules-defects` change, which is archived under `openspec/changes/`. Fourteen
+of them were defects and are fixed; their reproductions and what was done about
+each are in `SPEC_COVERAGE.md`. Three were never defects. They are design
+choices, and they are still yours to make.
 
 ---
 
-## Q2. A player is told about a rejected order every turn, forever
+## Q1. Energy never comes back, so an exhausted unit is a permanent obstacle
 
-**What happens.** The same root cause as **Q1**. From the turn a unit dies
-onward, its owner sees, at every single prompt:
+**What happens.** Energy is spent by moving and by attacking and is never
+replenished. A unit that spends down below its attack value can still shuffle
+around at 1 energy a move but can never fight again; at 0 energy it can do
+nothing at all — while still holding its square, still blocking, and still
+killable (**R5.10**). Two inert units can hold a square against each other for
+the rest of the game.
 
-```
-1 order(s) rejected last turn:
-  - x1 at (1,0): unit x1 already exists for player 1
-```
+**Why it is still here.** Attrition to exhaustion is a coherent design, and it
+now has somewhere to end: the win condition (**R7**) decides a game whose units
+have run down, rather than leaving it running forever. Changing it changes how
+every game plays.
 
-**Why it matters.** The rejection channel is the only way the server can tell a
-player anything. Filling it with a message about a unit that died ten turns ago
-makes it useless for the messages that matter.
-
----
-
-## Q3. Turn resolution is not actually simultaneous
-
-**What happens.** `Board.commit` resolves each unit's move in the order the
-units were **registered**, not all at once. What a unit finds on its destination
-square depends on whether the unit standing there has already had its own move
-resolved. Two things follow:
-
-- **Order decides whether a fight happens at all.** Two friendly units in a row,
-  both ordered east: if the rear one was registered first, it "engages" the
-  front one, and then the front one's own order resolves and it walks out of the
-  engagement. If the front one was registered first, both simply move and
-  nothing is contested. Same orders, same board, different events.
-
-- **Units pass straight through each other.** Two enemies one square apart,
-  ordered toward each other, swap squares. An `engaged` event is logged, no
-  damage is dealt, and — because no attack was exchanged — **neither player
-  learns the other unit exists** (**R6.2**). Two armies can walk through each
-  other and end up behind each other's lines having seen nothing.
-
-**Reproduction.** Place two units adjacent, order them into each other, and read
-the events. Then rebuild the same board registering them in the other order.
-
-**Why it matters.** `turn-commit` opens with "No player's orders are applied
-before another's, so no player gains an advantage from committing early or
-late." That is the one property the whole commit barrier exists to guarantee,
-and registration order quietly breaks it. `SPEC_COVERAGE.md` notes the
-pass-through under "Unspecified, and worth deciding" but not the more general
-ordering dependence.
-
-**To decide.** Three rules are missing and each needs writing down:
-1. May a unit leave a contest it is already in, during the same turn?
-2. May two units trade squares?
-3. What does a unit find on a square another unit is simultaneously leaving?
-
-The usual fix is to make the movement phase two passes: compute every
-destination first against the *starting* board, then apply them all, so nothing
-depends on registration order. A swap then becomes a head-on collision rather
-than a free pass.
+**To decide.** Energy regeneration — for every unit each turn, or only for one
+that took no action? A way to withdraw or scuttle a spent unit? Or leave it, and
+let the win condition carry the endgame.
 
 ---
 
-## Q4. The movement cost formula never varies
+## Q2. Identical units always destroy each other
 
-**What happens.** Movement costs `energy // 100 + 1`. Energy is capped at 100
-(**R2.4**), so the first term is 0 for every unit that has spent anything at
-all. The cost is **always 1**, except for a unit sitting on exactly 100 energy,
-whose first move costs 2.
+**What happens.** Every attack in a round lands regardless of the damage its
+attacker takes in that same round (**R5.2**), so two identical units always
+destroy each other, and in a three-way fight between identical units all three
+die. With attack and health both capped at 1–10, a fight is decided purely by
+`ceil(health ÷ attack)` and a tie kills everyone.
 
-**Why it matters.** Energy is therefore just a count of actions, and the formula
-implies a design — cost scaling with something — that never happens. It is easy
-to read the spec scenario ("the cost charged is `E // 100 + 1`") and believe
-movement gets cheaper or dearer as a unit tires. It does not.
+**Why it is still here.** It is deliberate, and it is what makes a contest's
+outcome independent of which unit is listed first — the same property the
+movement phase was rewritten to get (**R3.4**). Giving one side priority within
+a round would put an ordering rule back into the one place that no longer has
+one.
 
-There is a related loose end: `unit.py` still carries a header comment
-describing a `speed` statistic ("speed 10 is to move once per clock tick and 1
-is to move once every 10th tick") that no longer exists anywhere in the code.
-
-**To decide.** Either say plainly that a move costs 1 and drop the formula, or
-decide what it was meant to scale with — distance travelled, a per-type speed
-stat, or a cost that rises as a unit runs down — and give it a range that
-actually bites.
+**To decide.** Keep simultaneous resolution, or add an initiative statistic and
+accept that a fight then depends on it rather than on the two units alone.
 
 ---
 
-## Q5. Hidden information is not hidden
+## Q3. The specs say "cell" and the source says "square"
 
-**What happens.** Two leaks, both easy to see:
-
-- **`show types` lists every player's types, before any contact.** Player 1,
-  having met nobody, runs `show types` and gets back the name, symbol, attack,
-  health and energy of every type player 2 has defined. `player-client` says
-  "the player's own types are listed, together with any enemy types they have
-  seen".
-
-- **The client process holds the whole board.** It loads `data/units.yaml`,
-  which is the authoritative record of every unit and its position, and *then*
-  filters it for display. The unfiltered board is in memory, and the file is
-  readable on disk by anyone running the client.
-
-**Reproduction.** Set up a two-player game, resolve one turn, run `show types`
-as player 1.
-
-**Why it matters.** It decides what kind of game this is. `visibility` is
-written as a real rule — enemies hidden until contact, and forgotten again when
-you disengage. If a player can read the enemy's whole army design and every
-position at any time, that rule is decoration.
-
-**To decide.** Either visibility is enforced — the client is never sent data it
-may not see, it loads only its own view, and enemy types arrive only through
-contact — or it is an honour-system convenience and should be described as one.
-Note that fixing this properly means the client can no longer hold a full
-`Board`, which is also what makes **Q6** possible.
-
----
-
-## Q6. You cannot move your own unit if an opponent used the name first
-
-**What happens.** `order_move` looks a unit up by name across *all* players,
-takes the first match, and only then checks ownership — so if the opponent's
-unit of that name was registered first, your own order is refused with "can't
-move units belonging to other players". Your unit becomes permanently
-unorderable.
-
-**Reproduction.** Player 2 deploys `scout`, then player 1 deploys `scout`.
-Player 1 orders `move scout east`. Refused.
-
-**Why it matters.** `board-model` explicitly guarantees that two players may
-reuse the same unit name, and it is the natural thing for two players to do. The
-lookup should be scoped to the ordering player — `getUnitByName` already takes a
-player argument; this one call site does not pass it.
-
----
-
-## Q7. There is no win condition, and the documents disagree about what it would be
-
-**What happens.** Nothing ends the game. The server loops forever. Three
-documents describe an ending and no two agree:
-
-- `README.md`: "last player with a functional unit"
-- `MODULE_DESCRIPTION.md`: the same
-- `design.md`: "Win if other players pieces all run out of energy or has no more
-  pieces left"
-
-`design.md` treats a unit out of energy as finished. `combat-resolution` says
-the opposite in as many words: running out of energy does not destroy a unit, it
-makes it **inert**, and it keeps holding its square (**R5.10**).
-
-**A second problem.** A player with no units left must still `commit` every
-turn, or the barrier blocks everyone. A player who quits, or is wiped out,
-freezes the game.
-
-**To decide.**
-1. What is a "functional" unit? Undestroyed? Or undestroyed *and* able to act —
-   which is to say, is an inert unit alive?
-2. What if the last two units destroy each other — draw, or does the game go on
-   with nobody able to win?
-3. Does a player drop out of the commit barrier when they have nothing left, or
-   does the game end at that moment?
-4. Is there a turn limit or a stalemate rule? Nothing anywhere counts turns
-   (**Q16**), so today you could not write one.
-
----
-
-## Q8. Inert is a trap with no way out
-
-**What happens.** Energy is never replenished. A unit that spends down below its
-attack value can still shuffle around at 1 energy a move, but can never attack
-or defend again. At 0 energy it can do nothing at all — while still occupying a
-square, still blocking, and still killable. Two inert units can hold a square
-against each other indefinitely.
-
-**Why it matters.** Late in a game, most units are inert obstacles and nothing
-can resolve. Combined with **Q7**, the game reaches a state where nothing can
-happen and it cannot end.
-
-**To decide.** Energy regeneration (per turn, or for units that did not act)? A
-way to remove or recover an exhausted unit? Or accept attrition to stalemate as
-the design, and let the win condition handle it.
-
----
-
-## Q9. An undecided fight costs both sides energy and changes nothing
-
-**What happens.** Two units step onto the same square, neither can pay to
-attack, both are pushed back to where they came from (**R5.8**) — each having
-paid the move cost. Repeat the same order next turn and the same thing happens
-again, until both are at zero.
-
-**Why it matters.** It is a legitimate way to bleed an opponent dry, or an
-accidental treadmill neither player can see they are on — the movement events
-say a unit moved and fell back, but nothing says *why* the fight was undecided.
-
-**To decide.** Is this a tactic or a bug? If a tactic, the players need to be
-able to see it happening.
-
----
-
-## Q10. Mirror matches are always mutual annihilation
-
-**What happens.** Every attack in a round lands regardless of damage taken in
-that round (**R5.2**), so two identical units always destroy each other. In a
-three-way fight between identical units, all three die. With attack and health
-both capped at 1–10, a fight is decided purely by `ceil(health ÷ attack)`, and a
-tie kills everyone.
-
-**Reproduction.** Three units of attack 2, health 10 stepping onto one square:
-all three destroyed, each at −2 health.
-
-**Why it matters.** It is a real design choice, and it is specified deliberately
-— but it means there is no such thing as winning a fight against a copy of your
-own design, and it makes contested squares mutually suicidal. Worth confirming
-you want it before anything is built on top of it.
-
-**To decide.** Keep simultaneous resolution, or give the defender or the
-attacker priority within a round, or add an initiative statistic.
-
----
-
-## Q11. Failed moves are silent
-
-**What happens.** These all leave a unit exactly where it was, with no message
-to anyone:
-- A move the unit cannot pay for (**R4.5**).
-- A move off the board edge (**R4.6**).
-- An engagement refused because the mover has too little energy to attack, or
-  too little to pay the move (**R4.7**).
-- A deployment order in the `NOP` state whose square is occupied — this path
-  does not even record a rejection.
-
-**Why it matters.** `game-persistence` builds a whole rejection channel so a
-player "learns why an order of theirs had no effect", and then the most common
-reasons for an order having no effect never reach it. From the player's side,
-"my unit didn't move" is indistinguishable from "the server never got my order".
-
-**To decide.** Every order that does not do what it said should produce a
-rejection entry. That means the movement phase needs to be able to record one,
-which today it cannot — `Board.commit` returns events, and `turn.resolve`
-collects rejections, and the two are not connected.
-
----
-
-## Q12. Who wins a deployment collision is decided by player number
-
-**What happens.** When two players deploy onto the same square on the same turn,
-`turn-commit` says the server refuses one of them. Which one is decided by the
-order the server iterates players — which is player number, ascending. Player 1
-beats player 2, every time, forever.
-
-**Why it matters.** Neither player can see the other's units during setup, so
-the collision is genuinely blind — and the tiebreak is a fixed advantage to the
-lowest-numbered player. `turn-commit`'s own scenario says only "the server
-refuses one of the two", which reads as if it does not matter.
-
-**To decide.** Say the rule out loud (lowest player number wins), or make it
-alternate by turn, or refuse *both* deployments so neither player gains.
-
----
-
-## Q13. Orientation and coordinates are never written down
-
-**What happens.** North decreases `y`, the board is drawn with `y=0` on the top
-row, so north is up the screen and `(0, 0)` is the top-left. This is true of the
-code and nothing states it.
-
-**Why it matters.** It is the first thing a player needs and the first thing an
-API or web front-end will get wrong. Stated here as **R2.2**; it should be in
-`board-model`.
-
----
-
-## Q14. Destroyed units are still listed
-
-**What happens.** `show units` lists destroyed units, with `destroyed: True` and
-`on_board: False`. A player's view still names an enemy they destroyed this
-turn. Neither is specified either way.
-
-**To decide.** Are dead units part of what a player sees — a casualty list — or
-should they drop out of `show units`? If they are a casualty list, it should say
-so rather than reading as though the unit is still on the board.
-
----
-
-## Q15. "cell" and "square" are the same thing
-
-The specs say **cell**, the source says **square** (`Board.squareIsFree`, and
-most comments). Already noted under Housekeeping in `SPEC_COVERAGE.md`. This
-file uses "square", because that is what the events a player reads say.
-
----
-
-## Q16. Nothing counts turns
-
-There is no turn number anywhere — not in the saved game, not in a view, not in
-a rejection. A rejection file says what was refused but not when. You cannot
-write a turn limit, a draw-by-repetition rule, or a replay without one, and
-"rejections describe only the last resolved turn" is enforced by overwriting the
-file rather than by anything a reader can check.
-
----
-
-## Q17. The README describes a game that is not this one
-
-`README.md` leads with "Program each unit to play the game" and "Run the game
-automatically resolving the winner". Neither exists: units are ordered by hand,
-one command at a time, every turn, and nothing resolves a winner. The web
-service, the REST API and the SQLite backend are also aspirational.
-
-`MODULE_DESCRIPTION.md` is accurate about this and says so under "Not built
-yet". `README.md` should not read as though the feature is there.
+Both mean the same thing. The specs under `openspec/specs/` say **cell**; the
+source, the events a player reads, and this file say **square**. Aligning them
+is a mechanical rename across every capability with no behavioural content, and
+carrying it alongside a change that rewrote half those requirements would have
+made both harder to review. It is still its own job.
 
 ---
 
@@ -640,9 +403,9 @@ yet". `README.md` should not read as though the feature is there.
 | R2.3 | `game-server` | `service/games.py` |
 | R2.4–R2.5 | `unit-types` | `domain/unit.py` |
 | R2.6–R2.8 | `board-model`, `turn-commit`, `player-client` | `service/games.py`, `domain/board.py` |
-| R3.1–R3.7 | `turn-commit`, `game-persistence` | `service/turn.py`, `domain/board.py` |
-| R4.1–R4.8 | `unit-movement` | `domain/unit.py` (`preCommit`) |
-| R5.1–R5.11 | `combat-resolution` | `domain/unit.py` (`resolveContest`) |
+| R3.1–R3.8 | `turn-commit`, `game-persistence`, `game-outcome` | `service/turn.py`, `domain/board.py` (`commit`) |
+| R4.1–R4.10 | `unit-movement` | `domain/unit.py` (`planMove`), `domain/board.py` (`_move`) |
+| R5.1–R5.11 | `combat-resolution` | `domain/unit.py` (`exchangeAttacks`, `resolveContest`, `resolveCollision`) |
 | R6.1–R6.6 | `visibility` | `storage/serialise.py`, `service/game.py` |
-| R7.1 | nothing | — |
+| R7.1–R7.4 | `game-outcome` | `service/turn.py`, `cli/*.py` |
 | R8 | `game-server`, `player-client`, `game-observer` | `cli/roles.py`, `cli/grammar.py` |

@@ -325,51 +325,37 @@ class TestServerClientIntegration(unittest.TestCase):
         units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
         units = yaml.safe_load(units_file.read_text())['units']
 
-        # exactly one of the two deployments was accepted
-        self.assertEqual(len(units), 1)
-        self.assertEqual((units[0]['x'], units[0]['y']), (1, 1))
-        self.assertIn(units[0]['name'], ('x1', 'o1'))
+        # neither deployment was accepted. Letting the first through made
+        # the winner whichever player the server read first, which is player
+        # number order, in a race neither of them could see they were in
+        self.assertEqual(units, 'None')
 
-        # and the player whose order was refused is told, by name and square
-        accepted = units[0]['name']
-        loser, loser_unit = (2, 'o1') if accepted == 'x1' else (1, 'x1')
+        # and both players are told, by name and square
         players_dir = GAMES_DIR / '_test-01' / 'players'
+        for number, unit_name in ((1, 'x1'), (2, 'o1')):
+            refused = yaml.safe_load(
+                (players_dir / f'{number}_rejected.yaml').read_text())['rejected']
+            self.assertEqual(len(refused), 1)
+            self.assertEqual(refused[0]['unit'], unit_name)
+            self.assertEqual((refused[0]['x'], refused[0]['y']), (1, 1))
+            self.assertIn('both were refused', refused[0]['reason'])
 
-        refused = yaml.safe_load(
-            (players_dir / f'{loser}_rejected.yaml').read_text())['rejected']
-        self.assertEqual(len(refused), 1)
-        self.assertEqual(refused[0]['unit'], loser_unit)
-        self.assertEqual((refused[0]['x'], refused[0]['y']), (1, 1))
-        self.assertIn('occupied', refused[0]['reason'])
-
-        # the player who got the square is told nothing
-        winner = 1 if loser == 2 else 2
-        self.assertEqual(yaml.safe_load(
-            (players_dir / f'{winner}_rejected.yaml').read_text())['rejected'],
-            [])
-
-        # and the refused player sees it when they next log in
-        loser_client = self.start_client('test-01', loser)
-        loser_client.read_until('client.py> ')
-        self.assertIn('rejected last turn', loser_client.output)
-        self.assertIn(loser_unit, loser_client.output)
-        self.assertIn('occupied', loser_client.output)
+        # and each sees it when they next log in
+        for number, unit_name in ((1, 'x1'), (2, 'o1')):
+            client = self.start_client('test-01', number)
+            client.read_until('client.py> ')
+            self.assertIn('rejected last turn', client.output)
+            self.assertIn(unit_name, client.output)
+            client.send_line('commit')
+            client.read_until('commit complete')
 
         # a later turn in which nothing is refused clears the report, so
         # rejections describe the last turn rather than accumulating
-        loser_client.send_line('commit')
-        loser_client.read_until('commit complete')
-
-        winner_client = self.start_client('test-01', winner)
-        winner_client.read_until('client.py> ')
-        self.assertNotIn('rejected last turn', winner_client.output)
-        winner_client.send_line('commit')
-        winner_client.read_until('commit complete')
-
         self.read_until_count(server, 'commit complete', 3)
-        self.assertEqual(yaml.safe_load(
-            (players_dir / f'{loser}_rejected.yaml').read_text())['rejected'],
-            [])
+        for number in (1, 2):
+            self.assertEqual(yaml.safe_load(
+                (players_dir / f'{number}_rejected.yaml').read_text())['rejected'],
+                [])
 
     def test_an_order_with_an_invalid_state_is_rejected_not_fatal(self):
         # game-persistence requires the server to reject an order whose state

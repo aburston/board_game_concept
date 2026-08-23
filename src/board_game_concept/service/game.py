@@ -21,11 +21,20 @@ class Game:
 
         self.players = {}
         self.board = None
-        self.seen_board = None
         self.player_obj = None
+        # the administrator and the observer are both player 0, and both are
+        # entitled to the whole game. A player is entitled to their own view of
+        # it and nothing else, which is enforced by never reading them more
+        # than that rather than by filtering it on the way out
+        self.sees_everything = player_number == 0
         self.unprocessed_moves = False
         # orders the server refused when it last resolved a turn
         self.rejected = []
+        # how far the game has got: the last turn resolved, who is out of it,
+        # and how it ended if it has
+        self.turn_number = 0
+        self.eliminated = []
+        self.outcome = None
         # the administrator opens an established game; a player only ever
         # joins one that has been set up. XXX needs a better name
         self.new_game = player_number != 0
@@ -37,6 +46,26 @@ class Game:
 
     def getRejected(self):
         return self.rejected
+
+    def getTurnNumber(self):
+        return self.turn_number
+
+    def getEliminated(self):
+        return self.eliminated
+
+    def getOutcome(self):
+        """How the game ended, or None while it is still being played."""
+        return self.outcome
+
+    def isEliminated(self, player_number):
+        return player_number in self.eliminated
+
+    def setProgress(self, progress):
+        """Take the turn number, who is out, and the outcome from a record."""
+        progress = progress or {}
+        self.turn_number = int(progress.get('turn') or 0)
+        self.eliminated = list(progress.get('eliminated') or [])
+        self.outcome = progress.get('outcome') or None
 
     def getPlayerObj(self, player_number):
         if self.player_number == 0:
@@ -58,8 +87,8 @@ class Game:
     def setBoard(self, board):
         self.board = board
 
-    def getSeenBoard(self):
-        return self.seen_board
+    def seesEverything(self):
+        return self.sees_everything
 
     def getSizeX(self):
         return self.board.size_x if self.board is not None else 0
@@ -84,14 +113,19 @@ class Game:
         else:
             self.board = Board(*size)
 
+        self.setProgress(self.repository.read_progress())
         self._load_players()
         self.rejected = self.repository.read_rejections(self.player_number)
-        self._restore(self.board, self.repository.read_units())
-
-        view = self.repository.read_view(self.player_number)
-        if view is not None and self.board is not None:
-            self.seen_board = Board(self.board.size_x, self.board.size_y)
-            self._restore(self.seen_board, view)
+        if self.sees_everything:
+            self._restore(self.board, self.repository.read_units())
+        else:
+            # a player's session is built from that player's own published
+            # view, and never from the record of every unit on the board. It
+            # used to load the whole board and hide the parts the player was
+            # not entitled to when it drew them, which left every enemy
+            # position in the client's memory and on its disk
+            self._restore(self.board, self.repository.read_view(
+                self.player_number))
 
         # the session must belong to a player this game knows about, or to the
         # administrator, who is player 0 and holds no units
@@ -100,8 +134,11 @@ class Game:
 
     def _load_players(self):
         for number in self.repository.player_numbers():
-            player_data = self.repository.read_player(number)
-            if player_data is None:
+            # which players are registered is not secret; what they have
+            # designed and where it is standing are
+            mine = self.sees_everything or number == self.player_number
+            player_data = self.repository.read_player(number) if mine else None
+            if mine and player_data is None:
                 # gone since the players were listed
                 continue
             self.players[number] = {
@@ -109,6 +146,8 @@ class Game:
                 'obj': Player(number),
                 'types': {},
             }
+            if not mine:
+                continue
             for type_name in (player_data.get('types') or {}):
                 unit_type = player_data['types'][type_name]
                 # a player file can be written by hand, so its statistics are
@@ -136,7 +175,9 @@ class Game:
         """Put saved units back onto a board.
 
         Restoring is not deploying: whatever was there goes back, including a
-        square that ended up shared.
+        square that ended up shared. The turn is not resolved here - a saved
+        contest that was left undecided must stay undecided, not be fought
+        again every time the game is opened.
         """
         if board is None or not units:
             return
@@ -146,13 +187,38 @@ class Game:
                 self.players[number]['obj'],
                 unit['x'], unit['y'],
                 unit['name'],
-                self.players[number]['types'][unit['type']]['obj'],
+                self._type_for(number, unit),
                 unit['health'],
                 unit['energy'],
                 bool(unit['destroyed']),
                 bool(unit['on_board']),
                 restoring=True)
-        board.commit()
+
+    def _type_for(self, number, unit):
+        """The type a saved unit was made from.
+
+        A player knows their own types from their own file. An enemy type
+        arrives with the unit that carried it into contact, which is the only
+        way a player learns of one - so it is taken from the record itself and
+        remembered against its owner, for as long as the contact lasts.
+        """
+        types = self.players[number]['types']
+        known = types.get(unit['type'])
+        if known is not None and 'obj' in known:
+            return known['obj']
+        attack = int(unit.get('type_attack', unit['attack']))
+        health = int(unit.get('type_health', unit['health']))
+        energy = int(unit.get('type_energy', unit['energy']))
+        unit_type = UnitType(unit['type'], unit['symbol'], attack, health, energy)
+        types[unit['type']] = {
+            'name': unit['type'],
+            'symbol': unit['symbol'],
+            'attack': attack,
+            'health': health,
+            'energy': energy,
+            'obj': unit_type,
+        }
+        return unit_type
 
     # --- and doing something to it
 

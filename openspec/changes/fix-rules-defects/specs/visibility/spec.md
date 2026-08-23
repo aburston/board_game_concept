@@ -39,7 +39,8 @@ registered in the game.
 #### Scenario: The type of an enemy just fought
 
 - **WHEN** a player's unit exchanges attacks with an enemy unit in a turn
-- **THEN** that enemy unit's type and its statistics are listed for that player
+- **THEN** that enemy unit's type is listed for that player
+- **AND** it is listed with the statistics its owner designed it with, rather than with the state the unit happened to be in when it was met
 
 #### Scenario: The type of an enemy no longer in contact
 

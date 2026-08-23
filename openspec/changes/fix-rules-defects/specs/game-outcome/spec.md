@@ -6,6 +6,26 @@ owns the turn number every other record is attributed to.
 
 ## ADDED Requirements
 
+### Requirement: The Game Begins When The First Unit Reaches The Board
+
+The system SHALL judge elimination and victory only once a unit has reached the
+board. The administrator's commit that ends setup is resolved like a turn, and
+at that point nobody has deployed anything; it SHALL NOT be numbered as a turn,
+and no player SHALL be eliminated by it.
+
+#### Scenario: The commit that ends setup
+
+- **WHEN** the administrator commits to end setup and the turn is resolved with no unit on the board
+- **THEN** the game records no turn as resolved
+- **AND** no player is eliminated
+- **AND** the game is not decided
+
+#### Scenario: The first turn with units on the board
+
+- **WHEN** a turn is resolved in which units are on the board
+- **THEN** it is recorded as turn 1
+- **AND** elimination is judged from it
+
 ### Requirement: Player Elimination
 
 The system SHALL treat a player as eliminated once every unit they own has been
@@ -25,7 +45,7 @@ the game whatever its energy: a unit too spent to act is inert, not lost.
 
 #### Scenario: A player who never deployed a unit
 
-- **WHEN** the first turn is resolved and a registered player holds no units
+- **WHEN** the first turn with units on the board is resolved and a registered player holds none of them
 - **THEN** that player is eliminated
 
 #### Scenario: Elimination is not reversible
@@ -38,7 +58,9 @@ the game whatever its energy: a unit too spent to act is inert, not lost.
 
 The system SHALL decide the game in favour of the last player who is not
 eliminated, at the end of the turn in which every other player becomes
-eliminated.
+eliminated. A game registered with fewer than two players SHALL never be
+decided: there is nobody to be the last player standing against, and a solo
+game is a sandbox rather than a contest.
 
 #### Scenario: One player left
 
@@ -52,6 +74,12 @@ eliminated.
 - **WHEN** a turn is resolved and two or more players still hold an undestroyed unit
 - **THEN** the game is not decided
 - **AND** play continues
+
+#### Scenario: A game with a single registered player
+
+- **WHEN** turns are resolved in a game registered with one player
+- **THEN** the game is never decided
+- **AND** that player is never eliminated
 
 ### Requirement: Draw
 
@@ -145,7 +173,7 @@ published for a turn can be attributed to the turn it describes.
 
 #### Scenario: The first resolved turn
 
-- **WHEN** the first turn of a game is resolved
+- **WHEN** the first turn with units on the board is resolved
 - **THEN** the game records turn number 1
 
 #### Scenario: Numbering advances

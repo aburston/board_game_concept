@@ -14,7 +14,8 @@ from board_game_concept.cli.render import (print_board, print_players,
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.session import load_game, read_command, report
+from board_game_concept.cli.session import (describe_outcome, load_game,
+                                            read_command, report)
 from board_game_concept.service import games
 from board_game_concept.service.errors import GameError
 
@@ -52,19 +53,12 @@ def set_board(size_x, size_y):
 # show board - show the board
 
 
-def show_board(data, player_number):
-    player_obj = data.getPlayerObj(player_number)
-    seen_board = data.getSeenBoard()
+def show_board(data):
     board = data.getBoard()
-    if seen_board is not None:
-        if DEBUG:
-            print("showing seen board")
-        print_board(seen_board)
-    elif board is None:
+    if board is None:
         print("must create board - set size and commit")
-    else:
-        print_board(board, player_obj)
-
+        return
+    print_board(board)
 # show player - show player information
 
 
@@ -82,6 +76,8 @@ def show_types():
 
 def commit():
     pass
+
+
 
 
 def main(argv=None):
@@ -111,10 +107,15 @@ def main(argv=None):
         load_game(data)
 
         players = data.getPlayers()
-        player_obj = data.getPlayerObj(player_number)
         board = data.getBoard()
-        seen_board = data.getSeenBoard()
         new_game = data.getNewGame()
+
+        # a decided game has no turn left to resolve, and waiting for commits
+        # that will never come is how the cycle used to run forever
+        outcome = data.getOutcome()
+        if outcome is not None:
+            print(describe_outcome(outcome))
+            sys.exit(0)
 
         # interactive mode
         while new_game:
@@ -131,23 +132,20 @@ def main(argv=None):
 
             if command.kind == 'show':
                 if command.subject == 'board':
-                    show_board(data, player_number)
+                    show_board(data)
 
                 elif command.subject == 'types':
                     print_types(players)
 
                 elif command.subject == 'players':
-                    print_players(players)
+                    print_players(players, data.getEliminated())
 
                 elif command.subject == 'units':
-                    seen_board = data.getSeenBoard()
                     board = data.getBoard()
-                    if seen_board is not None:
-                        print(serialise_units(seen_board))
-                    elif board is None:
+                    if board is None:
                         print("must create board - set size and commit")
                     else:
-                        print(serialise_units(board, player_obj))
+                        print(serialise_units(board))
 
                 elif command.subject == 'pending':
                     for player in players.keys():
@@ -188,6 +186,14 @@ def main(argv=None):
         else:
             print("internal server error saving game data")
             sys.exit(1)
+
+        # the turn just resolved may have decided the game
+        outcome = data.getOutcome()
+        if outcome is not None:
+            print_board(data.getBoard())
+            print(serialise_units(data.getBoard()))
+            print(describe_outcome(outcome))
+            sys.exit(0)
 
         # wait for player commits before restarting the load and commit cycle
         data.waitForPlayerCommit()

@@ -56,4 +56,13 @@ def report(error):
         print(line)
 
 
-__all__ = ['GameError', 'load_game', 'read_command', 'report']
+__all__ = ['GameError', 'describe_outcome', 'load_game',
+           'read_command', 'report']
+
+
+def describe_outcome(outcome):
+    """How the game ended, as one line for whoever is watching."""
+    if outcome.get('winner') is None:
+        return f"game over: a draw on turn {outcome['turn']}"
+    return (f"game over: player {outcome['winner']} wins "
+            f"on turn {outcome['turn']}")

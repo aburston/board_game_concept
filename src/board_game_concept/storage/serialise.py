@@ -20,6 +20,11 @@ def unit_fields(unit):
         f'attack: {unit.attack}, '
         f'health: {unit.health}, '
         f'energy: {unit.energy}, '
+        # the design, so that a type learned by contact is the type as its
+        # owner built it and not the state the unit was in when it was met
+        f'type_attack: {unit.type_attack}, '
+        f'type_health: {unit.type_health}, '
+        f'type_energy: {unit.type_energy}, '
         f'x: {unit.x}, y: {unit.y}, '
         f'state: {unit.state}, direction: {unit.direction}, '
         f'destroyed: {unit.destroyed}, on_board: {unit.on_board}'
@@ -35,14 +40,27 @@ def _visible_to(unit, player):
     return any(player.number == seen.player.number for seen in unit.seen_by)
 
 
-def serialise_units(board, player=None):
+def serialise_orders(board, player):
+    """This player's orders for the turn: their units that are still in play.
+
+    A destroyed unit is not an order. It used to be published like any other,
+    in the state that means "waiting to be deployed", and the server dutifully
+    tried to deploy it again every turn for the rest of the game.
+    """
+    return serialise_units(board, player, in_play_only=True)
+
+
+def serialise_units(board, player=None, in_play_only=False, turn=None):
     """The board's units as YAML, limited to what this player may see.
 
     Passing no player serialises the whole board, which is what the server
-    writes as the authoritative record.
+    writes as the authoritative record. Passing `in_play_only` leaves out
+    destroyed units, which is what a player publishes as their orders.
     """
     units_str = "board: {" + \
         f" size_x: {board.size_x}, size_y: {board.size_y}" + "}\n"
+    if turn is not None:
+        units_str = units_str + f"turn: {turn}\n"
 
     if player is None:
         units_str = units_str + f"player: {player}\n"
@@ -51,6 +69,8 @@ def serialise_units(board, player=None):
 
     listed = ""
     for index, unit in enumerate(board.units):
+        if in_play_only and unit.destroyed:
+            continue
         if _visible_to(unit, player):
             listed = listed + "  - { " + f"id: {index}, " + unit_fields(unit) + " }\n"
 

@@ -97,20 +97,16 @@ def deploy_unit(data, command):
     if not data.getNewGame():
         raise GameError("can't add units after first turn")
     player_obj = data.getPlayerObj(data.player_number)
-    seen_board = data.getSeenBoard()
     try:
         unit_type = (data.getPlayers()[data.player_number]
                      ['types'][command.type_name]['obj'])
+        # the client holds one board, which is the view it was published, so a
+        # unit deployed this turn goes into it and is visible to its owner at
+        # once. It used to hold a second, fuller board as well, which had to be
+        # kept in step with the view and was the reason a just-deployed unit
+        # could not be seen
         board.add(player_obj, command.x, command.y, command.name, unit_type)
         board.commit()
-        # the view the server published is what the player is shown, so a unit
-        # deployed this turn has to be put there too or it stays invisible to
-        # its own owner until the turn resolves. Only this player's own unit is
-        # added, so nothing the server has not revealed becomes visible.
-        if seen_board is not None:
-            seen_board.add(player_obj, command.x, command.y, command.name,
-                           unit_type)
-            seen_board.commit()
     except Exception as e:
         raise GameError(f"error creating new unit {e}") from e
 
@@ -123,8 +119,13 @@ def order_move(data, command):
     if data.getNewGame():
         raise GameError(
             "can't move units until after the first turn is complete")
+    # scoped to this player, so that an opponent holding a unit of the same
+    # name cannot make a player's own order unanswerable. `board-model` allows
+    # two players to reuse a name, and the unscoped lookup returned whichever
+    # was registered first
+    player_obj = data.getPlayerObj(data.player_number)
     try:
-        unit = board.getUnitByName(command.unit)[0]
+        unit = board.getUnitByName(command.unit, player_obj)[0]
     except Exception as e:
         raise GameError(f"error moving unit {e}") from e
     if data.player_number != unit.player.number:

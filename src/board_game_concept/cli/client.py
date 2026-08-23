@@ -13,7 +13,8 @@ from board_game_concept.cli.render import (print_board, print_players,
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.session import load_game, read_command, report
+from board_game_concept.cli.session import (describe_outcome, load_game,
+                                            read_command, report)
 from board_game_concept.service import games
 from board_game_concept.service.errors import GameError
 
@@ -58,9 +59,7 @@ def main(argv=None):
         # what this session shows; the rules are the service layer's, and
         # it reads the game for itself
         players = data.getPlayers()
-        player_obj = data.getPlayerObj(player_number)
         board = data.getBoard()
-        seen_board = data.getSeenBoard()
         unprocessed_moves = data.getUnprocessedMoves()
 
         # wait 5 seconds if there are unprocessed moves and then reload
@@ -71,6 +70,15 @@ def main(argv=None):
             data.waitForTurn()
             # restart the loop
             continue
+
+        # a decided game, or one this player has been wiped out of, takes no
+        # more orders. Everything that only displays still works
+        outcome = data.getOutcome()
+        out_of_it = outcome is not None or data.isEliminated(player_number)
+        if outcome is not None:
+            print(describe_outcome(outcome))
+        elif out_of_it:
+            print(f"player {player_number} is out of the game")
 
         # report anything the server refused when it resolved the last turn
         rejected = data.getRejected()
@@ -96,26 +104,28 @@ def main(argv=None):
 
             if command.kind == 'show':
                 if command.subject == 'board':
-                    if seen_board is not None:
-                        print_board(seen_board)
-                    elif board is None:
+                    if board is None:
                         print("must create board - set size and commit")
                     else:
-                        print_board(board, player_obj)
+                        print_board(board)
 
                 elif command.subject == 'types':
                     print_types(players)
 
                 elif command.subject == 'players':
-                    print_players(players)
+                    print_players(players, data.getEliminated())
 
                 elif command.subject == 'units':
-                    if seen_board is not None:
-                        print(serialise_units(seen_board))
-                    elif board is None:
+                    if board is None:
                         print("must create board - set size and commit")
                     else:
-                        print(serialise_units(board, player_obj))
+                        print(serialise_units(board))
+                continue
+
+            if out_of_it and command.kind in ('commit', 'move', 'add_type',
+                                              'add_unit'):
+                print("the game is over" if outcome is not None
+                      else "you are out of the game")
                 continue
 
             if command.kind == 'commit':
@@ -133,7 +143,7 @@ def main(argv=None):
                 elif command.kind == 'move':
                     games.order_move(data, command)
                     # the order is read back so the player can see it took
-                    print(serialise_units(data.getBoard(), player_obj))
+                    print(serialise_units(data.getBoard()))
             except GameError as error:
                 report(error)
                 continue
