@@ -133,3 +133,50 @@ def order_move(data, command):
     if not unit.on_board:
         raise GameError("can't move units not on the board")
     unit.move(command.direction)
+
+
+# which function carries out which command. Named here rather than by building
+# a function name from the kind, so that a helper in this module cannot become
+# a command by accident - the same reason `parser.py` names its verbs one by
+# one instead of looking them up
+ACTIONS = {
+    'set_board': set_board_size,
+    'add_player': add_player,
+    'load_board': load_board,
+    'load_player': load_player,
+    'add_type': define_type,
+    'add_unit': deploy_unit,
+    'move': order_move,
+}
+
+
+def carries_out(command):
+    """Whether this is a command that does something to a game."""
+    return command.kind in ACTIONS
+
+
+def carry_out(data, command):
+    """Do what this command asks, recording nothing.
+
+    Replaying a draft comes through here: the rules are applied again, but the
+    commands are already written down and must not be written down twice.
+    """
+    action = ACTIONS.get(command.kind)
+    if action is None:
+        raise GameError(f"{command.kind} is not something to do to a game")
+    action(data, command)
+
+
+def perform(data, command):
+    """Do what this command asks, and remember that it was asked.
+
+    The one way a caller changes a game. Recording here rather than in each
+    caller is what stops a session's work being lost when the session ends -
+    and stops a caller added later from quietly not recording, which would
+    look like working code and lose somebody's army.
+
+    A command that is refused is not recorded: the draft holds what was done,
+    not what was attempted.
+    """
+    carry_out(data, command)
+    data.recordDraft(command)

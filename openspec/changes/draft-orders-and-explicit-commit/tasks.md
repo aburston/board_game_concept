@@ -23,17 +23,17 @@ green at the end of it with no test edited.
 
 ## 2. Recording
 
-- [ ] 2.1 Add `games.perform(data, command)`: carry the command out through the
+- [x] 2.1 Add `games.perform(data, command)`: carry the command out through the
       existing function for its kind, and append it to the draft only if that
       does not raise (design.md — Decision 2). The individual functions stay
       public and stay unrecording, because replay calls them. Verify a refused
       command leaves the draft as it was.
-- [ ] 2.2 Route `cli/bgcclient.py` and `cli/bgcserver.py` through `perform`,
+- [x] 2.2 Route `cli/bgcclient.py` and `cli/bgcserver.py` through `perform`,
       replacing the two hand-rolled `if command.kind == ...` ladders. Verify
       `tests/test_cli_client_surface.py` and `tests/test_cli_server_surface.py`
       pass with no edit, and that a session which types a type, a deployment
       and a move leaves all three in its draft file in that order.
-- [ ] 2.3 Verify no write command reaches a service function except through
+- [x] 2.3 Verify no write command reaches a service function except through
       `perform`, so drafting cannot be forgotten by a future caller. A test that
       drives every write production in `grammar.USAGES` through a session and
       asserts the draft holds it is the check that survives refactoring.

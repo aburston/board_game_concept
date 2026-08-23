@@ -124,20 +124,18 @@ def main(argv=None):
                     break
                 continue
 
-            # everything else is the service layer's to carry out or refuse
+            # everything else is the service layer's to carry out or refuse,
+            # and to remember: an order that is not committed yet is written
+            # down as it is given, so ending the session does not lose it
             try:
-                if command.kind == 'add_type':
-                    games.define_type(data, command)
-                elif command.kind == 'add_unit':
-                    games.deploy_unit(data, command)
-                elif command.kind == 'move':
-                    games.order_move(data, command)
-                    # the order is read back so the player can see it took,
-                    # as the same table `show units` would have given them
-                    show_units(data)
+                games.perform(data, command)
             except GameError as error:
                 report(error)
                 continue
+            if command.kind == 'move':
+                # the order is read back so the player can see it took, as the
+                # same table `show units` would have given them
+                show_units(data)
 
 
 if __name__ == "__main__":

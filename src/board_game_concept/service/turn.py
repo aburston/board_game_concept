@@ -35,6 +35,10 @@ def publish(game):
     repository.write_orders(
         number, serialise_orders(game.board, game.getPlayerObj(number)))
 
+    # the draft has become the published orders, so there is nothing left
+    # uncommitted to restore
+    game.clearDraft()
+
     # tell the server there is something to look at, rather than leaving it to
     # notice on its own
     repository.wake('server')
@@ -244,6 +248,9 @@ def resolve(game):
     for number, player in game.players.items():
         repository.write_view(
             number, serialise_units(game.board, player['obj'], turn=turn_number))
+
+    # the administrator's setup has been committed like anyone else's
+    game.clearDraft()
 
     # every player waiting on this turn can stop waiting
     for number in game.players:

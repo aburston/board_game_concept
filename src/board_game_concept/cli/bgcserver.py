@@ -93,16 +93,11 @@ def main(argv=None):
                 # commit failed, go back to the prompt to resolve the problem
                 continue
 
-            # everything else is the service layer's to carry out or refuse
+            # everything else is the service layer's to carry out or refuse,
+            # and to remember: setup that is not committed yet is written down
+            # as it is done, so ending the session does not lose it
             try:
-                if command.kind == 'set_board':
-                    games.set_board_size(data, command)
-                elif command.kind == 'add_player':
-                    games.add_player(data, command)
-                elif command.kind == 'load_board':
-                    games.load_board(data, command)
-                elif command.kind == 'load_player':
-                    games.load_player(data, command)
+                games.perform(data, command)
             except GameError as error:
                 report(error)
                 continue

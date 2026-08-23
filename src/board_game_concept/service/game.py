@@ -9,6 +9,7 @@ which this delegates to so that callers have one thing to talk to.
 """
 
 from ..domain import Board, Player, UnitType
+from ..storage.serialise import restore_draft, serialise_draft
 from . import turn
 from .errors import NoSuchGame, NoSuchPlayer
 
@@ -38,6 +39,11 @@ class Game:
         # the administrator opens an established game; a player only ever
         # joins one that has been set up. XXX needs a better name
         self.new_game = player_number != 0
+
+        # what this session has done since it last committed, in the order it
+        # did it. Held here as well as on disk so that recording one more is a
+        # write rather than a read and a write
+        self.draft = []
 
     # --- what the session can ask about the game
 
@@ -95,6 +101,28 @@ class Game:
 
     def getSizeY(self):
         return self.board.size_y if self.board is not None else 0
+
+    # --- work this session has not committed yet
+
+    def getDraft(self):
+        """The commands this session has issued since it last committed."""
+        return self.draft
+
+    def recordDraft(self, command):
+        """Remember a command, so that ending the session does not lose it.
+
+        Stamped with the turn it was drafted for. A draft belongs to one turn;
+        one found under a turn the game has moved past is work left behind by a
+        session that ended while a turn was being resolved.
+        """
+        self.draft.append(command)
+        self.repository.write_draft(
+            self.player_number, serialise_draft(self.draft, self.turn_number))
+
+    def clearDraft(self):
+        """Discard the draft, committed or abandoned."""
+        self.draft = []
+        self.repository.clear_draft(self.player_number)
 
     # --- reading it
 
