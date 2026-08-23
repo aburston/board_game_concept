@@ -3,11 +3,11 @@
 Nothing asks these questions yet, so behaviour is unchanged and the suite must
 be green at the end of the group with no test edited.
 
-- [ ] 1.1 Give `Player` the range: `FIRST = 1`, `LAST = 999`, asserted alongside
+- [x] 1.1 Give `Player` the range: `FIRST = 1`, `LAST = 999`, asserted alongside
       the integer and non-negative checks it already makes (design.md —
       Decision 1). Verify `Player(1)` and `Player(999)` are built and
       `Player(0)`, `Player(1000)` and `Player(-1)` each raise, naming the range.
-- [ ] 1.2 Add `service/identity.py` naming `ADMINISTRATOR = 0` and
+- [x] 1.2 Add `service/identity.py` naming `ADMINISTRATOR = 0` and
       `OBSERVER = 1000`, and answering the three questions the `== 0` tests were
       standing in for: `is_player`, `sees_everything`, `may_change`. Take the
       range from `Player` rather than restating it. Verify each answers
@@ -16,12 +16,12 @@ be green at the end of the group with no test edited.
 
 ## 2. Ask the question instead of the number
 
-- [ ] 2.1 Replace the five tests in `service/game.py` that read `player_number
+- [x] 2.1 Replace the five tests in `service/game.py` that read `player_number
       == 0` or `!= 0` with the identity question each was standing for
       (design.md — Decision 2). Verify the whole suite passes with no test
       edited: the observer is still launched as 0 at this point, so nothing
       observable may change yet.
-- [ ] 2.2 Verify the two that are easy to get wrong: `new_game` must stay false
+- [x] 2.2 Verify the two that are easy to get wrong: `new_game` must stay false
       for a session entitled to see everything, or the rules will think an
       observer is mid-setup; and a session entitled to see everything must still
       open a game with no board and be told `must create board - set size and

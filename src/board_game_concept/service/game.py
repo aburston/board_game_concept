@@ -10,7 +10,7 @@ which this delegates to so that callers have one thing to talk to.
 
 from ..domain import Board, Player, UnitType
 from ..storage.serialise import restore_draft, serialise_draft
-from . import games, turn
+from . import games, identity, turn
 from .errors import GameDataError, GameError, NoSuchGame, NoSuchPlayer
 
 
@@ -23,11 +23,11 @@ class Game:
         self.players = {}
         self.board = None
         self.player_obj = None
-        # the administrator and the observer are both player 0, and both are
-        # entitled to the whole game. A player is entitled to their own view of
-        # it and nothing else, which is enforced by never reading them more
-        # than that rather than by filtering it on the way out
-        self.sees_everything = player_number == 0
+        # the administrator and the observer are different identities and
+        # both are entitled to the whole game. A player is entitled to their
+        # own view of it and nothing else, which is enforced by never reading
+        # them more than that rather than by filtering it on the way out
+        self.sees_everything = identity.sees_everything(player_number)
         self.unprocessed_moves = False
         # orders the server refused when it last resolved a turn
         self.rejected = []
@@ -39,9 +39,11 @@ class Game:
         self.turn_number = 0
         self.eliminated = []
         self.outcome = None
-        # the administrator opens an established game; a player only ever
-        # joins one that has been set up. XXX needs a better name
-        self.new_game = player_number != 0
+        # an identity entitled to the whole game opens an established one; a
+        # player only ever joins one that has been set up. This gates deploying
+        # and ordering, so an observer for which it were true would be a session
+        # the rules considered mid-setup. XXX needs a better name
+        self.new_game = not self.sees_everything
 
         # what this session has done since it last committed, in the order it
         # did it. Held here as well as on disk so that recording one more is a
@@ -77,7 +79,9 @@ class Game:
         self.outcome = progress.get('outcome') or None
 
     def getPlayerObj(self, player_number):
-        if self.player_number == 0:
+        # an identity that is not a player's owns no units, so there is no
+        # player object to hand back
+        if not identity.is_player(self.player_number):
             return None
         return self.players[player_number]['obj']
 
@@ -137,8 +141,10 @@ class Game:
 
         size = self.repository.read_board()
         if size is None:
-            if self.player_number == 0:
-                # nothing has been set up yet, so this session sets it up
+            if self.sees_everything:
+                # nothing has been set up yet. The administrator's session is
+                # the one that sets it up, and the observer is told there is no
+                # board rather than refused the game outright
                 self.new_game = True
             else:
                 raise NoSuchGame(
@@ -160,9 +166,11 @@ class Game:
             self._restore(self.board, self.repository.read_view(
                 self.player_number))
 
-        # the session must belong to a player this game knows about, or to the
-        # administrator, who is player 0 and holds no units
-        if self.player_number not in self.players and self.player_number != 0:
+        # a session opened as a player must be one this game knows about. The
+        # administrator and the observer hold no units and are registered as
+        # nobody, so neither has to be found among the players
+        if (identity.is_player(self.player_number)
+                and self.player_number not in self.players):
             raise NoSuchPlayer(f"player {self.player_number} does not exist")
 
         # and last, whatever this session had done and not committed. It goes
