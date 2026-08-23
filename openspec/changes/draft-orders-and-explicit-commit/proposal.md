@@ -105,6 +105,9 @@ None. Drafting is the uncommitted half of committing, and belongs with it in
   order file.
 - `player-client`: a client reopening a game is shown its own draft, and orders
   given before a disconnection are not lost.
+- `game-server`: the administrator's uncommitted setup is restored the same
+  way, so a session that ends before setup is committed does not cost the board
+  that was sized or the players that were registered.
 
 ## Impact
 
@@ -121,9 +124,10 @@ None. Drafting is the uncommitted half of committing, and belongs with it in
   committed orders. All four existing consumers of "the order file exists"
   already mean *committed*, so this is a rename in place plus one new concept,
   not a split of an existing one.
-- **CLI**: `cli/bgcclient.py` writes its draft as it goes rather than holding it
-  in memory. `cli/show.py` and `cli/views.py` are unaffected — `pending`
-  keeps its current meaning.
+- **CLI**: `cli/bgcclient.py` and `cli/bgcserver.py` write their draft as they
+  go rather than holding it in memory, and their two command-dispatch ladders
+  collapse into the one service entry point that records. `cli/show.py` and
+  `cli/views.py` are unaffected — `pending` keeps its current meaning.
 - **Tests**: `tests/test_repository.py` for the new operations;
   `tests/test_server_client_integration.py` gains a client that is killed and
   restarted mid-turn, which is the behaviour this change exists to make
