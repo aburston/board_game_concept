@@ -68,7 +68,7 @@ per-player file.
 ### Requirement: Unit State Persistence
 
 The system SHALL persist the full state of every unit on the board and restore
-it on load, including units already destroyed and units sharing a cell. A unit
+it on load, including units already destroyed and units sharing a square. A unit
 SHALL be restored in a state that takes no action of its own: restoring is not
 an order, and a restored unit SHALL NOT be treated as waiting to be deployed.
 
@@ -92,21 +92,21 @@ an order, and a restored unit SHALL NOT be treated as waiting to be deployed.
 
 - **WHEN** a destroyed unit is restored
 - **THEN** it is restored destroyed and off the board
-- **AND** it occupies no cell
+- **AND** it occupies no square
 - **AND** resolving the next turn does not place it on one
 
-#### Scenario: Restoring a shared cell
+#### Scenario: Restoring a shared square
 
-- **WHEN** a saved game holds several units on one cell
-- **THEN** loading it restores every one of those units to that cell
+- **WHEN** a saved game holds several units on one square
+- **THEN** loading it restores every one of those units to that square
 - **AND** loading does not fail
-- **AND** the rule refusing deployment onto an occupied cell does not apply
+- **AND** the rule refusing deployment onto an occupied square does not apply
 
 ### Requirement: Order Publication
 
 The system SHALL have players publish pending orders as a per-player file that
 the server consumes when resolving a turn, and SHALL apply each order to the
-unit it names rather than to whatever occupies the cell. A player SHALL publish
+unit it names rather than to whatever occupies the square. A player SHALL publish
 orders only for units in play: a destroyed unit SHALL NOT be published as an
 order of any kind.
 
@@ -154,11 +154,11 @@ order of any kind.
 - **THEN** the server rejects the order
 - **AND** resolves the turn without it
 
-#### Scenario: Applying an order to a unit on a shared cell
+#### Scenario: Applying an order to a unit on a shared square
 
-- **WHEN** the server applies a move order for a unit whose cell holds several units
+- **WHEN** the server applies a move order for a unit whose square holds several units
 - **THEN** the order is applied to the named unit belonging to the ordering player
-- **AND** the other units in that cell are unaffected
+- **AND** the other units in that square are unaffected
 
 ### Requirement: Pending Order Detection
 
@@ -247,7 +247,7 @@ resolved.
 #### Scenario: A contest that ended undecided
 
 - **WHEN** a contest ends with more than one unit undestroyed
-- **THEN** each contestant is written to its owner's rejection file, recording that the contest was undecided and the cell it was fought over
+- **THEN** each contestant is written to its owner's rejection file, recording that the contest was undecided and the square it was fought over
 
 #### Scenario: No orders were refused
 

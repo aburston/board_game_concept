@@ -26,14 +26,14 @@ class DecidedGame(CliTestCase):
         server.read_until('commit complete')
 
         # a heavy unit against a light one, one square apart
-        for number, type_name, symbol, stats, unit, cell in (
+        for number, type_name, symbol, stats, unit, square in (
                 (1, 'Cross', 'X', '10 10 100', 'x1', '0 0'),
                 (2, 'Naught', 'O', '1 1 100', 'o1', '1 0')):
             client = self.start_client(game_number, number)
             client.read_until(CLIENT_PROMPT)
             client.send_line(f'add type {type_name} {symbol} {stats}')
             client.read_until_count(CLIENT_PROMPT, 2)
-            client.send_line(f'add unit {type_name} {unit} {cell}')
+            client.send_line(f'add unit {type_name} {unit} {square}')
             client.read_until_count(CLIENT_PROMPT, 3)
             client.send_line('commit')
             client.read_until('waiting for turn to complete...')

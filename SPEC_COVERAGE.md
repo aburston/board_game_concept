@@ -11,7 +11,7 @@ source of truth for intended behaviour.
 | `unit-types` | Unit type definition, statistic ranges, state and direction constants |
 | `board-model` | Board creation, unit placement, name uniqueness, lookup, rendering |
 | `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, energy cost |
-| `combat-resolution` | Contested cells, simultaneous attack rounds, damage, destruction is final |
+| `combat-resolution` | Contested squares, simultaneous attack rounds, damage, destruction is final |
 | `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
 | `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given |
 | `game-persistence` | On-disk game layout, YAML formats, orders as transport |
@@ -93,13 +93,13 @@ place it somewhere else on a later turn.
 ### 2. A contest neither unit can win hangs the server (issue #2) — fixed
 
 `UnitType.commit` looped `while unit_count > 1`, and `unit_count` only decreased
-when a unit was destroyed. Two units that contested a cell but could not damage
+when a unit was destroyed. Two units that contested a square but could not damage
 each other — for example, both with energy below their attack value — never
 reduced the count, and the loop never terminated. This was an unbounded spin,
 not a slow turn: the server stopped making progress.
 
 Reproduction: two units with energy below their attack value moved into the same
-cell.
+square.
 
 Addressed by the `fix-combat-stalemate-hang` change: combat ends when a round
 lands no attacks, and an undecided contest returns every unit that moved in to
@@ -120,7 +120,7 @@ defines only `number`, so evaluating the message raised
 `AttributeError: 'Player' object has no attribute 'name'` over the top of it.
 
 Reproduction: two units with more health than one round of attacks can spend
-moved into the same cell, and a client for either player was then started.
+moved into the same square, and a client for either player was then started.
 
 Addressed by the `fix-duplicate-seen-units` change: contact is recorded once per
 unit, a view names each unit it reveals once, restoring a unit the board already
@@ -448,19 +448,19 @@ scenario saying it ends the session.
 ### 23. A crowd drained a unit at a rate decided by who was standing in it — fixed
 
 `combat-resolution` charged a unit its attack value in energy "for each attack
-it makes", and a unit in a contested cell attacks every other unit in it. A
+it makes", and a unit in a contested square attacks every other unit in it. A
 three-way fight therefore cost twice the energy per round, a four-way three
 times, at a rate the unit did not choose and could not see coming.
 
 The same per-opponent charge left a rule decided by list position: a unit that
 could afford some but not all of its attacks struck whichever opponents came
-first in the cell. Three units with attack 2 and energy 2 — one strike each —
+first in the square. Three units with attack 2 and energy 2 — one strike each —
 produced six different damage distributions across the six orderings of the
-cell. That is the same order-dependence number 14 removed from movement, one
+square. That is the same order-dependence number 14 removed from movement, one
 layer down.
 
 Reproduction: three units of attack 2, health 10 and energy 2 contesting one
-cell, resolved against every ordering of the cell.
+square, resolved against every ordering of the square.
 
 Addressed by the `charge-attack-once-per-round` change: a unit pays its attack
 value once per round of a contest, however many it strikes, and a round is all
@@ -477,10 +477,9 @@ Nothing, at present. The two entries that stood here — units passing through
 each other, and the missing win condition — were both settled by the
 `fix-rules-defects` change and are recorded above as numbers 15 and 21.
 
-Three questions are still open and are design choices rather than defects:
-energy never regenerating, identical units always destroying each other, and the
-`cell`/`square` terminology split below. They are set out in Part 2 of
-`GAME_RULES.md`.
+Two questions are still open and are design choices rather than defects: energy
+never regenerating, and identical units always destroying each other. They are
+set out in Part 2 of `GAME_RULES.md`.
 
 ## Documented but not implemented
 
@@ -491,10 +490,24 @@ energy never regenerating, identical units always destroying each other, and the
 
 ## Housekeeping
 
-The specs call a board position a **cell**; the source calls it a **square**
-(`Board.squareIsFree`, and comments predating these specs). Both terms mean the
-same thing. Aligning them is a terminology sweep across all eleven capabilities,
-which no behavioural change should carry, so it is left as its own job.
+**A board position is a square.** The specs used to call it a *cell* and the
+source a *square*, which meant the two documents describing one game did not
+share a word for its most basic thing. The specs, the source, the tests and the
+prose now all say **square**, `domain/cell.py` is `domain/square.py`, and the
+grid inside `Board` holds `_squares`.
+
+It was done as one scripted sweep rather than through a change. A delta would
+have had to restate 42 of the 100 requirements verbatim but for one word, which
+is more error-prone than the rename and worse to review. What makes it safe is
+the check, not the ceremony: every spec file was diffed against its previous
+version with `cell` and `square` both normalised away, and the two were
+identical — 100 requirements and 318 scenarios, unchanged. The suite passes and
+`openspec validate --specs --strict` is clean.
+
+Two places deliberately still say *cell*, because renaming inside them would
+falsify a record: `openspec/changes/archive/`, which is what those changes
+actually said when they were made, and `TEST_RESULTS.md`, which is what a test
+run actually printed on a particular machine on a particular day.
 
 
 `src/board_game_concept/test_suite.py`, run by the `board-game-test-suite`

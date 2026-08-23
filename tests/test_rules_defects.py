@@ -79,7 +79,7 @@ def resolved(order_first, order_second, first, second):
 
 
 def test_registration_order_does_not_change_the_outcome():
-    # `chase` follows `lead` into the cell `lead` is leaving. Resolved unit by
+    # `chase` follows `lead` into the square `lead` is leaving. Resolved unit by
     # unit against a live board, whether it gets there depends on whether
     # `lead` has moved yet
     lead = (1, 'lead', 1, 0, (4, 5, 4))

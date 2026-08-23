@@ -353,11 +353,14 @@ role can be driven from a script or a pipe as well as from a keyboard.
 
 # Part 2 — What is still open
 
-The seventeen questions this file first raised were answered by the
-`fix-rules-defects` change, which is archived under `openspec/changes/`. Fourteen
-of them were defects and are fixed; their reproductions and what was done about
-each are in `SPEC_COVERAGE.md`. Three were never defects. They are design
-choices, and they are still yours to make.
+The seventeen questions this file first raised have all been answered. Fifteen
+were defects and are fixed; their reproductions and what was done about each are
+in `SPEC_COVERAGE.md`, along with two more found afterwards. The board position
+the specs called a *cell* and the source called a *square* is a **square**
+everywhere now.
+
+Two questions were never defects. They are design choices, and they are still
+yours to make.
 
 ---
 
@@ -399,16 +402,6 @@ list.
 
 **To decide.** Keep simultaneous resolution, or add an initiative statistic and
 accept that a fight then depends on it rather than on the two units alone.
-
----
-
-## Q3. The specs say "cell" and the source says "square"
-
-Both mean the same thing. The specs under `openspec/specs/` say **cell**; the
-source, the events a player reads, and this file say **square**. Aligning them
-is a mechanical rename across all eleven capabilities with no behavioural
-content, and carrying it alongside a change that rewrote half those
-requirements would have made both harder to review. It is still its own job.
 
 ---
 

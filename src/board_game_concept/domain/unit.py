@@ -1,4 +1,4 @@
-from .cell import Empty
+from .square import Empty
 from .events import Event
 from .player import Player
 
@@ -145,12 +145,12 @@ class UnitType:
     # takes this unit out of the square it holds, leaving behind anything else
     # sharing that square
     def vacate(self):
-        cell = self.board[self.x, self.y]
-        if not (type(cell) is list):
-            if cell is self:
+        square = self.board[self.x, self.y]
+        if not (type(square) is list):
+            if square is self:
                 self.board[self.x, self.y] = Empty()
             return
-        remaining = [unit for unit in cell if unit is not self]
+        remaining = [unit for unit in square if unit is not self]
         if not remaining:
             self.board[self.x, self.y] = Empty()
         elif len(remaining) == 1:

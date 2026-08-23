@@ -66,8 +66,8 @@ def _is_deployment(game, p_number, unit):
     return game.board.findUnit(unit['name'], owner) is None
 
 
-def _contended_cells(game, orders):
-    """The cells more than one deployment is asking for this turn.
+def _contended_squares(game, orders):
+    """The squares more than one deployment is asking for this turn.
 
     Both are refused. Letting the first through made the winner whichever
     player the server happened to read first, which is player number order:
@@ -78,15 +78,15 @@ def _contended_cells(game, orders):
     for p_number, unit in orders:
         if not _is_deployment(game, p_number, unit):
             continue
-        cell = (int(unit['x']), int(unit['y']))
-        claimed.setdefault(cell, []).append(p_number)
-    return {cell for cell, claimants in claimed.items() if len(claimants) > 1}
+        square = (int(unit['x']), int(unit['y']))
+        claimed.setdefault(square, []).append(p_number)
+    return {square for square, claimants in claimed.items() if len(claimants) > 1}
 
 
 def _apply_orders(game, reject):
     """Merge every player's published orders into the board."""
     orders = _published_orders(game)
-    contended = _contended_cells(game, orders)
+    contended = _contended_squares(game, orders)
 
     for p_number, unit in orders:
         owner = game.players[p_number]['obj']
@@ -95,7 +95,7 @@ def _apply_orders(game, reject):
         state = unit['state']
 
         # destruction is final. An order naming a unit the server holds as
-        # destroyed is refused whatever it asks for, so no cell falling empty
+        # destroyed is refused whatever it asks for, so no square falling empty
         # can bring one back
         known = game.board.findUnit(name, owner)
         if known is not None and known.destroyed:

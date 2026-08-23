@@ -28,7 +28,7 @@ def two_players(tmp_path, stats=(5, 5, 50), enemy=None):
 
 
 def test_a_destroyed_unit_does_not_come_back(tmp_path):
-    # equal units annihilate each other, leaving the cell they died on empty
+    # equal units annihilate each other, leaving the square they died on empty
     harness = two_players(tmp_path)
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     harness.turn({1: [], 2: [('o1', UnitType.WEST)]})
@@ -37,7 +37,7 @@ def test_a_destroyed_unit_does_not_come_back(tmp_path):
     assert units['x1'].destroyed
     assert units['o1'].destroyed
 
-    # play on. The cell they died on is empty, which is what used to bring them
+    # play on. The square they died on is empty, which is what used to bring them
     # back at full health
     for _ in range(3):
         harness.turn({1: [], 2: []})
@@ -65,13 +65,13 @@ def test_a_destroyed_unit_is_not_reported_every_turn(tmp_path):
 
 
 def test_a_survivor_can_take_the_cell_a_unit_died_on(tmp_path):
-    # x1 is strong enough to win outright, then walks off the cell and back
+    # x1 is strong enough to win outright, then walks off the square and back
     harness = two_players(tmp_path, stats=(10, 10, 50), enemy=(1, 1, 50))
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     assert harness.units()['o1'].destroyed
 
-    # step off the cell o1 died on, leaving it empty for a turn
+    # step off the square o1 died on, leaving it empty for a turn
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     board = harness.session(0).getBoard()
     assert len(board.units) == 4, [u.name for u in board.units]

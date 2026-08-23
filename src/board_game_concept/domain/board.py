@@ -1,6 +1,6 @@
 import copy
 
-from .cell import Empty
+from .square import Empty
 from .events import Event
 from .unit import (UnitType, resolveCollision, resolveContest)
 
@@ -16,13 +16,13 @@ class _Grid:
     def __init__(self, size_x, size_y):
         self.size_x = size_x
         self.size_y = size_y
-        self._cells = {}
+        self._squares = {}
 
     def __getitem__(self, key):
-        return self._cells.get(key, Empty())
+        return self._squares.get(key, Empty())
 
     def __setitem__(self, key, value):
-        self._cells[key] = value
+        self._squares[key] = value
 
 
 # Board
@@ -340,13 +340,13 @@ class Board:
         """Fight out every square more than one unit finished the turn in."""
         for x in range(self.size_x):
             for y in range(self.size_y):
-                cell = self.board[x, y]
-                if not (type(cell) is list):
+                square = self.board[x, y]
+                if not (type(square) is list):
                     continue
-                if len(cell) > 1:
-                    resolveContest(self.board, x, y, list(cell), free, events)
+                if len(square) > 1:
+                    resolveContest(self.board, x, y, list(square), free, events)
                 else:
-                    self.board[x, y] = cell[0]
+                    self.board[x, y] = square[0]
 
         # a collision is fought between whoever is still standing after the
         # squares have been decided

@@ -24,7 +24,7 @@ def one_unit(x, y, size=(4, 3), stats=(1, 5, 50)):
 def test_the_origin_is_the_north_west_cell():
     board = one_unit(0, 0)
     drawn = render_board(board).splitlines()
-    # the first drawn row is y = 0, and the unit at (0, 0) is its first cell
+    # the first drawn row is y = 0, and the unit at (0, 0) is its first square
     assert drawn[1].startswith('|U|')
 
 

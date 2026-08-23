@@ -36,7 +36,7 @@ has engaged them.
 #### Scenario: Unseen enemy is not drawn
 
 - **WHEN** a player renders the board
-- **THEN** cells holding enemy units they have not seen are drawn as empty
+- **THEN** squares holding enemy units they have not seen are drawn as empty
 
 ### Requirement: Contact Establishes Visibility
 
@@ -46,7 +46,7 @@ however many attacks the two exchange while resolving the turn.
 
 #### Scenario: Combat reveals both units
 
-- **WHEN** two units attack each other in a contested cell
+- **WHEN** two units attack each other in a contested square
 - **THEN** each unit records the other as seen
 - **AND** each unit's owner can subsequently list the other unit
 
@@ -128,7 +128,7 @@ point it is displayed is not sufficient.
 #### Scenario: An unseen enemy is not in the session at all
 
 - **WHEN** a player's session is loaded and an enemy unit has not been seen by any of their units
-- **THEN** the session holds no record of that unit, its cell, or its statistics
+- **THEN** the session holds no record of that unit, its square, or its statistics
 
 #### Scenario: The observer is unaffected
 
@@ -164,7 +164,7 @@ The system SHALL continue to show a player their own destroyed units, marked as
 destroyed and off the board, so that they can see what they have lost. An enemy
 unit destroyed in a turn in which the player made contact with it SHALL appear
 in that player's view for that turn only, marked the same way. A destroyed unit
-SHALL NOT be drawn on any cell.
+SHALL NOT be drawn on any square.
 
 #### Scenario: A player's own casualties
 
@@ -174,7 +174,7 @@ SHALL NOT be drawn on any cell.
 #### Scenario: Casualties are not drawn
 
 - **WHEN** a player renders the board
-- **THEN** no destroyed unit is drawn on any cell
+- **THEN** no destroyed unit is drawn on any square
 
 #### Scenario: An enemy destroyed in contact
 

@@ -44,7 +44,7 @@ def test_a_move_nobody_can_pay_for_is_reported(tmp_path):
 
 
 def test_an_undecided_contest_is_reported_to_both_owners(tmp_path):
-    # attack 5 on energy 4: each can pay the fare to step into the same cell
+    # attack 5 on energy 4: each can pay the fare to step into the same square
     # and neither can then pay to attack, so the contest decides nothing
     harness = GameHarness(tmp_path)
     harness.create(4, 3, [1, 2])

@@ -4,7 +4,7 @@ context: |
   Board Game Concept: a turn-based, simultaneous-commit strategy game where
   players design their own unit types, deploy them, and order them each turn.
 
-  Tech stack: Python 3.10+, PyYAML, pytest. Optional `board` library for cell
+  Tech stack: Python 3.10+, PyYAML, pytest. Optional `board` library for square
   storage, with a built-in fallback grid when it is absent.
 
   Layout: the importable package is `src/board_game_concept/`, in four layers,
@@ -32,7 +32,7 @@ context: |
   Domain notes: turns are simultaneous and gated on every player still in the
   game committing. Movement is planned against the board as the turn began and
   then applied all at once, so nothing depends on the order units are held in.
-  Combat is simultaneous multi-round attrition in any cell more than one unit
+  Combat is simultaneous multi-round attrition in any square more than one unit
   finished the turn in. Visibility is contact-based and recomputed each turn,
   and a player's session is only ever given its own published view. The last
   player with an undestroyed unit wins.

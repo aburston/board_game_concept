@@ -32,7 +32,7 @@ touching the parts that do not care.
 
 ### domain - the rules
 
-- **`cell.py`** - `Empty`, what a square holds when nothing else does.
+- **`square.py`** - `Empty`, what a square holds when nothing else does.
 - **`player.py`** - `Player`, identified by an integer number.
 - **`unit.py`** - `UnitType`, which is both a type and, once copied onto the
   board, a unit: name, symbol, attack, health, energy, plus the direction and

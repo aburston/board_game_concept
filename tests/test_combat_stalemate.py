@@ -49,7 +49,7 @@ def _spent_board():
 
 
 def test_contest_no_contestant_can_win_terminates():
-    # two units too spent to attack move into the same empty cell: resolution
+    # two units too spent to attack move into the same empty square: resolution
     # used to spin forever waiting for a casualty that could never happen
     board, _, _ = _spent_board()
     red = board.getUnitByName('r1')[0]
@@ -87,7 +87,7 @@ def test_stalemated_units_retreat_and_nobody_takes_the_cell():
     blue.move(UnitType.WEST)
     board.commit()
 
-    # nobody wins the contested cell
+    # nobody wins the contested square
     assert isinstance(board.getUnitByCoords(1, 1), Empty)
 
     # and every contestant is back where it started
@@ -98,7 +98,7 @@ def test_stalemated_units_retreat_and_nobody_takes_the_cell():
 
 
 def test_inert_unit_holds_its_cell_and_the_attacker_falls_back():
-    # a spent defender standing still is inert, not dead: it keeps its cell, and
+    # a spent defender standing still is inert, not dead: it keeps its square, and
     # an attacker that cannot finish it off returns to its own
     defender_type = UnitType('Defender', 'D', 5, 6, 1)
     attacker_type = UnitType('Attacker', 'A', 6, 6, 2)
@@ -147,7 +147,7 @@ def test_inert_unit_can_still_be_destroyed_by_an_opponent_with_energy():
 
 
 def _three_way_board():
-    """Three units converging on one cell, resolving over two attack rounds."""
+    """Three units converging on one square, resolving over two attack rounds."""
     strong_type = UnitType('Strong', 'S', 5, 10, 100)
     medium_type = UnitType('Medium', 'M', 1, 10, 100)
     weak_type = UnitType('Weak', 'W', 1, 6, 100)
@@ -169,7 +169,7 @@ def _three_way_board():
 def test_three_way_contest_leaves_the_sole_survivor_holding_the_cell():
     # the survivor count used to be decremented once per destroyed unit per
     # round, so by the second round it counted the first casualty again, reached
-    # zero, and emptied the cell out from under the unit still standing
+    # zero, and emptied the square out from under the unit still standing
     board = _three_way_board()
     board.commit()
 
@@ -352,12 +352,12 @@ def _shared_cell_board():
 
 def test_units_that_cannot_fall_back_share_the_square():
     board, _, _ = _shared_cell_board()
-    cell = board.getUnitByCoords(1, 0)
+    square = board.getUnitByCoords(1, 0)
 
-    assert isinstance(cell, list)
-    assert sorted(unit.name for unit in cell) == ['a1', 'b1']
-    assert all(unit.destroyed is False for unit in cell)
-    assert all(unit.on_board is True for unit in cell)
+    assert isinstance(square, list)
+    assert sorted(unit.name for unit in square) == ['a1', 'b1']
+    assert all(unit.destroyed is False for unit in square)
+    assert all(unit.on_board is True for unit in square)
 
 
 def test_shared_square_renders_without_failing():
@@ -413,10 +413,10 @@ def test_shared_square_survives_a_save_and_load_round_trip():
             restoring=True)
     reloaded.commit()
 
-    cell = reloaded.getUnitByCoords(1, 0)
-    assert isinstance(cell, list)
-    assert sorted(unit.name for unit in cell) == ['a1', 'b1']
-    assert all(unit.destroyed is False for unit in cell)
+    square = reloaded.getUnitByCoords(1, 0)
+    assert isinstance(square, list)
+    assert sorted(unit.name for unit in square) == ['a1', 'b1']
+    assert all(unit.destroyed is False for unit in square)
 
 
 def test_a_move_order_applies_to_the_named_unit_on_a_shared_square():

@@ -3,7 +3,7 @@
 A unit used to be charged its attack value once per opponent, so a crowd drained
 it at a rate decided by how many happened to be standing there. Worse, a unit
 that could afford some but not all of its attacks struck whichever opponents came
-first in the cell's list — a rule decided by list position, which is exactly the
+first in the square's list — a rule decided by list position, which is exactly the
 unpredictability this game does not have.
 """
 

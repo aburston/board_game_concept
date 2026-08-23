@@ -62,12 +62,12 @@ def scenarios(count, seed=20260823):
     rng = random.Random(seed)
     for _ in range(count):
         how_many = rng.choice([2, 3])
-        cells = rng.sample([(x, y) for x in range(4) for y in range(3)],
+        squares = rng.sample([(x, y) for x in range(4) for y in range(3)],
                            how_many)
         yield [(rng.choice([1, 2]), f'u{i}', x, y,
                 rng.randint(1, 4), rng.randint(1, 6), rng.randint(1, 8),
                 rng.choice(DIRECTIONS))
-               for i, (x, y) in enumerate(cells)]
+               for i, (x, y) in enumerate(squares)]
 
 
 def test_the_order_units_are_registered_in_does_not_change_the_outcome():

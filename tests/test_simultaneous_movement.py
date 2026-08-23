@@ -2,7 +2,7 @@
 
 These are the scenarios `unit-movement` gained with the `fix-rules-defects`
 change: nothing depends on the order units are held in, and two units ordered
-into each other's cells collide instead of passing through.
+into each other's squares collide instead of passing through.
 """
 
 from board_game_concept import Board, Player, UnitType
@@ -121,7 +121,7 @@ def test_a_collision_is_fought_and_both_units_pay():
 
 
 def test_one_survivor_completes_its_move():
-    # a kills b in a single round, and takes the cell b held
+    # a kills b in a single round, and takes the square b held
     board = facing(10, 10, 1, 1)
     collide(board)
     a = board.getUnitByName('a')[0]
@@ -152,7 +152,7 @@ def test_an_undecided_collision_leaves_both_where_they_started():
     assert any(e.kind == 'undecided' for e in events)
 
 
-def test_units_never_trade_cells():
+def test_units_never_trade_squares():
     board = facing(1, 10, 1, 10)
     collide(board)
     a = board.getUnitByName('a')[0]

@@ -13,8 +13,8 @@ player gains an advantage from committing early or late.
 
 The system SHALL resolve a turn in two phases: a movement phase that decides
 every unit's destination from the board as the turn began, applies all those
-moves together, and gathers the cells more than one unit finishes in; followed
-by a combat phase that resolves those cells. No unit's move SHALL be applied
+moves together, and gathers the squares more than one unit finishes in; followed
+by a combat phase that resolves those squares. No unit's move SHALL be applied
 before another's destination has been decided.
 
 #### Scenario: Resolving a turn
@@ -22,7 +22,7 @@ before another's destination has been decided.
 - **WHEN** a turn is resolved
 - **THEN** every unit on the board first has its destination decided against the board as the turn began
 - **AND** all of those moves are then applied together
-- **AND** only then is combat resolved in every contested cell
+- **AND** only then is combat resolved in every contested square
 
 #### Scenario: No unit is left mid-move
 
@@ -38,10 +38,10 @@ before another's destination has been decided.
 ### Requirement: Deployment On First Resolution
 
 The system SHALL place newly created units onto the board when the turn is
-resolved. Deploying a brand new unit onto a cell that is already taken is
+resolved. Deploying a brand new unit onto a square that is already taken is
 illegal: the system SHALL refuse the deployment and SHALL resolve the turn
 without it, rather than failing the turn. When two deployments contend for one
-cell in the same turn, the system SHALL refuse both, so that no player gains
+square in the same turn, the system SHALL refuse both, so that no player gains
 from the order their orders happen to be read in.
 
 #### Scenario: Deploying a new unit
@@ -50,23 +50,23 @@ from the order their orders happen to be read in.
 - **THEN** the unit is placed at its assigned coordinates
 - **AND** the unit moves to the `NOP` state
 
-#### Scenario: Deploying onto an occupied cell
+#### Scenario: Deploying onto an occupied square
 
 - **WHEN** a unit is deployed at coordinates that already hold a unit
-- **THEN** the deployment is refused with an error naming the unit and the cell
+- **THEN** the deployment is refused with an error naming the unit and the square
 - **AND** no unit is created
-- **AND** the unit already holding the cell is unaffected
+- **AND** the unit already holding the square is unaffected
 
-#### Scenario: Deploying two units onto one cell in the same turn
+#### Scenario: Deploying two units onto one square in the same turn
 
 - **WHEN** two units are deployed at the same coordinates before the turn is resolved
 - **THEN** both are refused
-- **AND** the turn resolves with neither on that cell
-- **AND** the cell is left empty
+- **AND** the turn resolves with neither on that square
+- **AND** the square is left empty
 
-#### Scenario: Two players deploying onto one cell in the same turn
+#### Scenario: Two players deploying onto one square in the same turn
 
-- **WHEN** two players each deploy a unit onto the same cell on the same turn, neither able to see the other's units
+- **WHEN** two players each deploy a unit onto the same square on the same turn, neither able to see the other's units
 - **THEN** the server refuses both deployments
 - **AND** publishes the rejection to each of them
 - **AND** the turn is resolved for every other unit
@@ -74,9 +74,9 @@ from the order their orders happen to be read in.
 
 #### Scenario: Deployment is not movement
 
-- **WHEN** a unit already on the board is ordered to move into a cell another unit holds
+- **WHEN** a unit already on the board is ordered to move into a square another unit holds
 - **THEN** the order is allowed
-- **AND** the two units contest the cell
+- **AND** the two units contest the square
 
 ### Requirement: Only Units In Play Are Resolved
 
@@ -197,12 +197,12 @@ it.
 
 #### Scenario: No rule is decided by collection order
 
-- **WHEN** a rule must choose between two units — which is struck, which holds a cell, which order is refused
+- **WHEN** a rule must choose between two units — which is struck, which holds a square, which order is refused
 - **THEN** the choice follows from the rules and the state
 - **AND** it does not follow from where either unit sits in a list
 
 #### Scenario: A contest is decided by the units in it
 
-- **WHEN** a contested cell is resolved
+- **WHEN** a contested square is resolved
 - **THEN** the damage each contestant takes depends only on the contestants' statistics and energy
-- **AND** not on the order the cell holds them in
+- **AND** not on the order the square holds them in
