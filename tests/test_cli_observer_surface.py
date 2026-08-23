@@ -19,7 +19,17 @@ class ObserverTestCase(CliTestCase):
         return observer
 
     def watching_a_played_game(self):
-        """An observer on a game with units the server has published."""
+        """An observer on a game with units the server has published.
+
+        `load player` brings units in with the player, and the server publishes
+        them as that player's orders for the turn after setup - so the units
+        reach `data/units.yaml` on the *second* resolved turn, not the first.
+        The server prints "commit complete" once per resolved turn, so waiting
+        for the second is waiting for the units to have been published.
+
+        Waiting for only the first was a race the observer usually won by being
+        slow to start, and lost on a loaded CI runner.
+        """
         self.server = self.start_server()
         self.server.read_until('server.py> ')
         self.server.send_line('set board 4 4')
@@ -27,7 +37,7 @@ class ObserverTestCase(CliTestCase):
         self.server.send_line('load player player_1.yaml')
         self.server.read_until_count('server.py> ', 3)
         self.server.send_line('commit')
-        self.server.read_until('commit complete')
+        self.server.read_until_count('commit complete', 2)
         observer = self.start_observer('test-01')
         observer.read_until(OBSERVER_PROMPT)
         return observer
