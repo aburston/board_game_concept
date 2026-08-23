@@ -8,7 +8,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import Game, YamlGameRepository
-from board_game_concept.cli import roles
+from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (describe_outcome, load_game,
@@ -46,6 +46,10 @@ def main(argv=None):
 
     # initialize the data object
     data = Game(YamlGameRepository(gameno), player_number)
+
+    # the observer completes what it may run, which is the reading half of the
+    # grammar; `roles.OBSERVER` is what decides that, here as everywhere else
+    complete.install(ROLE, complete.GameNames(data, player_number))
 
     while True:
 

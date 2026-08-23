@@ -8,16 +8,19 @@ block, which is why they had drifted from the commands they took.
 from .grammar import USAGES
 
 
+def usages_for(role):
+    """The commands this role accepts, in the order the grammar lists them.
+
+    `complete.py` walks the same list, so the words offered at the start of a
+    line are the commands `help` prints and nothing else.
+    """
+    return [usage for usage in USAGES if role.offers(usage)]
+
+
 def help_text(role):
     """The commands this role accepts, one per line."""
-    lines = []
-    for usage in USAGES:
-        if usage.kind not in role.kinds:
-            continue
-        if usage.subject is not None and usage.subject not in role.show_subjects:
-            continue
-        lines.append(f'{usage.usage} - {usage.description}')
-    return '\n'.join(lines)
+    return '\n'.join(f'{usage.usage} - {usage.description}'
+                     for usage in usages_for(role))
 
 
 def print_help(role):
