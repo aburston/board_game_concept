@@ -20,11 +20,16 @@ from board_game_concept.service.errors import GameError
 
 ROLE = roles.CLIENT
 
+# what this role calls itself, wherever it was launched from. The prompt and
+# the usage both come from here rather than from `argv[0]`, which is the path
+# the process happened to be started by
+PROGRAM = 'bgcclient'
+
 DEBUG = False
 
 
 def usage():
-    print("client.py <gameno> <player_number>", file=sys.stderr)
+    print(f"{PROGRAM} <gameno> <player_number>", file=sys.stderr)
 
 
 def main(argv=None):
@@ -91,7 +96,7 @@ def main(argv=None):
         # interactive mode
         while True:
 
-            command = read_command(argv[0], ROLE)
+            command = read_command(PROGRAM, ROLE)
             if command is None:
                 continue
 

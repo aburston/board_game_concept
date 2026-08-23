@@ -15,9 +15,9 @@ source of truth for intended behaviour.
 | `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
 | `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given |
 | `game-persistence` | On-disk game layout, YAML formats, orders as transport |
-| `player-client` | The `board-game-client` command surface |
-| `game-server` | The `board-game-server` command surface and unattended turn cycle |
-| `game-observer` | The `board-game-observer` read-only command surface |
+| `player-client` | The `bgcclient` command surface |
+| `game-server` | The `bgcserver` command surface and unattended turn cycle |
+| `game-observer` | The `bgcobserver` read-only command surface |
 | `game-outcome` | Player elimination, victory, draw, how a decided game stops, turn numbering |
 
 Validate them with:
@@ -222,14 +222,14 @@ called.
 
 `player-client`, `game-server` and `game-observer` each require their role to
 start when invoked with its arguments. `pyproject.toml` declares
-`board-game-server`, `board-game-client` and `board-game-observer` as the way to
+`bgcserver`, `bgcclient` and `bgcobserver` as the way to
 invoke them, and every one of those raised
 `TypeError: main() missing 1 required positional argument: 'argv'` and stopped.
 Each role's `main` took `argv`, while the console script setuptools generates
 calls it with nothing. Only launching the module files directly, as the tests
 did, ever worked.
 
-Reproduction: `pip install .`, then run `board-game-server`.
+Reproduction: `pip install -e .`, then run `bgcserver`.
 
 Addressed by the `split-into-layers` change: `main` defaults its argument to
 `sys.argv`. Each role now has a test that calls `main()` with no arguments the
@@ -437,7 +437,7 @@ It never showed to a person, who types `exit`. It made the roles unusable from a
 script: piping a set of commands into a client ran them and then filled the pipe
 with prompts.
 
-Reproduction: `printf 'help\n' | board-game-client <game> 1`.
+Reproduction: `printf 'help\n' | bgcclient <game> 1`.
 
 Addressed by the `end-session-on-eof` change: end of input comes back as the
 `exit` command, which every role already ends on, so the fix reaches all three
@@ -510,8 +510,8 @@ actually said when they were made, and `TEST_RESULTS.md`, which is what a test
 run actually printed on a particular machine on a particular day.
 
 
-`src/board_game_concept/test_suite.py`, run by the `board-game-test-suite`
-console script, is a hand-rolled harness covering the same ground as
+`src/board_game_concept/test_suite.py`, run as
+`python -m board_game_concept.test_suite`, is a hand-rolled harness covering the same ground as
 `tests/test_basic.py`. It was not updated when `fix-combat-stalemate-hang` made
 combat multi-round attrition, so its attack test still expected one round of
 damage and had been failing 9/10 since. The expectation has been corrected.

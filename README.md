@@ -23,31 +23,58 @@ player client.
  * create "flask" based web service that exposes all the cli based commands as a RESTful API
  * backend would still be files for now, although moving to sqlite may be a thought via a common data class
 
-# dependencies
+# setup
 
-  * Install expect on ubuntu 24.04 using `sudo apt-get install expect`
-  * Install dos2unix on ubuntu 24.04 using `sudo apt-get install dos2unix`
-  * Install pip on ubuntu 24.04 using `sudo apt-get install python3-pip`
-  * Install venv on ubuntu 24.04 using `sudo apt-get install python3.12-venv`
-  * Then create the venv in `board_game_concept` using `python3 -m venv .venv`
-  * Then activate the venv `source .venv/bin/activate`
-  * https://pypi.org/project/board using `pip install board`
-  * pyaml `pip install pyaml`
-  * pytest using `pip install pytest`
-  * To run the new pytest suite from the project root:
-    * `pytest`
-    * `pytest tests/test_basic.py`
-  * Core library source is now located in `src/`.
-  * Legacy expect-based shell tests and `test/test.sh` have been removed; the Python tests now cover the same behavior.
+On ubuntu 24.04, `pip` and `venv` come from apt:
+
+```
+sudo apt-get install python3-pip python3.12-venv
+```
+
+Then, from the project root, create a virtualenv and install the package into
+it. The install is what puts the commands below on your path, so it is not
+optional:
+
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -e '.[dev]'
+```
+
+`-e` installs in place, so the commands run the source in `src/` rather than a
+copy of it. Everything the game itself needs comes with the install; `pytest` is
+the one extra the test suite wants:
+
+```
+pip install pytest
+pytest                        # the whole suite, from the project root
+pytest tests/test_basic.py    # or one file
+```
+
+The suite runs the installed commands when they are on your path and falls back
+to the module files when they are not, so it passes either way — but
+`tests/test_cli_installation.py` skips unless you have installed the package,
+and that is the file that proves the commands work at all.
+
+Legacy expect-based shell tests and `test/test.sh` have been removed; the Python
+tests now cover the same behavior.
 
 # Console scripts
 
-After installation, the package exposes these console scripts:
+Installing the package puts one command on your path per role:
 
-  * `board-game-client` → runs the player client interface
-  * `board-game-server` → runs the game server/admin interface
-  * `board-game-observer` → runs the neutral game observer
-  * `board-game-test-suite` → runs the standalone package test harness
+  * `bgcclient <gameno> <player_number>` → runs the player client interface
+  * `bgcserver -g <gameno>` → runs the game server/admin interface
+  * `bgcobserver <gameno>` → runs the neutral game observer
+
+Each resolves a game against the directory you run it in, as `games/_<gameno>`.
+
+The standalone test harness has no command of its own — it is developer tooling
+rather than something an installed game needs, so run it as a module:
+
+```
+python -m board_game_concept.test_suite
+```
 
 # TODO
 

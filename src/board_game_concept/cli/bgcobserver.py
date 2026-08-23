@@ -18,11 +18,16 @@ from board_game_concept.cli.session import (describe_outcome, load_game,
 
 ROLE = roles.OBSERVER
 
+# what this role calls itself, wherever it was launched from. The prompt and
+# the usage both come from here rather than from `argv[0]`, which is the path
+# the process happened to be started by
+PROGRAM = 'bgcobserver'
+
 DEBUG = False
 
 
 def usage():
-    print("usage, observer.py <gameno>", file=sys.stderr)
+    print(f"usage, {PROGRAM} <gameno>", file=sys.stderr)
 
 
 def main(argv=None):
@@ -62,7 +67,7 @@ def main(argv=None):
         while True:
             # the observer watches; read_command refuses it everything
             # that writes
-            command = read_command(argv[0], ROLE)
+            command = read_command(PROGRAM, ROLE)
             if command is None:
                 continue
 

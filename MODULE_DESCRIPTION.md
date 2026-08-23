@@ -92,19 +92,25 @@ not know how it is drawn.
 - **`render.py`** - the board as a grid of squares between rules.
 - **`session.py`** - what all three sessions share: turning a line into a
   command, reporting a refusal, and failing when the game cannot be read.
-- **`server.py`**, **`client.py`**, **`observer.py`** - the roles themselves,
-  reduced to what is genuinely theirs.
+- **`bgcserver.py`**, **`bgcclient.py`**, **`bgcobserver.py`** - the roles
+  themselves, reduced to what is genuinely theirs. Each file is named for the
+  command it is installed as, so a role has one name and not two.
 
 ## The three roles
 
 | | Who | Does |
 |---|---|---|
-| `board-game-server` | player 0, the administrator | sets the board size, registers players, then runs unattended as the commit authority |
-| `board-game-client` | one player | defines types, deploys units, orders moves, commits |
-| `board-game-observer` | nobody | watches, and can reload |
+| `bgcserver` | player 0, the administrator | sets the board size, registers players, then runs unattended as the commit authority |
+| `bgcclient` | one player | defines types, deploys units, orders moves, commits |
+| `bgcobserver` | nobody | watches, and can reload |
 
-`board-game-test-suite` runs a standalone harness covering the same ground as
-`tests/test_basic.py`.
+Installing the package puts those three on the path and nothing else. Each names
+itself in its prompt and its usage from a `PROGRAM` constant rather than from
+`argv[0]`, so a role is called the same thing however it was started.
+
+`src/board_game_concept/test_suite.py` runs a standalone harness covering the
+same ground as `tests/test_basic.py`. It has no command of its own - it is
+developer tooling, so it is run as `python -m board_game_concept.test_suite`.
 
 ## How a turn goes
 

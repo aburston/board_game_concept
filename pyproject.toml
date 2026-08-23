@@ -21,10 +21,9 @@ where = ["src"]
 include = ["board_game_concept", "board_game_concept.*"]
 
 [project.scripts]
-board-game-client = "board_game_concept.cli.client:main"
-board-game-server = "board_game_concept.cli.server:main"
-board-game-observer = "board_game_concept.cli.observer:main"
-board-game-test-suite = "board_game_concept.test_suite:main"
+bgcclient = "board_game_concept.cli.bgcclient:main"
+bgcserver = "board_game_concept.cli.bgcserver:main"
+bgcobserver = "board_game_concept.cli.bgcobserver:main"
 
 [project.optional-dependencies]
 dev = ["pylint>=4.0.0,<5.0.0"]

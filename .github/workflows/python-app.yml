@@ -28,6 +28,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        # installs the package, which is what puts bgcserver, bgcclient and
+        # bgcobserver on the path. Without it tests/test_cli_installation.py
+        # skips and nothing here ever runs the commands a user runs
+        pip install -e '.[dev]'
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

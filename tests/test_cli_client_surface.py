@@ -48,7 +48,7 @@ class ClientInvocation(CliTestCase):
     def test_wrong_arguments(self):
         client = self.start_client_with_args(['test-01'])
         self.assertNotEqual(0, client.wait_for_exit())
-        self.assertIn('client.py <gameno> <player_number>', client.errors)
+        self.assertIn('bgcclient <gameno> <player_number>', client.errors)
 
     def test_unknown_game(self):
         client = self.start_client('no-such-game', 1)
@@ -59,7 +59,7 @@ class ClientInvocation(CliTestCase):
         # the generated console script calls main() with no arguments at all
         client = self.start_entry_point('client')
         self.assertNotEqual(0, client.wait_for_exit())
-        self.assertIn('client.py <gameno> <player_number>', client.errors)
+        self.assertIn('bgcclient <gameno> <player_number>', client.errors)
         self.assertNotIn('TypeError', client.errors)
 
 

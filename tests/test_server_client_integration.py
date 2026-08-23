@@ -105,30 +105,30 @@ class TestServerClientIntegration(unittest.TestCase):
 
     def start_server(self, args):
         proc = InteractiveProcess(
-            [str(ROOT / 'src' / 'board_game_concept' / 'cli' / 'server.py')] + args,
+            [str(ROOT / 'src' / 'board_game_concept' / 'cli' / 'bgcserver.py')] + args,
             cwd=TEST_DIR)
         self.processes.append(proc)
         return proc
 
     def start_client(self, game_number, player_number):
         proc = InteractiveProcess(
-            [str(ROOT / 'src' / 'board_game_concept' / 'cli' / 'client.py'), game_number, str(player_number)],
+            [str(ROOT / 'src' / 'board_game_concept' / 'cli' / 'bgcclient.py'), game_number, str(player_number)],
             cwd=TEST_DIR)
         self.processes.append(proc)
         return proc
 
     def test_server_interactive_start(self):
         server = self.start_server(['-g', 'test-01'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('set board 4 4')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('add player 1')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('add player 2')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('commit')
         server.read_until('wait for player commit')
@@ -137,16 +137,16 @@ class TestServerClientIntegration(unittest.TestCase):
 
     def test_server_interactive_load(self):
         server = self.start_server(['-g', 'test-02'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('load board board.yaml')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('load player player_1.yaml')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('load player player_2.yaml')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('commit')
         server.read_until('wait for player commit')
@@ -155,41 +155,41 @@ class TestServerClientIntegration(unittest.TestCase):
 
     def test_player_interactive_setup(self):
         server = self.start_server(['-g', 'test-01'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('set board 4 4')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 1')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 2')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('commit')
         server.read_until('wait for player commit')
 
         client1 = self.start_client('test-01', 1)
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
 
         client1.send_line('add type Cross X 1 1 10')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add unit Cross x1 0 0')
         client1.send_line('add unit Cross x2 0 1')
         client1.send_line('add unit Cross x3 0 2')
         client1.send_line('add unit Cross x4 0 3')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
 
         client1.send_line('commit')
         client1.read_until('waiting for turn to complete...')
 
         client2 = self.start_client('test-01', 2)
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
 
         client2.send_line('add type Naught O 1 1 10')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add unit Naught o1 3 0')
         client2.send_line('add unit Naught o2 3 1')
         client2.send_line('add unit Naught o3 3 2')
         client2.send_line('add unit Naught o4 3 3')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
 
         client2.send_line('commit')
         client2.read_until('waiting for turn to complete...')
@@ -222,34 +222,34 @@ class TestServerClientIntegration(unittest.TestCase):
         # The server prints "commit complete" once per resolved turn: the
         # interactive setup, then the deployment, then the contested move.
         server = self.start_server(['-g', 'test-01'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('set board 3 3')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 1')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 2')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('commit')
         server.read_until('wait for player commit')
 
         # attack 5 with energy 1: enough energy to move once, never enough to
         # attack, so neither unit can win the square
         client1 = self.start_client('test-01', 1)
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add type Spent S 5 1 1')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add unit Spent s1 0 1')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('commit')
         client1.read_until('waiting for turn to complete...')
 
         client2 = self.start_client('test-01', 2)
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add type Spent T 5 1 1')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add unit Spent t1 2 1')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('commit')
         client2.read_until('waiting for turn to complete...')
 
@@ -258,16 +258,16 @@ class TestServerClientIntegration(unittest.TestCase):
 
         # now order both units onto the middle square
         client1b = self.start_client('test-01', 1)
-        client1b.read_until('client.py> ')
+        client1b.read_until('bgcclient> ')
         client1b.send_line('move s1 east')
-        client1b.read_until('client.py> ')
+        client1b.read_until('bgcclient> ')
         client1b.send_line('commit')
         client1b.read_until('waiting for turn to complete...')
 
         client2b = self.start_client('test-01', 2)
-        client2b.read_until('client.py> ')
+        client2b.read_until('bgcclient> ')
         client2b.send_line('move t1 west')
-        client2b.read_until('client.py> ')
+        client2b.read_until('bgcclient> ')
         client2b.send_line('commit')
         client2b.read_until('waiting for turn to complete...')
 
@@ -290,32 +290,32 @@ class TestServerClientIntegration(unittest.TestCase):
         # so both may claim the same square. The server used to die on an
         # assertion; it now refuses the second deployment and resolves the turn
         server = self.start_server(['-g', 'test-01'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('set board 3 3')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 1')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 2')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('commit')
         server.read_until('wait for player commit')
 
         client1 = self.start_client('test-01', 1)
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add type Cross X 1 1 10')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add unit Cross x1 1 1')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('commit')
         client1.read_until('waiting for turn to complete...')
 
         client2 = self.start_client('test-01', 2)
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add type Naught O 1 1 10')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add unit Naught o1 1 1')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('commit')
         client2.read_until('waiting for turn to complete...')
 
@@ -343,7 +343,7 @@ class TestServerClientIntegration(unittest.TestCase):
         # and each sees it when they next log in
         for number, unit_name in ((1, 'x1'), (2, 'o1')):
             client = self.start_client('test-01', number)
-            client.read_until('client.py> ')
+            client.read_until('bgcclient> ')
             self.assertIn('rejected last turn', client.output)
             self.assertIn(unit_name, client.output)
             client.send_line('commit')
@@ -362,23 +362,23 @@ class TestServerClientIntegration(unittest.TestCase):
         # is not INITIAL, MOVING or NOP. It used to assert and take the server
         # down with it
         server = self.start_server(['-g', 'test-01'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('set board 3 3')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 1')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 2')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('commit')
         server.read_until('wait for player commit')
 
         client1 = self.start_client('test-01', 1)
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add type Cross X 1 1 10')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add unit Cross x1 0 0')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('commit')
         client1.read_until('waiting for turn to complete...')
 
@@ -390,11 +390,11 @@ class TestServerClientIntegration(unittest.TestCase):
         orders_file.write_text(yaml.safe_dump(orders))
 
         client2 = self.start_client('test-01', 2)
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add type Naught O 1 1 10')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add unit Naught o1 2 2')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('commit')
         client2.read_until('waiting for turn to complete...')
 
@@ -415,30 +415,30 @@ class TestServerClientIntegration(unittest.TestCase):
     def test_a_client_refuses_to_deploy_onto_a_square_it_already_holds(self):
         # the same rule, caught at the client before anything is sent
         server = self.start_server(['-g', 'test-01'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('set board 3 3')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 1')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 2')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('commit')
         server.read_until('wait for player commit')
 
         client1 = self.start_client('test-01', 1)
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add type Cross X 1 1 10')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add unit Cross x1 0 0')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add unit Cross x2 0 0')
         client1.read_until('error creating new unit')
 
         self.assertIn('occupied', client1.output)
         # the client is still usable afterwards
         client1.send_line('add unit Cross x3 1 0')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('commit')
         client1.read_until('commit complete')
 
@@ -447,34 +447,34 @@ class TestServerClientIntegration(unittest.TestCase):
         # once per attack, so the view written for each player named the enemy
         # unit once per attack and the client died restoring it a second time
         server = self.start_server(['-g', 'test-01'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('set board 3 3')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 1')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('add player 2')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
         server.send_line('commit')
         server.read_until('wait for player commit')
 
         # attack 1 against health 3 and 10: several rounds of attrition before
         # the cross wins the square
         client1 = self.start_client('test-01', 1)
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add type Cross X 1 10 100')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('add unit Cross x1 0 1')
-        client1.read_until('client.py> ')
+        client1.read_until('bgcclient> ')
         client1.send_line('commit')
         client1.read_until('waiting for turn to complete...')
 
         client2 = self.start_client('test-01', 2)
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add type Naught O 1 3 100')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('add unit Naught o1 2 1')
-        client2.read_until('client.py> ')
+        client2.read_until('bgcclient> ')
         client2.send_line('commit')
         client2.read_until('waiting for turn to complete...')
 
@@ -483,16 +483,16 @@ class TestServerClientIntegration(unittest.TestCase):
 
         # order the units into the same square, so that they fight
         client1b = self.start_client('test-01', 1)
-        client1b.read_until('client.py> ')
+        client1b.read_until('bgcclient> ')
         client1b.send_line('move x1 east')
-        client1b.read_until('client.py> ')
+        client1b.read_until('bgcclient> ')
         client1b.send_line('commit')
         client1b.read_until('waiting for turn to complete...')
 
         client2b = self.start_client('test-01', 2)
-        client2b.read_until('client.py> ')
+        client2b.read_until('bgcclient> ')
         client2b.send_line('move o1 west')
-        client2b.read_until('client.py> ')
+        client2b.read_until('bgcclient> ')
         client2b.send_line('commit')
         client2b.read_until('waiting for turn to complete...')
 
@@ -509,25 +509,25 @@ class TestServerClientIntegration(unittest.TestCase):
         # and a client reading that view starts and lists the enemy once,
         # rather than dying on the second copy of it
         client1c = self.start_client('test-01', 1)
-        client1c.read_until('client.py> ')
+        client1c.read_until('bgcclient> ')
         client1c.send_line('show units')
         # wait for the prompt that follows the listing, not the one before it
-        self.read_until_count(client1c, 'client.py> ', 2, timeout=15)
+        self.read_until_count(client1c, 'bgcclient> ', 2, timeout=15)
         self.assertNotIn('already exists', client1c.output)
         self.assertEqual(client1c.output.count('name: "o1"'), 1)
 
     def test_server_auto_load_equivalent(self):
         server = self.start_server(['-g', 'test-04'])
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('load board board.yaml')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('load player player_1.yaml')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('load player player_2.yaml')
-        server.read_until('server.py> ')
+        server.read_until('bgcserver> ')
 
         server.send_line('commit')
         server.read_until('wait for player commit')

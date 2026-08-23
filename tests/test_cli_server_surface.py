@@ -275,11 +275,11 @@ class UnattendedTurnCycle(CliTestCase):
         server.read_until('wait for player commit')
 
         client = self.start_client('test-01', 1)
-        client.read_until('client.py> ')
+        client.read_until('bgcclient> ')
         client.send_line('add type Cross X 1 1 10')
-        client.read_until_count('client.py> ', 2)
+        client.read_until_count('bgcclient> ', 2)
         client.send_line('add unit Cross x1 0 0')
-        client.read_until_count('client.py> ', 3)
+        client.read_until_count('bgcclient> ', 3)
         client.send_line('commit')
 
         # the barrier lifts, the server logs the board it was holding, and

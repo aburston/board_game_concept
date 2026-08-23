@@ -21,13 +21,12 @@ from board_game_concept.service.errors import GameError
 
 ROLE = roles.SERVER
 
+# what this role calls itself, wherever it was launched from. The prompt comes
+# from here rather than from `argv[0]`, which is the path the process happened
+# to be started by, and `argparse` is told the same name so its usage agrees
+PROGRAM = 'bgcserver'
+
 DEBUG = False
-
-
-def usage():
-    print(
-        "usage, server.py <gameno> [<boardfile>] [<playerfile 1>] ... [<playerfile n>]",
-        file=sys.stderr)
 
 
 # load board <board_file> - loads the board size from a file
@@ -88,13 +87,13 @@ def main(argv=None):
     player_number = 0
 
     # other arguments
-    parser = argparse.ArgumentParser(exit_on_error=True)
+    parser = argparse.ArgumentParser(prog=PROGRAM, exit_on_error=True)
     parser.add_argument(
         '-g',
         '--game-number',
         required=True,
         help='specify the game number')
-    args = parser.parse_args()
+    args = parser.parse_args(argv[1:])
 
     # initialize data object
     data = Game(YamlGameRepository(args.game_number), player_number)
@@ -117,7 +116,7 @@ def main(argv=None):
 
         # interactive mode
         while new_game:
-            command = read_command(argv[0], ROLE)
+            command = read_command(PROGRAM, ROLE)
             if command is None:
                 continue
 

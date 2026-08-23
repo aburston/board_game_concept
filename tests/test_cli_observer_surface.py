@@ -31,11 +31,11 @@ class ObserverTestCase(CliTestCase):
         slow to start, and lost on a loaded CI runner.
         """
         self.server = self.start_server()
-        self.server.read_until('server.py> ')
+        self.server.read_until('bgcserver> ')
         self.server.send_line('set board 4 4')
-        self.server.read_until_count('server.py> ', 2)
+        self.server.read_until_count('bgcserver> ', 2)
         self.server.send_line('load player player_1.yaml')
-        self.server.read_until_count('server.py> ', 3)
+        self.server.read_until_count('bgcserver> ', 3)
         self.server.send_line('commit')
         self.server.read_until_count('commit complete', 2)
         observer = self.start_observer('test-01')
@@ -53,13 +53,13 @@ class ObserverInvocation(CliTestCase):
     def test_wrong_arguments(self):
         observer = self.start_observer_with_args([])
         self.assertNotEqual(0, observer.wait_for_exit())
-        self.assertIn('usage, observer.py <gameno>', observer.errors)
+        self.assertIn('usage, bgcobserver <gameno>', observer.errors)
 
     def test_console_script_entry_point(self):
         # the generated console script calls main() with no arguments at all
         observer = self.start_entry_point('observer')
         self.assertNotEqual(0, observer.wait_for_exit())
-        self.assertIn('usage, observer.py <gameno>', observer.errors)
+        self.assertIn('usage, bgcobserver <gameno>', observer.errors)
         self.assertNotIn('TypeError', observer.errors)
 
 

@@ -6,6 +6,7 @@ module is deliberately a separate one so that
 is split into layers, and remain evidence that nothing observable changed.
 """
 
+import os
 import sys
 import time
 import shutil
@@ -21,20 +22,42 @@ PYTHON = sys.executable
 
 # the one place that knows where the role entry points live
 CLI_DIR = ROOT / 'src' / 'board_game_concept' / 'cli'
-SERVER = CLI_DIR / 'server.py'
-CLIENT = CLI_DIR / 'client.py'
-OBSERVER = CLI_DIR / 'observer.py'
 
-SERVER_PROMPT = 'server.py> '
-CLIENT_PROMPT = 'client.py> '
-OBSERVER_PROMPT = 'observer.py> '
+
+def launcher(command, module):
+    """How to start a role: the installed command, or its module file.
+
+    The point of the suite is to drive what a user drives, so an installed
+    `bgc<role>` on the path wins. Without one - a fresh clone, nothing
+    installed - fall back to running the module file with this interpreter,
+    which the role's own `sys.path` bootstrap makes work. Either way the role
+    names itself from its `PROGRAM` constant, so both launchers produce the
+    same prompts and the same usage, and every test below reads the same.
+    """
+    installed = shutil.which(command)
+    if installed is not None:
+        return [installed]
+    return [PYTHON, str(CLI_DIR / module)]
+
+
+SERVER = launcher('bgcserver', 'bgcserver.py')
+CLIENT = launcher('bgcclient', 'bgcclient.py')
+OBSERVER = launcher('bgcobserver', 'bgcobserver.py')
+
+SERVER_PROMPT = 'bgcserver> '
+CLIENT_PROMPT = 'bgcclient> '
+OBSERVER_PROMPT = 'bgcobserver> '
 
 
 class InteractiveProcess:
     def __init__(self, args, cwd):
+        # an installed console script cannot be handed `-u`, so ask for
+        # unbuffered output the way that works for both launchers
+        environment = dict(os.environ, PYTHONUNBUFFERED='1')
         self.proc = Popen(
-            [PYTHON, '-u'] + [str(a) for a in args],
+            [str(a) for a in args],
             cwd=str(cwd),
+            env=environment,
             stdin=PIPE,
             stdout=PIPE,
             stderr=PIPE,
@@ -165,34 +188,34 @@ class CliTestCase(unittest.TestCase):
         return proc
 
     def start_server(self, game_number='test-01'):
-        return self._start([SERVER, '-g', game_number])
+        return self._start(SERVER + ['-g', game_number])
 
     def start_server_with_args(self, args):
-        return self._start([SERVER] + list(args))
+        return self._start(SERVER + list(args))
 
     def start_client(self, game_number, player_number):
-        return self._start([CLIENT, game_number, str(player_number)])
+        return self._start(CLIENT + [game_number, str(player_number)])
 
     def start_client_with_args(self, args):
-        return self._start([CLIENT] + list(args))
+        return self._start(CLIENT + list(args))
 
     def start_observer(self, game_number):
-        return self._start([OBSERVER, game_number])
+        return self._start(OBSERVER + [game_number])
 
     def start_observer_with_args(self, args):
-        return self._start([OBSERVER] + list(args))
+        return self._start(OBSERVER + list(args))
 
     def start_entry_point(self, role):
         """Call a role's main() with no arguments, as its console script does.
 
-        `pyproject.toml` declares `board-game-<role>` as `...cli.<role>:main`,
-        and setuptools generates a wrapper that calls it with nothing at all.
-        Run in a subprocess that puts `src` on the path itself, so this holds
+        `pyproject.toml` declares `bgc<role>` as `...cli.bgc<role>:main`, and
+        setuptools generates a wrapper that calls it with nothing at all. Run
+        in a subprocess that puts `src` on the path itself, so this holds
         whether or not the package happens to be installed.
         """
         code = (f"import sys; sys.path.insert(0, {str(ROOT / 'src')!r}); "
-                f"from board_game_concept.cli.{role} import main; main()")
-        return self._start(['-c', code])
+                f"from board_game_concept.cli.bgc{role} import main; main()")
+        return self._start([PYTHON, '-c', code])
 
     def at_prompt(self, proc, prompt):
         """Send nothing; just confirm the role is still asking for input."""

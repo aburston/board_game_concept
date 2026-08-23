@@ -11,10 +11,14 @@ context: |
   each depending only on the ones below it: `domain/` holds the rules (Empty,
   Player, UnitType, Board, Event); `service/` holds what a caller may ask of a
   game and when; `storage/` holds where a game is kept; `cli/` holds the three
-  interactive roles - `server.py` (player 0, the admin and commit authority),
-  `client.py` (a player), and `observer.py` (read-only). Console scripts:
-  board-game-server, board-game-client, board-game-observer,
-  board-game-test-suite. See MODULE_DESCRIPTION.md.
+  interactive roles - `bgcserver.py` (player 0, the admin and commit
+  authority), `bgcclient.py` (a player), and `bgcobserver.py` (read-only), each
+  file named for the command it installs as. Installing the package
+  with `pip install -e .` puts one console script on the path per role -
+  bgcserver, bgcclient, bgcobserver - and nothing else; the standalone test
+  harness is run as `python -m board_game_concept.test_suite`. Each role names
+  itself from a PROGRAM constant, so its prompt and usage are the same however
+  it was launched. See MODULE_DESCRIPTION.md.
 
   Storage is YAML files under `games/_<gameno>/`. The filesystem is also the
   transport between server and clients: players publish orders by writing files
