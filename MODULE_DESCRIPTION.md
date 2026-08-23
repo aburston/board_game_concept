@@ -67,6 +67,11 @@ not know how it is drawn.
 - **`turn.py`** - publishing orders, resolving a turn, and the commit barrier.
   The barrier lives here because "every player has committed" is a rule about
   the game, not a fact about files.
+- **`identity.py`** - who a session is: the administrator, a player, or the
+  observer, and what each is entitled to. The reserved numbers live here rather
+  than in the domain because the engine resolves turns for players and has
+  never heard of an administrator; what a *player's* number may be is `Player`'s
+  and is taken from it.
 - **`errors.py`** - what goes wrong, raised rather than printed, so a caller
   that is not a terminal can decide what to do about it.
 
@@ -105,9 +110,14 @@ not know how it is drawn.
 
 | | Who | Does |
 |---|---|---|
-| `bgcserver` | player 0, the administrator | sets the board size, registers players, then runs unattended as the commit authority |
-| `bgcclient` | one player | defines types, deploys units, orders moves, commits |
-| `bgcobserver` | nobody | watches, and can reload |
+| `bgcserver` | 0, the administrator | sets the board size, registers players, then runs unattended as the commit authority |
+| `bgcclient` | one player, 1 to 999 | defines types, deploys units, orders moves, commits |
+| `bgcobserver` | 1000, the observer | watches, and can reload |
+
+The three numbers are three identities, and `service/identity.py` is where they
+are named. The administrator and the observer are both entitled to the whole
+game and only one of them may change it, which is a distinction nothing below
+the command line could make while they shared a number.
 
 Installing the package puts those three on the path and nothing else. Each names
 itself in its prompt and its usage from a `PROGRAM` constant rather than from

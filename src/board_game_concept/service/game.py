@@ -11,7 +11,8 @@ which this delegates to so that callers have one thing to talk to.
 from ..domain import Board, Player, UnitType
 from ..storage.serialise import restore_draft, serialise_draft
 from . import games, identity, turn
-from .errors import GameDataError, GameError, NoSuchGame, NoSuchPlayer
+from .errors import (GameDataError, GameError, NoSuchGame, NoSuchPlayer,
+                     UnreadableGame)
 
 
 class Game:
@@ -233,6 +234,14 @@ class Game:
 
     def _load_players(self):
         for number in self.repository.player_numbers():
+            # a game is a directory anyone can write into, so a number it holds
+            # is checked before it is trusted. This is not a command that can be
+            # refused and the session carry on - it is a game that cannot be
+            # read, and it ends the session the way an unparseable one does
+            if not identity.is_player(number):
+                raise UnreadableGame(
+                    f"{self.repository.data_path} holds a player that cannot "
+                    f"exist: {identity.out_of_range(number)}")
             # which players are registered is not secret; what they have
             # designed and where it is standing are
             mine = self.sees_everything or number == self.player_number

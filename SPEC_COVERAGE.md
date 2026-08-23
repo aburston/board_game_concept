@@ -515,6 +515,66 @@ Held by `tests/test_server_client_integration.py::TestWorkSurvivesASession`,
 `tests/test_draft_serialisation.py`, `tests/test_draft_cli.py` and
 `tests/test_commit_record.py`.
 
+### 25. The observer was the administrator, and read its uncommitted setup — fixed
+
+`bgcobserver.py` opened its session as player 0, and so did `bgcserver.py`.
+`Game` decided what a session may see with `sees_everything = player_number ==
+0`, so the two roles that differ in the most important way — one may change the
+game and one may not — were the same identity to everything below the CLI. The
+command line got away with it because they are different binaries with
+different grammars: `cli/roles.py` simply did not give the observer the commands
+that write, and nothing else enforced it.
+
+Drafting made it visible. An observer opening a game read the administrator's
+draft and held it as its own:
+
+```
+    administrator sets board 6 7, adds player 1, does NOT commit
+    observer opens the same game
+      → observer board size: (6, 7)
+      → observer holds a draft of: ['set_board', 'add_player']
+```
+
+So the observer saw setup nobody had published, and a session meant to write
+nothing was one recorded command away from writing into somebody else's draft.
+
+Reproduction: size a board and register a player at the server prompt without
+committing, then start an observer on the same game.
+
+Addressed by the `give-the-observer-its-own-number` change: the observer is
+1000, the administrator stays 0, and `service/identity.py` answers what each is
+entitled to. The `== 0` tests turned out to be three different questions wearing
+one test — may this session see everything, does it own units, must its number
+be a registered player — which is why they became questions rather than a wider
+comparison. `games.perform` now refuses a command from an identity that may not
+change a game, so the refusal no longer depends on a role table the caller may
+not go through.
+
+Held by `tests/test_player_numbering.py` and `tests/test_identity_cli.py`.
+
+### 26. Any number at all could be registered as a player — fixed
+
+`add player` had no range check. `add player 0` registered the administrator as
+a player of the game they were running, and `add player 1000` was accepted too,
+which became a direct collision once 1000 meant the observer. `Player` asserted
+only that a number was a non-negative integer, so `add player -1` raised an
+`AssertionError` — and the roles catch `GameError`, so it escaped and **killed
+the server**. That is the same class as number 4 above, which was fixed for a
+bare `add` and left live for a negative number.
+
+Reproduction: `add player -1` at the server prompt.
+
+Addressed by the same change: `Player` states the range 1 to 999, as `Board`
+already states its own limits, and the service turns the refusal into one a
+caller can act on exactly as `set_board_size` does. The range is the domain's
+because a player number arrives by three doors — the prompt, a loaded player
+file, and a game read off disk — and a check at any one of them is a check the
+others do not get. A game on disk holding a number that cannot be a player's is
+reported as a game that cannot be read rather than opening into an unclear
+state.
+
+Held by `tests/test_player_numbering.py` and `tests/test_identity_cli.py`.
+
 ## Unspecified, and worth deciding
 
 Nothing, at present. The two entries that stood here — units passing through

@@ -14,7 +14,7 @@ from board_game_concept.cli.help import print_help
 from board_game_concept.cli.render import print_dropped
 from board_game_concept.cli.session import (describe_outcome, load_game,
                                             read_command, report)
-from board_game_concept.service import games
+from board_game_concept.service import games, identity
 from board_game_concept.service.errors import GameError
 
 ROLE = roles.CLIENT
@@ -45,6 +45,13 @@ def main(argv=None):
         try:
             player_number = int(argv[2])
         except ValueError:
+            usage()
+            sys.exit(1)
+        # checked before the game is opened, so that a caller who cannot be
+        # this player is told so rather than opened as one and then refused
+        # by every command they try
+        if not identity.is_player(player_number):
+            print(identity.out_of_range(player_number), file=sys.stderr)
             usage()
             sys.exit(1)
     else:

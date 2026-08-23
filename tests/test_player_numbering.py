@@ -101,3 +101,96 @@ def test_a_reserved_number_is_refused_as_reserved_and_not_as_out_of_range():
     assert 'reserved' in identity.out_of_range(1000)
     assert 'reserved' not in identity.out_of_range(1001)
     assert '999' in identity.out_of_range(1001)
+
+
+# --- what the three identities see of each other
+
+
+def test_the_observer_does_not_see_the_administrators_uncommitted_setup(
+        tmp_path):
+    """The leak that made the shared identity visible.
+
+    An observer running as the administrator read the administrator's draft and
+    held it as its own - so it saw setup nobody had published, and a session
+    meant to write nothing was one recorded command away from writing into
+    somebody else's draft.
+    """
+    from board_game_concept import Game, YamlGameRepository
+    from board_game_concept.service import games
+    from board_game_concept.service.commands import AddPlayer, SetBoard
+
+    def session(number):
+        game = Game(YamlGameRepository('watched', str(tmp_path)), number)
+        game.load()
+        return game
+
+    admin = session(identity.ADMINISTRATOR)
+    games.perform(admin, SetBoard(size_x=6, size_y=7))
+    games.perform(admin, AddPlayer(number=1))
+
+    observer = session(identity.OBSERVER)
+
+    assert observer.getBoard() is None
+    assert observer.getPlayers() == {}
+    assert observer.getDraft() == []
+
+
+def test_the_administrator_still_gets_its_own_setup_back(tmp_path):
+    from board_game_concept import Game, YamlGameRepository
+    from board_game_concept.service import games
+    from board_game_concept.service.commands import SetBoard
+
+    def session(number):
+        game = Game(YamlGameRepository('watched', str(tmp_path)), number)
+        game.load()
+        return game
+
+    games.perform(session(identity.ADMINISTRATOR),
+                  SetBoard(size_x=6, size_y=7))
+    reopened = session(identity.ADMINISTRATOR)
+
+    assert (reopened.getSizeX(), reopened.getSizeY()) == (6, 7)
+
+
+def test_both_reserved_identities_are_shown_the_whole_board(tmp_path):
+    from game_harness import GameHarness
+
+    harness = GameHarness(tmp_path)
+    harness.create(4, 4, [1, 2])
+    harness.deploy(1, [('Cross', 'X', 1, 5, 10)], [('Cross', 'x1', 0, 0)])
+    harness.deploy(2, [('Ring', 'O', 1, 5, 10)], [('Ring', 'o1', 3, 3)])
+    harness.resolve()
+
+    for number in (identity.ADMINISTRATOR, identity.OBSERVER):
+        session = harness.session(number)
+        assert sorted(unit.name for unit in session.getBoard().units) == [
+            'o1', 'x1'], f'{identity.describe(number)} was shown the wrong board'
+
+
+def test_a_session_is_not_refused_for_being_an_identity_that_holds_no_units(
+        tmp_path):
+    """Neither reserved identity is registered, so neither is looked for."""
+    from game_harness import GameHarness
+
+    harness = GameHarness(tmp_path)
+    harness.create(4, 4, [1])
+
+    for number in (identity.ADMINISTRATOR, identity.OBSERVER):
+        harness.session(number)
+
+    # a player number the game does not have is still refused
+    from board_game_concept.service.errors import NoSuchPlayer
+    with pytest.raises(NoSuchPlayer):
+        harness.session(2)
+
+
+def test_the_commit_barrier_never_waits_for_a_reserved_identity(tmp_path):
+    from game_harness import GameHarness
+
+    harness = GameHarness(tmp_path)
+    harness.create(4, 4, [1])
+
+    server = harness.session(identity.ADMINISTRATOR)
+    assert sorted(server.getPlayers()) == [1]
+    assert identity.ADMINISTRATOR not in server.getPlayers()
+    assert identity.OBSERVER not in server.getPlayers()

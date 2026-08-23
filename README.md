@@ -67,6 +67,10 @@ Installing the package puts one command on your path per role:
   * `bgcserver -g <gameno>` → runs the game server/admin interface
   * `bgcobserver <gameno>` → runs the neutral game observer
 
+The three roles are three identities: 0 is the administrator, 1 to 999
+are the players, and 1000 is the observer. `bgcclient` takes a player's
+number and refuses one outside that range.
+
 Each resolves a game against the directory you run it in, as `games/_<gameno>`.
 
 Inside a session, `show board`, `show types`, `show units`, `show players` and

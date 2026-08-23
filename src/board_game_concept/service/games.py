@@ -12,6 +12,7 @@ holding only the part that is genuinely theirs - what to say, and to whom.
 import yaml
 
 from ..domain import Board, Player, UnitType
+from . import identity
 from .errors import GameError
 
 
@@ -31,12 +32,29 @@ def set_board_size(data, command):
     data.setBoard(board)
 
 
+def _player(number):
+    """A player of that number, or a refusal saying why there cannot be one.
+
+    The range is the domain's and `Player` states it; this turns the refusal
+    into one a caller can act on, as `set_board_size` does for the board's own
+    limits. Without it the assertion escapes as an `AssertionError`, which the
+    roles do not catch, and a mistyped number ends the session.
+    """
+    if not identity.is_player(number):
+        raise GameError(identity.out_of_range(number))
+    try:
+        return Player(number)
+    except AssertionError as e:
+        raise GameError(str(e)) from e
+
+
 def add_player(data, command):
     """Register a player, before the game starts."""
     if data.getNewGame() is False:
         raise GameError("can't add players to an existing game")
+    player = _player(command.number)
     data.getPlayers()[command.number] = {
-        'obj': Player(command.number),
+        'obj': player,
         'types': {},
     }
 
@@ -63,8 +81,11 @@ def load_player(data, command):
         raise GameError("can't add players to an existing game")
     player_data = _read_yaml(command.path, 'player')
     number = int(player_data['number'])
+    # a file is written by hand, so its number is checked here at the edge the
+    # same way one typed at the prompt is
+    player = _player(number)
     data.getPlayers()[number] = {
-        'obj': Player(number),
+        'obj': player,
         'types': player_data['types'],
         'units': player_data['units'],
     }
@@ -177,6 +198,14 @@ def perform(data, command):
 
     A command that is refused is not recorded: the draft holds what was done,
     not what was attempted.
+
+    Whether the caller may change a game at all is decided here, from its
+    identity. `cli/roles.py` decides it too, by not offering the observer a
+    command that writes - which is enough for a person at a prompt and nothing
+    at all for a caller that does not go through one.
     """
+    if not identity.may_change(data.player_number):
+        raise GameError(
+            f"{identity.describe(data.player_number)} may not change a game")
     carry_out(data, command)
     data.recordDraft(command)

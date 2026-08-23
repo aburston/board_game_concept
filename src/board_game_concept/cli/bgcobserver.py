@@ -9,6 +9,7 @@ if __package__ is None:
 
 from board_game_concept import Game, YamlGameRepository
 from board_game_concept.cli import complete, roles
+from board_game_concept.service import identity
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (describe_outcome, load_game,
@@ -38,7 +39,10 @@ def main(argv=None):
         print(f"len(argv): {len(argv)}")
 
     if len(argv) == 2:
-        player_number = 0
+        # the observer is its own identity, not the administrator's. Both are
+        # entitled to the whole game and only one may change it, which nothing
+        # below the command line could tell while they shared a number
+        player_number = identity.OBSERVER
         gameno = argv[1]
     else:
         usage()

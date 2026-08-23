@@ -29,15 +29,15 @@ be green at the end of the group with no test edited.
 
 ## 3. Refuse a bad number wherever it arrives
 
-- [ ] 3.1 Have `games.add_player` refuse a reserved or out-of-range number as a
+- [x] 3.1 Have `games.add_player` refuse a reserved or out-of-range number as a
       `GameError`, catching the domain's assertion the way `set_board_size`
       already catches the board's (design.md — Decision 5). Verify `add player
       0`, `add player 1000`, `add player -1` and `add player 1000000` are each
       reported at the prompt and leave the session taking commands.
-- [ ] 3.2 Have `games.load_player` refuse a file whose player number is not a
+- [x] 3.2 Have `games.load_player` refuse a file whose player number is not a
       player's, as the same `GameError`. Verify the server reports it and
       registers nobody.
-- [ ] 3.3 Have `Game.load` report a game whose registered players include a
+- [x] 3.3 Have `Game.load` report a game whose registered players include a
       number out of range as a game that cannot be read, rather than letting an
       `AssertionError` escape. Verify a hand-written game directory holding
       player 0 or player 1000 is reported and the session exits, and that no
@@ -47,23 +47,23 @@ be green at the end of the group with no test edited.
 
 The step that changes what anyone can observe.
 
-- [ ] 4.1 Launch `bgcobserver` as `identity.OBSERVER` instead of 0. Verify
+- [x] 4.1 Launch `bgcobserver` as `identity.OBSERVER` instead of 0. Verify
       `tests/test_cli_observer_surface.py` passes with no edit — the observer
       still sees every unit, still refuses every mutating command, and still
       shows `must create board` for a game with no board.
-- [ ] 4.2 Verify the leak the change exists for is closed: an administrator that
+- [x] 4.2 Verify the leak the change exists for is closed: an administrator that
       sizes a board and registers players without committing, and an observer
       that then opens the same game, must leave the observer showing none of it
       and holding no draft. This is the behaviour demonstrated in proposal.md —
       Why, so it gets a test named for it.
-- [ ] 4.3 Have `bgcclient` refuse a player number outside 1 to 999 before it
+- [x] 4.3 Have `bgcclient` refuse a player number outside 1 to 999 before it
       opens a session, alongside the non-integer it already refuses. Verify
       `bgcclient <game> 0`, `1000` and `-1` each report and exit with a failure
       status, and that `1` and `999` still open.
 
 ## 5. Refuse the observer below the CLI
 
-- [ ] 5.1 Have `games.perform` refuse a command from an identity that may not
+- [x] 5.1 Have `games.perform` refuse a command from an identity that may not
       change the game (design.md — Decision 4). Verify a session opened as the
       observer is refused a command that would change the game even though no
       role table was consulted, and that the administrator's setup commands and
@@ -71,14 +71,14 @@ The step that changes what anyone can observe.
 
 ## 6. Finish
 
-- [ ] 6.1 Update `MODULE_DESCRIPTION.md` and `README.md`, which both describe the
+- [x] 6.1 Update `MODULE_DESCRIPTION.md` and `README.md`, which both describe the
       observer as player 0. Verify neither names a number the code no longer
       uses.
-- [ ] 6.2 Record in `SPEC_COVERAGE.md` the defects this change closes — the
+- [x] 6.2 Record in `SPEC_COVERAGE.md` the defects this change closes — the
       observer sharing the administrator's identity and reading its draft,
       `add player 0` and `add player 1000` being accepted, and `add player -1`
       killing the server with an `AssertionError` that escaped the roles' error
       handling. Verify every entry names a test that now holds it.
-- [ ] 6.3 Run the full suite, `flake8 . --select=E9,F63,F7,F82` as CI does, and
+- [x] 6.3 Run the full suite, `flake8 . --select=E9,F63,F7,F82` as CI does, and
       `pylint` against the configured `.pylintrc`. Verify the suite is green and
       lint reports no message kind in a file that it did not report before.
