@@ -78,8 +78,6 @@ def commit():
     pass
 
 
-
-
 def main(argv=None):
     # the console script entry point calls this with nothing, so fall back to
     # the process arguments

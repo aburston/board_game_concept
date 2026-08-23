@@ -9,7 +9,7 @@ import sys
 
 import yaml
 
-from ..domain import Empty, UnitType
+from ..domain import UnitType
 from ..storage.serialise import serialise_orders, serialise_units
 
 
