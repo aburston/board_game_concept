@@ -1,4 +1,4 @@
-from .cell import Empty
+from .square import Empty
 from .events import Event, describe
 from .player import Player
 from .unit import UnitType

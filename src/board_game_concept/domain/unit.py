@@ -1,4 +1,4 @@
-from .cell import Empty
+from .square import Empty
 from .events import Event
 from .player import Player
 
@@ -6,7 +6,6 @@ from .player import Player
 # Unit
 #   name: One or more character
 #   symbol: One single character
-#   speed: speed 10 is to move once per clock tick and 1 is to move once every 10th tick
 #   attack: damage per attack
 #   health: total amount of health
 
@@ -22,6 +21,11 @@ class UnitType:
     INITIAL = 0
     MOVING = 1
     NOP = 2
+
+    # what one move costs. This was `energy // 100 + 1`, which under the
+    # 1 to 100 energy cap only ever yielded 1 - except from exactly 100,
+    # where it yielded 2 - so it read as though it scaled and never did
+    MOVE_COST = 1
 
     def __init__(self, name, symbol, attack, health, energy):
         self.name = name
@@ -48,6 +52,14 @@ class UnitType:
         assert isinstance(energy, int), "health must be an integer value"
         assert ((energy >= 1) and (energy <= 100)
                 ), "energy must be a value from 1 to 100"
+
+        # the design this unit was made from, kept alongside the values play
+        # wears down. `type_name` was already preserved through the copy for
+        # the same reason; a unit's current health is not its type's health,
+        # and a destroyed one has none at all
+        self.type_attack = attack
+        self.type_health = health
+        self.type_energy = energy
 
         self.state = UnitType.INITIAL
         self.direction = UnitType.NONE
@@ -99,103 +111,46 @@ class UnitType:
             if events is not None:
                 events.append(Event('destroyed', unit=self.name))
 
-    # calculates attacks and marks units as DESTROYED, creates arrays of units in squares where multiple units are
-    # trying to move simultaneously into the same square
-    def preCommit(self, events=None):
-        if self.state == UnitType.INITIAL:
-            # deployment is resolved in commit(). Board.add has already refused
-            # any deployment onto an occupied square
-            pass
-        elif self.state == UnitType.MOVING:
-            dest_x = self.x
-            dest_y = self.y
-            if self.direction == UnitType.NORTH:
-                dest_y = self.y - 1
-                self.direction = UnitType.NONE
-                if dest_y < 0:
-                    self.y = 0
-                    self.state = UnitType.NOP
-                    return
-            elif self.direction == UnitType.EAST:
-                dest_x = self.x + 1
-                self.direction = UnitType.NONE
-                if dest_x > self.board_max_x - 1:
-                    self.x = self.board_max_x - 1
-                    self.state = UnitType.NOP
-                    return
-            elif self.direction == UnitType.SOUTH:
-                dest_y = self.y + 1
-                self.direction = UnitType.NONE
-                if dest_y > self.board_max_y - 1:
-                    self.y = self.board_max_y - 1
-                    self.state = UnitType.NOP
-                    return
-            elif self.direction == UnitType.WEST:
-                dest_x = self.x - 1
-                self.direction = UnitType.NONE
-                if dest_x < 0:
-                    self.x = 0
-                    self.state = UnitType.NOP
-                    return
-            else:
-                self.state = UnitType.NOP
-                return
+    # where this unit would like to go, decided against the board as the turn
+    # began. Nothing is written: the board plans every move before it applies
+    # any, so that what a unit finds at its destination cannot depend on
+    # whether the unit standing there has been resolved yet
+    def planMove(self):
+        """`(destination, refusal)` for this unit's order this turn.
 
-            if type(self.board[dest_x, dest_y]) is Empty:
-                energy = self.energy - (self.energy // 100 + 1)
-                # only act if the unit has enough energy
-                if energy >= 0:
-                    self.energy = energy
-                    self.vacate()
-                    self.moved_from = (self.x, self.y)
-                    self.setCoords(dest_x, dest_y)
-                    self.board[self.x, self.y] = [self]
-                    if events is not None:
-                        events.append(Event(
-                            'moved', unit=self.name, x=self.x, y=self.y))
-            elif type(self.board[dest_x, dest_y]) is list:
-                energy = self.energy - (self.energy // 100 + 1)
-                # only act if the unit has enough energy
-                if energy >= 0:
-                    self.energy = energy
-                    self.vacate()
-                    self.moved_from = (self.x, self.y)
-                    self.setCoords(dest_x, dest_y)
-                    self.board[dest_x, dest_y].append(self)
-                    if events is not None:
-                        events.append(Event(
-                            'joined', unit=self.name, x=self.x, y=self.y))
-            elif type(self.board[dest_x, dest_y]) is UnitType:
-                # moving into an occupied square starts a combat exchange.
-                # Engaging is still a move, and is charged for like one: this
-                # used to be the one way onto a square that cost nothing, so a
-                # unit that kept meeting opponents moved for free while one
-                # crossing open ground paid every step
-                cost = self.energy // 100 + 1
-                if self.energy >= self.attack and self.energy - cost >= 0:
-                    self.energy = self.energy - cost
-                    target = self.board[dest_x, dest_y]
-                    self.vacate()
-                    self.moved_from = (self.x, self.y)
-                    self.setCoords(dest_x, dest_y)
-                    self.board[dest_x, dest_y] = [target, self]
-                    if events is not None:
-                        events.append(Event(
-                            'engaged', unit=self.name, target=target.name,
-                            x=self.x, y=self.y))
-            self.state = UnitType.NOP
-            return
+        `destination` is None when the unit is not moving or cannot; `refusal`
+        names the reason when an order was given and will not be carried out.
+        """
+        if self.state != UnitType.MOVING:
+            return None, None
+
+        dest_x, dest_y = self.x, self.y
+        if self.direction == UnitType.NORTH:
+            dest_y = self.y - 1
+        elif self.direction == UnitType.EAST:
+            dest_x = self.x + 1
+        elif self.direction == UnitType.SOUTH:
+            dest_y = self.y + 1
+        elif self.direction == UnitType.WEST:
+            dest_x = self.x - 1
         else:
-            pass
+            return None, None
+
+        if not (0 <= dest_x < self.board_max_x and 0 <= dest_y < self.board_max_y):
+            return None, 'the move would leave the board'
+        if self.energy < UnitType.MOVE_COST:
+            return None, 'not enough energy to move'
+        return (dest_x, dest_y), None
 
     # takes this unit out of the square it holds, leaving behind anything else
     # sharing that square
     def vacate(self):
-        cell = self.board[self.x, self.y]
-        if not (type(cell) is list):
-            self.board[self.x, self.y] = Empty()
+        square = self.board[self.x, self.y]
+        if not (type(square) is list):
+            if square is self:
+                self.board[self.x, self.y] = Empty()
             return
-        remaining = [unit for unit in cell if unit is not self]
+        remaining = [unit for unit in square if unit is not self]
         if not remaining:
             self.board[self.x, self.y] = Empty()
         elif len(remaining) == 1:
@@ -203,19 +158,36 @@ class UnitType:
         else:
             self.board[self.x, self.y] = remaining
 
+    # puts this unit into the square it is standing on, joining whatever is
+    # already there rather than displacing it
+    def occupy(self, x, y):
+        self.setCoords(x, y)
+        occupant = self.board[x, y]
+        if type(occupant) is Empty:
+            self.board[x, y] = self
+        elif type(occupant) is list:
+            if self not in occupant:
+                occupant.append(self)
+        elif occupant is not self:
+            self.board[x, y] = [occupant, self]
+
     # sends this unit back to the square it left this turn, so that an
-    # undecided contest leaves the board as it was. Returns True if the unit
-    # retreated.
-    def retreat(self, events=None):
+    # undecided contest leaves the board as it was. `free` is the set of
+    # squares movement left empty, judged once for the whole turn so that one
+    # contest resolving cannot change the answer for another. Returns True if
+    # the unit retreated.
+    def retreat(self, free, events=None):
         if self.moved_from is None:
             # nothing to go back to: the unit was already holding this square,
             # or was deployed onto it this turn
             return False
-        from_x, from_y = self.moved_from
-        if not (type(self.board[from_x, from_y]) is Empty):
+        if self.moved_from not in free:
             # something else took the square during this turn, so there is
             # nowhere to go back to and the unit stays where it is
             return False
+        from_x, from_y = self.moved_from
+        free.discard(self.moved_from)
+        self.vacate()
         self.setCoords(from_x, from_y)
         self.board[from_x, from_y] = self
         self.moved_from = None
@@ -224,112 +196,136 @@ class UnitType:
                 'retreated', unit=self.name, x=from_x, y=from_y))
         return True
 
-    # resolves the contest in the square this unit occupies. Attack rounds repeat
-    # until at most one contestant is left standing or a round lands no attacks,
-    # which is what stops a contest nobody can win from spinning forever. There
-    # is friendly fire: a contestant attacks every other unit in the square,
-    # whoever owns it. Running out of energy never destroys a unit, it only
-    # makes it inert.
-    def resolveContest(self, events=None):
-        cell_x = self.x
-        cell_y = self.y
-        contestants = self.board[cell_x, cell_y]
-        if events is not None:
-            events.append(Event(
-                'contested', x=cell_x, y=cell_y, units=len(contestants)))
-        while True:
-            # recount the survivors afresh each round, rather than decrementing
-            # a running total that counts the same casualty again every round
-            standing = [unit for unit in contestants if not unit.destroyed]
-            if len(standing) < 2:
-                break
-            attacked = False
-            # attackers and targets are the units standing at the start of the
-            # round, so a unit destroyed mid-round still lands its own attack
-            for unit in standing:
-                for target in standing:
-                    if unit is target:
-                        continue
-                    energy = unit.energy - unit.attack
-                    if energy < 0:
-                        # too spent to attack: inert, but not destroyed
-                        continue
-                    unit.energy = energy
-                    if events is not None:
-                        events.append(Event(
-                            'attacked', unit=unit.name, target=target.name,
-                            damage=unit.attack))
-                    target.incomingAttack(unit.attack, events)
-                    # populate seen_by, recording each contestant once however
-                    # many rounds of attacks the contest takes: a unit listed
-                    # twice is reported twice to the players who saw it
-                    if target not in unit.seen_by:
-                        unit.seen_by.append(target)
-                    if unit not in target.seen_by:
-                        target.seen_by.append(unit)
-                    attacked = True
-            if not attacked:
-                # no contestant can pay for an attack, so the contest is over
-                break
-
-        for unit in contestants:
-            if unit.destroyed:
-                unit.on_board = False
-
-        survivors = [unit for unit in contestants if not unit.destroyed]
-        if len(survivors) > 1:
-            # nobody won the square, so everyone who moved in goes back where
-            # it came from and the square is left as it was
-            survivors = [unit for unit in survivors
-                         if not unit.retreat(events)]
-
-        if not survivors:
-            self.board[cell_x, cell_y] = Empty()
-            if events is not None:
-                events.append(Event('emptied', x=cell_x, y=cell_y))
-        elif len(survivors) == 1:
-            self.board[cell_x, cell_y] = survivors[0]
-            if events is not None:
-                events.append(Event(
-                    'held', unit=survivors[0].name, x=cell_x, y=cell_y))
-        else:
-            # no survivor could fall back, so they share the square
-            self.board[cell_x, cell_y] = survivors
-            if events is not None:
-                events.append(Event(
-                    'shared', x=cell_x, y=cell_y, units=len(survivors)))
-
-    # processes all arrays created in the precommit phase, by calculating attacks and marking units DESTROYED
-    # removes all DESTROYED units from the board
-    def commit(self, events=None):
-        if self.state == UnitType.INITIAL:
-            # add the unit to the board. Board.add refuses to deploy onto an
-            # occupied square, so the square is empty unless a saved game is
-            # being restored, in which case the units it held are put back as
-            # they were
-            occupant = self.board[self.x, self.y]
-            if type(occupant) is Empty:
-                self.board[self.x, self.y] = self
-            elif type(occupant) is list:
-                occupant.append(self)
-            else:
-                self.board[self.x, self.y] = [occupant, self]
-            self.state = UnitType.NOP
-            if events is not None:
-                events.append(Event(
-                    'deployed', unit=self.name, x=self.x, y=self.y))
-        elif self.state == UnitType.MOVING:
-            assert not (
-                self.state == UnitType.MOVING), "During commit, no unit should be in the MOVING state"
-        else:
-            if type(self.board[self.x, self.y]) is list:
-                self.resolveContest(events)
-            else:
-                if self.destroyed:
-                    self.vacate()
-                    self.on_board = False
-                    if events is not None:
-                        events.append(Event('removed', unit=self.name))
-
     def __str__(self):
         return (self.symbol)
+
+
+# Attack rounds repeat until at most one contestant is left standing or a round
+# lands no attacks, which is what stops a contest nobody can win from spinning
+# forever. There is friendly fire: a contestant attacks every other unit in the
+# contest, whoever owns it. Running out of energy never destroys a unit, it only
+# makes it inert.
+def exchangeAttacks(contestants, events=None):
+    """Fight until the contest is decided or nobody can pay. Returns survivors."""
+    while True:
+        # recount the survivors afresh each round, rather than decrementing
+        # a running total that counts the same casualty again every round
+        standing = [unit for unit in contestants if not unit.destroyed]
+        if len(standing) < 2:
+            break
+        attacked = False
+        # attackers and targets are the units standing at the start of the
+        # round, so a unit destroyed mid-round still lands its own attack
+        for unit in standing:
+            # one swing, one charge. The cost used to sit inside the loop
+            # below, so a unit paid once per opponent and a crowd drained it at
+            # a rate decided by how many happened to be standing there - and a
+            # unit that could afford some but not all of its attacks struck
+            # whichever opponents came first in the list, which is a rule
+            # decided by list position rather than by the rules
+            if unit.energy < unit.attack:
+                # too spent to attack: inert, but not destroyed. The round is
+                # all or nothing, so there is no half-paid round to hand out
+                continue
+            unit.energy = unit.energy - unit.attack
+            for target in standing:
+                if unit is target:
+                    continue
+                if events is not None:
+                    events.append(Event(
+                        'attacked', unit=unit.name, target=target.name,
+                        damage=unit.attack))
+                target.incomingAttack(unit.attack, events)
+                # populate seen_by, recording each contestant once however
+                # many rounds of attacks the contest takes: a unit listed
+                # twice is reported twice to the players who saw it
+                if target not in unit.seen_by:
+                    unit.seen_by.append(target)
+                if unit not in target.seen_by:
+                    target.seen_by.append(unit)
+                attacked = True
+        if not attacked:
+            # no contestant can pay for an attack, so the contest is over
+            break
+
+    for unit in contestants:
+        if unit.destroyed:
+            unit.on_board = False
+    return [unit for unit in contestants if not unit.destroyed]
+
+
+def resolveContest(board, x, y, contestants, free, events=None):
+    """Fight out one square and decide who is left holding it."""
+    if events is not None:
+        events.append(Event(
+            'contested', x=x, y=y, units=len(contestants)))
+    survivors = exchangeAttacks(contestants, events)
+
+    for unit in contestants:
+        if unit.destroyed:
+            unit.vacate()
+
+    if len(survivors) > 1:
+        # nobody won the square, so everyone who moved in goes back where it
+        # came from and the square is left as it was
+        if events is not None:
+            events.append(Event(
+                'undecided', x=x, y=y,
+                units=','.join(sorted(unit.name for unit in survivors))))
+        survivors = [unit for unit in survivors
+                     if not unit.retreat(free, events)]
+
+    if not survivors:
+        board[x, y] = Empty()
+        if events is not None:
+            events.append(Event('emptied', x=x, y=y))
+    elif len(survivors) == 1:
+        board[x, y] = survivors[0]
+        if events is not None:
+            events.append(Event(
+                'held', unit=survivors[0].name, x=x, y=y))
+    else:
+        # no survivor could fall back, so they share the square
+        board[x, y] = survivors
+        if events is not None:
+            events.append(Event(
+                'shared', x=x, y=y, units=len(survivors)))
+
+
+def resolveCollision(first, second, events=None):
+    """Fight out a head-on exchange, in which neither unit moved.
+
+    Two units ordered into each other's squares used to pass straight through
+    one another, each arriving where the other started without either noticing.
+    They collide instead. There is no square to put them both in that does not
+    favour one of them, so they fight where they stand and the survivor - if
+    there is one - completes its move.
+    """
+    if events is not None:
+        # named in a settled order: which of the two is "first" is an accident
+        # of how the board holds them, and the collision is the same either way
+        near, far = sorted((first, second),
+                           key=lambda u: (u.player.number, u.name))
+        events.append(Event(
+            'collided', unit=near.name, target=far.name,
+            x=near.x, y=near.y, to_x=far.x, to_y=far.y))
+    survivors = exchangeAttacks([first, second], events)
+
+    for unit in (first, second):
+        if unit.destroyed:
+            unit.vacate()
+
+    if len(survivors) == 1:
+        survivor = survivors[0]
+        loser = second if survivor is first else first
+        target_x, target_y = loser.x, loser.y
+        survivor.vacate()
+        survivor.occupy(target_x, target_y)
+        if events is not None:
+            events.append(Event(
+                'held', unit=survivor.name, x=target_x, y=target_y))
+    elif len(survivors) == 2 and events is not None:
+        # neither could decide it, so both stay where the turn found them
+        events.append(Event(
+            'undecided', x=first.x, y=first.y,
+            units=','.join(sorted(unit.name for unit in survivors))))

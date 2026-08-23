@@ -36,6 +36,16 @@ class GameRepository:
     def write_board(self, size_x, size_y):
         raise NotImplementedError
 
+    def read_progress(self):
+        """How far the game has got: the turn number, who is out, how it ended.
+
+        Returns a record or None when no turn has been resolved yet.
+        """
+        raise NotImplementedError
+
+    def write_progress(self, progress):
+        raise NotImplementedError
+
     def read_units(self):
         """Every unit on the board, as plain records."""
         raise NotImplementedError
@@ -97,7 +107,7 @@ class GameRepository:
     def read_rejections(self, number):
         raise NotImplementedError
 
-    def write_rejections(self, number, rejected):
+    def write_rejections(self, number, rejected, turn=None):
         raise NotImplementedError
 
     # --- telling the other side something has changed

@@ -4,23 +4,38 @@ context: |
   Board Game Concept: a turn-based, simultaneous-commit strategy game where
   players design their own unit types, deploy them, and order them each turn.
 
-  Tech stack: Python 3.10+, PyYAML, pytest. Optional `board` library for cell
+  Tech stack: Python 3.10+, PyYAML, pytest. Optional `board` library for square
   storage, with a built-in fallback grid when it is absent.
 
-  Layout: the importable package is `src/board_game_concept/`. Core engine in
-  `BoardGameConcept.py` (Empty, Player, UnitType, Board); persistence and the
-  on-disk game database in `GameData.py`; three CLI roles in `server.py`
-  (player 0, the admin and commit authority), `client.py` (a player), and
-  `observer.py` (read-only). Console scripts: board-game-server,
-  board-game-client, board-game-observer, board-game-test-suite.
+  Layout: the importable package is `src/board_game_concept/`, in four layers,
+  each depending only on the ones below it: `domain/` holds the rules (Empty,
+  Player, UnitType, Board, Event); `service/` holds what a caller may ask of a
+  game and when; `storage/` holds where a game is kept; `cli/` holds the three
+  interactive roles - `server.py` (player 0, the admin and commit authority),
+  `client.py` (a player), and `observer.py` (read-only). Console scripts:
+  board-game-server, board-game-client, board-game-observer,
+  board-game-test-suite. See MODULE_DESCRIPTION.md.
 
   Storage is YAML files under `games/_<gameno>/`. The filesystem is also the
   transport between server and clients: players publish orders by writing files
   and the server publishes results the same way.
 
-  Domain notes: turns are simultaneous and gated on every player committing.
-  Combat is simultaneous multi-round attrition in any cell holding more than one
-  unit. Visibility is contact-based and recomputed each turn.
+  INVARIANT - no randomness in the resolution of the rules. A turn is a pure
+  function of the board and the orders given: the same orders on the same board
+  always resolve the same way. Nothing in resolution may consult a random
+  number generator, a clock, or an object identity. Where two things could
+  happen, the rules decide which - never the order a list happens to hold its
+  members in, which is unpredictable to a player in the same way a die roll
+  would be and harder to see. tests/test_determinism.py holds the game to this;
+  any proposed rule must be decidable from the board and the orders alone.
+
+  Domain notes: turns are simultaneous and gated on every player still in the
+  game committing. Movement is planned against the board as the turn began and
+  then applied all at once, so nothing depends on the order units are held in.
+  Combat is simultaneous multi-round attrition in any square more than one unit
+  finished the turn in. Visibility is contact-based and recomputed each turn,
+  and a player's session is only ever given its own published view. The last
+  player with an undestroyed unit wins.
 
   See SPEC_COVERAGE.md for known divergences between these specs and the code.
 

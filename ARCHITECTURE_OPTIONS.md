@@ -245,7 +245,7 @@ GET    /games/{id}/turns/{n}/events combat narration for a resolved turn
 
 | | Approach | Notes |
 |---|---|---|
-| **P1** | Server-rendered HTML (Jinja + htmx) | No build step, no JS toolchain. A board is a grid of cells and a turn is a page refresh - htmx polling maps onto the turn model almost exactly. Fastest route to the user stories in `design.md` |
+| **P1** | Server-rendered HTML (Jinja + htmx) | No build step, no JS toolchain. A board is a grid of squares and a turn is a page refresh - htmx polling maps onto the turn model almost exactly. Fastest route to the user stories in `design.md` |
 | **P2** | SPA (React/Svelte) against the JSON API | Better for drag-and-drop deployment and animating combat rounds. Costs a toolchain and a second codebase |
 | **P3** | Port the existing CLIs to be API clients | The real proof the API is complete, and it keeps `tests/test_server_client_integration.py` meaningful instead of obsolete |
 

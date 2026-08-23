@@ -1,10 +1,15 @@
 # board_game_concept
 Board game idea based on building and programming your own units
 
- * Create your own units based on simple rules
- * Program each unit to play the game
- * Run the game automatically resolving the winner
- * Win condition = last player with a functional unit
+`GAME_RULES.md` states the rules the game plays by, in one place.
+
+ * Create your own unit types, and deploy units built from them
+ * Order each unit every turn; every player's orders resolve at once
+ * Units that meet fight it out, and the last player with a unit standing wins
+
+Not built yet: programming a unit to play itself, which the concept is named
+for. Units are ordered by hand, one command at a time. See "Not built yet" in
+`MODULE_DESCRIPTION.md` for the rest.
  
 # server idea
 
@@ -13,7 +18,7 @@ Board game idea based on building and programming your own units
  * Currently the server runs and waits for files to be created and written into a directory on disk by the
 player client.
 
-# web service - [TODO]
+# web service - [TODO, none of this exists yet]
  * combine server, client and observer into different roles in the API based on login
  * create "flask" based web service that exposes all the cli based commands as a RESTful API
  * backend would still be files for now, although moving to sqlite may be a thought via a common data class

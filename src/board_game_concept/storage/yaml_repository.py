@@ -56,6 +56,15 @@ class YamlGameRepository(GameRepository):
         with open(os.path.join(self.data_path, 'board.yaml'), 'w') as file:
             yaml.safe_dump({'board': {'size_x': size_x, 'size_y': size_y}}, file)
 
+    def read_progress(self):
+        return self._read_yaml(
+            os.path.join(self.data_path, 'progress.yaml'), 'the game progress')
+
+    def write_progress(self, progress):
+        self.ensure()
+        with open(os.path.join(self.data_path, 'progress.yaml'), 'w') as file:
+            yaml.safe_dump(progress, file)
+
     def read_units(self):
         units = self._read_yaml(
             os.path.join(self.data_path, 'units.yaml'), 'the units')
@@ -166,9 +175,9 @@ class YamlGameRepository(GameRepository):
             return []
         return rejected.get('rejected') or []
 
-    def write_rejections(self, number, rejected):
+    def write_rejections(self, number, rejected, turn=None):
         with open(self._rejections_file(number), 'w') as file:
-            yaml.safe_dump({'rejected': rejected}, file)
+            yaml.safe_dump({'turn': turn, 'rejected': rejected}, file)
 
     # --- telling the other side something has changed
 

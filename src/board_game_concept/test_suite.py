@@ -149,15 +149,15 @@ def test_board_creation():
 
 
 def test_empty_cell():
-    """Test Empty cell representation"""
-    print("\n[TEST 6] Empty Cell Representation")
+    """Test Empty square representation"""
+    print("\n[TEST 6] Empty Square Representation")
     try:
         empty = Empty()
         assert str(empty) == "#"
-        print(f"✓ Empty cell displays as: '{str(empty)}'")
+        print(f"✓ Empty square displays as: '{str(empty)}'")
         return True
     except Exception as e:
-        print(f"✗ Empty cell test failed: {e}")
+        print(f"✗ Empty square test failed: {e}")
         return False
 
 
@@ -208,8 +208,8 @@ def test_unit_type_state_constants():
 
 
 def test_attack_on_entering_occupied_cell():
-    """Test attack resolution when a unit moves into an occupied cell"""
-    print("\n[TEST 9] Attack on Occupied Cell")
+    """Test attack resolution when a unit moves into an occupied square"""
+    print("\n[TEST 9] Attack on Occupied Square")
     try:
         attacker_type = UnitType('Attacker', 'A', 3, 5, 100)
         defender_type = UnitType('Defender', 'D', 2, 4, 100)
@@ -235,16 +235,16 @@ def test_attack_on_entering_occupied_cell():
         assert square.health == 1
         assert defender.destroyed is True
 
-        print('✓ Combat on entry resolved and victor occupies the target cell')
+        print('✓ Combat on entry resolved and victor occupies the target square')
         return True
     except Exception as e:
-        print(f"✗ Attack on occupied cell failed: {e}")
+        print(f"✗ Attack on occupied square failed: {e}")
         return False
 
 
 def test_simultaneous_move_to_same_cell_attack():
-    """Test attack resolution when two units move into the same empty cell"""
-    print("\n[TEST 10] Simultaneous Move into Same Cell")
+    """Test attack resolution when two units move into the same empty square"""
+    print("\n[TEST 10] Simultaneous Move into Same Square")
     try:
         red_type = UnitType('Red', 'R', 4, 7, 100)
         blue_type = UnitType('Blue', 'B', 3, 5, 100)
@@ -268,7 +268,7 @@ def test_simultaneous_move_to_same_cell_attack():
         assert square.player == p1
         assert blue.destroyed is True
 
-        print('✓ Simultaneous move combat resolved with a single victor occupying the cell')
+        print('✓ Simultaneous move combat resolved with a single victor occupying the square')
         return True
     except Exception as e:
         print(f"✗ Simultaneous move attack failed: {e}")
@@ -286,12 +286,12 @@ def main():
     results.append(("UnitType Creation", test_unit_type_creation()))
     results.append(("UnitType Validation", test_unit_type_constraints()))
     results.append(("Board Creation", test_board_creation()))
-    results.append(("Empty Cell", test_empty_cell()))
+    results.append(("Empty Square", test_empty_cell()))
     results.append(
         ("Opening A Game",
          test_game_data_initialization()))
     results.append(("UnitType Constants", test_unit_type_state_constants()))
-    results.append(("Attack on Occupied Cell",
+    results.append(("Attack on Occupied Square",
                     test_attack_on_entering_occupied_cell()))
     results.append(("Simultaneous Move Combat",
                     test_simultaneous_move_to_same_cell_attack()))

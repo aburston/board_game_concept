@@ -146,11 +146,28 @@ def test_crossing_open_ground_and_engaging_cost_the_same_move():
     assert engaging_cost == crossing_cost
 
 
-def test_a_unit_too_spent_to_pay_for_the_move_does_not_engage():
+def test_a_unit_too_spent_to_attack_still_arrives():
     board = _facing_pair(attacker_energy=1)
     attacker = board.getUnitByName('a')[0]
-    # enough to pay for the move, but not to attack, so no engagement starts
+    # enough to pay for the move but not to attack. Under simultaneous
+    # resolution there is no order-independent moment at which "occupied" can
+    # be tested, so a mover needs only the fare: it arrives and is inert in the
+    # contest it walked into
     attacker.move(UnitType.EAST)
-    board.commit()
+    events = board.commit()
+    assert attacker.energy == 0
+    assert not any(e.kind == 'attacked' and e.detail['unit'] == 'a'
+                   for e in events)
+    assert not attacker.destroyed or attacker.health <= 0
+
+
+def test_a_unit_that_cannot_pay_the_fare_does_not_move():
+    board = _facing_pair(attacker_energy=1)
+    attacker = board.getUnitByName('a')[0]
+    attacker.setEnergy(0)
+    attacker.move(UnitType.EAST)
+    events = board.commit()
     assert (attacker.x, attacker.y) == (0, 0)
-    assert attacker.energy == 1
+    assert attacker.energy == 0
+    assert [e.detail['reason'] for e in events if e.kind == 'refused'] == [
+        'not enough energy to move']

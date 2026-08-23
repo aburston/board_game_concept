@@ -42,6 +42,12 @@ DESCRIPTIONS = {
     'attacked': lambda d: f"{d['unit']} attacks {d['target']} for {d['damage']}",
     'destroyed': lambda d: f"{d['unit']} is destroyed",
     'retreated': lambda d: f"{d['unit']} falls back to ({d['x']}, {d['y']})",
+    'refused': lambda d: (f"{d['unit']} stays at ({d['x']}, {d['y']}): "
+                          f"{d['reason']}"),
+    'collided': lambda d: (f"{d['unit']} and {d['target']} collide between "
+                           f"({d['x']}, {d['y']}) and ({d['to_x']}, {d['to_y']})"),
+    'undecided': lambda d: (f"the contest at ({d['x']}, {d['y']}) is undecided "
+                            f"between {d['units']}"),
     'held': lambda d: f"{d['unit']} holds ({d['x']}, {d['y']})",
     'shared': lambda d: f"({d['x']}, {d['y']}) is left shared by {d['units']} units",
     'emptied': lambda d: f"({d['x']}, {d['y']}) is left empty",

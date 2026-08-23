@@ -10,20 +10,29 @@ source of truth for intended behaviour.
 |---|---|
 | `unit-types` | Unit type definition, statistic ranges, state and direction constants |
 | `board-model` | Board creation, unit placement, name uniqueness, lookup, rendering |
-| `unit-movement` | Movement orders, edge handling, energy cost, entering occupied cells |
-| `combat-resolution` | Contested cells, simultaneous attack rounds, damage, destruction |
-| `turn-commit` | Two-phase turn resolution, the all-players commit barrier, setup vs play |
-| `visibility` | Own units always visible, enemies revealed by contact, per-player views |
+| `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, energy cost |
+| `combat-resolution` | Contested squares, simultaneous attack rounds, damage, destruction is final |
+| `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
+| `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given |
 | `game-persistence` | On-disk game layout, YAML formats, orders as transport |
 | `player-client` | The `board-game-client` command surface |
 | `game-server` | The `board-game-server` command surface and unattended turn cycle |
 | `game-observer` | The `board-game-observer` read-only command surface |
+| `game-outcome` | Player elimination, victory, draw, how a decided game stops, turn numbering |
 
 Validate them with:
 
 ```
 openspec validate --specs --strict
 ```
+
+The invariant every capability is written under is stated in `turn-commit` —
+**no randomness in the resolution of the rules**. `tests/test_determinism.py`
+holds the game to it: hundreds of random boards resolved against every ordering
+of their units, requiring one answer each, plus a check that nothing under
+`domain/` reaches for a random number generator, a clock, or an identity that
+varies between runs. Any proposed rule must be decidable from the board and the
+orders alone.
 
 The scenarios in `player-client`, `game-server` and `game-observer` are covered
 one for one by `tests/test_cli_client_surface.py`,
@@ -51,6 +60,14 @@ the scenarios in `player-client`, `game-server` and `game-observer` out as tests
 found it, and each has a test in `tests/test_cli_*_surface.py`. Number 11 was
 found by playing a game.
 
+Numbers 12 to 21 were found by reading the specs and the source back as one set
+of rules, which is `GAME_RULES.md`, and reproducing each candidate against the
+code rather than inferring it. All were fixed by the `fix-rules-defects` change.
+Numbers 22 and 23 were found afterwards, one by playing a game through the
+console scripts and one by questioning a rule.
+The gap that let the worst of them survive 227 passing tests is that nothing
+played a game on past a unit's death; `tests/test_full_game.py` does.
+
 Every change named below is archived under `openspec/changes/archive/`.
 
 ### 1. Deploying onto an occupied square crashes (issue #1) — fixed
@@ -76,13 +93,13 @@ place it somewhere else on a later turn.
 ### 2. A contest neither unit can win hangs the server (issue #2) — fixed
 
 `UnitType.commit` looped `while unit_count > 1`, and `unit_count` only decreased
-when a unit was destroyed. Two units that contested a cell but could not damage
+when a unit was destroyed. Two units that contested a square but could not damage
 each other — for example, both with energy below their attack value — never
 reduced the count, and the loop never terminated. This was an unbounded spin,
 not a slow turn: the server stopped making progress.
 
 Reproduction: two units with energy below their attack value moved into the same
-cell.
+square.
 
 Addressed by the `fix-combat-stalemate-hang` change: combat ends when a round
 lands no attacks, and an undecided contest returns every unit that moved in to
@@ -103,7 +120,7 @@ defines only `number`, so evaluating the message raised
 `AttributeError: 'Player' object has no attribute 'name'` over the top of it.
 
 Reproduction: two units with more health than one round of attacks can spend
-moved into the same cell, and a client for either player was then started.
+moved into the same square, and a client for either player was then started.
 
 Addressed by the `fix-duplicate-seen-units` change: contact is recorded once per
 unit, a view names each unit it reveals once, restoring a unit the board already
@@ -264,33 +281,233 @@ other move, and is refused when the mover cannot pay, as well as when it has
 too little energy to attack. `unit-movement` gains a scenario saying so, since
 the requirement covering it was general enough to be read as not applying.
 
+### 12. Destroyed units came back to life (`Q1`) — fixed
+
+A unit is a shallow copy of its type, and a type's state is `INITIAL`, which
+means *waiting to be deployed*. Restoring a saved game never set the state, so
+every restored unit — destroyed ones included — came back in it. A client
+republished all of its units as its orders each turn, so a destroyed unit went
+out as a deployment order; the server refused it while the square it died on was
+occupied, and the first turn that square was empty when orders were applied, it
+created the unit again at full health and full energy.
+
+`Board.add` made it worse: it appended the unit to `board.units` *before*
+checking for a duplicate name, so even the refused case left a live unit behind
+that the next turn deployed.
+
+Reproduction: two units of equal statistics destroy each other; play one more
+turn in which nothing moves onto that square. Both paths were confirmed — the
+duplicate-name path via mutual destruction, and the free-square path via a
+killer that walks away.
+
+Addressed in three places, so no single path can resurrect a unit: restoring
+sets the state explicitly and never to `INITIAL`; a player publishes orders only
+for units in play; and the server refuses any order naming a unit it holds as
+destroyed. `Board.add` now validates everything before it registers anything.
+
+### 13. A player was told about a dead unit every turn, forever (`Q2`) — fixed
+
+The same root cause. From the turn a unit died, its owner saw
+`1 order(s) rejected last turn: x1 at (1,0): unit x1 already exists` at every
+prompt, filling the only channel the server has for telling a player anything.
+
+### 14. Turn resolution followed registration order (`Q3`) — fixed
+
+`Board.commit` resolved each unit's move against a live board, so what a unit
+found at its destination depended on whether the unit standing there had already
+moved. `turn-commit` opens by promising that no player's orders are applied
+before another's; registration order quietly broke it.
+
+Reproduction: a brute-force search over 4000 random two- and three-unit
+scenarios, comparing the final state across every permutation of registration
+order, found 93 that diverged. The clearest: a unit follows another into the
+square it is leaving, and whether it gets there depends on which was resolved
+first.
+
+Addressed by the `fix-rules-defects` change: movement is planned against the
+board as the turn began and then applied all at once, in the board rather than
+in each unit. `tests/test_rules_defects.py` asserts that the same orders on the
+same board give the same result whatever order the units were registered in.
+
+### 15. Two units ordered at each other passed straight through (`Q3`) — fixed
+
+A consequence of the same design. The first unit "engaged" the second, and then
+the second's own order was resolved and it walked out of the engagement into the
+square the first had just left. They swapped squares, no damage was dealt, and —
+because no attack was exchanged — neither player learned the other unit existed.
+
+Addressed by the `fix-rules-defects` change: two units ordered into each other's
+squares collide. Neither completes its move, both pay, and they fight where they
+stand; the survivor completes the move.
+
+`SPEC_COVERAGE.md` previously listed this under "Unspecified, and worth
+deciding". It is specified now, in `unit-movement`.
+
+### 16. The movement cost formula never varied (`Q4`) — fixed
+
+`unit-movement` charged `energy // 100 + 1`. Energy is capped at 100, so the
+first term is zero for every unit that has spent anything: the cost was always
+1, except 2 from exactly 100. The formula read as though it scaled with
+something and never did.
+
+Addressed by the `fix-rules-defects` change: a move costs 1. The vestigial
+`speed` statistic still described in a comment in `unit.py`, from a design that
+no longer exists anywhere in the code, went with it.
+
+### 17. Hidden information was hidden only when drawn (`Q5`) — fixed
+
+The client loaded `data/units.yaml` — the record of every unit and its position
+— and filtered it at the point of display. The unfiltered board was in memory
+and the file was readable on disk. `show types` did not filter at all: it listed
+every registered player's types, so a player who had met nobody could read the
+enemy's whole army design.
+
+Reproduction: set up a two-player game, resolve one turn, run `show types` as
+player 1.
+
+Addressed by the `fix-rules-defects` change: a player's session reads only its
+own published view and its own player file, and holds one board rather than two.
+An enemy type arrives with the unit that carried it into contact, so a type is
+disclosed on the same terms as the unit. `visibility` gains a requirement saying
+that hiding a unit when it is drawn is not sufficient.
+
+### 18. A shared unit name made your own order unanswerable (`Q6`) — fixed
+
+`board-model` guarantees that two players may reuse a unit name. `order_move`
+looked a unit up by name across all players, took the first match, and only then
+checked ownership, so the player whose unit was registered second was refused
+with "can't move units belonging to other players". The server registers players
+in ascending order, so it was always the higher-numbered player.
+
+Reproduction: two players each deploy a unit called `scout`; player 2 orders
+`move scout east`.
+
+Addressed by the `fix-rules-defects` change: the lookup is scoped to the
+ordering player, which `getUnitByName` already supported.
+
+### 19. Failed moves were dropped in silence (`Q9`, `Q11`) — fixed
+
+`game-persistence` builds a rejection channel so that a player "learns why an
+order of theirs had no effect", and then the most common reasons never reached
+it: a move nobody could pay for, a move off the board edge, and a contest that
+ended undecided all left the unit where it was with no word to anyone. From the
+player's side, "my unit didn't move" was indistinguishable from "the server
+never got my order".
+
+Addressed by the `fix-rules-defects` change: the movement phase emits an event
+for each of them, and `turn.resolve` turns the ones that name a unit into
+rejection entries. The engine still knows nothing about players' files.
+
+### 20. A deployment tie was won by the lower player number (`Q12`) — fixed
+
+`turn-commit` said only that the server "refuses one of the two". Which one was
+decided by the order the server iterated players, which is player number
+ascending: a fixed advantage to player 1, in a race neither player could see
+they were in, since neither can see the other's units during setup.
+
+Addressed by the `fix-rules-defects` change: both deployments are refused and
+both players are told. It is the only rule that does not depend on reading
+order.
+
+### 21. Nothing counted turns, and no game could end (`Q7`, `Q16`) — fixed
+
+`README.md`, `design.md` and `MODULE_DESCRIPTION.md` all described a win
+condition. None existed: the server's turn cycle ran forever, and a player who
+had been wiped out still held the commit barrier open for everyone else. The
+three documents also disagreed about what a "functional" unit was —
+`design.md` treated a unit out of energy as finished, which is the opposite of
+what `combat-resolution` says.
+
+Addressed by the `fix-rules-defects` change: a new `game-outcome` capability. A
+player is eliminated when every unit they own is destroyed; an inert unit still
+counts as alive, which settles the disagreement in `combat-resolution`'s favour.
+The last player standing wins, simultaneous elimination is a draw, eliminated
+players stop being waited for, and a decided game stops. Turns are numbered, and
+the number is written with every record published for a turn.
+
+### 22. A role read from a pipe spun forever at end of input — fixed
+
+`read_command` read a line with `sys.stdin.readline()`, which returns the empty
+string at end of input and a newline for a blank line. After stripping, the two
+were the same string, so a role whose input had run dry was told there was
+nothing to do, prompted again, and was told the same thing — forever, at
+whatever speed the terminal could print.
+
+It never showed to a person, who types `exit`. It made the roles unusable from a
+script: piping a set of commands into a client ran them and then filled the pipe
+with prompts.
+
+Reproduction: `printf 'help\n' | board-game-client <game> 1`.
+
+Addressed by the `end-session-on-eof` change: end of input comes back as the
+`exit` command, which every role already ends on, so the fix reaches all three
+without touching one of them. No capability had said what should happen at end
+of input, so the loop was free to do the wrong thing; all three now have a
+scenario saying it ends the session.
+
+### 23. A crowd drained a unit at a rate decided by who was standing in it — fixed
+
+`combat-resolution` charged a unit its attack value in energy "for each attack
+it makes", and a unit in a contested square attacks every other unit in it. A
+three-way fight therefore cost twice the energy per round, a four-way three
+times, at a rate the unit did not choose and could not see coming.
+
+The same per-opponent charge left a rule decided by list position: a unit that
+could afford some but not all of its attacks struck whichever opponents came
+first in the square. Three units with attack 2 and energy 2 — one strike each —
+produced six different damage distributions across the six orderings of the
+square. That is the same order-dependence number 14 removed from movement, one
+layer down.
+
+Reproduction: three units of attack 2, health 10 and energy 2 contesting one
+square, resolved against every ordering of the square.
+
+Addressed by the `charge-attack-once-per-round` change: a unit pays its attack
+value once per round of a contest, however many it strikes, and a round is all
+or nothing — so there is no half-paid round left to hand out and no tiebreak to
+arbitrate. The same change writes the no-randomness invariant into `turn-commit`
+and enforces it with `tests/test_determinism.py`, which found two narration
+defects on its way past: whether a move read as "moves" or "engages" was decided
+by which mover was placed first, and a head-on collision named its two units in
+board order. Both are now decided from the plan rather than from loop order.
+
 ## Unspecified, and worth deciding
 
-- **Two units can pass through each other.** A contest is a square holding more
-  than one unit, so two units approaching along a row swap squares and end up
-  behind each other, having never contested anything. What happens is that the
-  first of them engages the second, and then the second's own order is
-  resolved and it walks out of the engagement into the square the first has
-  just left. Whether a unit already in contention may leave it, and whether two
-  units may trade places, are rules nobody has written down. Confirmed to
-  behave the same way before and after the `split-into-layers` change.
+Nothing, at present. The two entries that stood here — units passing through
+each other, and the missing win condition — were both settled by the
+`fix-rules-defects` change and are recorded above as numbers 15 and 21.
+
+Two questions are still open and are design choices rather than defects: energy
+never regenerating, and identical units always destroying each other. They are
+set out in Part 2 of `GAME_RULES.md`.
 
 ## Documented but not implemented
 
-- **Win condition.** `README.md` and `MODULE_DESCRIPTION.md` both describe the
-  game ending when one player is the last with a functional unit. No win, loss,
-  or game-over logic exists in the source. The server's turn cycle runs
-  indefinitely. No capability specifies it, because there is nothing to specify
-  yet — it is a feature to propose, not behaviour to document.
 - **Web service.** The Flask/REST API and SQLite backend in `README.md` are
   aspirational; no such code exists.
+- **Unit programming.** The concept the project is named for — programming a
+  unit to play itself — does not exist. Units are ordered by hand each turn.
 
 ## Housekeeping
 
-The specs call a board position a **cell**; the source calls it a **square**
-(`Board.squareIsFree`, and comments predating these specs). Both terms mean the
-same thing. Aligning them is a terminology sweep across all ten capabilities,
-which no behavioural change should carry, so it is left as its own job.
+**A board position is a square.** The specs used to call it a *cell* and the
+source a *square*, which meant the two documents describing one game did not
+share a word for its most basic thing. The specs, the source, the tests and the
+prose now all say **square**, `domain/cell.py` is `domain/square.py`, and the
+grid inside `Board` holds `_squares`.
+
+It was done as one scripted sweep rather than through a change. A delta would
+have had to restate 42 of the 100 requirements verbatim but for one word, which
+is more error-prone than the rename and worse to review. What makes it safe is
+the check, not the ceremony: every spec file was diffed against its previous
+version with `cell` and `square` both normalised away, and the two were
+identical — 100 requirements and 318 scenarios, unchanged. The suite passes and
+`openspec validate --specs --strict` is clean.
+
+Two places deliberately still say *cell*, because renaming inside them would
+falsify a record: `openspec/changes/archive/`, which is what those changes
+actually said when they were made, and `TEST_RESULTS.md`, which is what a test
+run actually printed on a particular machine on a particular day.
 
 
 `src/board_game_concept/test_suite.py`, run by the `board-game-test-suite`

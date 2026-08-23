@@ -7,8 +7,10 @@ types, deploy them, and order them each turn; the server waits for every player
 to commit, then resolves all their orders at once.
 
 `openspec/specs/` is the source of truth for what the game does.
-`SPEC_COVERAGE.md` records where the code has diverged from it and what was
-done about each. This file describes how the code is arranged.
+`GAME_RULES.md` reads those specs and the code back as one set of rules, and
+lists what is still unclear. `SPEC_COVERAGE.md` records where the code has
+diverged from the specs and what was done about each. This file describes how
+the code is arranged.
 
 ## Layout
 
@@ -30,7 +32,7 @@ touching the parts that do not care.
 
 ### domain - the rules
 
-- **`cell.py`** - `Empty`, what a square holds when nothing else does.
+- **`square.py`** - `Empty`, what a square holds when nothing else does.
 - **`player.py`** - `Player`, identified by an integer number.
 - **`unit.py`** - `UnitType`, which is both a type and, once copied onto the
   board, a unit: name, symbol, attack, health, energy, plus the direction and
@@ -110,13 +112,17 @@ not know how it is drawn.
    That first commit ends setup.
 2. Each player defines their unit types and deploys their units, then commits.
    Committing publishes their orders and signals the server.
-3. The server waits until every player has committed, then applies all their
-   orders together, resolves movement, resolves combat in every contested
-   square, and publishes the result: the board, and what each player is
-   entitled to see.
-4. An order it will not carry out is refused and reported back to the player
-   who gave it, rather than taking the turn down.
-5. Players are woken, and order the next turn.
+3. The server waits until every player still in the game has committed, then
+   applies all their orders together, works out every destination against the
+   board as the turn began, applies all the moves at once, resolves combat in
+   every contested square, and publishes the result: the board, the turn
+   number, and what each player is entitled to see.
+4. Anything it will not carry out - an order it refused, a move nobody could
+   pay for, a contest that decided nothing - is reported back to the player who
+   gave it, rather than taking the turn down.
+5. Players are woken, and order the next turn. When a turn leaves one player
+   standing, the game is decided, the outcome is published, and the server
+   reports it and stops.
 
 ## Storage
 
@@ -151,6 +157,5 @@ Python 3.10 or later and PyYAML. Nothing else.
 
 ## Not built yet
 
-The win condition, an HTTP API, a web interface, accounts, and the unit
-programming the README describes. See `SPEC_COVERAGE.md` for what is documented
-but absent.
+An HTTP API, a web interface, accounts, and the unit programming the concept is
+named for. See `SPEC_COVERAGE.md` for what is documented but absent.
