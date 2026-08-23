@@ -113,6 +113,10 @@ class InteractiveProcess:
         raise TimeoutError(
             f"process still running\nstdout:\n{self.output}\nstderr:\n{self.errors}")
 
+    def close_input(self):
+        """Close this role's input, as a pipe running dry does."""
+        self.proc.stdin.close()
+
     def since(self, marker):
         """Everything printed after the last occurrence of marker."""
         with self._lock:

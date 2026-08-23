@@ -331,7 +331,8 @@ Every role: `help`, `exit`, `show ...`.
 
 The observer is read-only because it is never given the commands that write.
 A blank line does nothing; an unrecognised command is reported and the session
-continues.
+continues. A session ends on `exit`, and also when its input runs out — so a
+role can be driven from a script or a pipe as well as from a keyboard.
 
 ---
 ---
