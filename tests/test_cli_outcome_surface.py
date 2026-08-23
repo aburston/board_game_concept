@@ -100,8 +100,8 @@ class DecidedGame(CliTestCase):
 
         observer = self.start_observer('test-01')
         observer.read_until(OBSERVER_PROMPT)
-        observer.send_line('show players')
-        observer.read_until('number: 2, eliminated')
+        lines = self.shown_table(observer, OBSERVER_PROMPT, 'players')
+        assert ['2', 'eliminated'] in [line.split() for line in lines[1:]]
 
 
 if __name__ == '__main__':

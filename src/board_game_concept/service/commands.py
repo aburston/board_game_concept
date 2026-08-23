@@ -78,7 +78,13 @@ class Commit(Node):
 
 class Show(Node):
     kind = 'show'
-    fields = ('subject',)
+    # how the answer is to be written: as a table for a person, or as JSON for
+    # whatever is reading the session that is not one
+    fields = ('subject', 'format')
+
+    def __init__(self, **values):
+        values.setdefault('format', 'table')
+        super().__init__(**values)
 
 
 class SetBoard(Node):

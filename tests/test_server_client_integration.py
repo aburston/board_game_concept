@@ -514,7 +514,11 @@ class TestServerClientIntegration(unittest.TestCase):
         # wait for the prompt that follows the listing, not the one before it
         self.read_until_count(client1c, 'bgcclient> ', 2, timeout=15)
         self.assertNotIn('already exists', client1c.output)
-        self.assertEqual(client1c.output.count('name: "o1"'), 1)
+        # one row of the units table names it, not two
+        listed = [line.split() for line in client1c.output.splitlines()]
+        named = [cells for cells in listed
+                 if len(cells) > 1 and cells[1] == 'o1']
+        self.assertEqual(len(named), 1)
 
     def test_server_auto_load_equivalent(self):
         server = self.start_server(['-g', 'test-04'])

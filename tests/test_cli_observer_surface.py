@@ -118,13 +118,31 @@ class ObserverDisplayCommands(ObserverTestCase):
 
     def test_showing_types(self):
         observer = self.watching_a_played_game()
-        observer.send_line('show types')
-        observer.read_until('name: O')
+        lines = self.shown_table(observer, OBSERVER_PROMPT, 'types')
+        assert lines[0].split() == [
+            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY']
+        assert lines[1].split() == ['1', 'O', 'O', '1', '1', '10']
 
     def test_showing_units(self):
         observer = self.watching_a_played_game()
-        observer.send_line('show units')
-        observer.read_until('name: "o1"')
+        lines = self.shown_table(observer, OBSERVER_PROMPT, 'units')
+        assert lines[0].split()[:4] == ['PLAYER', 'NAME', 'TYPE', 'SYMBOL']
+        assert [line.split()[1] for line in lines[1:]] == [
+            'o1', 'o2', 'o3', 'o4']
+
+    def test_showing_a_subject_as_json(self):
+        observer = self.watching_a_played_game()
+        document = self.shown_json(observer, OBSERVER_PROMPT, 'units')
+        assert [entry['name'] for entry in document['units']] == [
+            'o1', 'o2', 'o3', 'o4']
+        assert document['units'][0]['player'] == 1
+        assert document['units'][0]['health'] == 1
+
+    def test_a_trailing_word_that_is_not_json(self):
+        observer = self.watching()
+        assert self.shown(
+            observer, OBSERVER_PROMPT,
+            'show units wibble') == 'invalid show command'
 
     def test_showing_the_units_on_the_board(self):
         observer = self.watching_a_played_game()
@@ -133,8 +151,10 @@ class ObserverDisplayCommands(ObserverTestCase):
 
     def test_showing_players(self):
         observer = self.watching()
-        observer.send_line('show players')
-        observer.read_until('number: 1')
+        lines = self.shown_table(observer, OBSERVER_PROMPT, 'players')
+        assert lines[0].split() == ['PLAYER', 'STATUS']
+        assert [line.split() for line in lines[1:]] == [
+            ['1', 'active'], ['2', 'active']]
 
     def test_showing_pending_orders(self):
         # a player who has committed while the server still waits for the
@@ -151,14 +171,14 @@ class ObserverDisplayCommands(ObserverTestCase):
 
         observer = self.start_observer('test-01')
         observer.read_until(OBSERVER_PROMPT)
-        observer.send_line('show pending')
-        observer.read_until('player: 1, moves:')
+        lines = self.shown_table(observer, OBSERVER_PROMPT, 'pending')
+        assert lines[0].split() == ['PLAYER', 'UNIT', 'ORDER', 'X', 'Y']
+        assert lines[1].split() == ['1', 'x1', 'deploy', '0', '0']
 
     def test_showing_pending_orders_when_none_are_queued(self):
         observer = self.watching()
-        observer.send_line('show pending')
-        observer.read_until_count(OBSERVER_PROMPT, 2)
-        self.assertNotIn('invalid show command', observer.since(OBSERVER_PROMPT))
+        assert self.shown(
+            observer, OBSERVER_PROMPT, 'show pending') == 'no orders pending'
 
     def test_incomplete_show_command(self):
         observer = self.watching()
@@ -183,8 +203,8 @@ class RefreshingTheView(ObserverTestCase):
         # one player, so that player's commit is the whole barrier and the
         # turn resolves without a second client
         observer = self.watching(players=(1,))
-        observer.send_line('show units')
-        observer.read_until('units: None')
+        assert self.shown(
+            observer, OBSERVER_PROMPT, 'show units') == 'no units yet'
 
         # the game gains a unit behind the observer's back: the only player
         # deploys one and commits, which is enough to resolve the turn
@@ -200,8 +220,8 @@ class RefreshingTheView(ObserverTestCase):
         observer.send_line('reload')
         observer.read_until('reloading')
         observer.read_until_count(OBSERVER_PROMPT, 3)
-        observer.send_line('show units')
-        observer.read_until('name: "x1"')
+        lines = self.shown_table(observer, OBSERVER_PROMPT, 'units')
+        assert [line.split()[1] for line in lines[1:]] == ['x1']
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ was in its memory and readable on its disk. It now loads its own published view
 and nothing else.
 """
 
-from board_game_concept.cli.render import type_lines
+from board_game_concept.cli.views import types_view
 from board_game_concept.domain import UnitType
 
 from game_harness import GameHarness
@@ -28,7 +28,12 @@ def names(harness, player_number):
 
 
 def types_listed(harness, player_number):
-    return type_lines(harness.session(player_number).getPlayers())
+    """The unit types this player's session knows of, as `show types` reads them."""
+    return types_view(harness.session(player_number).getPlayers())
+
+
+def type_names(harness, player_number):
+    return [entry['name'] for entry in types_listed(harness, player_number)]
 
 
 def test_a_player_sees_only_their_own_units_before_contact(tmp_path):
@@ -44,8 +49,8 @@ def test_the_observer_and_the_server_see_everything(tmp_path):
 
 def test_no_enemy_type_is_listed_before_contact(tmp_path):
     harness = apart(tmp_path)
-    assert all('Brute' not in line for line in types_listed(harness, 1))
-    assert all('Sneaky' not in line for line in types_listed(harness, 2))
+    assert 'Brute' not in type_names(harness, 1)
+    assert 'Sneaky' not in type_names(harness, 2)
 
 
 def touching(tmp_path):
@@ -73,12 +78,12 @@ def test_contact_reveals_the_enemy_unit(tmp_path):
 def test_contact_reveals_the_enemy_type_as_it_was_designed(tmp_path):
     harness = touching(tmp_path)
     listed = types_listed(harness, 1)
-    brute = [line for line in listed if 'Brute' in line]
+    brute = [entry for entry in listed if entry['name'] == 'Brute']
     assert len(brute) == 1
     # the design, not the state the unit happened to be in when it was met
-    assert 'attack: 3' in brute[0]
-    assert 'health: 10' in brute[0]
-    assert 'energy: 4' in brute[0]
+    assert brute[0]['attack'] == 3
+    assert brute[0]['health'] == 10
+    assert brute[0]['energy'] == 4
 
 
 def test_an_enemy_type_drops_out_when_contact_lapses(tmp_path):
@@ -86,7 +91,7 @@ def test_an_enemy_type_drops_out_when_contact_lapses(tmp_path):
     # disengage: neither orders anything, so no contact is made this turn
     harness.turn({1: [], 2: []})
     assert names(harness, 1) == ['x1']
-    assert all('Brute' not in line for line in types_listed(harness, 1))
+    assert 'Brute' not in type_names(harness, 1)
 
 
 def test_a_client_with_no_view_yet_shows_what_it_deployed(tmp_path):

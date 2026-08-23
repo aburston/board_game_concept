@@ -343,6 +343,19 @@ Every role: `help`, `exit`, `show ...`.
 | `show board` / `types` / `units` / `players` | ✔ | ✔ | ✔ |
 | `show pending` | ✔ | | ✔ |
 
+Every `show` answers with a table: a header naming its columns, then one row per
+thing, lined up so a row can be read across and a column compared down.
+`show board` draws the grid and, below it, a legend of what the symbols on it
+stand for. A subject with nothing in it yet says so in a line rather than
+printing an empty table.
+
+Ending a `show` in `json` — `show units json` — writes the same content as a
+single JSON document instead, for a caller that is not a person. It holds one
+key, named for the subject, and the fields a player acts on; it is not the
+storage format, and nothing else is printed with it. `json` is the only word a
+subject may be followed by: anything else is reported as an invalid show
+command.
+
 The observer is read-only because it is never given the commands that write.
 A blank line does nothing; an unrecognised command is reported and the session
 continues. A session ends on `exit`, and also when its input runs out — so a

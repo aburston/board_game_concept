@@ -96,8 +96,8 @@ class DefiningUnitTypes(ClientTestCase):
         client = self.player_client()
         client.send_line('add type Cross X 1 1 10')
         client.read_until_count(CLIENT_PROMPT, 2)
-        client.send_line('show types')
-        client.read_until('name: Cross')
+        lines = self.shown_table(client, CLIENT_PROMPT, 'types')
+        assert lines[1].split() == ['1', 'Cross', 'X', '1', '1', '10']
 
     def test_wrong_argument_count(self):
         client = self.player_client()
@@ -169,8 +169,12 @@ class OrderingMovement(ClientTestCase):
 
     def test_ordering_a_move(self):
         client = self.in_play()
-        client.send_line('move x1 north')
-        client.read_until('state: 1')
+        lines = self.shown(client, CLIENT_PROMPT, 'move x1 north').splitlines()
+        # the order is read back as the units table, showing it took
+        assert lines[0].split() == [
+            'PLAYER', 'NAME', 'TYPE', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
+            'X', 'Y', 'STATE', 'DIRECTION']
+        assert lines[1].split()[-2:] == ['moving', 'north']
 
     def test_wrong_argument_count(self):
         client = self.player_client()
@@ -204,18 +208,79 @@ class ClientDisplayCommands(ClientTestCase):
         client = self.player_client()
         client.send_line('add type Cross X 1 1 10')
         client.read_until_count(CLIENT_PROMPT, 2)
-        client.send_line('show types')
-        client.read_until('name: Cross')
+        lines = self.shown_table(client, CLIENT_PROMPT, 'types')
+        assert lines[0].split() == [
+            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY']
+        assert lines[1].split() == ['1', 'Cross', 'X', '1', '1', '10']
 
     def test_showing_units(self):
         client = self.with_a_unit()
-        client.send_line('show units')
-        client.read_until('name: "x1"')
+        lines = self.shown_table(client, CLIENT_PROMPT, 'units')
+        assert lines[0].split() == [
+            'PLAYER', 'NAME', 'TYPE', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
+            'X', 'Y', 'STATE', 'DIRECTION']
+        assert lines[1].split() == [
+            '1', 'x1', 'Cross', 'X', '1', '1', '10', '0', '0', 'holding', '-']
+
+    def test_showing_units_before_any_are_deployed(self):
+        client = self.player_client()
+        assert self.shown(client, CLIENT_PROMPT, 'show units') == 'no units yet'
 
     def test_showing_players(self):
         client = self.player_client()
-        client.send_line('show players')
-        client.read_until('number: 1')
+        lines = self.shown_table(client, CLIENT_PROMPT, 'players')
+        assert lines[0].split() == ['PLAYER', 'STATUS']
+        assert ['1', 'active'] in [line.split() for line in lines[1:]]
+
+    def test_showing_the_board_with_a_legend(self):
+        client = self.with_a_unit()
+        lines = self.shown_table(client, CLIENT_PROMPT, 'board')
+        assert lines[0].startswith('+-+')
+        legend = lines[lines.index('SYMBOL  PLAYER  TYPE'):]
+        assert legend[1].split() == ['X', '1', 'Cross']
+
+    def test_showing_a_subject_as_json(self):
+        client = self.with_a_unit()
+        document = self.shown_json(client, CLIENT_PROMPT, 'units')
+        assert document['units'] == [{
+            'player': 1, 'name': 'x1', 'type': 'Cross', 'symbol': 'X',
+            'attack': 1, 'health': 1, 'energy': 10, 'x': 0, 'y': 0,
+            'state': 'holding', 'direction': None}]
+
+    def test_the_json_holds_no_storage_field(self):
+        client = self.with_a_unit()
+        document = self.shown_json(client, CLIENT_PROMPT, 'units')
+        for storage_only in ('type_attack', 'type_health', 'type_energy',
+                             'on_board', 'destroyed', 'id'):
+            assert storage_only not in document['units'][0]
+
+    def test_the_table_and_the_json_describe_the_same_units(self):
+        client = self.with_a_unit()
+        rows = self.shown_table(client, CLIENT_PROMPT, 'units')[1:]
+        document = self.shown_json(client, CLIENT_PROMPT, 'units')
+
+        assert len(rows) == len(document['units'])
+        for row, entry in zip(rows, document['units']):
+            cells = row.split()
+            assert cells[1] == entry['name']
+            assert cells[0] == str(entry['player'])
+            assert cells[5] == str(entry['health'])
+            assert cells[9] == entry['state']
+
+    def test_the_board_as_json(self):
+        client = self.with_a_unit()
+        document = self.shown_json(client, CLIENT_PROMPT, 'board')
+        board = document['board']
+        assert (board['size_x'], board['size_y']) == (4, 4)
+        assert board['rows'][0][0] == 'X'
+        assert board['legend'] == [
+            {'symbol': 'X', 'player': 1, 'type': 'Cross'}]
+
+    def test_a_trailing_word_that_is_not_json(self):
+        client = self.player_client()
+        assert self.shown(
+            client, CLIENT_PROMPT,
+            'show units wibble') == 'invalid show command'
 
     def test_incomplete_show_command(self):
         client = self.player_client()

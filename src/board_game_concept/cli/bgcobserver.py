@@ -8,10 +8,8 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept import Game, YamlGameRepository
-from board_game_concept.cli.render import (print_board, print_players,
-                                           print_types)
-from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import roles
+from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (describe_outcome, load_game,
                                             read_command)
@@ -54,9 +52,6 @@ def main(argv=None):
         # load the gamedata
         load_game(data)
 
-        players = data.getPlayers()
-        board = data.getBoard()
-
         outcome = data.getOutcome()
         if outcome is not None:
             print(describe_outcome(outcome))
@@ -75,28 +70,7 @@ def main(argv=None):
                 print_help(ROLE)
 
             elif command.kind == 'show':
-                if command.subject == 'board':
-                    if board is None:
-                        print("must create board - set size and commit")
-                    else:
-                        print_board(board)
-
-                elif command.subject == 'types':
-                    print_types(players)
-
-                elif command.subject == 'players':
-                    print_players(players, data.getEliminated())
-
-                elif command.subject == 'units':
-                    if board is None:
-                        print("must create board - set size and commit")
-                    else:
-                        print(serialise_units(board))
-
-                elif command.subject == 'pending':
-                    for player in players.keys():
-                        if 'moves' in players[player].keys():
-                            print(f"player: {player}, moves: {players[player]['moves']}")
+                perform_show(data, command)
 
             elif command.kind == 'reload':
                 # leave the inner loop, and the game is read again
