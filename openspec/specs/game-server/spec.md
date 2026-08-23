@@ -142,12 +142,28 @@ The system SHALL let the administrator size the board before the game starts via
 ### Requirement: Registering Players
 
 The system SHALL let the administrator register players before the game starts
-via `add player <number>`.
+via `add player <number>`. The number SHALL be one `player-numbering` permits a
+player, and one that is not SHALL be refused at the prompt — reported, with the
+session continuing — rather than ending the session.
 
 #### Scenario: Adding a player
 
 - **WHEN** `add player` is given a player number and the game is new
 - **THEN** that player is registered with no unit types
+
+#### Scenario: Adding a player with a reserved number
+
+- **WHEN** `add player` is given 0 or 1000
+- **THEN** the server refuses, reporting that the number is reserved
+- **AND** no player is registered
+- **AND** the server takes further commands
+
+#### Scenario: Adding a player with a number out of range
+
+- **WHEN** `add player` is given a number below 1 or above 999
+- **THEN** the server refuses, naming the permitted range
+- **AND** no player is registered
+- **AND** the server takes further commands
 
 #### Scenario: Adding a player to an established game
 
@@ -162,7 +178,9 @@ via `add player <number>`.
 ### Requirement: Loading Configuration From Files
 
 The system SHALL let the administrator import board and player configuration
-from files via `load board <file>` and `load player <file>`.
+from files via `load board <file>` and `load player <file>`. A player file
+naming a number `player-numbering` does not permit a player SHALL be refused at
+the prompt, with the session continuing.
 
 #### Scenario: Loading a board
 
@@ -173,6 +191,13 @@ from files via `load board <file>` and `load player <file>`.
 
 - **WHEN** `load player` names a file containing a player number, types, and units
 - **THEN** that player is registered with those types and units
+
+#### Scenario: Loading a player whose number is not a player's
+
+- **WHEN** `load player` names a file whose player number is outside 1 to 999
+- **THEN** the server refuses, naming the permitted range
+- **AND** no player is registered
+- **AND** the server returns to the prompt
 
 #### Scenario: Loading a player into an established game
 
