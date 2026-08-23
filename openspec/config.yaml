@@ -20,6 +20,15 @@ context: |
   transport between server and clients: players publish orders by writing files
   and the server publishes results the same way.
 
+  INVARIANT - no randomness in the resolution of the rules. A turn is a pure
+  function of the board and the orders given: the same orders on the same board
+  always resolve the same way. Nothing in resolution may consult a random
+  number generator, a clock, or an object identity. Where two things could
+  happen, the rules decide which - never the order a list happens to hold its
+  members in, which is unpredictable to a player in the same way a die roll
+  would be and harder to see. tests/test_determinism.py holds the game to this;
+  any proposed rule must be decidable from the board and the orders alone.
+
   Domain notes: turns are simultaneous and gated on every player still in the
   game committing. Movement is planned against the board as the turn began and
   then applied all at once, so nothing depends on the order units are held in.

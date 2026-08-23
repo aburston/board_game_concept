@@ -280,28 +280,57 @@ class Board:
             if other is None or id(other[0]) in paired:
                 continue
             if other[2] == origin:
-                pairs.append((unit, other[0]))
+                pairs.append(tuple(sorted(
+                    (unit, other[0]),
+                    key=lambda u: (u.player.number, u.name))))
                 paired.add(id(unit))
                 paired.add(id(other[0]))
+        # fought in a settled order, so that two collisions resolving in the
+        # same turn cannot depend on which was noticed first
+        pairs.sort(key=lambda pair: (pair[0].player.number, pair[0].name))
 
         # everything planned is paid for, whether it arrives or collides
         for unit, origin, destination in plans:
             unit.energy = unit.energy - UnitType.MOVE_COST
 
+        movers = [plan for plan in plans if id(plan[0]) not in paired]
+
+        # how each move reads is decided from the plan, before any of it is
+        # applied. Reading it off the destination square as each unit was
+        # placed made it depend on which mover went first, so two units
+        # arriving together were narrated as one engaging the other, and which
+        # one was whichever the board happened to hold first
+        standing = {}
+        for x in range(self.size_x):
+            for y in range(self.size_y):
+                occupant = self.board[x, y]
+                if type(occupant) is UnitType:
+                    standing[(x, y)] = occupant
+        leaving = {id(plan[0]) for plan in movers}
+        arrivals = {}
+        for unit, origin, destination in movers:
+            arrivals[destination] = arrivals.get(destination, 0) + 1
+
         # vacate every mover's origin before placing any of them, so that a
         # chain of units advancing together needs no ordering rule
-        movers = [plan for plan in plans if id(plan[0]) not in paired]
         for unit, origin, destination in movers:
             unit.vacate()
         for unit, origin, destination in movers:
             unit.moved_from = origin
-            occupant = self.board[destination]
             unit.occupy(*destination)
+            held_by = standing.get(destination)
+            if held_by is not None and id(held_by) not in leaving:
+                detail = {'target': held_by.name}
+                kind = 'engaged'
+            elif arrivals[destination] > 1:
+                detail = {}
+                kind = 'joined'
+            else:
+                detail = {}
+                kind = 'moved'
             events.append(Event(
-                'joined' if type(occupant) is list else
-                ('engaged' if not (type(occupant) is Empty) else 'moved'),
-                unit=unit.name, x=destination[0], y=destination[1],
-                **({'target': occupant.name} if type(occupant) is UnitType else {})))
+                kind, unit=unit.name, x=destination[0], y=destination[1],
+                **detail))
 
         free = {(x, y) for x in range(self.size_x) for y in range(self.size_y)
                 if type(self.board[x, y]) is Empty}

@@ -18,15 +18,26 @@ Rules are numbered `R1.1`, open questions `Q1`, so you can point at one.
 
 **R1.1** Two or more players design their own unit types, deploy units of those
 types onto a shared grid, and then each turn order each unit to step one square
-in one of four directions. Units that end up on the same square fight. There is
-no dice, no randomness, and no hidden roll: given the same orders the same turn
-always resolves the same way.
+in one of four directions. Units that end up on the same square fight.
 
-**R1.2** There are three kinds of session against one game: the **server**
+**R1.2 The invariant: no randomness in the resolution of the rules.** A turn is
+a pure function of the board and the orders given — the same orders on the same
+board always resolve the same way. There is no dice, no hidden roll, and no
+random number anywhere in the game. Nor is there any rule decided by the order a
+list happens to hold its members in: that is unpredictable to a player in
+exactly the way a die roll would be, and harder to see. Where two things could
+happen, the rules decide which.
+
+This constrains every rule in this document and every rule added to it. It is
+enforced, not remembered: `tests/test_determinism.py` resolves hundreds of
+random boards against every ordering of their units and requires one answer
+each.
+
+**R1.3** There are three kinds of session against one game: the **server**
 (player 0, the administrator, and the commit authority), one **client** per
 player, and any number of read-only **observers**.
 
-**R1.3** The game ends when one player is the last with a unit left standing,
+**R1.4** The game ends when one player is the last with a unit left standing,
 or in a draw when the last players are wiped out together. See **R7**.
 
 ---
@@ -209,9 +220,12 @@ undestroyed **at the start of the round** each attack **every other** unit
 undestroyed at the start of the round. A unit destroyed part-way through a round
 still lands its own attack for that round. It takes no part in later rounds.
 
-**R5.3 Every attack costs the attacker its attack value in energy** and deals
-that same value in damage. In an *N*-way fight a unit pays `attack × (N − 1)`
-per round.
+**R5.3 A round of fighting costs the attacker its attack value in energy —
+once**, however many opponents it strikes in that round, and deals that same
+value in damage to each of them. A round is all or nothing: a unit that cannot
+pay strikes nobody, so no opponent is favoured by where it stands in the square.
+Facing three opponents therefore costs no more energy than facing one, though
+you take three attacks in return.
 
 **R5.4 A unit that cannot pay for an attack simply does not make it.** It deals
 no damage and spends nothing. It is not destroyed for it.

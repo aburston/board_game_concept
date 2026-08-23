@@ -217,14 +217,20 @@ def exchangeAttacks(contestants, events=None):
         # attackers and targets are the units standing at the start of the
         # round, so a unit destroyed mid-round still lands its own attack
         for unit in standing:
+            # one swing, one charge. The cost used to sit inside the loop
+            # below, so a unit paid once per opponent and a crowd drained it at
+            # a rate decided by how many happened to be standing there - and a
+            # unit that could afford some but not all of its attacks struck
+            # whichever opponents came first in the list, which is a rule
+            # decided by list position rather than by the rules
+            if unit.energy < unit.attack:
+                # too spent to attack: inert, but not destroyed. The round is
+                # all or nothing, so there is no half-paid round to hand out
+                continue
+            unit.energy = unit.energy - unit.attack
             for target in standing:
                 if unit is target:
                     continue
-                energy = unit.energy - unit.attack
-                if energy < 0:
-                    # too spent to attack: inert, but not destroyed
-                    continue
-                unit.energy = energy
                 if events is not None:
                     events.append(Event(
                         'attacked', unit=unit.name, target=target.name,
@@ -265,7 +271,7 @@ def resolveContest(board, x, y, contestants, free, events=None):
         if events is not None:
             events.append(Event(
                 'undecided', x=x, y=y,
-                units=','.join(unit.name for unit in survivors)))
+                units=','.join(sorted(unit.name for unit in survivors))))
         survivors = [unit for unit in survivors
                      if not unit.retreat(free, events)]
 
@@ -296,9 +302,13 @@ def resolveCollision(first, second, events=None):
     there is one - completes its move.
     """
     if events is not None:
+        # named in a settled order: which of the two is "first" is an accident
+        # of how the board holds them, and the collision is the same either way
+        near, far = sorted((first, second),
+                           key=lambda u: (u.player.number, u.name))
         events.append(Event(
-            'collided', unit=first.name, target=second.name,
-            x=first.x, y=first.y))
+            'collided', unit=near.name, target=far.name,
+            x=near.x, y=near.y, to_x=far.x, to_y=far.y))
     survivors = exchangeAttacks([first, second], events)
 
     for unit in (first, second):
@@ -318,4 +328,4 @@ def resolveCollision(first, second, events=None):
         # neither could decide it, so both stay where the turn found them
         events.append(Event(
             'undecided', x=first.x, y=first.y,
-            units=','.join(unit.name for unit in survivors)))
+            units=','.join(sorted(unit.name for unit in survivors))))
