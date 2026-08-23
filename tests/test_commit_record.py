@@ -9,7 +9,8 @@ for free, and what broke when it stopped.
 import os
 
 from board_game_concept.service import games
-from board_game_concept.service.commands import AddType, AddUnit
+from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
+                                                 SetBoard)
 from game_harness import GameHarness
 
 CROSS = ('Cross', 'X', 1, 5, 10)
@@ -104,7 +105,9 @@ def test_a_game_whose_markers_predate_the_turn_being_recorded(tmp_path):
 
     # as the marker was written before a commit recorded which turn it was for
     repository = harness.repository()
-    with open(repository._commit_marker(1), 'w') as file:
+    # reaching into the layout on purpose: what is being set up is a game
+    # an older version wrote, which no public operation can produce
+    with open(repository._commit_marker(1), 'w', encoding='utf-8') as file:
         file.write('')
 
     reopened = harness.session(1)
@@ -123,7 +126,6 @@ def test_the_server_commits_for_a_player_it_loaded_units_for(tmp_path):
     """
     harness = GameHarness(tmp_path)
     server = harness.session(0)
-    from board_game_concept.service.commands import AddPlayer, SetBoard
     games.perform(server, SetBoard(size_x=4, size_y=4))
     games.perform(server, AddPlayer(number=1))
     server.getPlayers()[1]['units'] = [{

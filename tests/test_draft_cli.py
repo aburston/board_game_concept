@@ -15,7 +15,7 @@ def draft_of(game_number, number):
     path = GAMES_DIR / f'_{game_number}' / 'players' / f'{number}_draft.yaml'
     if not path.exists():
         return None
-    with open(path) as file:
+    with open(path, encoding='utf-8') as file:
         return yaml.safe_load(file)
 
 
@@ -124,7 +124,7 @@ class DroppedCommands(CliTestCase):
 
         # a second deployment onto the square `x1` already holds, added to the
         # draft behind the client's back the way a game that moved on would
-        path = (GAMES_DIR / '_test-01' / 'players' / '1_draft.yaml')
+        path = GAMES_DIR / '_test-01' / 'players' / '1_draft.yaml'
         draft = yaml.safe_load(path.read_text())
         draft['commands'].append({'kind': 'add_unit', 'type_name': 'Cross',
                                   'name': 'x0', 'x': 0, 'y': 0})

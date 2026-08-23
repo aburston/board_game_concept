@@ -1,5 +1,34 @@
 # Three-Tier Architecture: Options
 
+**This document predates the layer split and describes a codebase that no
+longer exists.** It was written against `server.py`, `client.py` and
+`GameData.py`, before the `split-into-layers` change. It is kept as the
+reasoning that led to that change, not as a plan; §1 and §2 in particular
+describe couplings that have since been cut. What has landed since:
+
+| §7 step | Status |
+|---|---|
+| 0. Delete the stale duplicates | Done - `src/BoardGameConcept.py` and `src/GameData.py` are gone |
+| 1. Purify the engine | Done - `domain/` prints nothing, `board.commit()` returns events, rendering is in `cli/render.py` and serialising in `storage/serialise.py` |
+| 2. Extract the service layer | Done - `service/games.py` holds one function per command, and `sys.exit` is gone from library code |
+| 3. Introduce the repository port | Port done - `storage/repository.py` with `YamlGameRepository`. No second implementation |
+| 4. Put HTTP over the service layer | Not started |
+| 5. Build the web UI | Not started |
+| 6. Retire the file transport | Not started |
+
+Two things it says are no longer true. §2.5 said business rules live in CLI
+branches: they moved to `service/games.py`, and the last of the duplicated
+dispatch went when both roles were routed through `games.perform`. §2.1 said
+the domain model does its own I/O: it does not.
+
+One thing it did not anticipate. The `draft-orders-and-explicit-commit` change
+found that a session's uncommitted work was held only in memory, so an API had
+nowhere to put an order that had not been committed - and neither did a client
+that died mid-setup. That gap is now closed, which is the prerequisite §5's
+cross-cutting decisions rest on.
+
+---
+
 Exploration, not a decision. This maps what the code looks like today, names the
 couplings that have to be cut before a tier split is even possible, and lays out
 the options at each tier with the trade-offs. Nothing here has been implemented.

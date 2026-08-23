@@ -104,15 +104,15 @@ order file being what committing meant.
 
 ## 6. Finish
 
-- [ ] 6.1 Update `MODULE_DESCRIPTION.md` to describe drafting as part of what
+- [x] 6.1 Update `MODULE_DESCRIPTION.md` to describe drafting as part of what
       `service/` and `storage/` hold. Verify every path it names exists.
-- [ ] 6.2 Mark `ARCHITECTURE_OPTIONS.md` as predating the layer split, naming
+- [x] 6.2 Mark `ARCHITECTURE_OPTIONS.md` as predating the layer split, naming
       which of its steps have since landed, so it is read as the history it is
       rather than as a plan. Verify no step it lists as pending is one the code
       already has.
-- [ ] 6.3 Record in `SPEC_COVERAGE.md` that a session's uncommitted work used to
+- [x] 6.3 Record in `SPEC_COVERAGE.md` that a session's uncommitted work used to
       be lost when the session ended, in the style of the existing entries, and
       name the test that now holds it. Verify every entry listed has a test.
-- [ ] 6.4 Run the full suite, `flake8 . --select=E9,F63,F7,F82` as CI does, and
+- [x] 6.4 Run the full suite, `flake8 . --select=E9,F63,F7,F82` as CI does, and
       `pylint` against the configured `.pylintrc`. Verify the suite is green and
       lint reports nothing that was not already reported before the change.

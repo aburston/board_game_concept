@@ -472,6 +472,49 @@ defects on its way past: whether a move read as "moves" or "engages" was decided
 by which mover was placed first, and a head-on collision named its two units in
 board order. Both are now decided from the plan rather than from loop order.
 
+### 24. A session that ended before it committed lost everything it had done — fixed
+
+Nothing a session did reached disk until it committed. `define_type` and
+`deploy_unit` mutated the loaded game and wrote nothing; `order_move` set the
+order on a unit held in memory. Only `commit` wrote, publishing the board as
+orders and the player's types as their file. A client that died during setup —
+or was closed, or lost its terminal — cost its owner every type they had
+designed and every unit they had placed, with nothing on disk to show any of it
+had happened. The same was true of the administrator's board and player list.
+
+No requirement said the work had to survive, because no requirement had been
+written about work that was not yet committed: `turn-commit` described
+committing and `game-persistence` described what a commit publishes, and
+between the two there was nothing.
+
+Reproduction: define a type, deploy a unit, kill the client, and start it again
+for the same game.
+
+Addressed by the `draft-orders-and-explicit-commit` change: what a session has
+done since it last committed is written down as it does it, as the commands
+that did it, and put back when its owner reopens the game. A draft is private
+to the session that made it, so making the work durable did not make an
+opponent's deliberation visible; it belongs to one turn, so work left behind by
+a session that ended mid-resolution is discarded rather than replayed into a
+turn it was never meant for; and a command that can no longer be carried out is
+dropped and reported rather than refusing to open the game.
+
+The same change stopped inferring a commit from `players/<n>_units.yaml`
+existing. That file meant "committed for this turn" only because the server
+deletes it when it resolves one, so the fact lived in the absence of a
+deletion. It is now recorded against a player and a turn, and spent when that
+turn is resolved. Two things the inference had been doing unnoticed came out
+with it: a turn that resolves without advancing the turn number — every turn in
+which no unit reaches the board — would otherwise find the barrier still
+satisfied by the commits that opened it and resolve for ever; and `load player`
+relied on the server writing a loaded player's units as orders being what
+committed them, since nobody types `commit` for a player who arrived in a file.
+
+Held by `tests/test_server_client_integration.py::TestWorkSurvivesASession`,
+`tests/test_draft_replay.py`, `tests/test_draft_recording.py`,
+`tests/test_draft_serialisation.py`, `tests/test_draft_cli.py` and
+`tests/test_commit_record.py`.
+
 ## Unspecified, and worth deciding
 
 Nothing, at present. The two entries that stood here — units passing through
@@ -519,7 +562,10 @@ mid-resolution and what a caller reading a board directly would see.
 ## Documented but not implemented
 
 - **Web service.** The Flask/REST API and SQLite backend in `README.md` are
-  aspirational; no such code exists.
+  aspirational; no such code exists. The prerequisite an API needs — somewhere
+  to put an order that has not been committed yet — was built by the
+  `draft-orders-and-explicit-commit` change, so a request handler no longer
+  has to hold a session's state in memory to accept one.
 - **Unit programming.** The concept the project is named for — programming a
   unit to play itself — does not exist. Units are ordered by hand each turn.
 

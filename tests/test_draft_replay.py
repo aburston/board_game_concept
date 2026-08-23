@@ -12,7 +12,8 @@ import yaml
 from board_game_concept import Game
 from board_game_concept.cli import views
 from board_game_concept.service import games
-from board_game_concept.service.commands import AddType, AddUnit, Move
+from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
+                                                 Move, SetBoard)
 from game_harness import GameHarness
 
 CROSS = ('Cross', 'X', 1, 5, 10)
@@ -112,8 +113,8 @@ def test_a_game_with_no_draft_loads_as_it_always_did(tmp_path):
 
     reopened = harness.session(1)
 
-    assert reopened.getDraft() == []
-    assert reopened.getDropped() == []
+    assert not reopened.getDraft()
+    assert not reopened.getDropped()
     assert sorted(unit.name for unit in reopened.getBoard().units) == ['x1']
 
 
@@ -299,7 +300,6 @@ def test_reopening_after_committing_restores_nothing(tmp_path):
 
 def test_the_administrator_gets_uncommitted_setup_back(tmp_path):
     harness = GameHarness(tmp_path)
-    from board_game_concept.service.commands import AddPlayer, SetBoard
 
     doomed = Game(harness.repository(), 0)
     doomed.load()

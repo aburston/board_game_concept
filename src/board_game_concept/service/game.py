@@ -10,7 +10,7 @@ which this delegates to so that callers have one thing to talk to.
 
 from ..domain import Board, Player, UnitType
 from ..storage.serialise import restore_draft, serialise_draft
-from . import turn
+from . import games, turn
 from .errors import GameDataError, GameError, NoSuchGame, NoSuchPlayer
 
 
@@ -188,10 +188,6 @@ class Game:
         because one drafted order went stale would make a draft a way to lock
         yourself out of your own game.
         """
-        # imported here because the service layer's command functions are what
-        # replay applies, and `games` is written against this class
-        from . import games
-
         try:
             draft = self.repository.read_draft(self.player_number)
         except GameDataError as error:

@@ -55,10 +55,15 @@ not know how it is drawn.
   players, loading configuration, defining types, deploying units, ordering
   moves. Each carries the command out or refuses it by raising. The rules about
   *when* - only before the game starts, only after the first turn, only your
-  own units - are stated here, once.
+  own units - are stated here, once. `perform` is the one way a caller changes
+  a game: it carries the command out and writes it into the session's draft, so
+  a caller cannot carry one out without recording it. A refused command is not
+  recorded.
 - **`game.py`** - `Game`, a game as one session sees it: the board, the
   players, what this player can see, what was refused last turn. Knows how to
-  read a game through a repository.
+  read a game through a repository, and to put back what this session had done
+  and not committed - its own draft and never another's, replayed through the
+  same rules that first accepted it.
 - **`turn.py`** - publishing orders, resolving a turn, and the commit barrier.
   The barrier lives here because "every player has committed" is a rule about
   the game, not a fact about files.
@@ -73,8 +78,8 @@ not know how it is drawn.
 - **`yaml_repository.py`** - the layout `game-persistence` describes: shared
   data under `data`, per-player files under `players`, one directory per game
   number. The only module that knows any of those names.
-- **`serialise.py`** - units as YAML. The on-disk format, which the roles also
-  print verbatim for `show units`.
+- **`serialise.py`** - units as YAML, and a draft as the commands that made it.
+  The on-disk format, which the roles also print verbatim for `show units`.
 - **`notify.py`** - waking the other side of the file transport. Each side
   blocks on a FIFO until the other signals; the signal is a hint over a
   re-checked condition, so losing one costs latency and not correctness.
@@ -139,6 +144,12 @@ publishes results the same way.
 
 Where that root is, is given to the repository rather than read from the
 process working directory.
+
+What a session has done and not committed is kept too, as the commands that did
+it, stamped with the turn they belong to. A draft is private to the session
+that made it and is discarded when that session commits, its work having become
+the published orders. Committing is recorded against a player and a turn, and
+is spent when that turn is resolved - the way the orders it published are.
 
 ## Testing
 
