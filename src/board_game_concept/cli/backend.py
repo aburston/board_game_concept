@@ -268,10 +268,41 @@ class HttpSession(Session):
         return True
 
     def waitForTurn(self):
-        raise NotImplementedError("wait: step 5 - long-poll is not here yet")
+        # long-poll: the server holds the request for up to its wait
+        # budget, either the turn resolves and it returns 'resolved:
+        # true', or the budget runs out and it returns 'resolved: false'
+        # and this loops. `notify.py`'s cadence is one-liner behind it
+        while True:
+            response = self._session.get(
+                f'{self.base_url}/games/{self.gameno}/players/'
+                f'{self.player_number}/wait/turn',
+                timeout=self._wait_timeout())
+            _raise_for(response)
+            if response.json().get('resolved'):
+                # fresh state so a subsequent `getOutcome` sees what the
+                # server just wrote
+                self._invalidate()
+                return
 
     def waitForPlayerCommit(self):
-        raise NotImplementedError("wait: step 5 - long-poll is not here yet")
+        # the administrator's counterpart: waits until the barrier closes.
+        # Only the admin calls this; a player's REPL calls `waitForTurn`
+        while True:
+            response = self._session.get(
+                f'{self.base_url}/games/{self.gameno}/players/'
+                f'{self.player_number}/wait/commit',
+                timeout=self._wait_timeout())
+            _raise_for(response)
+            if response.json().get('met'):
+                self._invalidate()
+                return
+
+    def _wait_timeout(self):
+        # a socket-timeout longer than the server's wait budget: whatever
+        # the server chose, the client's request outlasts it. The server
+        # sets its own budget as `WAIT_BUDGET` in `http/app.py`; the
+        # client does not need to know it and always uses a generous cap
+        return 60.0
 
     def getOutcome(self):
         return self._require_state()['outcome']

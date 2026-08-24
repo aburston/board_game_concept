@@ -10,6 +10,7 @@ moves to a token and the path stops carrying it.
 """
 
 import os
+import time
 
 from flask import Flask, jsonify, request
 
@@ -23,6 +24,14 @@ from ..service.turn import _awaited_players
 from ..storage.lock import GameIsBusy
 from .. import Game
 from . import views as views_module
+
+
+# the long-poll wait budget: short enough to keep a proxy happy, long
+# enough that a client is not making a fresh request every second.
+# `POLL_INTERVAL` matches `notify.py`'s FIFO cadence so latency is the same
+# across transports. Tests override `WAIT_BUDGET` down to something small
+WAIT_BUDGET = 25.0
+POLL_INTERVAL = 0.2
 
 
 VIEW_BUILDERS = {
@@ -150,6 +159,57 @@ def create_app(base_path=None, backend=None):
             return _game_error_response(error)
         except GameError as error:
             return jsonify({'error': str(error)}), 400
+
+    @app.get('/games/<gameno>/players/<int:number>/wait/turn')
+    def wait_for_turn(gameno, number):
+        # the wait ends when the player's published orders are no longer
+        # pending. `has_orders(n)` False means the server consumed them,
+        # which is what `wait_for_turn` in `service/turn.py` waits on too
+        budget = float(request.args.get('budget', WAIT_BUDGET))
+        deadline = time.monotonic() + budget
+        while True:
+            try:
+                repository = _repository(gameno)
+                pending = repository.has_orders(int(number))
+            except GameDataError as error:
+                return _game_error_response(error)
+            if not pending:
+                # a fresh load so the turn number the client reads reflects
+                # the resolution it was waiting on
+                try:
+                    game = Game(_repository(gameno), int(number))
+                    game.load()
+                    return jsonify({'resolved': True,
+                                    'turn_number': game.getTurnNumber()})
+                except GameDataError as error:
+                    return _game_error_response(error)
+            if time.monotonic() >= deadline:
+                return jsonify({'resolved': False})
+            time.sleep(POLL_INTERVAL)
+
+    @app.get('/games/<gameno>/players/<int:number>/wait/commit')
+    def wait_for_commit(gameno, number):
+        # the wait ends when every awaited player has committed for the
+        # current turn - the same condition `wait_for_all_commits` in
+        # `service/turn.py` waits on
+        budget = float(request.args.get('budget', WAIT_BUDGET))
+        deadline = time.monotonic() + budget
+        while True:
+            try:
+                game = Game(_repository(gameno), int(number))
+                game.load()
+                awaited = _awaited_players(game)
+                committed = set(game.repository.committed_players(
+                    game.getTurnNumber()))
+            except GameDataError as error:
+                return _game_error_response(error)
+            missing = sorted(awaited - committed)
+            if not missing:
+                return jsonify({'met': True,
+                                'committed': sorted(committed)})
+            if time.monotonic() >= deadline:
+                return jsonify({'met': False, 'waiting_on': missing})
+            time.sleep(POLL_INTERVAL)
 
     @app.errorhandler(GameIsBusy)
     def _busy(error):

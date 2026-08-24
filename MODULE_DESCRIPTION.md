@@ -129,8 +129,10 @@ not know how it is drawn.
   Commit: `POST /games/<gameno>/players/<n>/commit` publishes and, under
   option (b), resolves the turn inline if the barrier is met - 200 with
   `resolved: true` when the request itself resolved the turn, 202 with
-  `waiting_on: [n, ...]` when it left the barrier open. Long-poll is
-  step 5.
+  `waiting_on: [n, ...]` when it left the barrier open. Long-poll:
+  `GET /wait/turn` and `GET /wait/commit` hold the request up to
+  `WAIT_BUDGET` seconds, either the condition is met and the server
+  answers, or the budget runs out and the client's loop asks again.
 - **`bgcapiserver.py`** - the console-script entry point that runs the
   Flask dev server. `--host`, `--port`, `--base-path`, `--backend`; local by
   default, and a real deployment binds where its operator wants.
@@ -152,8 +154,9 @@ not know how it is drawn.
   role holds a `Session` and talks to it, rather than reaching into a `Game`;
   `LocalSession` is the in-process implementation (the in-process `Game`,
   `service.games` and turn functions the roles used to call directly),
-  `HttpSession` speaks HTTP against `bgcapiserver`. The read half,
-  `perform` and `commit` are served today; waiting lands in step 5.
+  `HttpSession` speaks HTTP against `bgcapiserver`. Every method the
+  seam names is served: read, perform, commit and wait. Step 6 flips
+  the default so clients pick it without being told.
 - **`bgcserver.py`**, **`bgcclient.py`**, **`bgcobserver.py`** - the roles
   themselves, reduced to what is genuinely theirs. Each file is named for the
   command it is installed as, so a role has one name and not two.
