@@ -10,6 +10,8 @@ things that will walk this tree - an interpreter, and whatever prices a program
 by its size - are visitors over that shape.
 """
 
+from .errors import GameError
+
 
 class Node:
     """One node of a parsed tree."""
@@ -120,3 +122,63 @@ class LoadPlayer(Node):
 class Move(Node):
     kind = 'move'
     fields = ('unit', 'direction')
+
+
+class SetNewGame(Node):
+    """The setter that marks setup done. Only the administrator sends this,
+    and only over the HTTP tier - the local flow calls `data.setNewGame`
+    directly. Kept as a command so the wire has one shape for every
+    mutation."""
+
+    kind = 'set_new_game'
+    fields = ('new_game',)
+
+
+def _descendants(cls):
+    """Every class below this one, however deep.
+
+    Walked rather than listed, so a command added to this module is available
+    to be rebuilt without anything else being told about it. The recursion is
+    what makes it keep working when the grammar grows statements that contain
+    other statements and a command becomes a subclass of a command.
+    """
+    for subclass in cls.__subclasses__():
+        yield subclass
+        yield from _descendants(subclass)
+
+
+def command_type(kind):
+    """The command class that names itself with this kind, or None."""
+    for subclass in _descendants(Node):
+        if subclass.kind == kind:
+            return subclass
+    return None
+
+
+def as_record(command):
+    """One command as plain data: its kind, and the fields it was given."""
+    record = {'kind': command.kind}
+    for name in command.fields:
+        record[name] = getattr(command, name)
+    return record
+
+
+def from_record(record):
+    """The command a record describes.
+
+    Raises `GameError` rather than returning None for anything it cannot
+    rebuild: a draft is replayed through the same rules that first accepted
+    it, so a record that is not a command is refused the way a line that is
+    not a command is.
+    """
+    if not isinstance(record, dict) or 'kind' not in record:
+        raise GameError(f"not a command: {record!r}")
+    values = dict(record)
+    kind = values.pop('kind')
+    node = command_type(kind)
+    if node is None:
+        raise GameError(f"no such command: {kind}")
+    try:
+        return node(**values)
+    except TypeError as e:
+        raise GameError(f"command {kind} cannot be read back", e) from e

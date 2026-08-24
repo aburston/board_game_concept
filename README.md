@@ -10,54 +10,90 @@ Board game idea based on building and programming your own units
 Not built yet: programming a unit to play itself, which the concept is named
 for. Units are ordered by hand, one command at a time. See "Not built yet" in
 `MODULE_DESCRIPTION.md` for the rest.
- 
-# server idea
 
- * The server runs permanently, and automatically commits whenever all the players commit
- * The players should pause after their commit and wait for the server to commit
- * Currently the server runs and waits for files to be created and written into a directory on disk by the
-player client.
+# Install
 
-# web service - [TODO, none of this exists yet]
- * combine server, client and observer into different roles in the API based on login
- * create "flask" based web service that exposes all the cli based commands as a RESTful API
- * backend would still be files for now, although moving to sqlite may be a thought via a common data class
-
-# setup
-
-On ubuntu 24.04, `pip` and `venv` come from apt:
-
-```
-sudo apt-get install python3-pip python3.12-venv
-```
-
-Then, from the project root, create a virtualenv and install the package into
-it. The install is what puts the commands below on your path, so it is not
-optional:
+From the project root:
 
 ```
 python3 -m venv venv
 source venv/bin/activate
+pip install .
+```
+
+That's it. Every dependency comes with the install, and four console
+scripts land on your `$PATH`: `bgcapiserver`, `bgcserver`, `bgcclient`,
+`bgcobserver`. On Ubuntu, `sudo apt-get install python3-pip
+python3.12-venv` first if you don't have them.
+
+For working on the code, use `pip install -e '.[dev]'` — the `-e`
+installs in place, `[dev]` pulls in the linter.
+
+# Run over HTTP
+
+The three CLI roles talk to a REST server (`bgcapiserver`); with no
+`--server` and no `BOARD_GAME_SERVER` set, the roles probe for one on
+`http://127.0.0.1:8080`. Naming a `--backend` or `--server` explicitly
+skips the probe.
+
+```
+$ bgcapiserver &
+$ export BOARD_GAME_SERVER=http://127.0.0.1:8080
+$ bgcserver -g 1               # admin: sets the board, registers players
+                               # commits and exits
+$ bgcclient 1 1                # player 1
+$ bgcclient 1 2                # player 2
+$ bgcobserver 1                # observer
+```
+
+Without `BOARD_GAME_SERVER` (or `--server URL` on a role), each binary
+opens the game directory itself and runs its own local flow — the CLI
+behaviour that pre-dated the HTTP tier is unchanged. The storage backend
+is chosen by `BOARD_GAME_BACKEND` (or `--backend`); SQLite is the
+default, YAML is the readable-file alternative.
+
+## Storage backends
+
+Two backends behind the same `GameRepository` port:
+
+- **SQLite** (default) — one file per game at
+  `games/_<gameno>/game.sqlite3`. Real tables; `held()` is a
+  transaction; `read_view` runs the visibility join. This is what a
+  real deployment uses.
+- **YAML** — the readable-file backend. One YAML file per thing under
+  `games/_<gameno>/data/` and `games/_<gameno>/players/`. Available
+  for tests (byte-diff coverage), or for an operator who wants to
+  `cat` the game state. Pick with `--backend yaml` or
+  `BOARD_GAME_BACKEND=yaml`.
+
+Pick one at startup and stay with it: a game written by one backend is
+not readable by the other, and there is no migration between them.
+
+## Web service - what's next
+ * Authentication and TLS
+
+# Working on the code
+
+For an editable install (the commands run the source in `src/` rather than
+a copy of it) plus the linter used in CI:
+
+```
 pip install -e '.[dev]'
 ```
 
-`-e` installs in place, so the commands run the source in `src/` rather than a
-copy of it. Everything the game itself needs comes with the install; `pytest` is
-the one extra the test suite wants:
+The test suite wants `pytest`:
 
 ```
 pip install pytest
-pytest                        # the whole suite, from the project root
-pytest tests/test_basic.py    # or one file
+pytest                          # whole suite (YAML backend by default)
+BOARD_GAME_BACKEND=sqlite pytest   # same suite over SQLite
+pytest tests/test_basic.py      # or one file
 ```
 
-The suite runs the installed commands when they are on your path and falls back
-to the module files when they are not, so it passes either way — but
+The suite runs the installed commands when they are on your path and falls
+back to the module files when they are not, so it passes either way — but
 `tests/test_cli_installation.py` skips unless you have installed the package,
 and that is the file that proves the commands work at all.
-
-Legacy expect-based shell tests and `test/test.sh` have been removed; the Python
-tests now cover the same behavior.
 
 # Console scripts
 
@@ -66,6 +102,10 @@ Installing the package puts one command on your path per role:
   * `bgcclient <gameno> <player_number>` → runs the player client interface
   * `bgcserver -g <gameno>` → runs the game server/admin interface
   * `bgcobserver <gameno>` → runs the neutral game observer
+
+The three roles are three identities: 0 is the administrator, 1 to 999
+are the players, and 1000 is the observer. `bgcclient` takes a player's
+number and refuses one outside that range.
 
 Each resolves a game against the directory you run it in, as `games/_<gameno>`.
 

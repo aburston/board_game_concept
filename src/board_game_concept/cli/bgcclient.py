@@ -7,13 +7,14 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import Game, YamlGameRepository
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show, show_units
 from board_game_concept.cli.help import print_help
+from board_game_concept.cli.render import print_dropped
 from board_game_concept.cli.session import (describe_outcome, load_game,
-                                            read_command, report)
-from board_game_concept.service import games
+                                            make_session, read_command,
+                                            report)
+from board_game_concept.service import identity
 from board_game_concept.service.errors import GameError
 
 ROLE = roles.CLIENT
@@ -39,6 +40,26 @@ def main(argv=None):
     if DEBUG:
         print(f"len(argv): {len(argv)}")
 
+    # `--server URL` picks the HTTP session; without it, `BOARD_GAME_SERVER`
+    # or a local `LocalSession` decides. Kept as a `--flag URL` pair rather
+    # than a positional argument so the two-argument form stays what a
+    # person types today
+    server = None
+    filtered = []
+    it = iter(argv)
+    for arg in it:
+        if arg == '--server':
+            try:
+                server = next(it)
+            except StopIteration:
+                usage()
+                sys.exit(1)
+        elif arg.startswith('--server='):
+            server = arg[len('--server='):]
+        else:
+            filtered.append(arg)
+    argv = filtered
+
     if len(argv) == 3:
         gameno = argv[1]
         try:
@@ -46,12 +67,20 @@ def main(argv=None):
         except ValueError:
             usage()
             sys.exit(1)
+        # checked before the game is opened, so that a caller who cannot be
+        # this player is told so rather than opened as one and then refused
+        # by every command they try
+        if not identity.is_player(player_number):
+            print(identity.out_of_range(player_number), file=sys.stderr)
+            usage()
+            sys.exit(1)
     else:
         usage()
         sys.exit(1)
 
-    # initialize the data object
-    data = Game(YamlGameRepository(gameno), player_number)
+    # a session hides how the game is reached: local when the client opens
+    # a game directory itself, HTTP when it reaches the server for it
+    data = make_session(gameno, player_number, server=server)
 
     # let a person at a terminal complete what they are typing. The names come
     # from this game object, which is the same one the loop below reloads into,
@@ -86,6 +115,10 @@ def main(argv=None):
         elif out_of_it:
             print(f"player {player_number} is out of the game")
 
+        # anything of this player's own that could not be put back when their
+        # draft was restored, said before they are asked for anything else
+        print_dropped(data.getDropped())
+
         # report anything the server refused when it resolved the last turn
         rejected = data.getRejected()
         if rejected:
@@ -119,25 +152,25 @@ def main(argv=None):
                 continue
 
             if command.kind == 'commit':
-                if data.clientSave():
+                # commit as this role commits - the session knows which
+                # meaning by the identity it was opened as
+                if data.commit():
                     print("commit complete")
                     break
                 continue
 
-            # everything else is the service layer's to carry out or refuse
+            # everything else is the service layer's to carry out or refuse,
+            # and to remember: an order that is not committed yet is written
+            # down as it is given, so ending the session does not lose it
             try:
-                if command.kind == 'add_type':
-                    games.define_type(data, command)
-                elif command.kind == 'add_unit':
-                    games.deploy_unit(data, command)
-                elif command.kind == 'move':
-                    games.order_move(data, command)
-                    # the order is read back so the player can see it took,
-                    # as the same table `show units` would have given them
-                    show_units(data)
+                data.perform(command)
             except GameError as error:
                 report(error)
                 continue
+            if command.kind == 'move':
+                # the order is read back so the player can see it took, as the
+                # same table `show units` would have given them
+                show_units(data)
 
 
 if __name__ == "__main__":

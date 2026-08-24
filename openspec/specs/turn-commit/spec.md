@@ -94,6 +94,22 @@ The system SHALL apply a turn only once every player still in the game has
 committed, holding the turn open until then. A player who has been eliminated
 SHALL NOT be waited for.
 
+A turn SHALL be resolved while the game is held for writing, so that resolving
+it cannot overlap another caller committing, resolving, or reading. Holding the
+turn open SHALL NOT hold the game: a barrier waits for as long as a player takes
+to decide, and a game held across that would be stopped rather than protected.
+
+Whether the barrier is met SHALL be asked where the turn is resolved, while the
+game is held, and about the game as it is then — not about the game as a caller
+last read it. A turn SHALL NOT be resolved on a barrier that was met before the
+game was held. Waiting to be told the barrier is met is a hint to ask again, not
+an answer to act on.
+
+Finding the barrier unmet when it is asked SHALL NOT be an error: it means
+another caller resolved the turn first, which is the barrier doing its work. The
+caller SHALL be told the turn was not resolved, distinguishably from being told
+it could not be, and SHALL be free to wait and ask again.
+
 #### Scenario: Waiting for all players
 
 - **WHEN** some but not all players still in the game have committed their orders
@@ -103,6 +119,17 @@ SHALL NOT be waited for.
 
 - **WHEN** every player still in the game has committed
 - **THEN** the server resolves the turn and applies all orders together
+
+#### Scenario: Resolving a turn excludes everything else
+
+- **WHEN** a turn is being resolved
+- **THEN** no other caller may commit, resolve, or read that game until it is finished
+
+#### Scenario: Waiting for players does not exclude them
+
+- **WHEN** the server is holding a turn open for players who have not committed
+- **THEN** those players may commit
+- **AND** anyone may read the game
 
 #### Scenario: An eliminated player is not waited for
 
@@ -114,10 +141,34 @@ SHALL NOT be waited for.
 - **WHEN** every player but one has been eliminated
 - **THEN** the game is decided rather than the turn being held open for the eliminated players
 
+#### Scenario: The barrier is asked where the turn is resolved
+
+- **WHEN** a turn is resolved
+- **THEN** whether every player still in the game has committed was asked while the game was held
+- **AND** about the game as it was then
+
+#### Scenario: A turn is not resolved twice on one barrier
+
+- **WHEN** two callers each find the barrier met and each ask for the turn to be resolved
+- **THEN** one of them resolves it
+- **AND** the other is told the barrier is no longer met
+- **AND** the turn is resolved once
+
+#### Scenario: An unmet barrier is not a failure
+
+- **WHEN** a caller asks for the turn to be resolved and the barrier is not met
+- **THEN** it is told the turn was not resolved
+- **AND** that is distinguishable from being told the turn could not be resolved
+- **AND** the game is unchanged
+
 ### Requirement: Players Wait For Turn Completion
 
 The system SHALL prevent a player from issuing new orders while their previous
-commit is still awaiting resolution.
+commit is still awaiting resolution. A player SHALL be held until the turn they
+committed to has been published — until everything that turn produced, and in
+particular the view they will be shown, can be read — and not merely until the
+server has taken their orders. A player released from that wait SHALL be able to
+read the result of the turn they were waiting for.
 
 #### Scenario: Player blocked after committing
 
@@ -125,16 +176,116 @@ commit is still awaiting resolution.
 - **THEN** the client reports that it is waiting for the turn to complete
 - **AND** the client reloads game data and retries rather than accepting new orders
 
+#### Scenario: A released player can read the turn they waited for
+
+- **WHEN** a player stops waiting because the turn they committed to has been resolved
+- **THEN** the view they are shown is the one that turn published
+- **AND** it holds the units that turn left them, rather than the previous turn's
+
+#### Scenario: Taking a player's orders is not the same as publishing the turn
+
+- **WHEN** the server has consumed a player's orders but has not yet published everything the turn produced
+- **THEN** that player is still held
+- **AND** is not offered the chance to give orders against a turn that has not been published
+
+### Requirement: Drafting Before Committing
+
+The system SHALL record what a session has done since its last commit as it is
+done, rather than holding it only for the life of the session. Everything a
+caller may do to a game before committing SHALL be drafted: unit types defined,
+units deployed, movement ordered, and the administrator's setup of the board and
+its players.
+
+A draft SHALL be restored when its owner reopens the game, so that work is not
+lost when a session ends before it commits.
+
+A draft SHALL be private to the session that made it. No other player, the
+administrator, and no observer SHALL be able to read it. A drafted order is not
+a published one, and knowing that an opponent is deliberating — or what they are
+deliberating about — SHALL NOT be obtainable from the game.
+
+A draft SHALL record the turn it was made for. A draft made for any turn other
+than the game's current turn SHALL be discarded rather than restored, so that
+work left behind by a session that ended while a turn was being resolved is
+never applied to a later turn.
+
+Restoring a draft SHALL apply the same rules that applied when each action was
+first taken. An action that is no longer legal SHALL be dropped and reported to
+its owner, and the rest of the draft SHALL still be restored; a draft SHALL NOT
+make a game impossible to open.
+
+#### Scenario: Work is drafted as it is done
+
+- **WHEN** a player defines a type, deploys a unit, or orders a move, and does not commit
+- **THEN** the action is recorded against that player
+- **AND** it is recorded before the session ends
+
+#### Scenario: A session that ends before committing
+
+- **WHEN** a player defines types and deploys units, the session ends without committing, and the player reopens the game
+- **THEN** the types they defined are theirs again
+- **AND** the units they deployed are where they placed them
+- **AND** they may continue from where they stopped
+
+#### Scenario: A draft is not visible to anyone else
+
+- **WHEN** a player has drafted orders and has not committed
+- **THEN** no other player is shown them
+- **AND** the administrator is not shown them
+- **AND** an observer is not shown them
+- **AND** nothing reveals that the player has drafted anything at all
+
+#### Scenario: A draft from an earlier turn
+
+- **WHEN** a game is opened holding a draft recorded for a turn earlier than the game's current turn
+- **THEN** the draft is discarded
+- **AND** none of its actions are applied
+- **AND** the game opens normally
+
+#### Scenario: A drafted action that is no longer legal
+
+- **WHEN** a draft is restored and one of its actions can no longer be carried out
+- **THEN** that action is dropped and reported to its owner
+- **AND** every other action in the draft is restored
+- **AND** the game opens
+
+#### Scenario: Drafting is not permitted while awaiting resolution
+
+- **WHEN** a player has committed and the turn has not yet been resolved
+- **THEN** no further action is drafted for them
+- **AND** the client reports that it is waiting for the turn to complete
+
+#### Scenario: Committing consumes the draft
+
+- **WHEN** a player commits
+- **THEN** their draft is discarded, having become their committed orders
+- **AND** reopening the game restores no draft for them
+
 ### Requirement: Commits Are Final
 
 The system SHALL treat a commit as irreversible; a player cannot withdraw or
-amend orders once committed.
+amend orders once committed. A player MAY amend their draft freely up to the
+moment they commit, and SHALL NOT be able to amend it afterwards. There SHALL
+be no way to withdraw a commit: a player who has committed is committed for
+that turn, whatever any other player does next.
 
 #### Scenario: Committing orders
 
 - **WHEN** a player commits
 - **THEN** their orders are written for the server to consume
 - **AND** the player cannot undo them
+
+#### Scenario: Amending before committing
+
+- **WHEN** a player orders a unit to move and then orders the same unit to move elsewhere, before committing
+- **THEN** the later order stands
+- **AND** the earlier one has no effect on the turn
+
+#### Scenario: A commit cannot be withdrawn
+
+- **WHEN** a player has committed and the turn has not yet been resolved
+- **THEN** there is no command or request that withdraws their commit
+- **AND** the turn is still resolved with the orders they committed
 
 ### Requirement: Orders Are Consumed Once
 

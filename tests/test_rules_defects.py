@@ -170,7 +170,7 @@ def test_no_restored_unit_is_waiting_to_deploy(tmp_path):
 
 
 def test_an_order_naming_a_destroyed_unit_is_refused(tmp_path):
-    from board_game_concept.storage.serialise import serialise_units
+    from board_game_concept.storage.serialise import units_document
 
     harness = GameHarness(tmp_path)
     harness.create(6, 3, [1, 2])
@@ -187,8 +187,8 @@ def test_an_order_naming_a_destroyed_unit_is_refused(tmp_path):
     # publish x1 by hand, as a client that had not been fixed would
     repository = harness.repository()
     server = harness.session(0)
-    repository.write_orders(1, serialise_units(server.getBoard(),
-                                               server.getPlayers()[1]['obj']))
+    repository.write_orders(1, units_document(server.getBoard(),
+                                              server.getPlayers()[1]['obj']))
     repository.mark_committed(1)
     harness.order(2, [])
     harness.resolve()

@@ -53,8 +53,13 @@ OBSERVER_PROMPT = 'bgcobserver> '
 class InteractiveProcess:
     def __init__(self, args, cwd):
         # an installed console script cannot be handed `-u`, so ask for
-        # unbuffered output the way that works for both launchers
+        # unbuffered output the way that works for both launchers. The
+        # backend env var is passed through explicitly so a subprocess
+        # role uses the same storage backend as the in-process harness
+        # sitting beside it
+        from game_harness import DEFAULT_BACKEND, BACKEND_ENV
         environment = dict(os.environ, PYTHONUNBUFFERED='1')
+        environment.setdefault(BACKEND_ENV, DEFAULT_BACKEND)
         self.proc = Popen(
             [str(a) for a in args],
             cwd=str(cwd),

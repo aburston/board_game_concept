@@ -8,15 +8,18 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import Game, YamlGameRepository
-from board_game_concept.cli.render import print_board
-from board_game_concept.storage.serialise import serialise_units
+from board_game_concept.cli.render import print_board, print_dropped
+from board_game_concept.cli.backend import LocalSession, HttpSession
+from board_game_concept.storage.serialise import units_document
+from board_game_concept.storage.yaml_repository import dump_units
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.session import (describe_outcome, load_game,
-                                            read_command, report)
-from board_game_concept.service import games
+from board_game_concept.cli.session import (add_backend_argument,
+                                            add_server_argument,
+                                            describe_outcome, load_game,
+                                            make_session, read_command,
+                                            report)
 from board_game_concept.service.errors import GameError
 
 ROLE = roles.SERVER
@@ -45,10 +48,17 @@ def main(argv=None):
         '--game-number',
         required=True,
         help='specify the game number')
+    add_backend_argument(parser)
+    add_server_argument(parser)
     args = parser.parse_args(argv[1:])
 
-    # initialize data object
-    data = Game(YamlGameRepository(args.game_number), player_number)
+    # a session hides how the game is reached: local when the server opens
+    # a game directory itself, HTTP when it reaches `bgcapiserver` for it.
+    # In HTTP mode option (b) makes the last player's commit resolve the
+    # turn during the request, so the unattended resolver loop below runs
+    # only in local mode - the `isinstance` check gates it
+    data = make_session(args.game_number, player_number,
+                        server=args.server, backend=args.backend)
 
     # completion for the setup prompt. The server owns no units and defines no
     # types, so what it gains is the grammar and the paths `load` wants
@@ -58,6 +68,9 @@ def main(argv=None):
 
         # load the gamedata
         load_game(data)
+
+        # anything the administrator drafted that could not be put back
+        print_dropped(data.getDropped())
 
         new_game = data.getNewGame()
 
@@ -86,23 +99,19 @@ def main(argv=None):
                 continue
 
             if command.kind == 'commit':
-                # do all the commit actions for the first commit
-                if data.serverSave():
+                # commit as this role commits - the session knows which
+                # meaning by the identity it was opened as (ending setup, here)
+                if data.commit():
                     print("commit complete")
                     break
                 # commit failed, go back to the prompt to resolve the problem
                 continue
 
-            # everything else is the service layer's to carry out or refuse
+            # everything else is the service layer's to carry out or refuse,
+            # and to remember: setup that is not committed yet is written down
+            # as it is done, so ending the session does not lose it
             try:
-                if command.kind == 'set_board':
-                    games.set_board_size(data, command)
-                elif command.kind == 'add_player':
-                    games.add_player(data, command)
-                elif command.kind == 'load_board':
-                    games.load_board(data, command)
-                elif command.kind == 'load_player':
-                    games.load_player(data, command)
+                data.perform(command)
             except GameError as error:
                 report(error)
                 continue
@@ -113,17 +122,35 @@ def main(argv=None):
             # clear the new game flag, this suppresses interactive mode for the
             # server
             data.setNewGame(False)
-        elif data.serverSave():
-            print("commit complete")
+            # in HTTP mode option (b) makes the last player's commit resolve
+            # the turn during the request, so the unattended resolver loop
+            # below has no work. Exit after setup - the operator uses
+            # `bgcapiserver` for the ongoing game
+            if isinstance(data, HttpSession):
+                sys.exit(0)
         else:
-            print("internal server error saving game data")
-            sys.exit(1)
+            # asked here rather than acted on from the waiting: the question
+            # that authorises a resolution and the resolution itself are one
+            # act, holding the game, so another caller cannot resolve the turn
+            # in between and leave this one resolving a game with no orders
+            resolved = data.resolve_pending()
+            if resolved is None:
+                # somebody else resolved it first, which is the barrier doing
+                # its work rather than a failure. Wait to be told again -
+                # looping straight back would be a spin
+                data.waitForPlayerCommit()
+                continue
+            if not resolved:
+                print("internal server error saving game data")
+                sys.exit(1)
+            print("commit complete")
 
         # the turn just resolved may have decided the game
         outcome = data.getOutcome()
         if outcome is not None:
             print_board(data.getBoard())
-            print(serialise_units(data.getBoard()))
+            if isinstance(data, LocalSession):
+                print(dump_units(units_document(data.getBoard())))
             print(describe_outcome(outcome))
             sys.exit(0)
 
@@ -135,7 +162,8 @@ def main(argv=None):
         # local would still be the old one
         resolved = data.getBoard()
         print_board(resolved)
-        print(serialise_units(resolved))
+        if isinstance(data, LocalSession):
+            print(dump_units(units_document(resolved)))
 
 
 # run main()

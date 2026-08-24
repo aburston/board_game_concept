@@ -65,7 +65,7 @@ class InstalledCommands(CliTestCase):
     def test_the_observer_reports_its_own_name_in_its_usage(self):
         observer = self.start_by_name('bgcobserver', [])
         self.assertNotEqual(0, observer.wait_for_exit())
-        self.assertIn('usage, bgcobserver <gameno>', observer.errors)
+        self.assertIn('usage: bgcobserver', observer.errors)
 
 
 @unittest.skipUnless(INSTALLED, REASON)

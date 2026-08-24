@@ -142,12 +142,28 @@ The system SHALL let the administrator size the board before the game starts via
 ### Requirement: Registering Players
 
 The system SHALL let the administrator register players before the game starts
-via `add player <number>`.
+via `add player <number>`. The number SHALL be one `player-numbering` permits a
+player, and one that is not SHALL be refused at the prompt — reported, with the
+session continuing — rather than ending the session.
 
 #### Scenario: Adding a player
 
 - **WHEN** `add player` is given a player number and the game is new
 - **THEN** that player is registered with no unit types
+
+#### Scenario: Adding a player with a reserved number
+
+- **WHEN** `add player` is given 0 or 1000
+- **THEN** the server refuses, reporting that the number is reserved
+- **AND** no player is registered
+- **AND** the server takes further commands
+
+#### Scenario: Adding a player with a number out of range
+
+- **WHEN** `add player` is given a number below 1 or above 999
+- **THEN** the server refuses, naming the permitted range
+- **AND** no player is registered
+- **AND** the server takes further commands
 
 #### Scenario: Adding a player to an established game
 
@@ -162,7 +178,9 @@ via `add player <number>`.
 ### Requirement: Loading Configuration From Files
 
 The system SHALL let the administrator import board and player configuration
-from files via `load board <file>` and `load player <file>`.
+from files via `load board <file>` and `load player <file>`. A player file
+naming a number `player-numbering` does not permit a player SHALL be refused at
+the prompt, with the session continuing.
 
 #### Scenario: Loading a board
 
@@ -173,6 +191,13 @@ from files via `load board <file>` and `load player <file>`.
 
 - **WHEN** `load player` names a file containing a player number, types, and units
 - **THEN** that player is registered with those types and units
+
+#### Scenario: Loading a player whose number is not a player's
+
+- **WHEN** `load player` names a file whose player number is outside 1 to 999
+- **THEN** the server refuses, naming the permitted range
+- **AND** no player is registered
+- **AND** the server returns to the prompt
 
 #### Scenario: Loading a player into an established game
 
@@ -248,11 +273,51 @@ to disk and leaving interactive mode.
 - **WHEN** `commit` is entered and the game cannot be saved
 - **THEN** the server reports the problem and returns to the prompt
 
+### Requirement: Setup Survives A Session
+
+The system SHALL restore the administrator's uncommitted setup when the server
+is run again for the same game, so that ending the session before committing
+setup does not cost the board that was sized or the players that were
+registered.
+
+Where a restored setup action can no longer be carried out, the server SHALL
+report which action was dropped and why, before taking its next command, and
+SHALL continue with the rest of the setup restored. A configuration loaded from
+a file SHALL be restored by reading that file again; if it can no longer be
+read, that is a dropped action like any other and SHALL NOT prevent the game
+from being opened.
+
+#### Scenario: Reopening after a session ends during setup
+
+- **WHEN** the administrator sets a board size and registers players, the session ends without committing, and the server is run again for the same game
+- **THEN** `show board` shows the board at the size that was set
+- **AND** `show players` lists the players that were registered
+- **AND** the administrator may register more players or commit setup
+
+#### Scenario: Reopening after committing setup
+
+- **WHEN** the administrator commits setup and the server is run again
+- **THEN** nothing uncommitted is restored
+- **AND** the server resumes its unattended turn cycle
+
+#### Scenario: A loaded file that has since gone
+
+- **WHEN** setup is restored and a file a `load` command named can no longer be read
+- **THEN** the server reports that the command was dropped and why
+- **AND** the rest of the setup is restored
+- **AND** the administrator may reissue the command
+
 ### Requirement: Unattended Turn Cycle
 
 The system SHALL run continuously once setup is complete, resolving each turn as
 soon as every player still in the game has committed, and SHALL stop once the
 game is decided rather than waiting for commits that will never come.
+
+Being woken SHALL send the server to ask whether the turn may be resolved rather
+than to resolve it: the question is asked where the turn is resolved, as
+`turn-commit` requires. A turn the server may no longer resolve, because another
+caller resolved it first, SHALL send it back to waiting rather than be reported
+as a failure.
 
 #### Scenario: The turn loop
 
@@ -279,3 +344,15 @@ game is decided rather than waiting for commits that will never come.
 
 - **WHEN** the server cannot save game state while resolving a turn
 - **THEN** it reports an internal error and exits with a failure status
+
+#### Scenario: Woken for a turn another caller has already resolved
+
+- **WHEN** the server is woken and finds the barrier no longer met
+- **THEN** it does not resolve a turn
+- **AND** it reports no error
+- **AND** it waits again rather than exiting or asking immediately
+
+#### Scenario: Ending setup is not held to the barrier
+
+- **WHEN** the administrator commits to end setup
+- **THEN** the turn is resolved without waiting for any player to have committed

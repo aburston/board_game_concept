@@ -9,35 +9,53 @@ which this delegates to so that callers have one thing to talk to.
 """
 
 from ..domain import Board, Player, UnitType
-from . import turn
-from .errors import NoSuchGame, NoSuchPlayer
+from ..storage.notify import NullNotifier
+from ..storage.serialise import restore_draft, serialise_draft
+from . import games, identity, turn
+from .errors import (GameDataError, GameError, NoSuchGame, NoSuchPlayer,
+                     UnreadableGame)
 
 
 class Game:
 
-    def __init__(self, repository, player_number):
+    def __init__(self, repository, player_number, notifier=None):
         self.repository = repository
         self.player_number = player_number
+        # the bus is on its own interface: local flows poll through a
+        # `NullNotifier`, HTTP flows never reach here (`bgcapiserver` uses
+        # long-poll directly). A caller that arranges push semantics
+        # itself passes its own `Notifier`
+        self.notifier = notifier or NullNotifier()
 
         self.players = {}
         self.board = None
         self.player_obj = None
-        # the administrator and the observer are both player 0, and both are
-        # entitled to the whole game. A player is entitled to their own view of
-        # it and nothing else, which is enforced by never reading them more
-        # than that rather than by filtering it on the way out
-        self.sees_everything = player_number == 0
+        # the administrator and the observer are different identities and
+        # both are entitled to the whole game. A player is entitled to their
+        # own view of it and nothing else, which is enforced by never reading
+        # them more than that rather than by filtering it on the way out
+        self.sees_everything = identity.sees_everything(player_number)
         self.unprocessed_moves = False
         # orders the server refused when it last resolved a turn
         self.rejected = []
+        # drafted commands that could no longer be carried out when the draft
+        # was restored, and so were dropped
+        self.dropped = []
         # how far the game has got: the last turn resolved, who is out of it,
         # and how it ended if it has
         self.turn_number = 0
         self.eliminated = []
         self.outcome = None
-        # the administrator opens an established game; a player only ever
-        # joins one that has been set up. XXX needs a better name
-        self.new_game = player_number != 0
+        # an identity entitled to the whole game opens an established one; a
+        # player only ever joins one that has been set up. This gates deploying
+        # and ordering, so an observer for which it were true would be a session
+        # the rules considered mid-setup. XXX needs a better name
+        self.new_game = not self.sees_everything
+
+        # what this session has done since it last committed, in the order it
+        # did it. Held here as well as on disk so that recording one more is a
+        # write rather than a read and a write
+        self.draft = []
 
     # --- what the session can ask about the game
 
@@ -68,7 +86,9 @@ class Game:
         self.outcome = progress.get('outcome') or None
 
     def getPlayerObj(self, player_number):
-        if self.player_number == 0:
+        # an identity that is not a player's owns no units, so there is no
+        # player object to hand back
+        if not identity.is_player(self.player_number):
             return None
         return self.players[player_number]['obj']
 
@@ -96,16 +116,54 @@ class Game:
     def getSizeY(self):
         return self.board.size_y if self.board is not None else 0
 
+    # --- work this session has not committed yet
+
+    def getDraft(self):
+        """The commands this session has issued since it last committed."""
+        return self.draft
+
+    def recordDraft(self, command):
+        """Remember a command, so that ending the session does not lose it.
+
+        Stamped with the turn it was drafted for. A draft belongs to one turn;
+        one found under a turn the game has moved past is work left behind by a
+        session that ended while a turn was being resolved.
+        """
+        self.draft.append(command)
+        self.repository.write_draft(
+            self.player_number, serialise_draft(self.draft, self.turn_number))
+
+    def clearDraft(self):
+        """Discard the draft, committed or abandoned."""
+        self.draft = []
+        self.repository.clear_draft(self.player_number)
+
     # --- reading it
 
     def load(self):
         self.unprocessed_moves = False
+        self.dropped = []
+        self.draft = []
         self.repository.ensure()
 
+        # held for reading while the game's shared state is read, so that
+        # nothing here catches a turn part way through being published. Several
+        # sessions may read at once; a session resolving a turn excludes them
+        # all. The draft is replayed after it is let go - it is this session's
+        # own, nobody else reads or writes it, and holding a *read* lock across
+        # a write would misdescribe what is happening
+        with self.repository.held(read=True):
+            self._read()
+        self._replay_draft()
+
+    def _read(self):
+        """The game's shared state, read while the game is held."""
         size = self.repository.read_board()
         if size is None:
-            if self.player_number == 0:
-                # nothing has been set up yet, so this session sets it up
+            if self.sees_everything:
+                # nothing has been set up yet. The administrator's session is
+                # the one that sets it up, and the observer is told there is no
+                # board rather than refused the game outright
                 self.new_game = True
             else:
                 raise NoSuchGame(
@@ -127,13 +185,76 @@ class Game:
             self._restore(self.board, self.repository.read_view(
                 self.player_number))
 
-        # the session must belong to a player this game knows about, or to the
-        # administrator, who is player 0 and holds no units
-        if self.player_number not in self.players and self.player_number != 0:
+        # a session opened as a player must be one this game knows about. The
+        # administrator and the observer hold no units and are registered as
+        # nobody, so neither has to be found among the players
+        if (identity.is_player(self.player_number)
+                and self.player_number not in self.players):
             raise NoSuchPlayer(f"player {self.player_number} does not exist")
+
+
+    def _replay_draft(self):
+        """Put back what this session had done and not committed.
+
+        Only this session's own draft, never another's. The repository will
+        hand over any draft it is asked for, because a repository holds no
+        rules; not asking for somebody else's is this layer's part of the
+        bargain, as it already is for a player's file and a player's view.
+
+        A draft belongs to one turn. One stamped with another is work left
+        behind by a session that ended while a turn was being resolved, and is
+        discarded rather than replayed into a turn it was never meant for.
+
+        A command that can no longer be carried out is dropped and remembered,
+        and the rest of the draft is still restored. Refusing to open a game
+        because one drafted order went stale would make a draft a way to lock
+        yourself out of your own game.
+        """
+        try:
+            draft = self.repository.read_draft(self.player_number)
+        except GameDataError as error:
+            # an unreadable draft is this session's own work and nobody
+            # else's, so it costs the draft rather than the game
+            self.dropped.append((None, error.message))
+            self.repository.clear_draft(self.player_number)
+            return
+
+        try:
+            restored = restore_draft(draft, self.turn_number)
+        except GameError as error:
+            self.dropped.append((None, error.message))
+            self.repository.clear_draft(self.player_number)
+            return
+
+        for command in restored:
+            try:
+                games.carry_out(self, command)
+            except GameError as error:
+                self.dropped.append((command, error.message))
+                continue
+            self.draft.append(command)
+
+        if self.dropped:
+            # what is written down is what was put back, so the draft does not
+            # keep offering a command that cannot be carried out
+            self.repository.write_draft(
+                self.player_number,
+                serialise_draft(self.draft, self.turn_number))
+
+    def getDropped(self):
+        """Drafted commands that could not be put back, and why."""
+        return self.dropped
 
     def _load_players(self):
         for number in self.repository.player_numbers():
+            # a game is a directory anyone can write into, so a number it holds
+            # is checked before it is trusted. This is not a command that can be
+            # refused and the session carry on - it is a game that cannot be
+            # read, and it ends the session the way an unparseable one does
+            if not identity.is_player(number):
+                raise UnreadableGame(
+                    f"{self.repository.data_path} holds a player that cannot "
+                    f"exist: {identity.out_of_range(number)}")
             # which players are registered is not secret; what they have
             # designed and where it is standing are
             mine = self.sees_everything or number == self.player_number
@@ -226,7 +347,16 @@ class Game:
         return turn.publish(self)
 
     def serverSave(self):
+        """Resolve the turn now, asking no barrier.
+
+        What the administrator's `commit` calls to end setup, where nobody has
+        committed and nothing is being waited for.
+        """
         return turn.resolve(self)
+
+    def resolveWhenReady(self):
+        """Resolve the turn if it may be: `None` if the barrier is not met."""
+        return turn.resolve_when_ready(self)
 
     def waitForPlayerCommit(self):
         return turn.wait_for_all_commits(self)
@@ -235,4 +365,5 @@ class Game:
         return turn.wait_for_turn(self)
 
     def committedPlayerCount(self):
-        return len(self.repository.committed_players())
+        """How many players have committed for the turn now open."""
+        return len(self.repository.committed_players(self.turn_number))

@@ -472,6 +472,248 @@ defects on its way past: whether a move read as "moves" or "engages" was decided
 by which mover was placed first, and a head-on collision named its two units in
 board order. Both are now decided from the plan rather than from loop order.
 
+### 24. A session that ended before it committed lost everything it had done — fixed
+
+Nothing a session did reached disk until it committed. `define_type` and
+`deploy_unit` mutated the loaded game and wrote nothing; `order_move` set the
+order on a unit held in memory. Only `commit` wrote, publishing the board as
+orders and the player's types as their file. A client that died during setup —
+or was closed, or lost its terminal — cost its owner every type they had
+designed and every unit they had placed, with nothing on disk to show any of it
+had happened. The same was true of the administrator's board and player list.
+
+No requirement said the work had to survive, because no requirement had been
+written about work that was not yet committed: `turn-commit` described
+committing and `game-persistence` described what a commit publishes, and
+between the two there was nothing.
+
+Reproduction: define a type, deploy a unit, kill the client, and start it again
+for the same game.
+
+Addressed by the `draft-orders-and-explicit-commit` change: what a session has
+done since it last committed is written down as it does it, as the commands
+that did it, and put back when its owner reopens the game. A draft is private
+to the session that made it, so making the work durable did not make an
+opponent's deliberation visible; it belongs to one turn, so work left behind by
+a session that ended mid-resolution is discarded rather than replayed into a
+turn it was never meant for; and a command that can no longer be carried out is
+dropped and reported rather than refusing to open the game.
+
+The same change stopped inferring a commit from `players/<n>_units.yaml`
+existing. That file meant "committed for this turn" only because the server
+deletes it when it resolves one, so the fact lived in the absence of a
+deletion. It is now recorded against a player and a turn, and spent when that
+turn is resolved. Two things the inference had been doing unnoticed came out
+with it: a turn that resolves without advancing the turn number — every turn in
+which no unit reaches the board — would otherwise find the barrier still
+satisfied by the commits that opened it and resolve for ever; and `load player`
+relied on the server writing a loaded player's units as orders being what
+committed them, since nobody types `commit` for a player who arrived in a file.
+
+Held by `tests/test_server_client_integration.py::TestWorkSurvivesASession`,
+`tests/test_draft_replay.py`, `tests/test_draft_recording.py`,
+`tests/test_draft_serialisation.py`, `tests/test_draft_cli.py` and
+`tests/test_commit_record.py`.
+
+### 25. The observer was the administrator, and read its uncommitted setup — fixed
+
+`bgcobserver.py` opened its session as player 0, and so did `bgcserver.py`.
+`Game` decided what a session may see with `sees_everything = player_number ==
+0`, so the two roles that differ in the most important way — one may change the
+game and one may not — were the same identity to everything below the CLI. The
+command line got away with it because they are different binaries with
+different grammars: `cli/roles.py` simply did not give the observer the commands
+that write, and nothing else enforced it.
+
+Drafting made it visible. An observer opening a game read the administrator's
+draft and held it as its own:
+
+```
+    administrator sets board 6 7, adds player 1, does NOT commit
+    observer opens the same game
+      → observer board size: (6, 7)
+      → observer holds a draft of: ['set_board', 'add_player']
+```
+
+So the observer saw setup nobody had published, and a session meant to write
+nothing was one recorded command away from writing into somebody else's draft.
+
+Reproduction: size a board and register a player at the server prompt without
+committing, then start an observer on the same game.
+
+Addressed by the `give-the-observer-its-own-number` change: the observer is
+1000, the administrator stays 0, and `service/identity.py` answers what each is
+entitled to. The `== 0` tests turned out to be three different questions wearing
+one test — may this session see everything, does it own units, must its number
+be a registered player — which is why they became questions rather than a wider
+comparison. `games.perform` now refuses a command from an identity that may not
+change a game, so the refusal no longer depends on a role table the caller may
+not go through.
+
+Held by `tests/test_player_numbering.py` and `tests/test_identity_cli.py`.
+
+### 26. Any number at all could be registered as a player — fixed
+
+`add player` had no range check. `add player 0` registered the administrator as
+a player of the game they were running, and `add player 1000` was accepted too,
+which became a direct collision once 1000 meant the observer. `Player` asserted
+only that a number was a non-negative integer, so `add player -1` raised an
+`AssertionError` — and the roles catch `GameError`, so it escaped and **killed
+the server**. That is the same class as number 4 above, which was fixed for a
+bare `add` and left live for a negative number.
+
+Reproduction: `add player -1` at the server prompt.
+
+Addressed by the same change: `Player` states the range 1 to 999, as `Board`
+already states its own limits, and the service turns the refusal into one a
+caller can act on exactly as `set_board_size` does. The range is the domain's
+because a player number arrives by three doors — the prompt, a loaded player
+file, and a game read off disk — and a check at any one of them is a check the
+others do not get. A game on disk holding a number that cannot be a player's is
+reported as a game that cannot be read rather than opening into an unclear
+state.
+
+Held by `tests/test_player_numbering.py` and `tests/test_identity_cli.py`.
+
+### 27. A player could stop waiting before the turn was published — fixed
+
+A client waits for its turn by testing whether its own order file is still
+there: `turn.wait_for_turn` blocks while `has_orders` is true, and
+`Game.load` reads `unprocessed_moves` from the same file. Resolution deleted
+that file near the start and published each player's view near the end, so a
+client arriving inside the window never waited at all — it found no orders,
+concluded the turn was over, and read a view belonging to the previous turn.
+
+The wake at the end was always correct. What was wrong is that a client which
+was not asleep for it had already been let go.
+
+Caught in the act: a client that had just committed its only unit redrew an
+empty board and then timed out waiting for that unit's symbol.
+
+```
+    bgcclient> commit complete
+    waiting for turn to complete...
+    bgcclient> +-+-+-+-+
+               |#|#|#|#|          <- no units
+               +-+-+-+-+
+```
+
+It showed twice in twenty-six runs of the suite. The ordering was unchanged
+since the `split-into-layers` change, so neither drafting nor the observer's
+numbering caused it; both only made it easier to see. This is the same file
+being deleted while the turn is still being written that produced number 10
+above.
+
+Reproduction: commit a turn and read the committing player's view at the moment
+their orders are removed.
+
+Addressed by the `wake-a-player-when-the-turn-is-published` change: resolution
+publishes everything the turn produced — the turn number, each player's file and
+refusals, the record of every unit, and every player's view — and only then
+removes the consumed orders. Nothing in that span reads an order file, because
+orders are applied from what `load` put in memory, which is what makes the
+deletion free to be last. The orders a `load player` file seeds for the *next*
+turn are written after the removal rather than before it; a removal placed after
+them erases them, and a game set up that way never gets its units onto the
+board.
+
+Held by `tests/test_turn_publication.py`, which asserts the order of the
+operations one resolution performs rather than racing it, and fails in
+milliseconds if the order is changed back.
+
+**Not addressed**: a reader that holds no orders is gated by nothing, so the
+administrator and the observer can still load while a file is midway through
+being written. That is a different defect — the atomicity of one write rather
+than the order of several — and its fix is writing to a temporary name and
+renaming, not reordering.
+
+### 28. Nothing stopped two processes using a game at once — fixed
+
+The repository port had no lock. Divergence 10 above is the same defect
+reported from one angle — a client loading a game raced the server deleting
+orders and died of `FileNotFoundError` — and it was addressed by tolerating the
+file being gone rather than by stopping the race. Number 27 closed one window by
+reordering and said in as many words that the rest of the class stayed.
+
+Two exposures were left, both ordinary. A reader could catch a file part way
+through being written: the administrator and the observer hold no orders, so
+nothing gated them, and either could load while `write_view` or `write_units`
+was midway and get `UnreadableGame` on YAML that was valid a millisecond later.
+And a writer could lose to another writer: `publish` writes an order file,
+`resolve` deletes every order file, and which happened first was decided by
+nothing. A crash between opening a file and finishing it left the game
+unopenable, because every write truncated in place.
+
+Reproduction: read a game's units while a turn is being resolved; or commit
+while the server resolves.
+
+Addressed by the `serialise-access-to-a-game` change. A game can be held: a
+turn being resolved and a commit being published hold it for writing, reading it
+holds it for reading, and waiting never holds it — a barrier waits for as long
+as a player takes to decide, and a game held across that would be stopped rather
+than protected. Holding is on the repository port rather than in the service
+layer, so storage that keeps a game some other way holds it some other way; a
+database would implement the same two words as a transaction. Every write now
+replaces its file rather than emptying and refilling it, which closes the crash
+that the lock cannot.
+
+Held by `tests/test_storage_safety.py`, which proves the sharing rules between
+two real processes rather than two threads, because an advisory lock is per
+open file description and threads would not prove it.
+
+**What this does not cover.** An advisory lock binds only those who ask for it,
+so anything editing a game directory by hand ignores it — which is the contract
+every process here already ran under. And the commit barrier is still two steps
+for the command line: `wait_for_all_commits` loops outside the lock and
+`resolve` takes it, so the check that releases the loop and the resolution it
+authorises are not one indivisible act. What the lock buys is that the
+resolution cannot be interleaved. A caller that must decide and act indivisibly
+takes the lock and re-checks inside it, which the port now allows and which is
+what an HTTP `POST /commit` will do.
+
+### 29. A turn could be resolved on a barrier that was met a moment ago — fixed
+
+Number 28 above closed the race between writers and left one thing open, and
+said so: the question that authorises a resolution and the resolution itself
+were still two acts. `wait_for_all_commits` looped until every player still in
+the game had committed — outside any hold, as it must be, because it waits for
+as long as a player takes to decide. It then returned, the server loaded the
+game, and `resolve` took the game and resolved it. Nothing re-asked inside the
+hold, so a resolution could be *begun* on a decision that was true a moment
+earlier and was not true any more.
+
+What could change in the gap was not exotic. Another resolution — a second
+server started by accident, or one run by hand — took the game first, resolved
+the turn and spent every commit that opened it. The first then loaded and
+resolved too, against a game with no orders in it, advancing the turn number and
+publishing a board nobody ordered, and each player was told their orders had
+been consumed twice.
+
+Reproduction: open two sessions on a game whose players have all committed, and
+resolve from each.
+
+Addressed by the `check-the-barrier-where-the-turn-is-resolved` change: reading
+the game, asking whether the barrier is met, and resolving the turn happen under
+one hold. The read is inside for the same reason as the question — orders are
+applied from what `load` put in memory, so asking about a game the resolution is
+not going to resolve would be no better than asking too early. Waiting is what
+`notify.py` always said a signal was, a hint to ask again rather than an answer
+to act on; the commit barrier was the one caller that did not re-check.
+
+Finding the barrier unmet is answered distinguishably from being unable to
+resolve, because the server exits on the latter and the former is the system
+working.
+
+Held by `tests/test_turn_publication.py`, which asks from two callers that both
+found the barrier met rather than by timing, and fails in milliseconds if the
+question is taken back out.
+
+**What is still not one act.** A player's commit does not resolve the turn: a
+client publishes, and the server resolves. Making whichever commit completes the
+barrier resolve the turn inline is option (b) of §5 in
+`ARCHITECTURE_OPTIONS.md`, and it removes `game-server`'s unattended cycle
+rather than tightening it. It needs exactly the operation this change adds.
+
 ## Unspecified, and worth deciding
 
 Nothing, at present. The two entries that stood here — units passing through
@@ -519,7 +761,10 @@ mid-resolution and what a caller reading a board directly would see.
 ## Documented but not implemented
 
 - **Web service.** The Flask/REST API and SQLite backend in `README.md` are
-  aspirational; no such code exists.
+  aspirational; no such code exists. The prerequisite an API needs — somewhere
+  to put an order that has not been committed yet — was built by the
+  `draft-orders-and-explicit-commit` change, so a request handler no longer
+  has to hold a session's state in memory to accept one.
 - **Unit programming.** The concept the project is named for — programming a
   unit to play itself — does not exist. Units are ordered by hand each turn.
 

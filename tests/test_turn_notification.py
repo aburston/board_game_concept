@@ -1,55 +1,50 @@
-"""Waking the other side of the file transport instead of polling for it."""
+"""What the notifier interface still promises, after the FIFO retirement.
 
-import os
+The FIFO transport is gone. `NullNotifier` is the only implementation:
+its `waiter` sleeps `POLL_INTERVAL` and returns, and the outer loops in
+`service/turn.py` re-check the condition. `TurnsResolveWithoutWaiting`
+is the guard against a poll loop creeping back - a committed turn still
+comes back within seconds, not minutes.
+"""
+
 import time
-
-import pytest
 
 from board_game_concept.storage import notify
 from cli_harness import CliTestCase, CLIENT_PROMPT
 
-pytestmark = pytest.mark.skipif(
-    not notify.HAVE_FIFOS, reason="this platform has no FIFOs")
 
-
-def test_signalling_nobody_is_not_an_error(tmp_path):
-    # the other side may not have reached its wait yet; it will see the state
-    # it was waiting for when it checks
-    assert notify.signal(notify.wake_path(str(tmp_path), 'server')) is False
-
-
-def test_a_waiter_is_woken(tmp_path):
-    path = notify.wake_path(str(tmp_path), 'server')
-    with notify.Waiter(path) as waiter:
-        assert notify.signal(path) is True
-        assert waiter.wait(timeout=5) is True
-
-
-def test_a_signal_sent_before_the_wait_is_not_lost(tmp_path):
-    # the FIFO is opened before the condition is checked, so a signal that
-    # arrives while nobody is inside wait() is buffered
-    path = notify.wake_path(str(tmp_path), 'server')
-    with notify.Waiter(path) as waiter:
-        notify.signal(path)
-        notify.signal(path)
-        assert waiter.wait(timeout=5) is True
-
-
-def test_waiting_gives_up_rather_than_blocking_for_ever(tmp_path):
-    path = notify.wake_path(str(tmp_path), '1')
-    with notify.Waiter(path) as waiter:
+def test_the_null_notifier_does_nothing_and_does_not_raise():
+    """The notifier every `Game` gets by default."""
+    notifier = notify.NullNotifier()
+    # a signal is a lost signal
+    assert notifier.wake('server') is False
+    # and a waiter returns from `wait` after `POLL_INTERVAL`, so the
+    # outer loop can re-check the condition it was waiting on. Callers
+    # poll rather than block
+    with notifier.waiter('server') as waiter:
         started = time.monotonic()
-        assert waiter.wait(timeout=0.3) is False
-        assert time.monotonic() - started < 5
+        assert waiter.wait(timeout=1.0) is False
+        elapsed = time.monotonic() - started
+        # POLL_INTERVAL is 0.2s; a short-timeout caller still gets that
+        assert elapsed < 1.0
 
 
-def test_the_fifo_is_kept_out_of_the_players_directory(tmp_path):
-    # loading a game opens every file in the players directory, and opening a
-    # FIFO would block for ever
-    data = tmp_path / 'data'
-    data.mkdir()
-    with notify.Waiter(notify.wake_path(str(data), 'server')):
-        assert os.listdir(str(tmp_path)) == ['data']
+def test_every_game_gets_a_null_notifier():
+    """After step 7, no repository carries a bus - every `Game` polls."""
+    from board_game_concept import Game
+    from board_game_concept.storage.sqlite_repository import (
+        SqliteGameRepository)
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        game = Game(SqliteGameRepository('one', base_path=tmp), 0)
+        assert isinstance(game.notifier, notify.NullNotifier)
+
+    class QuietRepository:
+        pass
+
+    game = Game(QuietRepository(), 0)
+    assert isinstance(game.notifier, notify.NullNotifier)
 
 
 class TurnsResolveWithoutWaiting(CliTestCase):
@@ -70,7 +65,8 @@ class TurnsResolveWithoutWaiting(CliTestCase):
         elapsed = time.monotonic() - started
 
         # the barrier used to be found by looking every ten seconds and the
-        # resolved turn by looking every five, so this took upwards of fifteen
-        # seconds. The threshold is here to catch polling creeping back, not
-        # to measure performance
+        # resolved turn by looking every five, so this took upwards of
+        # fifteen seconds. Under `NullNotifier` a `POLL_INTERVAL` of 0.2s
+        # keeps it well under the threshold; the assertion catches a poll
+        # loop creeping back
         assert elapsed < 8, f"the turn took {elapsed:.1f}s to come back"

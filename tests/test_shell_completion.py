@@ -14,6 +14,12 @@ import pytest
 
 from game_harness import GameHarness
 
+# the shell completion knows the YAML directory layout by name - "players"
+# under each game, one YAML file per player, one number per file name. Under
+# any other backend the layout is different, and these tests are about the
+# YAML one
+pytestmark = pytest.mark.backend('yaml')
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASH_COMPLETION = os.path.join(ROOT, 'completions', 'bgc.bash')
 

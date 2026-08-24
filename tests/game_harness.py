@@ -9,21 +9,39 @@ A session here is exactly what a role holds: `Game(repository, number)`, loaded,
 acted on through `service.games`, and committed. Nothing is reached around.
 """
 
+import os
+
 from board_game_concept import Game, YamlGameRepository
 from board_game_concept.service import games
 from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
                                                  Move, SetBoard)
+from board_game_concept.storage.sqlite_repository import SqliteGameRepository
+
+
+# environment override for the harness's default backend. A test that pins
+# itself to a backend still overrides this via `backend=`
+BACKEND_ENV = 'BOARD_GAME_BACKEND'
+DEFAULT_BACKEND = os.environ.get(BACKEND_ENV, 'yaml')
+
+
+def make_repository(backend, gameno, base_path):
+    if backend == 'sqlite':
+        return SqliteGameRepository(gameno, base_path=base_path)
+    if backend == 'yaml':
+        return YamlGameRepository(gameno, base_path=base_path)
+    raise ValueError(f"unknown backend: {backend}")
 
 
 class GameHarness:
     """One game, and a way to open a session on it as any role."""
 
-    def __init__(self, base_path, gameno='harness'):
+    def __init__(self, base_path, gameno='harness', backend=None):
         self.base_path = str(base_path)
         self.gameno = gameno
+        self.backend = backend or DEFAULT_BACKEND
 
     def repository(self):
-        return YamlGameRepository(self.gameno, self.base_path)
+        return make_repository(self.backend, self.gameno, self.base_path)
 
     def session(self, player_number):
         """A loaded session for a player, or for the administrator as 0."""

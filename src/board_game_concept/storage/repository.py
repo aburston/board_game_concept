@@ -23,6 +23,27 @@ class GameRepository:
     and to fail loudly rather than silently when one is missing.
     """
 
+    # --- holding a game while it is used
+
+    def held(self, read=False):
+        """Hold this game while the caller reads or writes it.
+
+        Used as a context manager. A caller holding a game for writing excludes
+        every other holder; callers holding it for reading may hold it
+        together. Which is what a turn being resolved needs and what a game
+        being read needs, and the difference is the only thing a caller says.
+
+        Holding is the repository's to arrange rather than the caller's, so
+        that a repository keeping a game some other way can hold it some other
+        way - a database implementing the same two words as a transaction.
+
+        A game is never held across a wait for something a person must do. A
+        commit barrier holds a turn open for as long as a player takes to
+        decide, and a game held across that would be stopped rather than
+        protected.
+        """
+        raise NotImplementedError
+
     # --- the game itself
 
     def ensure(self):
@@ -50,7 +71,14 @@ class GameRepository:
         """Every unit on the board, as plain records."""
         raise NotImplementedError
 
-    def write_units(self, text):
+    def write_units(self, document):
+        """The authoritative units record, as a plain-data document.
+
+        A document is `{board, turn, player, units}`, the shape the files
+        already held. Each backend serialises it its own way; the YAML one
+        writes the same bytes it wrote before, and a database one inserts
+        rows.
+        """
         raise NotImplementedError
 
     # --- players
@@ -72,7 +100,8 @@ class GameRepository:
         """The units last published to this player, as plain records."""
         raise NotImplementedError
 
-    def write_view(self, number, text):
+    def write_view(self, number, document):
+        """What this player has learned, as a plain-data document."""
         raise NotImplementedError
 
     # --- orders, and the commit barrier they signal
@@ -84,22 +113,55 @@ class GameRepository:
     def read_orders(self, number):
         raise NotImplementedError
 
-    def write_orders(self, number, text):
+    def write_orders(self, number, document):
+        """The orders this player is publishing, as a plain-data document."""
         raise NotImplementedError
 
     def clear_orders(self):
         """Discard every player's orders, the turn having consumed them."""
         raise NotImplementedError
 
-    def committed_players(self):
-        """The players whose orders are waiting to be resolved."""
+    def committed_players(self, turn=None):
+        """The players who have committed, for this turn if one is named.
+
+        Naming a turn is the question the commit barrier actually asks. Asking
+        without one is asking who has ever committed.
+        """
         raise NotImplementedError
 
-    def mark_committed(self, number):
-        """Record that this player has committed at least once."""
+    def mark_committed(self, number, turn=None):
+        """Record that this player has committed, and for which turn."""
         raise NotImplementedError
 
     def has_committed(self, number):
+        raise NotImplementedError
+
+    def clear_commits(self):
+        """Consume every player's commit, the turn having been resolved.
+
+        A commit belongs to the turn it was made for, the way orders do, and
+        is spent when that turn is resolved. Having ever committed is a
+        different fact and survives this.
+        """
+        raise NotImplementedError
+
+    # --- work a session has not committed yet
+
+    def read_draft(self, number):
+        """This session's uncommitted work, or None if it has none.
+
+        Read only for the session it belongs to. A repository will hand over
+        any draft it is asked for, because a repository holds no rules; not
+        asking for another player's is the caller's part of the bargain, the
+        same way a client reads its own view rather than the whole board.
+        """
+        raise NotImplementedError
+
+    def write_draft(self, number, draft):
+        raise NotImplementedError
+
+    def clear_draft(self, number):
+        """Discard this session's draft, committed or abandoned."""
         raise NotImplementedError
 
     # --- refused orders
@@ -108,14 +170,4 @@ class GameRepository:
         raise NotImplementedError
 
     def write_rejections(self, number, rejected, turn=None):
-        raise NotImplementedError
-
-    # --- telling the other side something has changed
-
-    def wake(self, name):
-        """Wake whoever is waiting under this name, if anyone is."""
-        raise NotImplementedError
-
-    def waiter(self, name):
-        """Something to block on until `wake` is called with the same name."""
         raise NotImplementedError

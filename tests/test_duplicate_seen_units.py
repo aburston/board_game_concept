@@ -5,9 +5,7 @@ attack, the player's view then named the enemy unit once per contact, and the
 client died restoring a unit it had already restored.
 """
 
-import yaml
-
-from board_game_concept.storage.serialise import serialise_units
+from board_game_concept.storage.serialise import units_document
 from board_game_concept import UnitType, Board, Player
 
 
@@ -33,7 +31,7 @@ def _fighting_board():
 
 def _restore(board, source, players, types):
     """Load a published view the way the client's game data loader does."""
-    for unit in yaml.safe_load(source)['units']:
+    for unit in source['units']:
         board.add(
             players[unit['player']],
             unit['x'], unit['y'],
@@ -58,7 +56,7 @@ def test_a_drawn_out_fight_records_each_unit_once():
 def test_a_view_names_a_unit_seen_repeatedly_once():
     board, p1, _, _, _ = _fighting_board()
 
-    view = yaml.safe_load(serialise_units(board, p1))
+    view = units_document(board, p1)
     names = [unit['name'] for unit in view['units']]
 
     assert sorted(names) == ['b1', 'r1']
@@ -86,7 +84,7 @@ def test_a_view_names_an_enemy_engaged_by_several_units_once():
     assert sorted(unit.name for unit in blue.seen_by) == ['r1', 'r2']
 
     names = [unit['name']
-             for unit in yaml.safe_load(serialise_units(board, p1))['units']]
+             for unit in units_document(board, p1)['units']]
     assert names.count('b1') == 1
 
 
@@ -120,15 +118,14 @@ def test_restoring_a_unit_the_board_already_holds_updates_it():
 def test_restoring_a_view_that_names_a_unit_twice_loads():
     # a view written by an older server names a unit once per contact made
     board, p1, p2, _, _ = _fighting_board()
-    published = serialise_units(board, p1)
-    doubled = yaml.safe_load(published)
+    doubled = units_document(board, p1)
     doubled['units'] = doubled['units'] + [
         unit for unit in doubled['units'] if unit['player'] == 2]
 
     seen_board = Board(3, 3)
     _restore(
         seen_board,
-        yaml.safe_dump(doubled),
+        doubled,
         {1: p1, 2: p2},
         {1: UnitType('Red', 'R', 1, 10, 100),
          2: UnitType('Blue', 'B', 1, 10, 100)})

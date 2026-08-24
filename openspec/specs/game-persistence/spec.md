@@ -12,7 +12,9 @@ game number.
 ### Requirement: Game Directory Layout
 
 The system SHALL store each game under a directory keyed by game number, split
-into shared game data and per-player files.
+into shared game data and per-player files. Whatever the system needs to hold a
+game SHALL be kept where nothing that classifies a game's files by name will
+read it.
 
 #### Scenario: Resolving game paths
 
@@ -24,6 +26,81 @@ into shared game data and per-player files.
 
 - **WHEN** a game's directories do not yet exist
 - **THEN** they are created
+
+#### Scenario: What holds a game is not one of its files
+
+- **WHEN** a game is held
+- **THEN** whatever records that is not read as shared game data, as a player, as published orders, or as a commit
+
+### Requirement: A Game May Be Held While It Is Used
+
+The system SHALL let a caller hold a game while reading or writing it, and
+SHALL serialise those holdings: a caller holding a game for writing SHALL
+exclude every other holder, and callers holding it for reading SHALL be able to
+hold it together.
+
+Holding SHALL be something the storage offers rather than something a caller
+arranges for itself, so that storage which keeps a game some other way may hold
+it some other way.
+
+A game SHALL NOT be held across a wait for something a person must do. The
+commit barrier holds a turn open for as long as a player takes to decide, and a
+game held across that would be stopped rather than protected.
+
+Where the platform offers no means of holding a game, the system SHALL carry on
+without holding it, behaving as it does when nothing is held, and SHALL NOT
+report that a game was held when it was not.
+
+#### Scenario: Two writers do not overlap
+
+- **WHEN** one caller holds a game for writing and another asks to hold it for writing
+- **THEN** the second waits until the first has finished
+
+#### Scenario: A reader waits for a writer
+
+- **WHEN** a caller holds a game for writing and another asks to hold it for reading
+- **THEN** the reader waits until the writer has finished
+- **AND** does not read a game part way through being written
+
+#### Scenario: Readers do not exclude each other
+
+- **WHEN** one caller holds a game for reading and another asks to hold it for reading
+- **THEN** both hold it at once
+
+#### Scenario: Holding is released when the caller is done
+
+- **WHEN** a caller finishes with a game it was holding, whether it finished normally or because of an error
+- **THEN** the game is no longer held
+- **AND** another caller may hold it
+
+#### Scenario: Waiting for a turn does not hold the game
+
+- **WHEN** the server is waiting for players to commit, or a player is waiting for a turn to be resolved
+- **THEN** the game is not held
+- **AND** another caller may hold it meanwhile
+
+### Requirement: A Write Replaces What It Replaces
+
+The system SHALL write a game's files by replacing them rather than by emptying
+and refilling them, so that a reader sees either what was there before or what
+is there after, and never part of either. A write that does not finish — because
+the process ended — SHALL leave the previous contents readable.
+
+#### Scenario: A reader never sees a partly written file
+
+- **WHEN** a game file is being written and another caller reads it
+- **THEN** it reads either the previous contents or the new contents in full
+
+#### Scenario: A write that does not finish leaves the file readable
+
+- **WHEN** a process ends part way through writing a game file
+- **THEN** the file still holds what it held before
+- **AND** the game can still be opened
+
+#### Scenario: What a write leaves behind is not mistaken for a game's own files
+
+- **WHEN** a game's files are written
+- **THEN** nothing left behind by the writing is read as a player, as published orders, or as a commit
 
 ### Requirement: Board Configuration Persistence
 
@@ -110,11 +187,35 @@ unit it names rather than to whatever occupies the square. A player SHALL publis
 orders only for units in play: a destroyed unit SHALL NOT be published as an
 order of any kind.
 
+Committing SHALL be recorded as a fact about a player and a turn, rather than
+inferred from the presence of a file, so that the system can answer whether a
+given player has committed for the turn now open. Which players the commit
+barrier is waiting for SHALL be determined from that record.
+
+A player's pending orders SHALL NOT be removed until everything the turn
+produced has been published, because their removal is what releases a player
+waiting on that turn. Orders published on a player's behalf for the turn *about
+to be* resolved SHALL be written after that removal, so that seeding the next
+turn cannot erase them.
+
 #### Scenario: Player publishes orders
 
 - **WHEN** a player commits
 - **THEN** their pending orders are written to `players/<number>_units.yaml`
 - **AND** a marker file `players/commit_<number>` records that they have committed
+- **AND** the marker records the turn they committed for
+
+#### Scenario: Determining who has committed
+
+- **WHEN** the system is asked which players have committed for the turn now open
+- **THEN** the answer comes from the commit records
+- **AND** a player whose most recent commit was for an earlier turn is not counted
+
+#### Scenario: A player who has drafted but not committed
+
+- **WHEN** a player has drafted orders and has not committed
+- **THEN** they are not counted as having committed
+- **AND** the turn is still held open for them
 
 #### Scenario: Destroyed units are not published as orders
 
@@ -127,6 +228,19 @@ order of any kind.
 - **WHEN** the server resolves a turn
 - **THEN** it applies each player's pending orders according to unit state: deploying units in `INITIAL`, moving units in `MOVING`, and leaving units in `NOP` in place
 - **AND** it removes the pending order files afterwards
+
+#### Scenario: Orders are removed only once the turn is published
+
+- **WHEN** the server resolves a turn
+- **THEN** it writes the turn number, each player's file and refusals, the record of every unit, and every player's view
+- **AND** only then removes the pending order files
+
+#### Scenario: Seeding the next turn does not erase it
+
+- **WHEN** the server resolves a turn for a game whose player was loaded from a file holding units
+- **THEN** that player's units are published as their orders for the turn about to be resolved
+- **AND** those orders survive the removal of the turn's consumed orders
+- **AND** the units reach the board when that turn is resolved
 
 #### Scenario: An order naming a destroyed unit
 
@@ -162,13 +276,77 @@ order of any kind.
 
 ### Requirement: Pending Order Detection
 
-The system SHALL detect that a player's own orders are still pending and report
-that the turn is incomplete.
+The system SHALL detect that a player's own committed orders are still pending
+and report that the turn is incomplete. A player's orders SHALL be treated as
+pending until the turn that consumes them has been published in full.
+
+A session SHALL NOT read a game part way through a turn being resolved: it holds
+the game for reading, and a turn being resolved holds it for writing, so a
+session opening one mid-resolution waits and then reads a turn that is
+complete.
+
+A draft SHALL NOT be treated as a pending commit: a player who has drafted work
+and not committed it has an open turn, not an unresolved one.
 
 #### Scenario: Detecting an unresolved commit
 
 - **WHEN** a player loads a game and their own pending order file still exists
 - **THEN** the game data reports unprocessed moves
+
+#### Scenario: Loading while a turn is being resolved
+
+- **WHEN** a player opens a game after the server has begun resolving the turn they committed to and before it has finished
+- **THEN** the session waits until the resolution is finished
+- **AND** is not shown a partly published turn
+- **AND** once it opens, the turn it reads is complete and its orders are no longer pending
+
+#### Scenario: A draft is not an unresolved commit
+
+- **WHEN** a player loads a game holding a draft and no published orders
+- **THEN** the game data reports no unprocessed moves
+- **AND** the player may continue to give orders
+
+### Requirement: Draft Persistence
+
+The system SHALL store each session's uncommitted work in a per-session file
+under the game's players directory, separate from the orders that session has
+published. The file SHALL record the turn the work was drafted for.
+
+A draft file SHALL be read only for the session that owns it. Loading a game
+SHALL NOT read another session's draft, in the same way that a client reads its
+own view rather than the shared record of all units.
+
+A draft SHALL be removed when its owner commits, the work having become their
+published orders.
+
+#### Scenario: Writing a draft
+
+- **WHEN** a session carries out an action without committing
+- **THEN** the action is written to that session's draft file under `games/_<gameno>/players`
+- **AND** the file records the turn it was drafted for
+
+#### Scenario: Reading a draft back
+
+- **WHEN** a game is loaded and the loading session's draft file exists and names the current turn
+- **THEN** the actions it holds are applied to the game the session sees
+
+#### Scenario: A session does not read another's draft
+
+- **WHEN** a game is loaded
+- **THEN** no draft file belonging to another player is read
+- **AND** the administrator's session reads no player's draft
+
+#### Scenario: Committing removes the draft
+
+- **WHEN** a player commits
+- **THEN** their draft file is removed
+- **AND** their published orders hold the work it held
+
+#### Scenario: A game with no draft
+
+- **WHEN** a game is loaded and the loading session has no draft file
+- **THEN** the game loads as though the draft were empty
+- **AND** nothing is reported as missing
 
 ### Requirement: Per-Player View Persistence
 

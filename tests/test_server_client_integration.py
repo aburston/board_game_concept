@@ -5,9 +5,18 @@ import shutil
 import signal
 import unittest
 import threading
+import pytest
 import yaml
 from pathlib import Path
 from subprocess import Popen, PIPE
+
+# many of these tests reach directly for the YAML files - the units file, the
+# rejected file, the seen file - to check what the server wrote. The SQLite
+# backend does not put anything at those paths, so the whole module is pinned
+# to YAML; the SQLite equivalents would be a whole separate suite of reads
+# against the schema, and are not this change's scope
+pytestmark = pytest.mark.backend('yaml')
+
 
 ROOT = Path(__file__).resolve().parent.parent
 TEST_DIR = ROOT / 'tests'
@@ -23,9 +32,16 @@ class InteractiveProcess:
     def __init__(self, args, cwd):
         self.args = args
         self.cwd = cwd
+        # the subprocess uses whatever backend the pytest run is using, so a
+        # subprocess role and the harness sitting beside it agree on where
+        # the game lives
+        from game_harness import DEFAULT_BACKEND, BACKEND_ENV
+        environment = dict(os.environ)
+        environment.setdefault(BACKEND_ENV, DEFAULT_BACKEND)
         self.proc = Popen(
             [PYTHON, '-u'] + args,
             cwd=str(cwd),
+            env=environment,
             stdin=PIPE,
             stdout=PIPE,
             stderr=PIPE,
@@ -540,3 +556,222 @@ class TestServerClientIntegration(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestWorkSurvivesASession(unittest.TestCase):
+    """A session that ends before it commits does not cost its owner the work.
+
+    This is the behaviour the drafting change exists for, so it is driven the
+    way a person would hit it: kill the process, start it again for the same
+    game, and see what is there.
+    """
+
+    def setUp(self):
+        remove_games_dir()
+        self.processes = []
+
+    def tearDown(self):
+        for proc in self.processes:
+            proc.terminate()
+        remove_games_dir()
+
+    # --- driving a role
+
+    def _start(self, args):
+        proc = InteractiveProcess(args, cwd=TEST_DIR)
+        self.processes.append(proc)
+        return proc
+
+    def start_server(self, game_number='test-01'):
+        return self._start(
+            [str(ROOT / 'src' / 'board_game_concept' / 'cli' / 'bgcserver.py'),
+             '-g', game_number])
+
+    def start_client(self, game_number, player_number):
+        return self._start(
+            [str(ROOT / 'src' / 'board_game_concept' / 'cli' / 'bgcclient.py'),
+             game_number, str(player_number)])
+
+    def wait_for(self, proc, substring, count, timeout=60):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if proc.output.count(substring) >= count:
+                return
+            time.sleep(0.01)
+        raise AssertionError(f"timed out waiting for {count} of {substring!r}"
+                             f"\n{proc.output}")
+
+    def shown(self, proc, prompt, command):
+        """Everything a role printed for one command, between two prompts."""
+        before = proc.output.count(prompt)
+        proc.send_line(command)
+        self.wait_for(proc, prompt, before + 1)
+        return proc.output.rsplit(prompt, 2)[-2].strip()
+
+    def typed(self, proc, prompt, command):
+        """Send a command and wait for the role to ask for another."""
+        self.shown(proc, prompt, command)
+
+    def established_game(self, game_number='test-01', players=(1,)):
+        server = self.start_server(game_number)
+        self.wait_for(server, 'bgcserver> ', 1)
+        self.typed(server, 'bgcserver> ', 'set board 4 4')
+        for number in players:
+            self.typed(server, 'bgcserver> ', f'add player {number}')
+        server.send_line('commit')
+        server.read_until('commit complete')
+        return server
+
+    def with_an_army(self, game_number='test-01', player=1):
+        """A client past setup, holding a unit the server has published."""
+        self.established_game(game_number, players=(player,))
+        client = self.start_client(game_number, player)
+        self.wait_for(client, 'bgcclient> ', 1)
+        self.typed(client, 'bgcclient> ', 'add type Cross X 1 5 10')
+        self.typed(client, 'bgcclient> ', 'add unit Cross x1 1 1')
+        before = client.output.count('bgcclient> ')
+        client.send_line('commit')
+        client.read_until('commit complete')
+        # the sole player's commit satisfies the barrier, so the turn resolves
+        self.wait_for(client, 'bgcclient> ', before + 1)
+        return client
+
+    def _repository(self, game_number='test-01'):
+        from board_game_concept import YamlGameRepository
+        return YamlGameRepository(game_number, base_path=str(TEST_DIR))
+
+    def published_turn(self, game_number='test-01'):
+        """The last turn the server has published, or 0 before any."""
+        repository = self._repository(game_number)
+        with repository.held(read=True):
+            progress = repository.read_progress() or {}
+        return int(progress.get('turn') or 0)
+
+    def published_square(self, name, after, game_number='test-01',
+                         timeout=60):
+        """Where the named unit is, once a turn later than `after` is published.
+
+        Both reads happen inside one hold of the game. Read separately and
+        unheld, they can straddle a resolution: the turn number is written
+        early in publishing a turn and the units late, so an unheld reader can
+        see the new turn beside the old board and believe both.
+
+        Waited for on the turn number rather than on the unit's state, because
+        a unit that is not `MOVING` only means some turn has been through it -
+        and the turn that deployed it satisfies that too.
+        """
+        repository = self._repository(game_number)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with repository.held(read=True):
+                progress = repository.read_progress() or {}
+                if int(progress.get('turn') or 0) > after:
+                    for unit in repository.read_units():
+                        if unit['name'] == name:
+                            return (unit['x'], unit['y'])
+            time.sleep(0.02)
+        raise AssertionError(
+            f"the server published no turn after {after} holding {name}")
+
+    def unit_names(self, proc):
+        """The unit names a client lists, read off its `show units` table."""
+        listed = self.shown(proc, 'bgcclient> ', 'show units').splitlines()
+        return [line.split()[1] for line in listed[1:]]
+
+    # --- what survives
+
+    def test_a_client_killed_mid_setup_gets_its_army_back(self):
+        self.established_game(players=(1,))
+
+        doomed = self.start_client('test-01', 1)
+        self.wait_for(doomed, 'bgcclient> ', 1)
+        self.typed(doomed, 'bgcclient> ', 'add type Cross X 1 5 10')
+        self.typed(doomed, 'bgcclient> ', 'add unit Cross x1 0 0')
+        self.typed(doomed, 'bgcclient> ', 'add unit Cross x2 1 0')
+        doomed.terminate()
+
+        revived = self.start_client('test-01', 1)
+        self.wait_for(revived, 'bgcclient> ', 1)
+
+        self.assertEqual(self.unit_names(revived), ['x1', 'x2'])
+        # the type is back too, or the units could not have been
+        self.assertIn('Cross', self.shown(revived, 'bgcclient> ', 'show types'))
+
+        # and the work that was restored commits
+        revived.send_line('commit')
+        revived.read_until('commit complete')
+
+    def test_a_client_killed_mid_turn_gets_its_order_back(self):
+        client = self.with_an_army()
+        self.typed(client, 'bgcclient> ', 'move x1 north')
+        client.terminate()
+
+        revived = self.start_client('test-01', 1)
+        self.wait_for(revived, 'bgcclient> ', 1)
+
+        listed = self.shown(revived, 'bgcclient> ', 'show units')
+        self.assertIn('moving', listed)
+        self.assertIn('north', listed)
+
+    def test_a_restored_order_can_be_changed_before_committing(self):
+        client = self.with_an_army()
+        self.typed(client, 'bgcclient> ', 'move x1 north')
+        client.terminate()
+
+        revived = self.start_client('test-01', 1)
+        self.wait_for(revived, 'bgcclient> ', 1)
+        # the turn the deployment resolved into, so that what is waited for
+        # below is the turn the *move* resolves into and not that one
+        deployed_on = self.published_turn()
+        self.typed(revived, 'bgcclient> ', 'move x1 south')
+        revived.send_line('commit')
+        revived.read_until('commit complete')
+
+        # only the later order was taken: the unit moved south from (1, 1)
+        self.assertEqual(self.published_square('x1', after=deployed_on), (1, 2))
+
+    def test_a_server_killed_during_setup_gets_its_setup_back(self):
+        doomed = self.start_server('test-01')
+        self.wait_for(doomed, 'bgcserver> ', 1)
+        self.typed(doomed, 'bgcserver> ', 'set board 5 6')
+        self.typed(doomed, 'bgcserver> ', 'add player 1')
+        self.typed(doomed, 'bgcserver> ', 'add player 2')
+        doomed.terminate()
+
+        revived = self.start_server('test-01')
+        self.wait_for(revived, 'bgcserver> ', 1)
+
+        listed = self.shown(revived, 'bgcserver> ', 'show players')
+        self.assertIn('1', listed)
+        self.assertIn('2', listed)
+
+        revived.send_line('commit')
+        revived.read_until('commit complete')
+        board = yaml.safe_load(
+            (GAMES_DIR / '_test-01' / 'data' / 'board.yaml').read_text())
+        self.assertEqual(board['board'], {'size_x': 5, 'size_y': 6})
+
+    def test_a_draft_does_not_hold_the_turn_open(self):
+        """Drafting is not committing, and the barrier counts commits."""
+        server = self.established_game(players=(1, 2))
+        server.read_until('wait for player commit')
+
+        drafting = self.start_client('test-01', 1)
+        self.wait_for(drafting, 'bgcclient> ', 1)
+        self.typed(drafting, 'bgcclient> ', 'add type Cross X 1 5 10')
+        self.typed(drafting, 'bgcclient> ', 'add unit Cross x1 0 0')
+
+        other = self.start_client('test-01', 2)
+        self.wait_for(other, 'bgcclient> ', 1)
+        self.typed(other, 'bgcclient> ', 'add type Ring O 1 5 10')
+        self.typed(other, 'bgcclient> ', 'add unit Ring o1 3 3')
+        other.send_line('commit')
+        other.read_until('commit complete')
+
+        # player 1 has drafted and not committed, so the turn stays open
+        time.sleep(1)
+        self.assertEqual(server.output.count('commit complete'), 1)
+
+        drafting.send_line('commit')
+        drafting.read_until('commit complete')
+        self.wait_for(server, 'commit complete', 2)

@@ -4,6 +4,8 @@ None of this existed: the server's turn cycle ran forever, a wiped-out player
 still held the commit barrier open, and nothing anywhere counted turns.
 """
 
+import pytest
+
 from board_game_concept.domain import UnitType
 
 from game_harness import GameHarness
@@ -48,6 +50,7 @@ def test_the_turn_number_survives_a_reload(tmp_path):
         assert harness.session(number).getTurnNumber() == 2
 
 
+@pytest.mark.backend('yaml')
 def test_published_records_name_their_turn(tmp_path):
     import yaml
 

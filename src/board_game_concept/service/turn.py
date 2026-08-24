@@ -7,10 +7,8 @@ is asked who has committed; what that means is decided here.
 
 import sys
 
-import yaml
-
 from ..domain import UnitType
-from ..storage.serialise import serialise_orders, serialise_units
+from ..storage.serialise import units_document
 
 
 def _types_without_objects(player):
@@ -30,14 +28,24 @@ def publish(game):
 
     number = game.player_number
     repository = game.repository
-    repository.write_player(number, _types_without_objects(game.players[number]))
-    repository.mark_committed(number)
-    repository.write_orders(
-        number, serialise_orders(game.board, game.getPlayerObj(number)))
+    # held for writing: publishing an order file and resolving a turn, which
+    # deletes every order file, must not overlap
+    with repository.held():
+        repository.write_player(
+            number, _types_without_objects(game.players[number]))
+        repository.mark_committed(number, game.getTurnNumber())
+        repository.write_orders(
+            number,
+            units_document(game.board, game.getPlayerObj(number),
+                           in_play_only=True))
+
+        # the draft has become the published orders, so there is nothing left
+        # uncommitted to restore
+        game.clearDraft()
 
     # tell the server there is something to look at, rather than leaving it to
     # notice on its own
-    repository.wake('server')
+    game.notifier.wake('server')
     return True
 
 
@@ -192,62 +200,92 @@ def resolve(game):
         return False
 
     repository = game.repository
-    repository.ensure()
-    repository.write_board(game.board.size_x, game.board.size_y)
+    # held for writing, for the whole of it: the barrier check that
+    # authorised this resolution and everything it publishes are one
+    # span, and a commit arriving mid-flight must not land inside it
+    with repository.held():
+        repository.ensure()
+        repository.write_board(game.board.size_x, game.board.size_y)
 
-    # orders refused this turn, collected per player so each can be told what
-    # the server would not do for them
-    rejected = {}
+        # orders refused this turn, collected per player so each can be told what
+        # the server would not do for them
+        rejected = {}
 
-    def reject(p_number, unit, reason):
-        print(f"rejected order from player {p_number}: {reason}",
-              file=sys.stderr)
-        rejected.setdefault(p_number, []).append({
-            'unit': str(unit['name']),
-            'type': str(unit['type']),
-            'x': int(unit['x']),
-            'y': int(unit['y']),
-            'reason': str(reason),
-        })
+        def reject(p_number, unit, reason):
+            print(f"rejected order from player {p_number}: {reason}",
+                  file=sys.stderr)
+            rejected.setdefault(p_number, []).append({
+                'unit': str(unit['name']),
+                'type': str(unit['type']),
+                'x': int(unit['x']),
+                'y': int(unit['y']),
+                'reason': str(reason),
+            })
 
-    _apply_orders(game, reject)
+        _apply_orders(game, reject)
 
-    # resolve all moves and end the turn
-    events = game.board.commit()
-    _report_turn(game, events, reject)
-    repository.clear_orders()
+        # resolve all moves and end the turn
+        events = game.board.commit()
+        _report_turn(game, events, reject)
 
-    # setup ends with a resolution of its own, before anything is on the board.
-    # That is not a turn of the game and is not numbered as one
-    turn_number = game.getTurnNumber() + 1 if has_started(game) else 0
-    eliminated = eliminated_players(game)
-    outcome = decide(game, turn_number, eliminated)
-    progress = {'turn': turn_number, 'eliminated': eliminated}
-    if outcome is not None:
-        progress['outcome'] = outcome
-    repository.write_progress(progress)
-    game.setProgress(progress)
+        # setup ends with a resolution of its own, before anything is on the board.
+        # That is not a turn of the game and is not numbered as one
+        turn_number = game.getTurnNumber() + 1 if has_started(game) else 0
+        eliminated = eliminated_players(game)
+        outcome = decide(game, turn_number, eliminated)
+        progress = {'turn': turn_number, 'eliminated': eliminated}
+        if outcome is not None:
+            progress['outcome'] = outcome
+        repository.write_progress(progress)
+        game.setProgress(progress)
 
-    for number, player in game.players.items():
-        repository.write_player(number, _types_without_objects(player))
-        if 'units' in player:
-            # units that came in with a loaded player file become that
-            # player's orders for the turn about to be resolved
-            repository.write_orders(number, _as_orders(player['units']))
-        # written every turn, so it always describes the turn just resolved
-        # rather than accumulating stale refusals
-        repository.write_rejections(number, rejected.get(number, []),
-                                    turn=turn_number)
+        # --- what this turn produced. All of it is written before anybody waiting
+        # on the turn is let go, because a released player reads it
 
-    # the authoritative record, and then what each player is entitled to see
-    repository.write_units(serialise_units(game.board, turn=turn_number))
-    for number, player in game.players.items():
-        repository.write_view(
-            number, serialise_units(game.board, player['obj'], turn=turn_number))
+        for number, player in game.players.items():
+            repository.write_player(number, _types_without_objects(player))
+            # written every turn, so it always describes the turn just resolved
+            # rather than accumulating stale refusals
+            repository.write_rejections(number, rejected.get(number, []),
+                                        turn=turn_number)
 
-    # every player waiting on this turn can stop waiting
-    for number in game.players:
-        repository.wake(number)
+        # the authoritative record, and then what each player is entitled to see
+        repository.write_units(units_document(game.board, turn=turn_number))
+        for number, player in game.players.items():
+            repository.write_view(
+                number,
+                units_document(game.board, player['obj'], turn=turn_number))
+
+        # --- and only now, the turn is over
+
+        # this is what releases a player waiting on the turn: a client waits by
+        # testing whether its own order file is still there, so the file has to
+        # outlive every write above it. Nothing between here and the top of
+        # resolution reads one - orders are applied from what `load` put in memory -
+        # so the deletion is free to be last, and has to be
+        repository.clear_orders()
+        # the commits that opened this turn are spent with it
+        repository.clear_commits()
+
+        # the next turn's input, written after the deletion rather than before it.
+        # Units that came in with a loaded player file become that player's orders
+        # for the turn about to be resolved, and the server commits them on that
+        # player's behalf - publishing orders for somebody without committing them
+        # would leave the turn held open for a player who has nobody to type
+        # `commit` for them. A `clear_orders` placed after this erases them
+        for number, player in game.players.items():
+            if 'units' in player:
+                repository.write_orders(
+                    number, _loaded_orders_document(game, number, player,
+                                                   turn_number))
+                repository.mark_committed(number, turn_number)
+
+        # the administrator's setup has been committed like anyone else's
+        game.clearDraft()
+
+        # every player waiting on this turn can stop waiting
+        for number in game.players:
+            game.notifier.wake(number)
 
     return True
 
@@ -292,8 +330,51 @@ def _named(game, name):
         return None
 
 
-def _as_orders(units):
-    return yaml.safe_dump({'units': units})
+def _loaded_orders_document(game, number, player, turn):
+    """The orders document for a loaded player, before their units are placed.
+
+    The `player['units']` list comes from a file the caller wrote by hand and
+    may lack the type-defaults (`type_attack`, `type_health`, `type_energy`)
+    the emitter expects. Those are read from the player's type record, which
+    is what they defaulted to before the unit spent anything.
+    """
+    types = player.get('types') or {}
+    units = []
+    for index, unit in enumerate(player['units']):
+        type_record = types.get(unit.get('type')) or {}
+        units.append({
+            'id': index,
+            'player': unit.get('player', number),
+            'type': unit.get('type'),
+            'name': unit.get('name'),
+            'symbol': unit.get('symbol'),
+            'attack': unit.get('attack'),
+            'health': unit.get('health'),
+            'energy': unit.get('energy'),
+            # a loaded file may name a type by a key that does not match its
+            # own `name`, and units may lack the type-defaults altogether;
+            # `type_record`'s stats fall back to the unit's own, which is
+            # what they defaulted to before the unit spent anything
+            'type_attack': (unit.get('type_attack')
+                            or type_record.get('attack')
+                            or unit.get('attack')),
+            'type_health': (unit.get('type_health')
+                            or type_record.get('health')
+                            or unit.get('health')),
+            'type_energy': (unit.get('type_energy')
+                            or type_record.get('energy')
+                            or unit.get('energy')),
+            'x': unit.get('x'), 'y': unit.get('y'),
+            'state': unit.get('state'), 'direction': unit.get('direction'),
+            'destroyed': unit.get('destroyed', False),
+            'on_board': unit.get('on_board', False),
+        })
+    return {
+        'board': {'size_x': game.board.size_x, 'size_y': game.board.size_y},
+        'turn': turn,
+        'player': number,
+        'units': units,
+    }
 
 
 def _awaited_players(game):
@@ -306,20 +387,67 @@ def _awaited_players(game):
     return {number for number in game.players if number not in eliminated}
 
 
+def barrier_met(game):
+    """Whether every player still in the game has committed for its open turn.
+
+    Said once and asked in two places: by the waiting, about the game it was
+    given, and by the resolution, about the game it has just read. A barrier
+    that meant one thing to the waiter and another to the resolver would be
+    worse than the gap it exists to close.
+    """
+    return _awaited_players(game).issubset(
+        set(game.repository.committed_players(game.getTurnNumber())))
+
+
+def resolve_when_ready(game):
+    """Read the game, ask whether the turn may be resolved, and resolve it.
+
+    All three under one hold, which is the point: the question that authorises
+    a resolution and the resolution itself must not come apart. Between them,
+    another caller can resolve the turn and spend every commit that opened it,
+    and this one would then resolve a game with no orders in it - advancing the
+    turn and publishing a board nobody ordered.
+
+    The read is inside for the same reason. `_apply_orders` works from what
+    `load` put in memory, so asking about a game the resolution is not going to
+    resolve would be no better than asking too early.
+
+    Three answers, because two would not do. `None` means the barrier was not
+    met, which is another caller having got there first and is the system
+    working; `True` and `False` are `resolve`'s own, and `False` is a failure.
+    """
+    with game.repository.held():
+        game.load()
+        if not barrier_met(game):
+            return None
+        return resolve(game)
+
+
 def wait_for_all_commits(game):
-    """Hold the turn open until every player still in the game has committed."""
+    """Wait until every player still in the game has committed.
+
+    A hint, not an answer. `notify.py` says a signal "is only ever a hint: every
+    caller re-checks the condition it actually cares about", and this is the
+    caller that did not - it returned, and what it had found was acted on three
+    steps later. Waking now sends the caller to ask again where it matters.
+
+    The game is not held here. A barrier waits for as long as a player takes to
+    decide, and a game held across that would be stopped rather than protected.
+    """
     print("wait for player commit")
     awaited = _awaited_players(game)
     # the waiter is opened before the first check, so a commit signalled from
     # here on is buffered rather than lost, and one that arrived earlier is
     # found by the check itself
-    with game.repository.waiter('server') as waiter:
-        while not awaited.issubset(set(game.repository.committed_players())):
+    turn_number = game.getTurnNumber()
+    with game.notifier.waiter('server') as waiter:
+        while not awaited.issubset(
+                set(game.repository.committed_players(turn_number))):
             waiter.wait()
 
 
 def wait_for_turn(game):
     """Wait until the server has consumed this player's orders."""
-    with game.repository.waiter(game.player_number) as waiter:
+    with game.notifier.waiter(game.player_number) as waiter:
         while game.repository.has_orders(game.player_number):
             waiter.wait()
