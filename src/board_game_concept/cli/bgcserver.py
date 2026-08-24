@@ -9,7 +9,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept.cli.render import print_board, print_dropped
-from board_game_concept.cli.backend import LocalSession
+from board_game_concept.cli.backend import LocalSession, HttpSession
 from board_game_concept.storage.serialise import units_document
 from board_game_concept.storage.yaml_repository import dump_units
 from board_game_concept.cli import complete, roles
@@ -18,7 +18,7 @@ from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (add_backend_argument,
                                             add_server_argument,
                                             describe_outcome, load_game,
-                                            make_repository, read_command,
+                                            make_session, read_command,
                                             report)
 from board_game_concept.service.errors import GameError
 
@@ -52,19 +52,13 @@ def main(argv=None):
     add_server_argument(parser)
     args = parser.parse_args(argv[1:])
 
-    if args.server:
-        # the write and wait paths are what the server drives, and the HTTP
-        # session does not have them yet - step 3 is where they land. Say
-        # so, and exit
-        print(f"{PROGRAM}: --server is not supported yet - the write and "
-              f"wait paths over HTTP land in step 3", file=sys.stderr)
-        sys.exit(2)
-
-    # a session hides how the game is reached. Today it is in-process; a
-    # later change swaps LocalSession for an HTTP-backed one and the rest
-    # of this file does not notice
-    data = LocalSession(
-        make_repository(args.game_number, args.backend), player_number)
+    # a session hides how the game is reached: local when the server opens
+    # a game directory itself, HTTP when it reaches `bgcapiserver` for it.
+    # In HTTP mode option (b) makes the last player's commit resolve the
+    # turn during the request, so the unattended resolver loop below runs
+    # only in local mode - the `isinstance` check gates it
+    data = make_session(args.game_number, player_number,
+                        server=args.server, backend=args.backend)
 
     # completion for the setup prompt. The server owns no units and defines no
     # types, so what it gains is the grammar and the paths `load` wants
@@ -128,6 +122,12 @@ def main(argv=None):
             # clear the new game flag, this suppresses interactive mode for the
             # server
             data.setNewGame(False)
+            # in HTTP mode option (b) makes the last player's commit resolve
+            # the turn during the request, so the unattended resolver loop
+            # below has no work. Exit after setup - the operator uses
+            # `bgcapiserver` for the ongoing game
+            if isinstance(data, HttpSession):
+                sys.exit(0)
         else:
             # asked here rather than acted on from the waiting: the question
             # that authorises a resolution and the resolution itself are one
@@ -149,7 +149,8 @@ def main(argv=None):
         outcome = data.getOutcome()
         if outcome is not None:
             print_board(data.getBoard())
-            print(dump_units(units_document(data.getBoard())))
+            if isinstance(data, LocalSession):
+                print(dump_units(units_document(data.getBoard())))
             print(describe_outcome(outcome))
             sys.exit(0)
 
@@ -161,7 +162,8 @@ def main(argv=None):
         # local would still be the old one
         resolved = data.getBoard()
         print_board(resolved)
-        print(dump_units(units_document(resolved)))
+        if isinstance(data, LocalSession):
+            print(dump_units(units_document(resolved)))
 
 
 # run main()

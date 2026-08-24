@@ -18,10 +18,33 @@ for. Units are ordered by hand, one command at a time. See "Not built yet" in
  * Currently the server runs and waits for files to be created and written into a directory on disk by the
 player client.
 
-# web service - [TODO, none of this exists yet]
- * combine server, client and observer into different roles in the API based on login
- * create "flask" based web service that exposes all the cli based commands as a RESTful API
- * backend would still be files for now, although moving to sqlite may be a thought via a common data class
+# Run over HTTP
+
+The three CLI roles talk to a REST server (`bgcapiserver`) as their
+default when `BOARD_GAME_SERVER` is set. The API server serves every game
+under one directory; every role points at one URL. Under option (b) the
+last player's commit resolves the turn during the request, so no
+unattended resolver is required.
+
+```
+$ bgcapiserver &
+$ export BOARD_GAME_SERVER=http://127.0.0.1:8080
+$ bgcserver -g 1               # admin: sets the board, registers players
+                               # commits and exits
+$ bgcclient 1 1                # player 1
+$ bgcclient 1 2                # player 2
+$ bgcobserver 1                # observer
+```
+
+Without `BOARD_GAME_SERVER` (or `--server URL` on a role), each binary
+opens the game directory itself and runs its own local flow — the CLI
+behaviour that pre-dated the HTTP tier is unchanged. The storage backend
+is chosen by `BOARD_GAME_BACKEND` (or `--backend`); SQLite is the
+default, YAML is the readable-file alternative.
+
+## Web service - what's next
+ * Authentication and TLS
+ * Retiring the file-transport in favour of the REST tier entirely
 
 # setup
 

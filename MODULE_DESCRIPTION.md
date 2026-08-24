@@ -159,7 +159,12 @@ not know how it is drawn.
   the default so clients pick it without being told.
 - **`bgcserver.py`**, **`bgcclient.py`**, **`bgcobserver.py`** - the roles
   themselves, reduced to what is genuinely theirs. Each file is named for the
-  command it is installed as, so a role has one name and not two.
+  command it is installed as, so a role has one name and not two. All three
+  honour `--server URL` (or `BOARD_GAME_SERVER`) and construct an
+  `HttpSession` against `bgcapiserver` when set; without it they open the
+  game directory themselves and run the local flow. `bgcserver` in HTTP
+  mode is the interactive admin session (sets the board, commits, and
+  exits); option (b) makes the unattended resolver loop unnecessary there.
 
 ## The three roles
 
