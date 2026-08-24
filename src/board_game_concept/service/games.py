@@ -160,6 +160,12 @@ def order_move(data, command):
 # a function name from the kind, so that a helper in this module cannot become
 # a command by accident - the same reason `parser.py` names its verbs one by
 # one instead of looking them up
+def set_new_game(data, command):
+    """End the setup phase. Only the administrator sends this; over HTTP it
+    is a command like any other so the wire has one shape."""
+    data.setNewGame(bool(command.new_game))
+
+
 ACTIONS = {
     'set_board': set_board_size,
     'add_player': add_player,
@@ -168,6 +174,7 @@ ACTIONS = {
     'add_type': define_type,
     'add_unit': deploy_unit,
     'move': order_move,
+    'set_new_game': set_new_game,
 }
 
 

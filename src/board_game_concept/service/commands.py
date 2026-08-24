@@ -124,6 +124,16 @@ class Move(Node):
     fields = ('unit', 'direction')
 
 
+class SetNewGame(Node):
+    """The setter that marks setup done. Only the administrator sends this,
+    and only over the HTTP tier - the local flow calls `data.setNewGame`
+    directly. Kept as a command so the wire has one shape for every
+    mutation."""
+
+    kind = 'set_new_game'
+    fields = ('new_game',)
+
+
 def _descendants(cls):
     """Every class below this one, however deep.
 

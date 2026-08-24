@@ -97,20 +97,19 @@ class ClientOverHttp(CliTestCase):
                'refused' in client.output.lower() or \
                'occupied' in client.output.lower(), client.output
 
-    def test_commit_stops_with_a_step_4_message(self):
-        """`commit` is not on HTTP yet; the client says so."""
+    def test_commit_closes_the_barrier_and_resolves_the_turn(self):
+        """A one-player commit resolves the setup turn inline (option b)."""
         self.server = self.established_game(players=(1,))
         client = self._start_client_over_http()
         self._send_and_wait(client, 'add type Cross X 1 5 10', 2)
         self._send_and_wait(client, 'add unit Cross x1 0 0', 3)
+        # commit closes the barrier for the one player - the server
+        # resolves the setup turn during the request (option b) and the
+        # client prints `commit complete` and returns to the prompt
         client.send_line('commit')
-        # the client raises NotImplementedError and exits; a graceful
-        # message would be nicer, but the mention of "step 4" is what the
-        # change refuses on
-        deadline = time.monotonic() + 5
-        while time.monotonic() < deadline:
-            if client.proc.poll() is not None:
-                break
-            time.sleep(0.1)
-        assert client.proc.poll() is not None, (
-            'the client did not exit on commit')
+        client.read_until('commit complete')
+        client.read_until_count(CLIENT_PROMPT, 4)
+        # a subsequent `show units` reads back the deployed unit as it
+        # stands after the turn resolved
+        self._send_and_wait(client, 'show units', 5)
+        assert 'x1' in client.output

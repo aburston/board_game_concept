@@ -26,7 +26,7 @@ import requests
 from .. import Game
 from ..http import views as views_module
 from ..service import games, identity
-from ..service.commands import as_record
+from ..service.commands import SetNewGame, as_record
 from ..service.errors import (GameError, NoSuchGame, NoSuchPlayer,
                               UnreadableGame)
 from ..storage.lock import GameIsBusy
@@ -233,16 +233,39 @@ class HttpSession(Session):
             f'{self.player_number}/commands',
             json=as_record(command))
         _raise_for(response)
+        self._invalidate()
+
+    def _invalidate(self):
         # ordinary cache invalidation: the next reader fetches fresh
         self._state = None
         self._board = None
         self._players = None
 
     def commit(self):
-        raise NotImplementedError("commit: step 3 - the write side over HTTP")
+        response = self._session.post(
+            f'{self.base_url}/games/{self.gameno}/players/'
+            f'{self.player_number}/commit')
+        if response.status_code == 400:
+            # a publish-side refusal: matches `LocalSession.commit` returning
+            # False when `publish` refused (the board is too small)
+            self._invalidate()
+            return False
+        _raise_for(response)
+        self._invalidate()
+        return True
 
     def resolve_pending(self):
-        raise NotImplementedError("resolve: step 3 - the write side over HTTP")
+        response = self._session.post(
+            f'{self.base_url}/games/{self.gameno}/players/'
+            f'{self.player_number}/commit')
+        if response.status_code == 202:
+            # the barrier was not met: matches `resolveWhenReady` returning
+            # None when another caller had not yet committed
+            self._invalidate()
+            return None
+        _raise_for(response)
+        self._invalidate()
+        return True
 
     def waitForTurn(self):
         raise NotImplementedError("wait: step 5 - long-poll is not here yet")
@@ -260,8 +283,10 @@ class HttpSession(Session):
         return self._require_state()['new_game']
 
     def setNewGame(self, new_game):
-        raise NotImplementedError(
-            "setNewGame: step 3 - the write side over HTTP")
+        # `SetNewGame` is a command like any other on the HTTP tier so the
+        # wire has one shape - `service/commands.py::SetNewGame` is the
+        # node the server carries out
+        self.perform(SetNewGame(new_game=bool(new_game)))
 
     def getUnprocessedMoves(self):
         return self._require_state()['unprocessed_moves']

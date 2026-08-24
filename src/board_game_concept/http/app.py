@@ -15,9 +15,11 @@ from flask import Flask, jsonify, request
 
 from ..cli import session as session_module
 from ..service import games as game_ops
+from ..service import identity
 from ..service.commands import as_record as _AS_RECORD, from_record
 from ..service.errors import (GameDataError, GameError, NoSuchGame,
                               NoSuchPlayer, UnreadableGame)
+from ..service.turn import _awaited_players
 from ..storage.lock import GameIsBusy
 from .. import Game
 from . import views as views_module
@@ -115,6 +117,40 @@ def create_app(base_path=None, backend=None):
             return jsonify({'error': str(error)}), 400
         return '', 204
 
+    @app.post('/games/<gameno>/players/<int:number>/commit')
+    def commit_turn(gameno, number):
+        try:
+            game = Game(_repository(gameno), int(number))
+            if identity.is_player(number):
+                # publish under one hold; if the barrier is met, resolve
+                # under a fresh one - the two are separate for a reason
+                # (design.md - Decision 2)
+                game.load()
+                published = game.clientSave()
+                if not published:
+                    return jsonify(
+                        {'error': 'the board is too small to commit'}), 400
+                # a fresh session for the resolve so the load reflects the
+                # commit that just landed rather than the state before it
+                resolver = Game(_repository(gameno), int(number))
+                resolved = resolver.resolveWhenReady()
+                data = resolver if resolved else game
+                data.load()
+                payload = _commit_payload(data, resolved=bool(resolved))
+                return jsonify(payload), (200 if resolved else 202)
+            # the administrator: the setup resolution has no barrier
+            game.load()
+            game.serverSave()
+            game.load()
+            payload = _commit_payload(game, resolved=True)
+            return jsonify(payload), 200
+        except GameIsBusy as error:
+            return jsonify({'error': str(error)}), 409
+        except GameDataError as error:
+            return _game_error_response(error)
+        except GameError as error:
+            return jsonify({'error': str(error)}), 400
+
     @app.errorhandler(GameIsBusy)
     def _busy(error):
         return jsonify({'error': str(error)}), 409
@@ -124,6 +160,18 @@ def create_app(base_path=None, backend=None):
         return _game_error_response(error)
 
     return app
+
+
+def _commit_payload(data, resolved):
+    committed = set(
+        data.repository.committed_players(data.getTurnNumber()))
+    awaited = _awaited_players(data)
+    return {
+        'resolved': bool(resolved),
+        'turn_number': data.getTurnNumber(),
+        'outcome': data.getOutcome(),
+        'waiting_on': sorted(awaited - committed),
+    }
 
 
 def _state_payload(data):
