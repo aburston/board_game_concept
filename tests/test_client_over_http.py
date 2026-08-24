@@ -113,3 +113,43 @@ class ClientOverHttp(CliTestCase):
         # stands after the turn resolved
         self._send_and_wait(client, 'show units', 5)
         assert 'x1' in client.output
+
+    def test_two_players_commit_in_turn_and_neither_wins(self):
+        """Two clients, the game a person plays with a friend.
+
+        Player 1 commits and waits; player 2's commit closes the barrier and
+        resolves the setup turn during the request. Nobody has given an order,
+        so the game is still there to be played - which is what the turn
+        resolved from the committing player's own half-sighted view was not:
+        it wiped player 1 off the board and handed player 2 the game on turn 1.
+        """
+        self.server = self.established_game(players=(1, 2))
+        one = self._start_client_over_http(player_number=1)
+        two = self._start_client_over_http(player_number=2)
+
+        self._send_and_wait(one, 'add type Cross X 1 5 10', 2)
+        self._send_and_wait(one, 'add unit Cross x1 0 0', 3)
+        self._send_and_wait(two, 'add type Ring O 1 5 10', 2)
+        self._send_and_wait(two, 'add unit Ring o1 3 3', 3)
+
+        # player 1 commits first and is left waiting on the barrier
+        one.send_line('commit')
+        one.read_until('waiting for turn to complete...')
+
+        # player 2's commit closes it, and the turn resolves in the request
+        two.send_line('commit')
+        two.read_until('commit complete')
+        two.read_until_count(CLIENT_PROMPT, 4, timeout=60)
+
+        # the resolution releases player 1, who is prompted again
+        one.read_until_count(CLIENT_PROMPT, 4, timeout=60)
+
+        for client in (one, two):
+            assert 'game over' not in client.output, client.output
+            assert 'out of the game' not in client.output, client.output
+
+        # and both units are standing where they were deployed
+        self._send_and_wait(one, 'show units', 5)
+        assert 'x1' in one.output
+        self._send_and_wait(two, 'show units', 5)
+        assert 'o1' in two.output

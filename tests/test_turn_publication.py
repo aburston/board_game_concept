@@ -385,3 +385,40 @@ def test_ending_setup_is_not_held_to_the_barrier(tmp_path):
     # still ends
     assert server.serverSave() is True
     assert harness.session(0).getSizeX() == 4
+
+
+def test_a_players_session_may_not_resolve_a_turn(tmp_path):
+    """Resolving from a player's session is refused where the damage is done.
+
+    A player's session is built from that player's own published view and
+    loads no other player's orders, so a turn resolved from one applies half
+    the orders and republishes half the board as the record of the game. That
+    is how the HTTP commit endpoint came to eliminate everybody but whoever
+    committed last. Which session resolves is the caller's to get right, and
+    getting it wrong is refused here rather than trusted to each caller.
+    """
+    from board_game_concept import Game
+    from board_game_concept.service.errors import GameError
+
+    harness = ready_game(tmp_path)
+    player = Game(harness.repository(), 1)
+    player.load()
+
+    with pytest.raises(GameError) as refused:
+        player.serverSave()
+    assert 'player 1' in refused.value.message
+
+    with pytest.raises(GameError):
+        Game(harness.repository(), 1).resolveWhenReady()
+
+    # and neither may the observer, which sees the whole game and changes
+    # nothing: a turn resolved from one would be a read that wrote
+    from board_game_concept.service import identity
+
+    watcher = Game(harness.repository(), identity.OBSERVER)
+    watcher.load()
+    with pytest.raises(GameError):
+        watcher.serverSave()
+
+    # and the turn is still there to be resolved by the administrator
+    assert Game(harness.repository(), 0).resolveWhenReady() is True
