@@ -119,10 +119,14 @@ not know how it is drawn.
   and cannot come to disagree. `cli/views.py` is a re-export shim for callers
   the seam has not yet stopped naming directly.
 - **`app.py`** - `create_app(base_path, backend)` returns a Flask app that
-  serves the read side: `/games/<gameno>/players/<n>/state`,
-  `/games/<gameno>/players/<n>/views/<subject>`, and `/games/<gameno>/players`.
-  Each request opens a fresh `Game` and calls `load()`; no cache to disagree
-  with the game. Writes and long-poll are later steps.
+  serves both halves of the seam. Reads:
+  `/games/<gameno>/players/<n>/state`,
+  `/games/<gameno>/players/<n>/views/<subject>`,
+  `/games/<gameno>/players`; each opens a fresh `Game`, calls `load()`,
+  and returns the JSON. Writes: `POST /games/<gameno>/players/<n>/commands`
+  takes the record `commands.as_record` produces, decodes with
+  `from_record`, holds the game for writing, and runs `games.perform`.
+  Commit and long-poll are later steps.
 - **`bgcapiserver.py`** - the console-script entry point that runs the
   Flask dev server. `--host`, `--port`, `--base-path`, `--backend`; local by
   default, and a real deployment binds where its operator wants.
@@ -144,8 +148,8 @@ not know how it is drawn.
   role holds a `Session` and talks to it, rather than reaching into a `Game`;
   `LocalSession` is the in-process implementation (the in-process `Game`,
   `service.games` and turn functions the roles used to call directly),
-  `HttpSession` speaks HTTP against `bgcapiserver`. The read half is served
-  today; the write half raises `NotImplementedError` and lands in step 3.
+  `HttpSession` speaks HTTP against `bgcapiserver`. The read half and
+  `perform` are served today; `commit` lands in step 4, waiting in step 5.
 - **`bgcserver.py`**, **`bgcclient.py`**, **`bgcobserver.py`** - the roles
   themselves, reduced to what is genuinely theirs. Each file is named for the
   command it is installed as, so a role has one name and not two.

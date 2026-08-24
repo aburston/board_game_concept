@@ -8,12 +8,11 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept.cli import complete, roles
-from board_game_concept.cli.backend import LocalSession
 from board_game_concept.cli.show import perform_show, show_units
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.render import print_dropped
 from board_game_concept.cli.session import (describe_outcome, load_game,
-                                            make_repository, read_command,
+                                            make_session, read_command,
                                             report)
 from board_game_concept.service import identity
 from board_game_concept.service.errors import GameError
@@ -41,13 +40,25 @@ def main(argv=None):
     if DEBUG:
         print(f"len(argv): {len(argv)}")
 
-    # `--server URL` is here for parity with the observer and the server; the
-    # write and wait paths over HTTP land in step 3, so the flag is refused
-    # rather than silently ignored
-    if any(arg == '--server' or arg.startswith('--server=') for arg in argv):
-        print(f"bgcclient: --server is not supported yet - the write and "
-              f"wait paths over HTTP land in step 3", file=sys.stderr)
-        sys.exit(2)
+    # `--server URL` picks the HTTP session; without it, `BOARD_GAME_SERVER`
+    # or a local `LocalSession` decides. Kept as a `--flag URL` pair rather
+    # than a positional argument so the two-argument form stays what a
+    # person types today
+    server = None
+    filtered = []
+    it = iter(argv)
+    for arg in it:
+        if arg == '--server':
+            try:
+                server = next(it)
+            except StopIteration:
+                usage()
+                sys.exit(1)
+        elif arg.startswith('--server='):
+            server = arg[len('--server='):]
+        else:
+            filtered.append(arg)
+    argv = filtered
 
     if len(argv) == 3:
         gameno = argv[1]
@@ -67,10 +78,9 @@ def main(argv=None):
         usage()
         sys.exit(1)
 
-    # a session hides how the game is reached. Today it is in-process; a
-    # later change swaps LocalSession for an HTTP-backed one and the rest
-    # of this file does not notice
-    data = LocalSession(make_repository(gameno), player_number)
+    # a session hides how the game is reached: local when the client opens
+    # a game directory itself, HTTP when it reaches the server for it
+    data = make_session(gameno, player_number, server=server)
 
     # let a person at a terminal complete what they are typing. The names come
     # from this game object, which is the same one the loop below reloads into,

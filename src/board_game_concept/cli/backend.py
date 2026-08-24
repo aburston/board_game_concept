@@ -26,6 +26,7 @@ import requests
 from .. import Game
 from ..http import views as views_module
 from ..service import games, identity
+from ..service.commands import as_record
 from ..service.errors import (GameError, NoSuchGame, NoSuchPlayer,
                               UnreadableGame)
 from ..storage.lock import GameIsBusy
@@ -220,7 +221,22 @@ class HttpSession(Session):
         self._state = self._get(f'/players/{self.player_number}/state')
 
     def perform(self, command):
-        raise NotImplementedError("perform: step 3 - the write side over HTTP")
+        # `load` reads a file on the caller's disk and hands its contents
+        # over; opening that file server-side would let a client name a
+        # path the server owns. Doing it right - opening on the client
+        # and sequencing the effective commands - is its own change
+        if command.kind in ('load_board', 'load_player'):
+            raise GameError(
+                f"{command.kind}: not yet supported over HTTP")
+        response = self._session.post(
+            f'{self.base_url}/games/{self.gameno}/players/'
+            f'{self.player_number}/commands',
+            json=as_record(command))
+        _raise_for(response)
+        # ordinary cache invalidation: the next reader fetches fresh
+        self._state = None
+        self._board = None
+        self._players = None
 
     def commit(self):
         raise NotImplementedError("commit: step 3 - the write side over HTTP")

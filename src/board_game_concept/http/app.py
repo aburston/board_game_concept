@@ -11,10 +11,11 @@ moves to a token and the path stops carrying it.
 
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 from ..cli import session as session_module
-from ..service.commands import as_record as _AS_RECORD
+from ..service import games as game_ops
+from ..service.commands import as_record as _AS_RECORD, from_record
 from ..service.errors import (GameDataError, GameError, NoSuchGame,
                               NoSuchPlayer, UnreadableGame)
 from ..storage.lock import GameIsBusy
@@ -88,6 +89,31 @@ def create_app(base_path=None, backend=None):
         if subject in VIEWS_THAT_NEED_A_BOARD and data.getBoard() is None:
             return jsonify({'error': 'no board yet'}), 404
         return jsonify({subject: builder(data)})
+
+    @app.post('/games/<gameno>/players/<int:number>/commands')
+    def perform_command(gameno, number):
+        record = request.get_json(silent=True)
+        if not isinstance(record, dict):
+            return jsonify({'error': 'a command is a JSON object'}), 400
+        try:
+            command = from_record(record)
+        except GameError as error:
+            return jsonify({'error': str(error)}), 400
+        game = Game(_repository(gameno), int(number))
+        try:
+            # held for writing across the load + perform, because a client's
+            # `perform` is what carries a mutation out and every reader has
+            # to see the whole of that mutation or none of it
+            with game.repository.held():
+                game.load()
+                game_ops.perform(game, command)
+        except GameIsBusy as error:
+            return jsonify({'error': str(error)}), 409
+        except GameDataError as error:
+            return _game_error_response(error)
+        except GameError as error:
+            return jsonify({'error': str(error)}), 400
+        return '', 204
 
     @app.errorhandler(GameIsBusy)
     def _busy(error):

@@ -39,6 +39,20 @@ def _set_up(base_path, gameno='one'):
     server.serverSave()
 
 
+def _set_up_in_setup(base_path, gameno='two'):
+    """A game with a registered player who has not committed yet.
+
+    Writes exercised on this game hit the pre-first-turn branch of the
+    service rules: `add type` is allowed, `add unit` is allowed. The write
+    tests use this fixture; the read tests use `_set_up`.
+    """
+    admin = Game(SqliteGameRepository(gameno, base_path=str(base_path)), 0)
+    admin.load()
+    game_ops.perform(admin, SetBoard(size_x=4, size_y=4))
+    game_ops.perform(admin, AddPlayer(number=1))
+    admin.serverSave()
+
+
 def _client(base_path):
     return create_app(base_path=str(base_path),
                       backend='sqlite').test_client()
@@ -105,3 +119,72 @@ def test_a_player_who_does_not_exist_is_404(tmp_path):
     _set_up(tmp_path)
     response = _client(tmp_path).get('/games/one/players/99/state')
     assert response.status_code == 404
+
+
+# --- POST /commands
+
+
+def test_posting_a_command_carries_it_out(tmp_path):
+    """One `AddType` POST, then `GET /views/types` shows the new type."""
+    _set_up_in_setup(tmp_path)
+    client = _client(tmp_path)
+
+    response = client.post(
+        '/games/two/players/1/commands',
+        json={'kind': 'add_type', 'name': 'Ring', 'symbol': 'O',
+              'attack': 2, 'health': 4, 'energy': 8})
+    assert response.status_code == 204, response.get_json()
+
+    types = client.get('/games/two/players/1/views/types').get_json()
+    names = [t['name'] for t in types['types']]
+    assert 'Ring' in names, types
+
+
+def test_a_command_that_is_refused_is_400(tmp_path):
+    """A command the rules refuse comes back as 400 with the message."""
+    _set_up(tmp_path)
+    client = _client(tmp_path)
+
+    # x1 is already at (2, 3) and the setup turn has resolved, so any
+    # `add_unit` command is refused: the game is past setup
+    response = client.post(
+        '/games/one/players/1/commands',
+        json={'kind': 'add_unit', 'type_name': 'Cross', 'name': 'x2',
+              'x': 0, 'y': 0})
+    assert response.status_code == 400
+    body = response.get_json()
+    assert 'error' in body
+
+
+def test_an_unknown_command_kind_is_400(tmp_path):
+    _set_up(tmp_path)
+    response = _client(tmp_path).post(
+        '/games/one/players/1/commands',
+        json={'kind': 'no_such_thing'})
+    assert response.status_code == 400
+
+
+def test_a_non_json_body_is_400(tmp_path):
+    _set_up(tmp_path)
+    response = _client(tmp_path).post(
+        '/games/one/players/1/commands', data='not a json body')
+    assert response.status_code == 400
+
+
+def test_a_deployed_unit_is_visible_over_the_view(tmp_path):
+    """AddUnit followed by /views/units shows the deployed unit."""
+    _set_up_in_setup(tmp_path)
+    client = _client(tmp_path)
+
+    client.post('/games/two/players/1/commands',
+                json={'kind': 'add_type', 'name': 'Ring', 'symbol': 'O',
+                      'attack': 2, 'health': 4, 'energy': 8})
+    response = client.post(
+        '/games/two/players/1/commands',
+        json={'kind': 'add_unit', 'type_name': 'Ring', 'name': 'o1',
+              'x': 1, 'y': 1})
+    assert response.status_code == 204
+
+    units = client.get('/games/two/players/1/views/units').get_json()
+    names = sorted(u['name'] for u in units['units'])
+    assert names == ['o1']
