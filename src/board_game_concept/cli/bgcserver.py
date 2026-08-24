@@ -16,6 +16,7 @@ from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (add_backend_argument,
+                                            add_server_argument,
                                             describe_outcome, load_game,
                                             make_repository, read_command,
                                             report)
@@ -48,7 +49,16 @@ def main(argv=None):
         required=True,
         help='specify the game number')
     add_backend_argument(parser)
+    add_server_argument(parser)
     args = parser.parse_args(argv[1:])
+
+    if args.server:
+        # the write and wait paths are what the server drives, and the HTTP
+        # session does not have them yet - step 3 is where they land. Say
+        # so, and exit
+        print(f"{PROGRAM}: --server is not supported yet - the write and "
+              f"wait paths over HTTP land in step 3", file=sys.stderr)
+        sys.exit(2)
 
     # a session hides how the game is reached. Today it is in-process; a
     # later change swaps LocalSession for an HTTP-backed one and the rest

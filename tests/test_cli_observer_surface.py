@@ -53,13 +53,13 @@ class ObserverInvocation(CliTestCase):
     def test_wrong_arguments(self):
         observer = self.start_observer_with_args([])
         self.assertNotEqual(0, observer.wait_for_exit())
-        self.assertIn('usage, bgcobserver <gameno>', observer.errors)
+        self.assertIn('usage: bgcobserver', observer.errors)
 
     def test_console_script_entry_point(self):
         # the generated console script calls main() with no arguments at all
         observer = self.start_entry_point('observer')
         self.assertNotEqual(0, observer.wait_for_exit())
-        self.assertIn('usage, bgcobserver <gameno>', observer.errors)
+        self.assertIn('usage: bgcobserver', observer.errors)
         self.assertNotIn('TypeError', observer.errors)
 
 

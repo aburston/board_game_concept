@@ -13,7 +13,7 @@ table or written as JSON, so the two cannot describe different games.
 
 import json
 
-from . import render, views
+from . import render
 
 # what to say when a subject needs a board and the game has not been given one
 # yet. It is a refusal rather than an answer, so it is said in words even when
@@ -25,16 +25,13 @@ NEEDS_BOARD = ('board', 'units')
 
 
 def _view(data, subject):
-    """What this subject has to say, as plain data."""
-    if subject == 'board':
-        return views.board_view(data.getBoard())
-    if subject == 'units':
-        return views.units_view(data.getBoard())
-    if subject == 'types':
-        return views.types_view(data.getPlayers())
-    if subject == 'players':
-        return views.players_view(data.getPlayers(), data.getEliminated())
-    return views.pending_view(data.getPlayers(), data.getBoard())
+    """What this subject has to say, as plain data.
+
+    The session builds it: `LocalSession` computes from live objects,
+    `HttpSession` fetches from the server. Either way the value is the same
+    JSON the terminal renders below.
+    """
+    return data.getView(subject)
 
 
 def _print_table(subject, view):
@@ -58,7 +55,7 @@ def show_units(data):
     gives and is written by the same code, rather than being the storage YAML
     it used to be.
     """
-    render.print_units(views.units_view(data.getBoard()))
+    render.print_units(data.getView('units'))
 
 
 def perform_show(data, command):

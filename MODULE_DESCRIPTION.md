@@ -19,6 +19,7 @@ src/board_game_concept/
     domain/     the rules of the game
     service/    what a caller may ask of a game, and when
     storage/    where a game is kept
+    http/       the HTTP tier: `views.py` and the Flask app
     cli/        the three interactive roles
 ```
 
@@ -111,6 +112,21 @@ not know how it is drawn.
   backends use, and `NullNotifier` for a backend that carries no bus.
   `Game` picks the one that fits the repository it was handed.
 
+### http - the HTTP tier
+
+- **`views.py`** - one function per `show` subject, each returning plain data.
+  Also what the HTTP tier hands over the wire, so the two are the same JSON
+  and cannot come to disagree. `cli/views.py` is a re-export shim for callers
+  the seam has not yet stopped naming directly.
+- **`app.py`** - `create_app(base_path, backend)` returns a Flask app that
+  serves the read side: `/games/<gameno>/players/<n>/state`,
+  `/games/<gameno>/players/<n>/views/<subject>`, and `/games/<gameno>/players`.
+  Each request opens a fresh `Game` and calls `load()`; no cache to disagree
+  with the game. Writes and long-poll are later steps.
+- **`bgcapiserver.py`** - the console-script entry point that runs the
+  Flask dev server. `--host`, `--port`, `--base-path`, `--backend`; local by
+  default, and a real deployment binds where its operator wants.
+
 ### cli - the three roles
 
 - **`grammar.py`** - the language all three roles share, described once.
@@ -126,10 +142,10 @@ not know how it is drawn.
   command, reporting a refusal, and failing when the game cannot be read.
 - **`backend.py`** - the seam between a role and the game it drives. Every
   role holds a `Session` and talks to it, rather than reaching into a `Game`;
-  `LocalSession` is the one implementation there is today (the in-process
-  `Game`, `service.games` and turn functions the roles used to call
-  directly). What lets a later change put an HTTP client behind the same
-  interface, without the roles knowing which is behind them.
+  `LocalSession` is the in-process implementation (the in-process `Game`,
+  `service.games` and turn functions the roles used to call directly),
+  `HttpSession` speaks HTTP against `bgcapiserver`. The read half is served
+  today; the write half raises `NotImplementedError` and lands in step 3.
 - **`bgcserver.py`**, **`bgcclient.py`**, **`bgcobserver.py`** - the roles
   themselves, reduced to what is genuinely theirs. Each file is named for the
   command it is installed as, so a role has one name and not two.

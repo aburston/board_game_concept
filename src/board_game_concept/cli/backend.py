@@ -21,8 +21,14 @@ server-side. Until then the seam is drawn for actions, lifecycle and state, and
 these three are the coupling still to cut.
 """
 
+import requests
+
 from .. import Game
+from ..http import views as views_module
 from ..service import games, identity
+from ..service.errors import (GameError, NoSuchGame, NoSuchPlayer,
+                              UnreadableGame)
+from ..storage.lock import GameIsBusy
 
 
 class Session:
@@ -100,6 +106,16 @@ class Session:
     def getEliminated(self):
         raise NotImplementedError
 
+    def getView(self, subject):
+        """One `show` subject as its view value.
+
+        `LocalSession` computes it from its live objects; `HttpSession`
+        fetches it from `/views/<subject>`. Every caller of `show.py` goes
+        through here rather than calling `views.<subject>_view` itself, so
+        the two backends serve the same JSON.
+        """
+        raise NotImplementedError
+
 
 class LocalSession(Session):
     """The in-process implementation: a `Game`, driven as the roles drive it."""
@@ -163,3 +179,196 @@ class LocalSession(Session):
 
     def getEliminated(self):
         return self._game.getEliminated()
+
+    def getView(self, subject):
+        if subject == 'board':
+            return views_module.board_view(self._game.getBoard())
+        if subject == 'units':
+            return views_module.units_view(self._game.getBoard())
+        if subject == 'types':
+            return views_module.types_view(self._game.getPlayers())
+        if subject == 'players':
+            return views_module.players_view(self._game.getPlayers(),
+                                             self._game.getEliminated())
+        if subject == 'pending':
+            return views_module.pending_view(self._game.getPlayers(),
+                                             self._game.getBoard())
+        raise ValueError(f"unknown view: {subject}")
+
+
+class HttpSession(Session):
+    """The seam's HTTP implementation, read-only for now.
+
+    Reads a state snapshot and a view whenever the REPL asks. Writes and
+    waits raise; step 3 fills them in.
+    """
+
+    def __init__(self, base_url, gameno, player_number):
+        self._session = requests.Session()
+        self.base_url = base_url.rstrip('/')
+        self.gameno = gameno
+        self.player_number = player_number
+        self._state = None
+        self._board = None
+        self._players = None
+
+    def load(self):
+        # a fresh screen: throw the cached snapshot away and refetch
+        self._state = None
+        self._board = None
+        self._players = None
+        self._state = self._get(f'/players/{self.player_number}/state')
+
+    def perform(self, command):
+        raise NotImplementedError("perform: step 3 - the write side over HTTP")
+
+    def commit(self):
+        raise NotImplementedError("commit: step 3 - the write side over HTTP")
+
+    def resolve_pending(self):
+        raise NotImplementedError("resolve: step 3 - the write side over HTTP")
+
+    def waitForTurn(self):
+        raise NotImplementedError("wait: step 5 - long-poll is not here yet")
+
+    def waitForPlayerCommit(self):
+        raise NotImplementedError("wait: step 5 - long-poll is not here yet")
+
+    def getOutcome(self):
+        return self._require_state()['outcome']
+
+    def getTurnNumber(self):
+        return self._require_state()['turn_number']
+
+    def getNewGame(self):
+        return self._require_state()['new_game']
+
+    def setNewGame(self, new_game):
+        raise NotImplementedError(
+            "setNewGame: step 3 - the write side over HTTP")
+
+    def getUnprocessedMoves(self):
+        return self._require_state()['unprocessed_moves']
+
+    def getRejected(self):
+        return self._require_state()['rejected']
+
+    def getDropped(self):
+        # the on-disk `getDropped` returns `(command, message)` tuples; the
+        # wire form is `{command, message}` records, and the REPL only ever
+        # reads the message
+        return [(record.get('command'), record['message'])
+                for record in self._require_state()['dropped']]
+
+    def isEliminated(self, player_number):
+        # the state snapshot does not carry every player's eliminated flag,
+        # only this session's. The value the REPL asks for is derived from
+        # the `players` view instead
+        players = self.getPlayers()
+        return player_number in self._eliminated_from(players)
+
+    def getBoard(self):
+        if self._board is None:
+            self._board = _HttpBoard(
+                self._get(f'/players/{self.player_number}/views/board')
+                .get('board', {}))
+        return self._board
+
+    def getPlayers(self):
+        if self._players is None:
+            types_by_player = {}
+            for entry in self._get(
+                    f'/players/{self.player_number}/views/types'
+                    ).get('types', []):
+                types_by_player.setdefault(entry['player'], {})[
+                    entry['name']] = {
+                        'name': entry['name'], 'symbol': entry['symbol'],
+                        'attack': entry['attack'],
+                        'health': entry['health'],
+                        'energy': entry['energy']}
+            listed = self._get_list('/players').get('players', [])
+            self._players = {
+                number: {'number': number, 'types': types_by_player.get(
+                    number, {})}
+                for number in listed}
+        return self._players
+
+    def getEliminated(self):
+        players = self._get(
+            f'/players/{self.player_number}/views/players'
+            ).get('players', [])
+        return [entry['player'] for entry in players
+                if entry.get('status') == 'eliminated']
+
+    def getView(self, subject):
+        response = self._get(
+            f'/players/{self.player_number}/views/{subject}')
+        # each endpoint returns `{<subject>: value}`; hand back the value
+        return response.get(subject)
+
+    # --- private
+
+    def _require_state(self):
+        if self._state is None:
+            self._state = self._get(f'/players/{self.player_number}/state')
+        return self._state
+
+    def _get(self, path):
+        return self._request(f'/games/{self.gameno}{path}')
+
+    def _get_list(self, path):
+        # for `/games/<n>/players`, which has no player number in the path
+        return self._request(f'/games/{self.gameno}{path}')
+
+    def _request(self, path):
+        response = self._session.get(self.base_url + path)
+        _raise_for(response)
+        return response.json()
+
+    @staticmethod
+    def _eliminated_from(players):
+        return {number for number, info in players.items()
+                if info.get('status') == 'eliminated'}
+
+
+class _HttpBoard:
+    """The little of a `Board` the REPL still asks for.
+
+    `show.py` and `complete.py` reach for `board.size_x` and `board.size_y`
+    when they check whether a game has been sized yet. Everything else the
+    board is used for goes through a view the server already computed, so
+    this holds the two attributes and nothing more.
+    """
+
+    def __init__(self, view):
+        self._view = view or {}
+
+    @property
+    def size_x(self):
+        return self._view.get('size_x')
+
+    @property
+    def size_y(self):
+        return self._view.get('size_y')
+
+
+def _raise_for(response):
+    if response.status_code // 100 == 2:
+        return
+    try:
+        body = response.json()
+        message = body.get('error', response.text)
+    except ValueError:
+        message = response.text
+    if response.status_code in (404,):
+        # the wire does not distinguish "no game" from "no player" strongly
+        # enough to hand the caller different exceptions; the message names
+        # which
+        if 'player' in message.lower():
+            raise NoSuchPlayer(message)
+        raise NoSuchGame(message)
+    if response.status_code == 409:
+        raise GameIsBusy(message)
+    if response.status_code == 422:
+        raise UnreadableGame(message)
+    raise GameError(message)

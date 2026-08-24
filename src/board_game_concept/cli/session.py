@@ -14,6 +14,7 @@ from .. import YamlGameRepository
 from ..service import commands
 from ..service.errors import GameDataError, GameError
 from ..storage.sqlite_repository import SqliteGameRepository
+from .backend import HttpSession, LocalSession
 from .parser import ParseError, parse
 
 
@@ -28,20 +29,24 @@ def default_backend():
     return os.environ.get(BACKEND_ENV, COMPILED_DEFAULT_BACKEND)
 
 
-def make_repository(gameno, backend=None):
+def make_repository(gameno, backend=None, base_path=None):
     """Which backend a role puts behind its `LocalSession`.
 
     The three CLI binaries call this rather than picking a class themselves,
     so a `--backend` argument added here reaches them without three edits.
     Default is SQLite; a caller who wants the YAML directory layout asks
     for it by name (or through the `BOARD_GAME_BACKEND` env var).
+
+    `base_path` names the directory `games/` lives under; the CLI binaries
+    let it default to the process working directory, and the HTTP tier
+    passes the base path it was configured for.
     """
     if backend is None:
         backend = default_backend()
     if backend == 'sqlite':
-        return SqliteGameRepository(gameno)
+        return SqliteGameRepository(gameno, base_path=base_path)
     if backend == 'yaml':
-        return YamlGameRepository(gameno)
+        return YamlGameRepository(gameno, base_path=base_path)
     raise ValueError(f"unknown backend: {backend}")
 
 
@@ -57,6 +62,43 @@ def add_backend_argument(parser):
         help="which storage backend to use "
              f"(default: {COMPILED_DEFAULT_BACKEND}, "
              f"or ${BACKEND_ENV} when set)")
+
+
+SERVER_ENV = 'BOARD_GAME_SERVER'
+
+
+def default_server():
+    return os.environ.get(SERVER_ENV)
+
+
+def add_server_argument(parser):
+    """Add `--server URL` (default: none) to a role's parser.
+
+    When set, the role goes over HTTP against the URL rather than reaching
+    into a local game directory. `BOARD_GAME_SERVER` env var is the
+    fallback so a test that has spun up a Flask thread can point every
+    subprocess at it without touching argv.
+    """
+    parser.add_argument(
+        '--server', default=None,
+        help=f"URL of the game server, e.g. http://127.0.0.1:8080 "
+             f"(overrides ${SERVER_ENV}); when unset the role uses local "
+             f"storage")
+
+
+def make_session(gameno, player_number, server=None, backend=None,
+                 base_path=None):
+    """Which session backend a role puts behind its REPL.
+
+    `server` (or `BOARD_GAME_SERVER`) picks the HTTP session; without one,
+    a `LocalSession` over the configured storage backend.
+    """
+    server = server or default_server()
+    if server:
+        return HttpSession(server, gameno, player_number)
+    return LocalSession(
+        make_repository(gameno, backend=backend, base_path=base_path),
+        player_number)
 
 
 def load_game(data):
@@ -143,8 +185,9 @@ def report(error):
 
 
 __all__ = ['COMPILED_DEFAULT_BACKEND', 'GameError', 'add_backend_argument',
-           'default_backend', 'describe_outcome', 'load_game',
-           'make_repository', 'read_command', 'report']
+           'add_server_argument', 'default_backend', 'default_server',
+           'describe_outcome', 'load_game', 'make_repository',
+           'make_session', 'read_command', 'report']
 
 
 def describe_outcome(outcome):

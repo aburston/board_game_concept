@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -8,12 +9,13 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept.cli import complete, roles
-from board_game_concept.cli.backend import LocalSession
 from board_game_concept.service import identity
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.session import (describe_outcome, load_game,
-                                            make_repository, read_command)
+from board_game_concept.cli.session import (add_backend_argument,
+                                            add_server_argument,
+                                            describe_outcome, load_game,
+                                            make_session, read_command)
 
 ROLE = roles.OBSERVER
 
@@ -25,10 +27,6 @@ PROGRAM = 'bgcobserver'
 DEBUG = False
 
 
-def usage():
-    print(f"usage, {PROGRAM} <gameno>", file=sys.stderr)
-
-
 def main(argv=None):
     # the console script entry point calls this with nothing, so fall back to
     # the process arguments
@@ -38,20 +36,22 @@ def main(argv=None):
     if DEBUG:
         print(f"len(argv): {len(argv)}")
 
-    if len(argv) == 2:
-        # the observer is its own identity, not the administrator's. Both are
-        # entitled to the whole game and only one may change it, which nothing
-        # below the command line could tell while they shared a number
-        player_number = identity.OBSERVER
-        gameno = argv[1]
-    else:
-        usage()
-        sys.exit(1)
+    parser = argparse.ArgumentParser(prog=PROGRAM, exit_on_error=True)
+    parser.add_argument('gameno', help='the game number to observe')
+    add_backend_argument(parser)
+    add_server_argument(parser)
+    args = parser.parse_args(argv[1:])
 
-    # a session hides how the game is reached. Today it is in-process; a
-    # later change swaps LocalSession for an HTTP-backed one and the rest
-    # of this file does not notice
-    data = LocalSession(make_repository(gameno), player_number)
+    # the observer is its own identity, not the administrator's. Both are
+    # entitled to the whole game and only one may change it, which nothing
+    # below the command line could tell while they shared a number
+    player_number = identity.OBSERVER
+    gameno = args.gameno
+
+    # a session hides how the game is reached: local when the observer opens
+    # a game directory itself, HTTP when it reaches the server for it
+    data = make_session(gameno, player_number,
+                        server=args.server, backend=args.backend)
 
     # the observer completes what it may run, which is the reading half of the
     # grammar; `roles.OBSERVER` is what decides that, here as everywhere else

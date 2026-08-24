@@ -41,6 +41,14 @@ def main(argv=None):
     if DEBUG:
         print(f"len(argv): {len(argv)}")
 
+    # `--server URL` is here for parity with the observer and the server; the
+    # write and wait paths over HTTP land in step 3, so the flag is refused
+    # rather than silently ignored
+    if any(arg == '--server' or arg.startswith('--server=') for arg in argv):
+        print(f"bgcclient: --server is not supported yet - the write and "
+              f"wait paths over HTTP land in step 3", file=sys.stderr)
+        sys.exit(2)
+
     if len(argv) == 3:
         gameno = argv[1]
         try:

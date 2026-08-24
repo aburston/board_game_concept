@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Board game concept library and server/client framework."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["PyYAML"]
+dependencies = ["PyYAML", "flask", "requests"]
 authors = [{name = "Rose Burston"}]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -20,10 +20,14 @@ classifiers = [
 where = ["src"]
 include = ["board_game_concept", "board_game_concept.*"]
 
+[tool.setuptools.package-data]
+"board_game_concept.storage" = ["schema.sql"]
+
 [project.scripts]
 bgcclient = "board_game_concept.cli.bgcclient:main"
 bgcserver = "board_game_concept.cli.bgcserver:main"
 bgcobserver = "board_game_concept.cli.bgcobserver:main"
+bgcapiserver = "board_game_concept.http.bgcapiserver:main"
 
 [project.optional-dependencies]
 dev = ["pylint>=4.0.0,<5.0.0"]
