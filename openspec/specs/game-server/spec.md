@@ -313,6 +313,12 @@ The system SHALL run continuously once setup is complete, resolving each turn as
 soon as every player still in the game has committed, and SHALL stop once the
 game is decided rather than waiting for commits that will never come.
 
+Being woken SHALL send the server to ask whether the turn may be resolved rather
+than to resolve it: the question is asked where the turn is resolved, as
+`turn-commit` requires. A turn the server may no longer resolve, because another
+caller resolved it first, SHALL send it back to waiting rather than be reported
+as a failure.
+
 #### Scenario: The turn loop
 
 - **WHEN** the server is running unattended
@@ -338,3 +344,15 @@ game is decided rather than waiting for commits that will never come.
 
 - **WHEN** the server cannot save game state while resolving a turn
 - **THEN** it reports an internal error and exits with a failure status
+
+#### Scenario: Woken for a turn another caller has already resolved
+
+- **WHEN** the server is woken and finds the barrier no longer met
+- **THEN** it does not resolve a turn
+- **AND** it reports no error
+- **AND** it waits again rather than exiting or asking immediately
+
+#### Scenario: Ending setup is not held to the barrier
+
+- **WHEN** the administrator commits to end setup
+- **THEN** the turn is resolved without waiting for any player to have committed

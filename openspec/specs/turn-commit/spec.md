@@ -99,6 +99,17 @@ it cannot overlap another caller committing, resolving, or reading. Holding the
 turn open SHALL NOT hold the game: a barrier waits for as long as a player takes
 to decide, and a game held across that would be stopped rather than protected.
 
+Whether the barrier is met SHALL be asked where the turn is resolved, while the
+game is held, and about the game as it is then — not about the game as a caller
+last read it. A turn SHALL NOT be resolved on a barrier that was met before the
+game was held. Waiting to be told the barrier is met is a hint to ask again, not
+an answer to act on.
+
+Finding the barrier unmet when it is asked SHALL NOT be an error: it means
+another caller resolved the turn first, which is the barrier doing its work. The
+caller SHALL be told the turn was not resolved, distinguishably from being told
+it could not be, and SHALL be free to wait and ask again.
+
 #### Scenario: Waiting for all players
 
 - **WHEN** some but not all players still in the game have committed their orders
@@ -129,6 +140,26 @@ to decide, and a game held across that would be stopped rather than protected.
 
 - **WHEN** every player but one has been eliminated
 - **THEN** the game is decided rather than the turn being held open for the eliminated players
+
+#### Scenario: The barrier is asked where the turn is resolved
+
+- **WHEN** a turn is resolved
+- **THEN** whether every player still in the game has committed was asked while the game was held
+- **AND** about the game as it was then
+
+#### Scenario: A turn is not resolved twice on one barrier
+
+- **WHEN** two callers each find the barrier met and each ask for the turn to be resolved
+- **THEN** one of them resolves it
+- **AND** the other is told the barrier is no longer met
+- **AND** the turn is resolved once
+
+#### Scenario: An unmet barrier is not a failure
+
+- **WHEN** a caller asks for the turn to be resolved and the barrier is not met
+- **THEN** it is told the turn was not resolved
+- **AND** that is distinguishable from being told the turn could not be resolved
+- **AND** the game is unchanged
 
 ### Requirement: Players Wait For Turn Completion
 
