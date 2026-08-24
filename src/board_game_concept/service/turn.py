@@ -341,8 +341,53 @@ def _awaited_players(game):
     return {number for number in game.players if number not in eliminated}
 
 
+def barrier_met(game):
+    """Whether every player still in the game has committed for its open turn.
+
+    Said once and asked in two places: by the waiting, about the game it was
+    given, and by the resolution, about the game it has just read. A barrier
+    that meant one thing to the waiter and another to the resolver would be
+    worse than the gap it exists to close.
+    """
+    return _awaited_players(game).issubset(
+        set(game.repository.committed_players(game.getTurnNumber())))
+
+
+def resolve_when_ready(game):
+    """Read the game, ask whether the turn may be resolved, and resolve it.
+
+    All three under one hold, which is the point: the question that authorises
+    a resolution and the resolution itself must not come apart. Between them,
+    another caller can resolve the turn and spend every commit that opened it,
+    and this one would then resolve a game with no orders in it - advancing the
+    turn and publishing a board nobody ordered.
+
+    The read is inside for the same reason. `_apply_orders` works from what
+    `load` put in memory, so asking about a game the resolution is not going to
+    resolve would be no better than asking too early.
+
+    Three answers, because two would not do. `None` means the barrier was not
+    met, which is another caller having got there first and is the system
+    working; `True` and `False` are `resolve`'s own, and `False` is a failure.
+    """
+    with game.repository.held():
+        game.load()
+        if not barrier_met(game):
+            return None
+        return resolve(game)
+
+
 def wait_for_all_commits(game):
-    """Hold the turn open until every player still in the game has committed."""
+    """Wait until every player still in the game has committed.
+
+    A hint, not an answer. `notify.py` says a signal "is only ever a hint: every
+    caller re-checks the condition it actually cares about", and this is the
+    caller that did not - it returned, and what it had found was acted on three
+    steps later. Waking now sends the caller to ask again where it matters.
+
+    The game is not held here. A barrier waits for as long as a player takes to
+    decide, and a game held across that would be stopped rather than protected.
+    """
     print("wait for player commit")
     awaited = _awaited_players(game)
     # the waiter is opened before the first check, so a commit signalled from

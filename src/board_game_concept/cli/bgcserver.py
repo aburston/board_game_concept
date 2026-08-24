@@ -111,11 +111,22 @@ def main(argv=None):
             # clear the new game flag, this suppresses interactive mode for the
             # server
             data.setNewGame(False)
-        elif data.serverSave():
-            print("commit complete")
         else:
-            print("internal server error saving game data")
-            sys.exit(1)
+            # asked here rather than acted on from the waiting: the question
+            # that authorises a resolution and the resolution itself are one
+            # act, holding the game, so another caller cannot resolve the turn
+            # in between and leave this one resolving a game with no orders
+            resolved = data.resolveWhenReady()
+            if resolved is None:
+                # somebody else resolved it first, which is the barrier doing
+                # its work rather than a failure. Wait to be told again -
+                # looping straight back would be a spin
+                data.waitForPlayerCommit()
+                continue
+            if not resolved:
+                print("internal server error saving game data")
+                sys.exit(1)
+            print("commit complete")
 
         # the turn just resolved may have decided the game
         outcome = data.getOutcome()

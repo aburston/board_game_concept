@@ -671,6 +671,49 @@ resolution cannot be interleaved. A caller that must decide and act indivisibly
 takes the lock and re-checks inside it, which the port now allows and which is
 what an HTTP `POST /commit` will do.
 
+### 29. A turn could be resolved on a barrier that was met a moment ago — fixed
+
+Number 28 above closed the race between writers and left one thing open, and
+said so: the question that authorises a resolution and the resolution itself
+were still two acts. `wait_for_all_commits` looped until every player still in
+the game had committed — outside any hold, as it must be, because it waits for
+as long as a player takes to decide. It then returned, the server loaded the
+game, and `resolve` took the game and resolved it. Nothing re-asked inside the
+hold, so a resolution could be *begun* on a decision that was true a moment
+earlier and was not true any more.
+
+What could change in the gap was not exotic. Another resolution — a second
+server started by accident, or one run by hand — took the game first, resolved
+the turn and spent every commit that opened it. The first then loaded and
+resolved too, against a game with no orders in it, advancing the turn number and
+publishing a board nobody ordered, and each player was told their orders had
+been consumed twice.
+
+Reproduction: open two sessions on a game whose players have all committed, and
+resolve from each.
+
+Addressed by the `check-the-barrier-where-the-turn-is-resolved` change: reading
+the game, asking whether the barrier is met, and resolving the turn happen under
+one hold. The read is inside for the same reason as the question — orders are
+applied from what `load` put in memory, so asking about a game the resolution is
+not going to resolve would be no better than asking too early. Waiting is what
+`notify.py` always said a signal was, a hint to ask again rather than an answer
+to act on; the commit barrier was the one caller that did not re-check.
+
+Finding the barrier unmet is answered distinguishably from being unable to
+resolve, because the server exits on the latter and the former is the system
+working.
+
+Held by `tests/test_turn_publication.py`, which asks from two callers that both
+found the barrier met rather than by timing, and fails in milliseconds if the
+question is taken back out.
+
+**What is still not one act.** A player's commit does not resolve the turn: a
+client publishes, and the server resolves. Making whichever commit completes the
+barrier resolve the turn inline is option (b) of §5 in
+`ARCHITECTURE_OPTIONS.md`, and it removes `game-server`'s unattended cycle
+rather than tightening it. It needs exactly the operation this change adds.
+
 ## Unspecified, and worth deciding
 
 Nothing, at present. The two entries that stood here — units passing through

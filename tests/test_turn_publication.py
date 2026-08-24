@@ -275,3 +275,112 @@ def test_a_loaded_players_units_still_reach_the_board(tmp_path):
     units = harness.units(0)
     assert 'x1' in units, 'a loaded player never got its units onto the board'
     assert (units['x1'].x, units['x1'].y) == (2, 3)
+
+
+# --- the barrier is asked where the turn is resolved
+
+
+def ready_game(tmp_path):
+    """A game whose every player has committed, waiting to be resolved."""
+    harness = GameHarness(tmp_path)
+    harness.create(4, 4, [1, 2])
+    harness.deploy(1, [CROSS], [('Cross', 'x1', 0, 0)])
+    harness.deploy(2, [RING], [('Ring', 'o1', 3, 3)])
+    return harness
+
+
+def test_reading_asking_and_resolving_happen_inside_one_hold(tmp_path):
+    from board_game_concept import Game
+
+    harness = ready_game(tmp_path)
+    recorder = Recorder(harness.repository())
+    server = Game(recorder, 0)
+    recorder.calls.clear()
+
+    assert server.resolveWhenReady() is True
+
+    held = recorder.first('held')
+    assert held is not None, 'the game was never held'
+    for asked in ('read_progress', 'committed_players', 'write_view'):
+        at = recorder.first(asked)
+        assert at is not None and at > held, (
+            f'{asked} happened outside the hold:\n  {recorder.calls}')
+
+
+def test_two_callers_woken_for_one_turn_resolve_it_once(tmp_path):
+    """Both find the barrier met. Only one turn is resolved.
+
+    This is the gap: each was woken, each would have acted on what it was told,
+    and under the old shape each would have resolved. Asked where the turn is
+    resolved, the second is told the barrier is no longer met. Sequential rather
+    than nested because the hold makes it so - the second cannot get in until
+    the first is done, which is the point.
+    """
+    from board_game_concept import Game
+    from board_game_concept.service import turn as turn_service
+
+    harness = ready_game(tmp_path)
+    first = Game(harness.repository(), 0)
+    first.load()
+    second = Game(harness.repository(), 0)
+    second.load()
+
+    # both were woken, and both would have found the barrier met
+    assert turn_service.barrier_met(first)
+    assert turn_service.barrier_met(second)
+
+    assert first.resolveWhenReady() is True
+    assert second.resolveWhenReady() is None, (
+        'a second caller resolved a turn the first had already resolved')
+
+
+def test_the_turn_a_second_caller_did_not_resolve_advanced_once(tmp_path):
+    harness = ready_game(tmp_path)
+    from board_game_concept import Game
+
+    assert Game(harness.repository(), 0).resolveWhenReady() is True
+    after_one = harness.session(0).getTurnNumber()
+
+    # a second caller, with nothing new committed
+    assert Game(harness.repository(), 0).resolveWhenReady() is None
+
+    assert harness.session(0).getTurnNumber() == after_one
+    # and each player's orders were consumed once, not twice
+    assert sorted(unit.name for unit in harness.session(0).getBoard().units) \
+        == ['o1', 'x1']
+
+
+def test_an_unmet_barrier_is_told_apart_from_a_turn_that_cannot_resolve(
+        tmp_path):
+    """Folded together, the server exits on the one case that is not a failure."""
+    from board_game_concept import Game
+
+    harness = ready_game(tmp_path)
+    assert Game(harness.repository(), 0).resolveWhenReady() is True
+
+    # nothing more committed: not met, which is another caller having got there
+    # first and is the system working
+    assert Game(harness.repository(), 0).resolveWhenReady() is None
+
+    # a game that is over cannot resolve a turn, which is a different answer
+    decided = harness.session(0)
+    decided.setProgress({'turn': 5, 'eliminated': [2],
+                         'outcome': {'decided': True, 'winner': 1, 'turn': 5}})
+    assert decided.serverSave() is False
+
+
+def test_ending_setup_is_not_held_to_the_barrier(tmp_path):
+    """Nobody has committed when the administrator ends setup."""
+    from board_game_concept import Game
+    from board_game_concept.service.commands import AddPlayer, SetBoard
+
+    harness = GameHarness(tmp_path)
+    server = Game(harness.repository(), 0)
+    server.load()
+    games.perform(server, SetBoard(size_x=4, size_y=4))
+    games.perform(server, AddPlayer(number=1))
+
+    # the barrier is not met - player 1 has committed nothing - and setup
+    # still ends
+    assert server.serverSave() is True
+    assert harness.session(0).getSizeX() == 4

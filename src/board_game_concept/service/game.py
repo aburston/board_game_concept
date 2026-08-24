@@ -341,7 +341,16 @@ class Game:
         return turn.publish(self)
 
     def serverSave(self):
+        """Resolve the turn now, asking no barrier.
+
+        What the administrator's `commit` calls to end setup, where nobody has
+        committed and nothing is being waited for.
+        """
         return turn.resolve(self)
+
+    def resolveWhenReady(self):
+        """Resolve the turn if it may be: `None` if the barrier is not met."""
+        return turn.resolve_when_ready(self)
 
     def waitForPlayerCommit(self):
         return turn.wait_for_all_commits(self)
