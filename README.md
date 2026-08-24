@@ -42,9 +42,25 @@ behaviour that pre-dated the HTTP tier is unchanged. The storage backend
 is chosen by `BOARD_GAME_BACKEND` (or `--backend`); SQLite is the
 default, YAML is the readable-file alternative.
 
+## Storage backends
+
+Two backends behind the same `GameRepository` port:
+
+- **SQLite** (default) — one file per game at
+  `games/_<gameno>/game.sqlite3`. Real tables; `held()` is a
+  transaction; `read_view` runs the visibility join. This is what a
+  real deployment uses.
+- **YAML** — the readable-file backend. One YAML file per thing under
+  `games/_<gameno>/data/` and `games/_<gameno>/players/`. Available
+  for tests (byte-diff coverage), or for an operator who wants to
+  `cat` the game state. Pick with `--backend yaml` or
+  `BOARD_GAME_BACKEND=yaml`.
+
+Pick one at startup and stay with it: a game written by one backend is
+not readable by the other, and there is no migration between them.
+
 ## Web service - what's next
  * Authentication and TLS
- * Retiring the file-transport in favour of the REST tier entirely
 
 # setup
 

@@ -22,7 +22,6 @@ import os
 import sqlite3
 
 from ..service.errors import UnreadableGame
-from . import notify
 from .lock import GameIsBusy
 from .repository import GameRepository
 
@@ -451,14 +450,6 @@ class SqliteGameRepository(GameRepository):
                  getattr(event, 'kind', None) or event.get('kind'),
                  json.dumps(getattr(event, 'detail', None)
                             or event.get('detail') or {})))
-
-    # --- the bus, still over FIFOs until step 5
-
-    def wake(self, name):
-        return notify.signal(notify.wake_path(self.data_path, str(name)))
-
-    def waiter(self, name):
-        return notify.Waiter(notify.wake_path(self.data_path, str(name)))
 
     # --- private helpers
 

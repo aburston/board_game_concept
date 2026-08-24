@@ -10,7 +10,7 @@ import os
 import yaml
 
 from ..service.errors import UnreadableGame
-from . import lock, notify
+from . import lock
 from .repository import GameRepository
 
 
@@ -259,14 +259,6 @@ class YamlGameRepository(GameRepository):
     def write_rejections(self, number, rejected, turn=None):
         with self._replace(self._rejections_file(number)) as file:
             yaml.safe_dump({'turn': turn, 'rejected': rejected}, file)
-
-    # --- telling the other side something has changed
-
-    def wake(self, name):
-        return notify.signal(notify.wake_path(self.data_path, str(name)))
-
-    def waiter(self, name):
-        return notify.Waiter(notify.wake_path(self.data_path, str(name)))
 
 
 def dump_units(document):

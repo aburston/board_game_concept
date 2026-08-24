@@ -105,12 +105,14 @@ not know how it is drawn.
   backend. An advisory lock on a file in the game's root: a caller holding
   it for writing excludes every other holder, and readers may hold it
   together. Where the platform has no such lock this does nothing and says
-  so, as `notify.py` waits on the clock where there are no FIFOs. The
-  SQLite backend uses a transaction for the same job.
-- **`notify.py`** - the bus, on its own interface. `Notifier` (an ABC over
-  `wake` and `waiter`), `FifoNotifier` around the FIFO helpers both
-  backends use, and `NullNotifier` for a backend that carries no bus.
-  `Game` picks the one that fits the repository it was handed.
+  so. The SQLite backend uses a transaction for the same job.
+- **`notify.py`** - the `Notifier` interface a `Game` waits through, with
+  `NullNotifier` as its one implementation. Local waits poll at
+  `POLL_INTERVAL` (0.2s); the outer loops in `service/turn.py` re-check
+  the condition on every return. HTTP-side waiting is long-poll served
+  by `http/app.py` and never goes through this interface. The ABC stays
+  as the seam a future push notifier (SSE, WebSocket, Redis pub/sub)
+  hangs off.
 
 ### http - the HTTP tier
 

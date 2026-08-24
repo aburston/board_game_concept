@@ -9,7 +9,7 @@ which this delegates to so that callers have one thing to talk to.
 """
 
 from ..domain import Board, Player, UnitType
-from ..storage.notify import FifoNotifier, NullNotifier
+from ..storage.notify import NullNotifier
 from ..storage.serialise import restore_draft, serialise_draft
 from . import games, identity, turn
 from .errors import (GameDataError, GameError, NoSuchGame, NoSuchPlayer,
@@ -21,17 +21,11 @@ class Game:
     def __init__(self, repository, player_number, notifier=None):
         self.repository = repository
         self.player_number = player_number
-        # the bus is not on the port: a repository that does not know how to
-        # rendezvous is fine, and `Game` picks the notifier that fits. If the
-        # repository still carries the FIFO methods (the YAML case), wrap it
-        # in a `FifoNotifier`; otherwise fall back to a `NullNotifier` and
-        # let callers poll
-        if notifier is not None:
-            self.notifier = notifier
-        elif hasattr(repository, 'wake') and hasattr(repository, 'waiter'):
-            self.notifier = FifoNotifier(repository.data_path)
-        else:
-            self.notifier = NullNotifier()
+        # the bus is on its own interface: local flows poll through a
+        # `NullNotifier`, HTTP flows never reach here (`bgcapiserver` uses
+        # long-poll directly). A caller that arranges push semantics
+        # itself passes its own `Notifier`
+        self.notifier = notifier or NullNotifier()
 
         self.players = {}
         self.board = None
