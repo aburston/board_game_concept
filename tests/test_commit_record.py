@@ -8,6 +8,8 @@ for free, and what broke when it stopped.
 
 import os
 
+import pytest
+
 from board_game_concept.service import games
 from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
                                                  SetBoard)
@@ -93,6 +95,7 @@ def test_having_ever_committed_survives_the_turn_being_resolved(tmp_path):
     assert client.getNewGame() is False
 
 
+@pytest.mark.backend('yaml')
 def test_a_game_whose_markers_predate_the_turn_being_recorded(tmp_path):
     """A game set up by an older version opens, and still resolves turns."""
     harness = GameHarness(tmp_path)
@@ -117,6 +120,7 @@ def test_a_game_whose_markers_predate_the_turn_being_recorded(tmp_path):
     assert repository.committed_players(0) == []
 
 
+@pytest.mark.backend('yaml')
 def test_the_server_commits_for_a_player_it_loaded_units_for(tmp_path):
     """Nobody types `commit` for a player who arrived in a file.
 

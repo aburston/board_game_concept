@@ -81,22 +81,34 @@ not know how it is drawn.
   to offer. Reads and writes, no rules; takes documents rather than text. The
   bus is not on it any more - a backend that does not know how to rendezvous
   is fine, and `Game` fits it with the notifier that does.
-- **`yaml_repository.py`** - the layout `game-persistence` describes: shared
-  data under `data`, per-player files under `players`, one directory per game
-  number. The only module that knows any of those names, and the only one
-  that composes today's hand-crafted YAML text - the emitter turning a
-  document into those bytes lives here.
+- **`yaml_repository.py`** - one of the two implementations of the port. The
+  layout `game-persistence` describes: shared data under `data`, per-player
+  files under `players`, one directory per game number. The only module that
+  knows any of those names, and the only one that composes today's hand-
+  crafted YAML text - the emitter turning a document into those bytes lives
+  here.
+- **`sqlite_repository.py`** - the other implementation. One SQLite database
+  per game, at `games/_<gameno>/game.sqlite3`, with the schema in
+  `schema.sql`. `held()` is a transaction (`BEGIN IMMEDIATE` for a writer,
+  `BEGIN DEFERRED` for a reader, WAL on); `read_view` runs a visibility
+  join against `sightings` rather than reading a materialised file; every
+  turn's events are recorded to `turn_events`, ready for a caller to read.
+  SQLite is the default backend.
+- **`schema.sql`** - the DDL loaded on first `ensure()` of a SQLite backend.
+  Each table maps nearly one-to-one to what a YAML file held; `sightings`
+  and `turn_events` are the two the schema adds.
 - **`serialise.py`** - the plain-data documents storage takes: `units_document`
   for the units file shape, `serialise_draft` and `restore_draft` for the
   commands a session has not committed yet.
-- **`lock.py`** - holding a game while it is read or written. An advisory lock
-  on a file in the game's root: a caller holding it for writing excludes every
-  other holder, and readers may hold it together. Where the platform has no
-  such lock this does nothing and says so, as `notify.py` waits on the clock
-  where there are no FIFOs.
+- **`lock.py`** - holding a game while it is read or written on the YAML
+  backend. An advisory lock on a file in the game's root: a caller holding
+  it for writing excludes every other holder, and readers may hold it
+  together. Where the platform has no such lock this does nothing and says
+  so, as `notify.py` waits on the clock where there are no FIFOs. The
+  SQLite backend uses a transaction for the same job.
 - **`notify.py`** - the bus, on its own interface. `Notifier` (an ABC over
-  `wake` and `waiter`), `FifoNotifier` around the FIFO helpers the YAML
-  backend already had, and `NullNotifier` for a backend that carries no bus.
+  `wake` and `waiter`), `FifoNotifier` around the FIFO helpers both
+  backends use, and `NullNotifier` for a backend that carries no bus.
   `Game` picks the one that fits the repository it was handed.
 
 ### cli - the three roles

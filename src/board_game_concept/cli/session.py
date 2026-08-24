@@ -7,11 +7,56 @@ command, how a refusal is reported, and what happens when the game itself
 cannot be read.
 """
 
+import os
 import sys
 
+from .. import YamlGameRepository
 from ..service import commands
 from ..service.errors import GameDataError, GameError
+from ..storage.sqlite_repository import SqliteGameRepository
 from .parser import ParseError, parse
+
+
+# the compiled-in default is SQLite. `BOARD_GAME_BACKEND` overrides it so
+# the test suite can run the roles under either backend without every test
+# having to pass `--backend` through its subprocess call
+BACKEND_ENV = 'BOARD_GAME_BACKEND'
+COMPILED_DEFAULT_BACKEND = 'sqlite'
+
+
+def default_backend():
+    return os.environ.get(BACKEND_ENV, COMPILED_DEFAULT_BACKEND)
+
+
+def make_repository(gameno, backend=None):
+    """Which backend a role puts behind its `LocalSession`.
+
+    The three CLI binaries call this rather than picking a class themselves,
+    so a `--backend` argument added here reaches them without three edits.
+    Default is SQLite; a caller who wants the YAML directory layout asks
+    for it by name (or through the `BOARD_GAME_BACKEND` env var).
+    """
+    if backend is None:
+        backend = default_backend()
+    if backend == 'sqlite':
+        return SqliteGameRepository(gameno)
+    if backend == 'yaml':
+        return YamlGameRepository(gameno)
+    raise ValueError(f"unknown backend: {backend}")
+
+
+def add_backend_argument(parser):
+    """Add `--backend {sqlite,yaml}` to a role's parser.
+
+    The default is what `default_backend()` returns - `sqlite`, unless the
+    `BOARD_GAME_BACKEND` env var says otherwise. That is how the test suite
+    runs the roles under YAML while the compiled-in default is SQLite.
+    """
+    parser.add_argument(
+        '--backend', choices=('sqlite', 'yaml'), default=None,
+        help="which storage backend to use "
+             f"(default: {COMPILED_DEFAULT_BACKEND}, "
+             f"or ${BACKEND_ENV} when set)")
 
 
 def load_game(data):
@@ -97,8 +142,9 @@ def report(error):
         print(line)
 
 
-__all__ = ['GameError', 'describe_outcome', 'load_game',
-           'read_command', 'report']
+__all__ = ['COMPILED_DEFAULT_BACKEND', 'GameError', 'add_backend_argument',
+           'default_backend', 'describe_outcome', 'load_game',
+           'make_repository', 'read_command', 'report']
 
 
 def describe_outcome(outcome):

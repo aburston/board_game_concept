@@ -8,7 +8,6 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import YamlGameRepository
 from board_game_concept.cli.render import print_board, print_dropped
 from board_game_concept.cli.backend import LocalSession
 from board_game_concept.storage.serialise import units_document
@@ -16,8 +15,10 @@ from board_game_concept.storage.yaml_repository import dump_units
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
-from board_game_concept.cli.session import (describe_outcome, load_game,
-                                            read_command, report)
+from board_game_concept.cli.session import (add_backend_argument,
+                                            describe_outcome, load_game,
+                                            make_repository, read_command,
+                                            report)
 from board_game_concept.service.errors import GameError
 
 ROLE = roles.SERVER
@@ -46,12 +47,14 @@ def main(argv=None):
         '--game-number',
         required=True,
         help='specify the game number')
+    add_backend_argument(parser)
     args = parser.parse_args(argv[1:])
 
     # a session hides how the game is reached. Today it is in-process; a
     # later change swaps LocalSession for an HTTP-backed one and the rest
     # of this file does not notice
-    data = LocalSession(YamlGameRepository(args.game_number), player_number)
+    data = LocalSession(
+        make_repository(args.game_number, args.backend), player_number)
 
     # completion for the setup prompt. The server owns no units and defines no
     # types, so what it gains is the grammar and the paths `load` wants

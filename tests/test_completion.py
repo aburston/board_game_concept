@@ -308,6 +308,7 @@ class TestInstallingIt:
             readline.set_completer_delims(before[1])
 
 
+@pytest.mark.backend('yaml')
 class TestCompletingAtARealPrompt:
     """The wiring into `readline`, which needs a terminal to have any effect."""
 
@@ -342,7 +343,8 @@ class TestCompletingAtARealPrompt:
         process = subprocess.Popen(
             argv + ['harness', '1'], cwd=str(tmp_path),
             stdin=slave, stdout=slave, stderr=slave, close_fds=True,
-            env=dict(os.environ, TERM='xterm', PYTHONUNBUFFERED='1'))
+            env=dict(os.environ, TERM='xterm', PYTHONUNBUFFERED='1',
+                     BOARD_GAME_BACKEND='yaml'))
         os.close(slave)
         try:
             self.read_for(master, 10, until='bgcclient> ')
@@ -359,6 +361,7 @@ class TestCompletingAtARealPrompt:
             os.close(master)
 
 
+@pytest.mark.backend('yaml')
 def test_a_piped_session_holds_no_escape_sequence(tmp_path):
     """What a role prints to a pipe is what it always printed.
 
@@ -374,7 +377,8 @@ def test_a_piped_session_holds_no_escape_sequence(tmp_path):
     result = subprocess.run(
         argv + ['harness', '1'], cwd=str(tmp_path), input='show units\nexit\n',
         capture_output=True, text=True, timeout=30,
-        env=dict(os.environ, PYTHONUNBUFFERED='1'), check=False)
+        env=dict(os.environ, PYTHONUNBUFFERED='1',
+                 BOARD_GAME_BACKEND='yaml'), check=False)
 
     assert 'bgcclient> ' in result.stdout
     assert '\x1b' not in result.stdout

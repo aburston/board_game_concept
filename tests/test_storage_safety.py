@@ -13,6 +13,11 @@ import yaml
 
 from board_game_concept import YamlGameRepository
 
+# this file is about the YAML backend's write path - the tempfile-and-rename
+# dance and the advisory `flock` lock. The SQLite backend's equivalents live
+# in `test_sqlite_safety.py`
+pytestmark = pytest.mark.backend('yaml')
+
 
 def repository(tmp_path, gameno='one'):
     made = YamlGameRepository(gameno, base_path=str(tmp_path))

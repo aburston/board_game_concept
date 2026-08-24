@@ -5,9 +5,17 @@ import shutil
 import signal
 import unittest
 import threading
+import pytest
 import yaml
 from pathlib import Path
 from subprocess import Popen, PIPE
+
+# many of these tests reach directly for the YAML files - the units file, the
+# rejected file, the seen file - to check what the server wrote. The SQLite
+# backend does not put anything at those paths, so the whole module is pinned
+# to YAML; the SQLite equivalents would be a whole separate suite of reads
+# against the schema, and are not this change's scope
+pytestmark = pytest.mark.backend('yaml')
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -24,9 +32,16 @@ class InteractiveProcess:
     def __init__(self, args, cwd):
         self.args = args
         self.cwd = cwd
+        # the subprocess uses whatever backend the pytest run is using, so a
+        # subprocess role and the harness sitting beside it agree on where
+        # the game lives
+        from game_harness import DEFAULT_BACKEND, BACKEND_ENV
+        environment = dict(os.environ)
+        environment.setdefault(BACKEND_ENV, DEFAULT_BACKEND)
         self.proc = Popen(
             [PYTHON, '-u'] + args,
             cwd=str(cwd),
+            env=environment,
             stdin=PIPE,
             stdout=PIPE,
             stderr=PIPE,

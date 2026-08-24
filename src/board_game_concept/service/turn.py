@@ -351,9 +351,19 @@ def _loaded_orders_document(game, number, player, turn):
             'attack': unit.get('attack'),
             'health': unit.get('health'),
             'energy': unit.get('energy'),
-            'type_attack': unit.get('type_attack', type_record.get('attack')),
-            'type_health': unit.get('type_health', type_record.get('health')),
-            'type_energy': unit.get('type_energy', type_record.get('energy')),
+            # a loaded file may name a type by a key that does not match its
+            # own `name`, and units may lack the type-defaults altogether;
+            # `type_record`'s stats fall back to the unit's own, which is
+            # what they defaulted to before the unit spent anything
+            'type_attack': (unit.get('type_attack')
+                            or type_record.get('attack')
+                            or unit.get('attack')),
+            'type_health': (unit.get('type_health')
+                            or type_record.get('health')
+                            or unit.get('health')),
+            'type_energy': (unit.get('type_energy')
+                            or type_record.get('energy')
+                            or unit.get('energy')),
             'x': unit.get('x'), 'y': unit.get('y'),
             'state': unit.get('state'), 'direction': unit.get('direction'),
             'destroyed': unit.get('destroyed', False),

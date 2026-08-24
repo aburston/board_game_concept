@@ -14,6 +14,12 @@ from board_game_concept import Game, YamlGameRepository
 from board_game_concept.domain import Board, Player, UnitType
 from board_game_concept.storage.repository import GameRepository
 
+# this file is about the YAML backend specifically: the directory layout,
+# the file names, and what a partial implementation of the port fails
+# loudly about. `test_sqlite_repository.py` covers the SQLite backend the
+# same way
+pytestmark = pytest.mark.backend('yaml')
+
 
 def test_a_game_is_kept_where_it_is_told(tmp_path):
     # the base path used to be read from the process working directory, which

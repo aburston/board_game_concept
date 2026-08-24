@@ -197,6 +197,7 @@ def test_a_released_player_reads_the_turn_they_waited_for(tmp_path):
         'the view a released player reads is not the one the turn published')
 
 
+@pytest.mark.backend('yaml')
 def test_a_session_cannot_load_part_way_through_a_resolution(tmp_path,
                                                              monkeypatch):
     """Stronger than it was, since a game is held while it is resolved.

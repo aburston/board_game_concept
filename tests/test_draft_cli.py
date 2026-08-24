@@ -5,9 +5,15 @@ roles to going through it, by driving the commands a person types and reading
 the draft off disk afterwards.
 """
 
+import pytest
 import yaml
 
 from cli_harness import (CLIENT_PROMPT, GAMES_DIR, SERVER_PROMPT, CliTestCase)
+
+# these tests read the YAML draft file off disk to check what a session
+# wrote. The SQLite backend keeps drafts as rows; a JSON snapshot of the
+# same thing is a different assertion this file does not need to make
+pytestmark = pytest.mark.backend('yaml')
 
 
 def draft_of(game_number, number):

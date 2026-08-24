@@ -249,6 +249,7 @@ def test_no_draft_can_stop_a_game_being_opened(tmp_path, commands):
     assert reopened.getDropped() != []
 
 
+@pytest.mark.backend('yaml')
 def test_an_unreadable_draft_costs_the_draft_and_not_the_game(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [1])
@@ -265,6 +266,7 @@ def test_an_unreadable_draft_costs_the_draft_and_not_the_game(tmp_path):
 # --- 3.5 what committing leaves behind
 
 
+@pytest.mark.backend('yaml')
 def test_committing_publishes_the_same_orders_however_the_work_got_there(
         tmp_path):
     """A session that died and one that did not must publish the same turn."""
