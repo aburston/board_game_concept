@@ -115,6 +115,12 @@ inferred from the presence of a file, so that the system can answer whether a
 given player has committed for the turn now open. Which players the commit
 barrier is waiting for SHALL be determined from that record.
 
+A player's pending orders SHALL NOT be removed until everything the turn
+produced has been published, because their removal is what releases a player
+waiting on that turn. Orders published on a player's behalf for the turn *about
+to be* resolved SHALL be written after that removal, so that seeding the next
+turn cannot erase them.
+
 #### Scenario: Player publishes orders
 
 - **WHEN** a player commits
@@ -145,6 +151,19 @@ barrier is waiting for SHALL be determined from that record.
 - **WHEN** the server resolves a turn
 - **THEN** it applies each player's pending orders according to unit state: deploying units in `INITIAL`, moving units in `MOVING`, and leaving units in `NOP` in place
 - **AND** it removes the pending order files afterwards
+
+#### Scenario: Orders are removed only once the turn is published
+
+- **WHEN** the server resolves a turn
+- **THEN** it writes the turn number, each player's file and refusals, the record of every unit, and every player's view
+- **AND** only then removes the pending order files
+
+#### Scenario: Seeding the next turn does not erase it
+
+- **WHEN** the server resolves a turn for a game whose player was loaded from a file holding units
+- **THEN** that player's units are published as their orders for the turn about to be resolved
+- **AND** those orders survive the removal of the turn's consumed orders
+- **AND** the units reach the board when that turn is resolved
 
 #### Scenario: An order naming a destroyed unit
 
@@ -181,14 +200,24 @@ barrier is waiting for SHALL be determined from that record.
 ### Requirement: Pending Order Detection
 
 The system SHALL detect that a player's own committed orders are still pending
-and report that the turn is incomplete. A draft SHALL NOT be treated as a
-pending commit: a player who has drafted work and not committed it has an open
-turn, not an unresolved one.
+and report that the turn is incomplete. A player's orders SHALL be treated as
+pending until the turn that consumes them has been published in full, so that a
+session loading a game while a turn is being resolved is told the turn is
+incomplete rather than being given a partly published one.
+
+A draft SHALL NOT be treated as a pending commit: a player who has drafted work
+and not committed it has an open turn, not an unresolved one.
 
 #### Scenario: Detecting an unresolved commit
 
 - **WHEN** a player loads a game and their own pending order file still exists
 - **THEN** the game data reports unprocessed moves
+
+#### Scenario: Loading while a turn is being resolved
+
+- **WHEN** a player loads a game after the server has begun resolving the turn they committed to and before it has published everything that turn produced
+- **THEN** the game data reports unprocessed moves
+- **AND** the player is not shown a partly published turn
 
 #### Scenario: A draft is not an unresolved commit
 
