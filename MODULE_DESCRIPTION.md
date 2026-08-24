@@ -85,6 +85,11 @@ not know how it is drawn.
   number. The only module that knows any of those names.
 - **`serialise.py`** - units as YAML, and a draft as the commands that made it.
   The on-disk format, which the roles also print verbatim for `show units`.
+- **`lock.py`** - holding a game while it is read or written. An advisory lock
+  on a file in the game's root: a caller holding it for writing excludes every
+  other holder, and readers may hold it together. Where the platform has no
+  such lock this does nothing and says so, as `notify.py` waits on the clock
+  where there are no FIFOs.
 - **`notify.py`** - waking the other side of the file transport. Each side
   blocks on a FIFO until the other signals; the signal is a hint over a
   re-checked condition, so losing one costs latency and not correctness.
@@ -154,6 +159,13 @@ publishes results the same way.
 
 Where that root is, is given to the repository rather than read from the
 process working directory.
+
+A game is held while it is used: a turn being resolved and a commit being
+published hold it for writing, and reading it holds it for reading. Waiting
+never holds it - a barrier waits for as long as a player takes to decide, and a
+game held across that would be stopped rather than protected. Every write
+replaces its file rather than emptying and refilling it, so a reader sees the
+old contents or the new ones and a crash leaves the old ones.
 
 What a session has done and not committed is kept too, as the commands that did
 it, stamped with the turn they belong to. A draft is private to the session

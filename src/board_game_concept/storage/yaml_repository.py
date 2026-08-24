@@ -10,7 +10,7 @@ import os
 import yaml
 
 from ..service.errors import UnreadableGame
-from . import notify
+from . import lock, notify
 from .repository import GameRepository
 
 
@@ -26,6 +26,11 @@ class YamlGameRepository(GameRepository):
         self.root = os.path.join(base_path, 'games', f'_{gameno}')
         self.data_path = os.path.join(self.root, 'data')
         self.player_path = os.path.join(self.root, 'players')
+        # in the game's root rather than beside the files that are listed:
+        # `player_numbers`, `committed_players` and `clear_orders` all classify
+        # by name, and the root is listed by nothing at all
+        self.lock_path = os.path.join(self.root, '.lock')
+        self._holding = lock.Holding(self.lock_path)
 
     # --- the game itself
 
@@ -33,6 +38,29 @@ class YamlGameRepository(GameRepository):
         for path in (self.data_path, self.player_path):
             if not os.path.exists(path):
                 os.makedirs(path)
+
+    # --- holding a game while it is used
+
+    def held(self, read=False):
+        self.ensure()
+        return self._holding.take(read=read)
+
+    # --- writing
+
+    def _replace(self, path):
+        """Write a file by replacing it, rather than by emptying and refilling.
+
+        A reader sees the previous contents or the new ones and never part of
+        either, and a process that dies part way through leaves the previous
+        contents readable rather than a half-written file.
+
+        The temporary lives in the same directory as its target, because a
+        rename is only atomic within one filesystem. Its name carries a suffix
+        after the extension so that the three places which classify a game's
+        files by name - `player_numbers`, `committed_players` and
+        `clear_orders` - all skip it.
+        """
+        return _Replacement(path)
 
     def _read_yaml(self, path, what):
         try:
@@ -53,7 +81,7 @@ class YamlGameRepository(GameRepository):
 
     def write_board(self, size_x, size_y):
         self.ensure()
-        with open(os.path.join(self.data_path, 'board.yaml'), 'w') as file:
+        with self._replace(os.path.join(self.data_path, 'board.yaml')) as file:
             yaml.safe_dump({'board': {'size_x': size_x, 'size_y': size_y}}, file)
 
     def read_progress(self):
@@ -62,7 +90,7 @@ class YamlGameRepository(GameRepository):
 
     def write_progress(self, progress):
         self.ensure()
-        with open(os.path.join(self.data_path, 'progress.yaml'), 'w') as file:
+        with self._replace(os.path.join(self.data_path, 'progress.yaml')) as file:
             yaml.safe_dump(progress, file)
 
     def read_units(self):
@@ -75,7 +103,7 @@ class YamlGameRepository(GameRepository):
         return [] if listed == 'None' or not listed else listed
 
     def write_units(self, text):
-        with open(os.path.join(self.data_path, 'units.yaml'), 'w') as file:
+        with self._replace(os.path.join(self.data_path, 'units.yaml')) as file:
             file.write(text)
 
     # --- players
@@ -98,7 +126,7 @@ class YamlGameRepository(GameRepository):
                                f'the file for player {number}')
 
     def write_player(self, number, types):
-        with open(self._player_file(number), 'w') as file:
+        with self._replace(self._player_file(number)) as file:
             yaml.safe_dump({'number': number, 'types': types}, file)
 
     # --- what a player can see
@@ -115,7 +143,7 @@ class YamlGameRepository(GameRepository):
         return [] if listed == 'None' or not listed else listed
 
     def write_view(self, number, text):
-        with open(self._view_file(number), 'w') as file:
+        with self._replace(self._view_file(number)) as file:
             file.write(text)
 
     # --- orders, and the commit barrier they signal
@@ -131,7 +159,7 @@ class YamlGameRepository(GameRepository):
                                f'the orders published by player {number}')
 
     def write_orders(self, number, text):
-        with open(self._orders_file(number), 'w') as file:
+        with self._replace(self._orders_file(number)) as file:
             file.write(text)
 
     def clear_orders(self):
@@ -182,7 +210,7 @@ class YamlGameRepository(GameRepository):
         return recorded.get('turn')
 
     def mark_committed(self, number, turn=None):
-        with open(self._commit_marker(number), 'w') as file:
+        with self._replace(self._commit_marker(number)) as file:
             yaml.safe_dump({'turn': turn}, file)
 
     def has_committed(self, number):
@@ -205,7 +233,7 @@ class YamlGameRepository(GameRepository):
                                f'the draft held by session {number}')
 
     def write_draft(self, number, draft):
-        with open(self._draft_file(number), 'w') as file:
+        with self._replace(self._draft_file(number)) as file:
             yaml.safe_dump(draft, file)
 
     def clear_draft(self, number):
@@ -229,7 +257,7 @@ class YamlGameRepository(GameRepository):
         return rejected.get('rejected') or []
 
     def write_rejections(self, number, rejected, turn=None):
-        with open(self._rejections_file(number), 'w') as file:
+        with self._replace(self._rejections_file(number)) as file:
             yaml.safe_dump({'turn': turn, 'rejected': rejected}, file)
 
     # --- telling the other side something has changed
@@ -239,3 +267,35 @@ class YamlGameRepository(GameRepository):
 
     def waiter(self, name):
         return notify.Waiter(notify.wake_path(self.data_path, str(name)))
+
+
+class _Replacement:
+    """A file being written under a temporary name, to be renamed into place.
+
+    Renamed only when the body finishes without raising: a write that fails
+    part way leaves the target as it was and the temporary behind, which
+    nothing lists and nothing reads.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        # the process number keeps two writers of the same file from sharing a
+        # temporary; the suffix after `.yaml` is what makes it invisible to
+        # everything that classifies a game's files by name
+        self.temporary = f'{path}.writing-{os.getpid()}'
+        self.file = None
+
+    def __enter__(self):
+        self.file = open(self.temporary, 'w', encoding='utf-8')
+        return self.file
+
+    def __exit__(self, kind, value, traceback):
+        self.file.close()
+        if kind is None:
+            os.replace(self.temporary, self.path)
+            return False
+        try:
+            os.remove(self.temporary)
+        except OSError:
+            pass
+        return False

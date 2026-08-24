@@ -627,6 +627,50 @@ being written. That is a different defect — the atomicity of one write rather
 than the order of several — and its fix is writing to a temporary name and
 renaming, not reordering.
 
+### 28. Nothing stopped two processes using a game at once — fixed
+
+The repository port had no lock. Divergence 10 above is the same defect
+reported from one angle — a client loading a game raced the server deleting
+orders and died of `FileNotFoundError` — and it was addressed by tolerating the
+file being gone rather than by stopping the race. Number 27 closed one window by
+reordering and said in as many words that the rest of the class stayed.
+
+Two exposures were left, both ordinary. A reader could catch a file part way
+through being written: the administrator and the observer hold no orders, so
+nothing gated them, and either could load while `write_view` or `write_units`
+was midway and get `UnreadableGame` on YAML that was valid a millisecond later.
+And a writer could lose to another writer: `publish` writes an order file,
+`resolve` deletes every order file, and which happened first was decided by
+nothing. A crash between opening a file and finishing it left the game
+unopenable, because every write truncated in place.
+
+Reproduction: read a game's units while a turn is being resolved; or commit
+while the server resolves.
+
+Addressed by the `serialise-access-to-a-game` change. A game can be held: a
+turn being resolved and a commit being published hold it for writing, reading it
+holds it for reading, and waiting never holds it — a barrier waits for as long
+as a player takes to decide, and a game held across that would be stopped rather
+than protected. Holding is on the repository port rather than in the service
+layer, so storage that keeps a game some other way holds it some other way; a
+database would implement the same two words as a transaction. Every write now
+replaces its file rather than emptying and refilling it, which closes the crash
+that the lock cannot.
+
+Held by `tests/test_storage_safety.py`, which proves the sharing rules between
+two real processes rather than two threads, because an advisory lock is per
+open file description and threads would not prove it.
+
+**What this does not cover.** An advisory lock binds only those who ask for it,
+so anything editing a game directory by hand ignores it — which is the contract
+every process here already ran under. And the commit barrier is still two steps
+for the command line: `wait_for_all_commits` loops outside the lock and
+`resolve` takes it, so the check that releases the loop and the resolution it
+authorises are not one indivisible act. What the lock buys is that the
+resolution cannot be interleaved. A caller that must decide and act indivisibly
+takes the lock and re-checks inside it, which the port now allows and which is
+what an HTTP `POST /commit` will do.
+
 ## Unspecified, and worth deciding
 
 Nothing, at present. The two entries that stood here — units passing through

@@ -197,19 +197,29 @@ def test_a_released_player_reads_the_turn_they_waited_for(tmp_path):
         'the view a released player reads is not the one the turn published')
 
 
-def test_a_session_loading_mid_resolution_is_told_the_turn_is_incomplete(
-        tmp_path):
-    """`unprocessed_moves` reads the same fact, and inherits the fix."""
+def test_a_session_cannot_load_part_way_through_a_resolution(tmp_path,
+                                                             monkeypatch):
+    """Stronger than it was, since a game is held while it is resolved.
+
+    This used to assert that a session loading mid-resolution was told its
+    orders were still pending, which was the best available when a reader could
+    get in at all. It no longer can: a resolution holds the game for writing and
+    a reader waits for it. Asserted by giving the reader almost no patience and
+    watching it be refused, which is exclusion observed rather than inferred.
+    """
+    from board_game_concept.storage import lock as lock_module
+
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [1, 2])
     harness.deploy(1, [CROSS], [('Cross', 'x1', 0, 0)])
     harness.deploy(2, [RING], [('Ring', 'o1', 3, 3)])
+    monkeypatch.setattr(lock_module, 'TIMEOUT', 0.05)
 
     repository = harness.repository()
-    pending = {}
+    refused = {}
 
     class LoadsAsItPublishes:
-        """Opens a player's session part way through publishing the turn."""
+        """Tries to open a session part way through publishing the turn."""
 
         def __init__(self, wrapped):
             self._wrapped = wrapped
@@ -218,11 +228,12 @@ def test_a_session_loading_mid_resolution_is_told_the_turn_is_incomplete(
             return getattr(self._wrapped, name)
 
         def write_units(self, text):
-            # part way through: progress and the player files are written and
-            # the views are not
             result = self._wrapped.write_units(text)
-            client = harness.session(1)
-            pending['mid'] = client.getUnprocessedMoves()
+            try:
+                harness.session(1)
+                refused['excluded'] = False
+            except lock_module.GameIsBusy:
+                refused['excluded'] = True
             return result
 
     from board_game_concept import Game
@@ -230,11 +241,12 @@ def test_a_session_loading_mid_resolution_is_told_the_turn_is_incomplete(
     server.load()
     assert server.serverSave()
 
-    assert pending['mid'] is True, (
-        'a session opened part way through a resolution was told the turn was '
-        'complete, and would have been shown a partly published one')
-    # and once the turn is published, it is complete
-    assert harness.session(1).getUnprocessedMoves() is False
+    assert refused['excluded'] is True, (
+        'a session read the game part way through a resolution')
+    # and once the resolution has finished, it opens and the turn is complete
+    client = harness.session(1)
+    assert client.getUnprocessedMoves() is False
+    assert sorted(unit.name for unit in client.getBoard().units) == ['x1']
 
 
 def test_a_loaded_players_units_still_reach_the_board(tmp_path):

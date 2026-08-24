@@ -23,6 +23,27 @@ class GameRepository:
     and to fail loudly rather than silently when one is missing.
     """
 
+    # --- holding a game while it is used
+
+    def held(self, read=False):
+        """Hold this game while the caller reads or writes it.
+
+        Used as a context manager. A caller holding a game for writing excludes
+        every other holder; callers holding it for reading may hold it
+        together. Which is what a turn being resolved needs and what a game
+        being read needs, and the difference is the only thing a caller says.
+
+        Holding is the repository's to arrange rather than the caller's, so
+        that a repository keeping a game some other way can hold it some other
+        way - a database implementing the same two words as a transaction.
+
+        A game is never held across a wait for something a person must do. A
+        commit barrier holds a turn open for as long as a player takes to
+        decide, and a game held across that would be stopped rather than
+        protected.
+        """
+        raise NotImplementedError
+
     # --- the game itself
 
     def ensure(self):

@@ -9,8 +9,6 @@ import yaml
 from pathlib import Path
 from subprocess import Popen, PIPE
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'src'))
-from board_game_concept.domain import UnitType
 
 ROOT = Path(__file__).resolve().parent.parent
 TEST_DIR = ROOT / 'tests'
@@ -623,23 +621,42 @@ class TestWorkSurvivesASession(unittest.TestCase):
         self.wait_for(client, 'bgcclient> ', before + 1)
         return client
 
-    def published_square(self, name, game_number='test-01', timeout=60):
-        """Where the server has the named unit, once it has resolved a turn."""
-        path = GAMES_DIR / f'_{game_number}' / 'data' / 'units.yaml'
+    def _repository(self, game_number='test-01'):
+        from board_game_concept import YamlGameRepository
+        return YamlGameRepository(game_number, base_path=str(TEST_DIR))
+
+    def published_turn(self, game_number='test-01'):
+        """The last turn the server has published, or 0 before any."""
+        repository = self._repository(game_number)
+        with repository.held(read=True):
+            progress = repository.read_progress() or {}
+        return int(progress.get('turn') or 0)
+
+    def published_square(self, name, after, game_number='test-01',
+                         timeout=60):
+        """Where the named unit is, once a turn later than `after` is published.
+
+        Both reads happen inside one hold of the game. Read separately and
+        unheld, they can straddle a resolution: the turn number is written
+        early in publishing a turn and the units late, so an unheld reader can
+        see the new turn beside the old board and believe both.
+
+        Waited for on the turn number rather than on the unit's state, because
+        a unit that is not `MOVING` only means some turn has been through it -
+        and the turn that deployed it satisfies that too.
+        """
+        repository = self._repository(game_number)
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            try:
-                units = yaml.safe_load(path.read_text())['units']
-            except (OSError, TypeError, KeyError):
-                units = None
-            if units and units != 'None':
-                for unit in units:
-                    # `MOVING` means the order has not been resolved yet;
-                    # anything else means the turn has been through it
-                    if unit['name'] == name and unit['state'] != UnitType.MOVING:
-                        return (unit['x'], unit['y'])
+            with repository.held(read=True):
+                progress = repository.read_progress() or {}
+                if int(progress.get('turn') or 0) > after:
+                    for unit in repository.read_units():
+                        if unit['name'] == name:
+                            return (unit['x'], unit['y'])
             time.sleep(0.02)
-        raise AssertionError(f"the server never published a resolved {name}")
+        raise AssertionError(
+            f"the server published no turn after {after} holding {name}")
 
     def unit_names(self, proc):
         """The unit names a client lists, read off its `show units` table."""
@@ -688,14 +705,15 @@ class TestWorkSurvivesASession(unittest.TestCase):
 
         revived = self.start_client('test-01', 1)
         self.wait_for(revived, 'bgcclient> ', 1)
+        # the turn the deployment resolved into, so that what is waited for
+        # below is the turn the *move* resolves into and not that one
+        deployed_on = self.published_turn()
         self.typed(revived, 'bgcclient> ', 'move x1 south')
         revived.send_line('commit')
         revived.read_until('commit complete')
 
-        # only the later order was taken: the unit moved south from (1, 1).
-        # Waited for on the published record rather than on a count of
-        # prompts, because what is being waited for is the turn resolving
-        self.assertEqual(self.published_square('x1'), (1, 2))
+        # only the later order was taken: the unit moved south from (1, 1)
+        self.assertEqual(self.published_square('x1', after=deployed_on), (1, 2))
 
     def test_a_server_killed_during_setup_gets_its_setup_back(self):
         doomed = self.start_server('test-01')

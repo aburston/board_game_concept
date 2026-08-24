@@ -140,6 +140,18 @@ class Game:
         self.draft = []
         self.repository.ensure()
 
+        # held for reading while the game's shared state is read, so that
+        # nothing here catches a turn part way through being published. Several
+        # sessions may read at once; a session resolving a turn excludes them
+        # all. The draft is replayed after it is let go - it is this session's
+        # own, nobody else reads or writes it, and holding a *read* lock across
+        # a write would misdescribe what is happening
+        with self.repository.held(read=True):
+            self._read()
+        self._replay_draft()
+
+    def _read(self):
+        """The game's shared state, read while the game is held."""
         size = self.repository.read_board()
         if size is None:
             if self.sees_everything:
@@ -174,11 +186,6 @@ class Game:
                 and self.player_number not in self.players):
             raise NoSuchPlayer(f"player {self.player_number} does not exist")
 
-        # and last, whatever this session had done and not committed. It goes
-        # on top of the published view rather than into it, and it goes on
-        # after the players are loaded because the deployment and movement
-        # rules read the setup gate that loading them sets
-        self._replay_draft()
 
     def _replay_draft(self):
         """Put back what this session had done and not committed.

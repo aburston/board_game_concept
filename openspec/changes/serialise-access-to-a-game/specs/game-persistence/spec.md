@@ -94,3 +94,35 @@ read it.
 
 - **WHEN** a game is held
 - **THEN** whatever records that is not read as shared game data, as a player, as published orders, or as a commit
+
+### Requirement: Pending Order Detection
+
+The system SHALL detect that a player's own committed orders are still pending
+and report that the turn is incomplete. A player's orders SHALL be treated as
+pending until the turn that consumes them has been published in full.
+
+A session SHALL NOT read a game part way through a turn being resolved: it holds
+the game for reading, and a turn being resolved holds it for writing, so a
+session opening one mid-resolution waits and then reads a turn that is
+complete.
+
+A draft SHALL NOT be treated as a pending commit: a player who has drafted work
+and not committed it has an open turn, not an unresolved one.
+
+#### Scenario: Detecting an unresolved commit
+
+- **WHEN** a player loads a game and their own pending order file still exists
+- **THEN** the game data reports unprocessed moves
+
+#### Scenario: Loading while a turn is being resolved
+
+- **WHEN** a player opens a game after the server has begun resolving the turn they committed to and before it has finished
+- **THEN** the session waits until the resolution is finished
+- **AND** is not shown a partly published turn
+- **AND** once it opens, the turn it reads is complete and its orders are no longer pending
+
+#### Scenario: A draft is not an unresolved commit
+
+- **WHEN** a player loads a game holding a draft and no published orders
+- **THEN** the game data reports no unprocessed moves
+- **AND** the player may continue to give orders
