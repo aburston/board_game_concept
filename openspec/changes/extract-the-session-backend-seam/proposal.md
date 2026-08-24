@@ -34,15 +34,19 @@ anything harder depends on it.
   instead of in front of it.
 
 - **The three roles are rewritten against the interface.** They construct a
-  session rather than a `Game`, and never touch a `Game`, a repository, or a
-  board object directly again. Parsing, the role table, rendering, the shared
-  session loop and completion are untouched in what they do.
+  session rather than a `Game`, and stop calling `service.games` directly.
+  Parsing, the role table, rendering, view building, the shared session loop and
+  completion are untouched.
 
-- **`show` is split at the seam it already half-has.** `cli/views.py` builds view
-  data and `cli/render.py` turns it into text; today `cli/show.py` calls both.
-  Building moves behind the session (it is "my view", which the HTTP
-  implementation will one day fetch); rendering stays in the CLI, where it
-  belongs. Neither `views.py` nor `render.py` changes.
+- **The seam is a facade, not yet a view-data boundary.** `cli/views.py` and
+  `cli/complete.GameNames` are pinned by direct unit tests to build views from
+  board and player objects, so moving them behind view data would mean editing
+  tests — the one thing a pure refactor here must not do. The session therefore
+  passes `getBoard`/`getPlayers`/`getEliminated` through unchanged, for `show`
+  and completion to use as they do now. Turning those reads into view data is
+  the HTTP step's work, where `views.py` moves server-side anyway. Step 0 draws
+  the seam for actions, lifecycle and state, and marks the view-object reads as
+  the coupling still to be cut.
 
 **No behaviour changes**, which is the point: same commands, same prompts, same
 output, same refusals, same waiting. `skip_specs` is set — there is no
@@ -65,13 +69,12 @@ will touch are named in `put-a-rest-api-under-the-cli`.
 - **New**: a session interface and `LocalSession` in `cli/` (the consumer side)
   — the seam the roles are written against.
 - **Reshaped, behaviour preserved**: `cli/bgcserver.py`, `cli/bgcclient.py`,
-  `cli/bgcobserver.py` construct and use a session rather than a `Game`;
-  `cli/session.py` (the shared loop) and `cli/complete.py` take their game
-  facts from the session; `cli/show.py` calls the session for view data and
-  keeps rendering.
-- **Unchanged**: `cli/views.py`, `cli/render.py`, `cli/parser.py`,
-  `cli/grammar.py`, `cli/roles.py`; the whole of `service/`, `storage/` and
-  `domain/`. The seam is a consumer-side abstraction; nothing below it moves.
+  `cli/bgcobserver.py` construct and use a session rather than a `Game`, and no
+  longer call `service.games` directly.
+- **Unchanged**: `cli/show.py`, `cli/complete.py`, `cli/views.py`,
+  `cli/render.py`, `cli/session.py`, `cli/parser.py`, `cli/grammar.py`,
+  `cli/roles.py`; the whole of `service/`, `storage/` and `domain/`. The session
+  presents the `Game` read surface these already use, so only the roles change.
 - **Tests**: none edited. The suite — the CLI surface suites and the 542-line
   integration suite driving the real binaries — is the proof the behaviour is
   preserved. If any of it needs a change, the refactor was not pure and the

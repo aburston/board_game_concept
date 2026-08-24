@@ -7,8 +7,9 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import Game, YamlGameRepository
+from board_game_concept import YamlGameRepository
 from board_game_concept.cli import complete, roles
+from board_game_concept.cli.backend import LocalSession
 from board_game_concept.service import identity
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
@@ -48,8 +49,10 @@ def main(argv=None):
         usage()
         sys.exit(1)
 
-    # initialize the data object
-    data = Game(YamlGameRepository(gameno), player_number)
+    # a session hides how the game is reached. Today it is in-process; a
+    # later change swaps LocalSession for an HTTP-backed one and the rest
+    # of this file does not notice
+    data = LocalSession(YamlGameRepository(gameno), player_number)
 
     # the observer completes what it may run, which is the reading half of the
     # grammar; `roles.OBSERVER` is what decides that, here as everywhere else

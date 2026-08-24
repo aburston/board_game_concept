@@ -107,6 +107,12 @@ not know how it is drawn.
 - **`render.py`** - the board as a grid of squares between rules.
 - **`session.py`** - what all three sessions share: turning a line into a
   command, reporting a refusal, and failing when the game cannot be read.
+- **`backend.py`** - the seam between a role and the game it drives. Every
+  role holds a `Session` and talks to it, rather than reaching into a `Game`;
+  `LocalSession` is the one implementation there is today (the in-process
+  `Game`, `service.games` and turn functions the roles used to call
+  directly). What lets a later change put an HTTP client behind the same
+  interface, without the roles knowing which is behind them.
 - **`bgcserver.py`**, **`bgcclient.py`**, **`bgcobserver.py`** - the roles
   themselves, reduced to what is genuinely theirs. Each file is named for the
   command it is installed as, so a role has one name and not two.

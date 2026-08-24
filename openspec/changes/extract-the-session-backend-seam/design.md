@@ -44,46 +44,66 @@ HTTP client implements none of that — it implements "post my command, get my
 view", the use-case level. So the seam is above the port, and the port is
 untouched.
 
-### 2. The interface returns view data, not board objects
+### 2. A facade seam, not a view-data seam — because the tests pin the view layer
 
-This is the decision that makes the seam stable. `show.py` and `complete.py`
-stop holding a board and calling `views.*`; they ask the session for the view
-data `views.*` produces, and render or filter it. `views.py` and `render.py` do
-not change — only their *caller* moves, from the REPLs into the session.
+The original intent was for the seam to return *view data*, so `show.py` and
+`complete.py` would stop holding a board. Reading the tests killed that for step
+0: `test_completion.py` constructs `GameNames(<a Game>, number)` and
+`test_cli_views.py` calls `views.units_view(<Game>.getBoard())`. Both `views.py`
+and `complete.GameNames` are pinned by direct unit tests to operate on board and
+player objects. Moving them to view data means editing those tests, which is the
+one thing this change forbids.
+
+So step 0 is a **facade seam**. The roles hold a `Session` instead of a `Game`
+and route their actions and lifecycle through it; but view building (`views.py`)
+and completion (`GameNames`) stay exactly where and how they are, reached through
+the session as passthrough reads:
 
 ```
-   before   show/complete → views.*(getBoard(), getPlayers()) → render/filter
-   after    show/complete → session.view(subject)             → render/filter
-                                     └─ LocalSession calls views.* internally
+   actions / lifecycle / state   go THROUGH the seam
+      perform · commit · resolve_pending · wait_* · the scalar reads
+
+   view objects                  PASS THROUGH the seam, unchanged callers
+      getBoard() getPlayers() getEliminated()  ← show.py & GameNames still
+                                                  call views.* on these
 ```
+
+The view-object accessors are the honestly-remaining coupling. They are what the
+HTTP step replaces with view data, because that is when `views.py` moves
+server-side (it becomes what `GET /view` returns) and completion is reworked to
+run off the fetched view. Purifying them now would either edit the tests or move
+`views.py` prematurely; deferring them keeps step 0 pure and puts the work where
+it belongs.
 
 The interface, in the surface the REPLs actually use:
 
 ```
-   open()                        load/reload; raises the game-data errors the
-                                 session loop already turns into an exit
-   view(subject) -> data|None    views.* output for board/units/types/players/
-                                 pending; None when the subject needs a board
-                                 and there is none (drives the NO_BOARD message)
-   names_for_completion()        the units/types data completion filters
-   outcome() turn_number()       scalar reads, as today
-   is_setup() set_setup(bool)    was new_game / setNewGame (the server flips it)
-   unprocessed_moves()
-   rejected() dropped() is_eliminated(n)
-   perform(command)              games.perform; raises GameError as now
-   commit() -> bool              what this role's `commit` does (Decision 4)
+   load()                         delegate Game.load; the session loop's
+                                  load_game keeps turning its error into an exit
+   perform(command)               games.perform on the wrapped game; raises
+                                  GameError as now
+   commit() -> bool               what this role's `commit` does (Decision 4)
    resolve_pending() -> bool|None the server's unattended resolve
-   wait_for_turn() wait_for_all_commits()
+   waitForTurn() waitForPlayerCommit()   Game's names; the roles' existing
+                                         calls are untouched by them
+   getOutcome() getTurnNumber() getNewGame() setNewGame(v)
+   getUnprocessedMoves() getRejected() getDropped() isEliminated(n)
+   getBoard() getPlayers() getEliminated()   ← passthrough, for show/completion;
+                                               local-only, refined at the HTTP step
 ```
+
+The read methods keep their `Game` names so `show.py`, `complete.py` and
+`cli/session.py` do not change — the session presents the same surface those
+callers already use. Only the roles change, and only where they constructed a
+`Game` or called `games.perform`.
 
 ### 3. `LocalSession` is today's calls, relocated
 
-The one implementation wraps a `Game`, `service.games`, and the turn functions —
-the exact calls the REPLs make now, moved behind the interface. `open()` wraps
-`Game.load` with the error handling `cli/session.py:load_game` has today.
-`view(subject)` holds the board/players and calls `views.*` — the code lifted
-verbatim out of `show.py:_view`. Nothing new is computed; it is the same work at
-a different address.
+The one implementation wraps a `Game`, `service.games`, and the turn functions.
+`load()` delegates `Game.load` (so `cli/session.py:load_game` keeps its error
+handling unchanged); `perform` calls `games.perform` on the wrapped game;
+`commit` maps by identity (Decision 4); the reads delegate. Nothing new is
+computed; it is the same work behind one object.
 
 ### 4. `commit()` maps by identity; `resolve_pending()` is the server's loop
 
@@ -100,17 +120,18 @@ difference is identity, which the session knows:
 because it is not a typed command — it is what the unattended loop does when
 woken. The observer calls neither.
 
-### 5. One provisional leak, named: the server's raw turn-log
+### 5. The passthrough reads are local-only, and named as such
 
-`bgcserver` logs each turn as `print_board(getBoard())` and
-`serialise_units(getBoard())` — the latter a storage-format YAML dump.
-`SPEC_COVERAGE.md` already lists that raw dump under "Left to a follow-up". To
-keep this change a pure refactor, its output must not change, so the session
-exposes a `board()` accessor used *only* by that turn-log, and only by the
-server. It is the one thing not yet at view-data altitude. It is flagged rather
-than cleaned, because forcing it through the seam now would change the logged
-output and break the no-test-edited property; the turn-log is reconsidered when
-the server becomes the API host, where it is a server-side concern anyway.
+`getBoard()`, `getPlayers()` and `getEliminated()` cross the seam so that
+`show.py` and `complete.GameNames` — unchanged, and pinned by their tests to
+board objects — keep working, and so that `bgcserver`'s raw turn-log
+(`print_board(getBoard())`, `serialise_units(getBoard())`, the latter already
+listed in `SPEC_COVERAGE.md` under "Left to a follow-up") keeps its output
+byte-for-byte. These are the accessors the HTTP session cannot provide, and the
+HTTP step is where they go: `views.py` moves server-side, `show` renders fetched
+view data, and completion runs off it. Naming them local-only here is the honest
+statement that the seam is not yet at view-data altitude for reads — only for
+actions, lifecycle and state.
 
 ### 6. What does not move
 
@@ -143,14 +164,14 @@ the same division as today.
 
 Within this change:
 
-1. Define the interface and `LocalSession` beside the roles; nothing uses it.
-2. Move `show.py`'s view building into `LocalSession.view`, and have `show.py`
-   and `complete.py` call the session for view data. `views.py`/`render.py`
-   unchanged.
-3. Rewrite `bgcclient`, `bgcobserver`, then `bgcserver` to construct and use a
-   session. Do the observer first — it is read-only and the smallest — then the
-   client, then the server with its two commit meanings and its turn-log.
-4. Run the whole suite. Green with nothing edited is the exit condition.
+1. Define the `Session` interface and `LocalSession` beside the roles; nothing
+   uses them.
+2. Rewrite the roles to construct and use a session — observer first (read-only,
+   smallest), then client, then server with its two commit meanings and its
+   turn-log. `show.py`, `complete.py`, `views.py`, `render.py` and
+   `cli/session.py` are untouched: the session presents the `Game` read surface
+   they already use.
+3. Run the whole suite. Green with nothing edited is the exit condition.
 
 No later tread starts here.
 

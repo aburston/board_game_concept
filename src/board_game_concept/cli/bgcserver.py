@@ -8,15 +8,15 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import Game, YamlGameRepository
+from board_game_concept import YamlGameRepository
 from board_game_concept.cli.render import print_board, print_dropped
+from board_game_concept.cli.backend import LocalSession
 from board_game_concept.storage.serialise import serialise_units
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (describe_outcome, load_game,
                                             read_command, report)
-from board_game_concept.service import games
 from board_game_concept.service.errors import GameError
 
 ROLE = roles.SERVER
@@ -47,8 +47,10 @@ def main(argv=None):
         help='specify the game number')
     args = parser.parse_args(argv[1:])
 
-    # initialize data object
-    data = Game(YamlGameRepository(args.game_number), player_number)
+    # a session hides how the game is reached. Today it is in-process; a
+    # later change swaps LocalSession for an HTTP-backed one and the rest
+    # of this file does not notice
+    data = LocalSession(YamlGameRepository(args.game_number), player_number)
 
     # completion for the setup prompt. The server owns no units and defines no
     # types, so what it gains is the grammar and the paths `load` wants
@@ -89,8 +91,9 @@ def main(argv=None):
                 continue
 
             if command.kind == 'commit':
-                # do all the commit actions for the first commit
-                if data.serverSave():
+                # commit as this role commits - the session knows which
+                # meaning by the identity it was opened as (ending setup, here)
+                if data.commit():
                     print("commit complete")
                     break
                 # commit failed, go back to the prompt to resolve the problem
@@ -100,7 +103,7 @@ def main(argv=None):
             # and to remember: setup that is not committed yet is written down
             # as it is done, so ending the session does not lose it
             try:
-                games.perform(data, command)
+                data.perform(command)
             except GameError as error:
                 report(error)
                 continue
@@ -116,7 +119,7 @@ def main(argv=None):
             # that authorises a resolution and the resolution itself are one
             # act, holding the game, so another caller cannot resolve the turn
             # in between and leave this one resolving a game with no orders
-            resolved = data.resolveWhenReady()
+            resolved = data.resolve_pending()
             if resolved is None:
                 # somebody else resolved it first, which is the barrier doing
                 # its work rather than a failure. Wait to be told again -

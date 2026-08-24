@@ -7,14 +7,15 @@ if __package__ is None:
     # launched as a script rather than imported, so put `src` on the path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from board_game_concept import Game, YamlGameRepository
+from board_game_concept import YamlGameRepository
 from board_game_concept.cli import complete, roles
+from board_game_concept.cli.backend import LocalSession
 from board_game_concept.cli.show import perform_show, show_units
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.render import print_dropped
 from board_game_concept.cli.session import (describe_outcome, load_game,
                                             read_command, report)
-from board_game_concept.service import games, identity
+from board_game_concept.service import identity
 from board_game_concept.service.errors import GameError
 
 ROLE = roles.CLIENT
@@ -58,8 +59,10 @@ def main(argv=None):
         usage()
         sys.exit(1)
 
-    # initialize the data object
-    data = Game(YamlGameRepository(gameno), player_number)
+    # a session hides how the game is reached. Today it is in-process; a
+    # later change swaps LocalSession for an HTTP-backed one and the rest
+    # of this file does not notice
+    data = LocalSession(YamlGameRepository(gameno), player_number)
 
     # let a person at a terminal complete what they are typing. The names come
     # from this game object, which is the same one the loop below reloads into,
@@ -131,7 +134,9 @@ def main(argv=None):
                 continue
 
             if command.kind == 'commit':
-                if data.clientSave():
+                # commit as this role commits - the session knows which
+                # meaning by the identity it was opened as
+                if data.commit():
                     print("commit complete")
                     break
                 continue
@@ -140,7 +145,7 @@ def main(argv=None):
             # and to remember: an order that is not committed yet is written
             # down as it is given, so ending the session does not lose it
             try:
-                games.perform(data, command)
+                data.perform(command)
             except GameError as error:
                 report(error)
                 continue
