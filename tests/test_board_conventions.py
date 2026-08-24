@@ -6,7 +6,7 @@ player needs and the first thing another front end would get wrong.
 
 from board_game_concept import Board, Empty, Player, UnitType
 from board_game_concept.cli.render import render_board
-from board_game_concept.storage.serialise import serialise_units
+from board_game_concept.storage.serialise import units_document
 
 from game_harness import GameHarness
 
@@ -75,10 +75,11 @@ def duel_to_the_death(tmp_path):
 
 def test_a_player_still_sees_their_own_casualties(tmp_path):
     harness = duel_to_the_death(tmp_path)
-    listed = serialise_units(harness.session(1).getBoard())
-    assert 'name: "x1"' in listed
-    assert 'destroyed: True' in listed
-    assert 'on_board: False' in listed
+    listed = units_document(harness.session(1).getBoard())['units']
+    x1 = next((u for u in listed if u['name'] == 'x1'), None)
+    assert x1 is not None
+    assert x1['destroyed'] is True
+    assert x1['on_board'] is False
 
 
 def test_a_casualty_is_not_drawn_on_any_cell(tmp_path):
@@ -91,13 +92,14 @@ def test_a_casualty_is_not_drawn_on_any_cell(tmp_path):
 
 def test_an_enemy_casualty_is_listed_for_the_turn_contact_was_made(tmp_path):
     harness = duel_to_the_death(tmp_path)
-    listed = serialise_units(harness.session(1).getBoard())
-    assert 'name: "o1"' in listed
+    listed = units_document(harness.session(1).getBoard())['units']
+    assert any(u['name'] == 'o1' for u in listed)
 
 
 def test_an_enemy_casualty_drops_out_next_turn(tmp_path):
     harness = duel_to_the_death(tmp_path)
     harness.turn({1: [], 2: []})
-    listed = serialise_units(harness.session(1).getBoard())
-    assert 'name: "o1"' not in listed
-    assert 'name: "x1"' in listed
+    listed = units_document(harness.session(1).getBoard())['units']
+    names = [u['name'] for u in listed]
+    assert 'o1' not in names
+    assert 'x1' in names

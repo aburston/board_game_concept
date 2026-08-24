@@ -227,8 +227,8 @@ def test_a_session_cannot_load_part_way_through_a_resolution(tmp_path,
         def __getattr__(self, name):
             return getattr(self._wrapped, name)
 
-        def write_units(self, text):
-            result = self._wrapped.write_units(text)
+        def write_units(self, document):
+            result = self._wrapped.write_units(document)
             try:
                 harness.session(1)
                 refused['excluded'] = False

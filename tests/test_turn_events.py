@@ -82,16 +82,14 @@ def test_events_read_as_lines_of_text():
 
 def test_a_units_numbers_survive_a_round_trip_as_numbers():
     """A unit written out and read back needs no converting on the way in."""
-    import yaml
-
-    from board_game_concept.storage.serialise import serialise_units
+    from board_game_concept.storage.serialise import units_document
 
     board = Board(3, 3)
     p1 = Player(1)
     board.add(p1, 1, 2, 'a1', UnitType('Attacker', 'A', 3, 7, 40))
     board.commit()
 
-    written = yaml.safe_load(serialise_units(board))['units'][0]
+    written = units_document(board)['units'][0]
     assert written['player'] == 1
     assert written['attack'] == 3
     assert written['health'] == 7

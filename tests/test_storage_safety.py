@@ -26,7 +26,7 @@ def repository(tmp_path, gameno='one'):
 def test_a_write_leaves_no_moment_where_the_file_is_empty(tmp_path):
     """The target is renamed into place, so it is never open for truncation."""
     made = repository(tmp_path)
-    made.write_units('units: None\n')
+    made.write_units({'units': None})
     target = os.path.join(made.data_path, 'units.yaml')
     before = open(target, encoding='utf-8').read()
 
@@ -40,7 +40,7 @@ def test_a_write_leaves_no_moment_where_the_file_is_empty(tmp_path):
         return original(path)
 
     made._replace = watched
-    made.write_units('units:\n  - { id: 0 }\n')
+    made.write_units({'units': [{'id': 0}]})
 
     assert seen == [before], 'the target changed before the write finished'
     assert 'id: 0' in open(target, encoding='utf-8').read()
@@ -79,7 +79,7 @@ def test_what_a_write_leaves_behind_is_not_read_as_a_game_file(tmp_path,
     made = repository(tmp_path)
     made.write_player(1, {})
     made.mark_committed(1, turn=0)
-    made.write_orders(1, 'units: None\n')
+    made.write_orders(1, {'units': None})
 
     target = {'player': made._player_file(1),
               'commit': made._commit_marker(1),

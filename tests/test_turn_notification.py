@@ -52,6 +52,45 @@ def test_the_fifo_is_kept_out_of_the_players_directory(tmp_path):
         assert os.listdir(str(tmp_path)) == ['data']
 
 
+def test_the_fifo_notifier_wakes_and_waits(tmp_path):
+    """The bus a YAML-backed game uses, exercised through the `Notifier` shape."""
+    notifier = notify.FifoNotifier(str(tmp_path))
+    with notifier.waiter('server') as waiter:
+        assert notifier.wake('server') is True
+        assert waiter.wait(timeout=5) is True
+
+
+def test_the_null_notifier_does_nothing_and_does_not_raise():
+    """The notifier a backend that carries no bus is fitted with."""
+    notifier = notify.NullNotifier()
+    # a signal is a lost signal
+    assert notifier.wake('server') is False
+    # and a waiter returns from `wait` at once, so callers poll
+    with notifier.waiter('server') as waiter:
+        started = time.monotonic()
+        assert waiter.wait(timeout=0.5) is False
+        assert time.monotonic() - started < 0.4
+
+
+def test_game_wraps_the_yaml_repository_in_a_fifo_notifier(tmp_path):
+    """A `Game` built with a YAML backend still rendezvous over FIFOs."""
+    from board_game_concept import Game, YamlGameRepository
+
+    game = Game(YamlGameRepository('one', base_path=str(tmp_path)), 0)
+    assert isinstance(game.notifier, notify.FifoNotifier)
+
+
+def test_game_falls_back_to_a_null_notifier_when_the_repository_has_no_bus():
+    """A backend that only reads and writes carries no bus, so `Game` polls."""
+    from board_game_concept import Game
+
+    class QuietRepository:
+        pass
+
+    game = Game(QuietRepository(), 0)
+    assert isinstance(game.notifier, notify.NullNotifier)
+
+
 class TurnsResolveWithoutWaiting(CliTestCase):
 
     def test_a_committed_turn_comes_back_promptly(self):

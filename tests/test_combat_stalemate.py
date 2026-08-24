@@ -10,7 +10,7 @@ import threading
 
 import pytest
 
-from board_game_concept.storage.serialise import serialise_units
+from board_game_concept.storage.serialise import units_document
 from board_game_concept import UnitType, Board, Player, Empty
 
 
@@ -386,12 +386,10 @@ def test_shared_square_renders_without_failing():
 
 def test_shared_square_survives_a_save_and_load_round_trip():
     # reload a game the way GameData does: read back the units it wrote with
-    # serialise_units and replay them onto a fresh board. Restoring is not a
+    # units_document and replay them onto a fresh board. Restoring is not a
     # deployment, so the occupancy rule does not refuse the shared square
-    import yaml
-
     board, _, _ = _shared_cell_board()
-    saved = yaml.safe_load(serialise_units(board))
+    saved = units_document(board)
 
     players = {}
     types = {}

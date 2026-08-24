@@ -78,21 +78,26 @@ not know how it is drawn.
 ### storage - where a game is kept
 
 - **`repository.py`** - `GameRepository`, the operations a game's storage has
-  to offer. Reads and writes, no rules. Everything above is written against
-  this rather than against a directory of YAML.
+  to offer. Reads and writes, no rules; takes documents rather than text. The
+  bus is not on it any more - a backend that does not know how to rendezvous
+  is fine, and `Game` fits it with the notifier that does.
 - **`yaml_repository.py`** - the layout `game-persistence` describes: shared
   data under `data`, per-player files under `players`, one directory per game
-  number. The only module that knows any of those names.
-- **`serialise.py`** - units as YAML, and a draft as the commands that made it.
-  The on-disk format, which the roles also print verbatim for `show units`.
+  number. The only module that knows any of those names, and the only one
+  that composes today's hand-crafted YAML text - the emitter turning a
+  document into those bytes lives here.
+- **`serialise.py`** - the plain-data documents storage takes: `units_document`
+  for the units file shape, `serialise_draft` and `restore_draft` for the
+  commands a session has not committed yet.
 - **`lock.py`** - holding a game while it is read or written. An advisory lock
   on a file in the game's root: a caller holding it for writing excludes every
   other holder, and readers may hold it together. Where the platform has no
   such lock this does nothing and says so, as `notify.py` waits on the clock
   where there are no FIFOs.
-- **`notify.py`** - waking the other side of the file transport. Each side
-  blocks on a FIFO until the other signals; the signal is a hint over a
-  re-checked condition, so losing one costs latency and not correctness.
+- **`notify.py`** - the bus, on its own interface. `Notifier` (an ABC over
+  `wake` and `waiter`), `FifoNotifier` around the FIFO helpers the YAML
+  backend already had, and `NullNotifier` for a backend that carries no bus.
+  `Game` picks the one that fits the repository it was handed.
 
 ### cli - the three roles
 

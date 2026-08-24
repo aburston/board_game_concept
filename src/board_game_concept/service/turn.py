@@ -7,10 +7,8 @@ is asked who has committed; what that means is decided here.
 
 import sys
 
-import yaml
-
 from ..domain import UnitType
-from ..storage.serialise import serialise_orders, serialise_units
+from ..storage.serialise import units_document
 
 
 def _types_without_objects(player):
@@ -37,7 +35,9 @@ def publish(game):
             number, _types_without_objects(game.players[number]))
         repository.mark_committed(number, game.getTurnNumber())
         repository.write_orders(
-            number, serialise_orders(game.board, game.getPlayerObj(number)))
+            number,
+            units_document(game.board, game.getPlayerObj(number),
+                           in_play_only=True))
 
         # the draft has become the published orders, so there is nothing left
         # uncommitted to restore
@@ -45,7 +45,7 @@ def publish(game):
 
     # tell the server there is something to look at, rather than leaving it to
     # notice on its own
-    repository.wake('server')
+    game.notifier.wake('server')
     return True
 
 
@@ -250,10 +250,11 @@ def resolve(game):
                                         turn=turn_number)
 
         # the authoritative record, and then what each player is entitled to see
-        repository.write_units(serialise_units(game.board, turn=turn_number))
+        repository.write_units(units_document(game.board, turn=turn_number))
         for number, player in game.players.items():
             repository.write_view(
-                number, serialise_units(game.board, player['obj'], turn=turn_number))
+                number,
+                units_document(game.board, player['obj'], turn=turn_number))
 
         # --- and only now, the turn is over
 
@@ -274,7 +275,9 @@ def resolve(game):
         # `commit` for them. A `clear_orders` placed after this erases them
         for number, player in game.players.items():
             if 'units' in player:
-                repository.write_orders(number, _as_orders(player['units']))
+                repository.write_orders(
+                    number, _loaded_orders_document(game, number, player,
+                                                   turn_number))
                 repository.mark_committed(number, turn_number)
 
         # the administrator's setup has been committed like anyone else's
@@ -282,7 +285,7 @@ def resolve(game):
 
         # every player waiting on this turn can stop waiting
         for number in game.players:
-            repository.wake(number)
+            game.notifier.wake(number)
 
     return True
 
@@ -327,8 +330,41 @@ def _named(game, name):
         return None
 
 
-def _as_orders(units):
-    return yaml.safe_dump({'units': units})
+def _loaded_orders_document(game, number, player, turn):
+    """The orders document for a loaded player, before their units are placed.
+
+    The `player['units']` list comes from a file the caller wrote by hand and
+    may lack the type-defaults (`type_attack`, `type_health`, `type_energy`)
+    the emitter expects. Those are read from the player's type record, which
+    is what they defaulted to before the unit spent anything.
+    """
+    types = player.get('types') or {}
+    units = []
+    for index, unit in enumerate(player['units']):
+        type_record = types.get(unit.get('type')) or {}
+        units.append({
+            'id': index,
+            'player': unit.get('player', number),
+            'type': unit.get('type'),
+            'name': unit.get('name'),
+            'symbol': unit.get('symbol'),
+            'attack': unit.get('attack'),
+            'health': unit.get('health'),
+            'energy': unit.get('energy'),
+            'type_attack': unit.get('type_attack', type_record.get('attack')),
+            'type_health': unit.get('type_health', type_record.get('health')),
+            'type_energy': unit.get('type_energy', type_record.get('energy')),
+            'x': unit.get('x'), 'y': unit.get('y'),
+            'state': unit.get('state'), 'direction': unit.get('direction'),
+            'destroyed': unit.get('destroyed', False),
+            'on_board': unit.get('on_board', False),
+        })
+    return {
+        'board': {'size_x': game.board.size_x, 'size_y': game.board.size_y},
+        'turn': turn,
+        'player': number,
+        'units': units,
+    }
 
 
 def _awaited_players(game):
@@ -394,7 +430,7 @@ def wait_for_all_commits(game):
     # here on is buffered rather than lost, and one that arrived earlier is
     # found by the check itself
     turn_number = game.getTurnNumber()
-    with game.repository.waiter('server') as waiter:
+    with game.notifier.waiter('server') as waiter:
         while not awaited.issubset(
                 set(game.repository.committed_players(turn_number))):
             waiter.wait()
@@ -402,6 +438,6 @@ def wait_for_all_commits(game):
 
 def wait_for_turn(game):
     """Wait until the server has consumed this player's orders."""
-    with game.repository.waiter(game.player_number) as waiter:
+    with game.notifier.waiter(game.player_number) as waiter:
         while game.repository.has_orders(game.player_number):
             waiter.wait()

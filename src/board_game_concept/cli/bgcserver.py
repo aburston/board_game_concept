@@ -11,7 +11,8 @@ if __package__ is None:
 from board_game_concept import YamlGameRepository
 from board_game_concept.cli.render import print_board, print_dropped
 from board_game_concept.cli.backend import LocalSession
-from board_game_concept.storage.serialise import serialise_units
+from board_game_concept.storage.serialise import units_document
+from board_game_concept.storage.yaml_repository import dump_units
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
@@ -135,7 +136,7 @@ def main(argv=None):
         outcome = data.getOutcome()
         if outcome is not None:
             print_board(data.getBoard())
-            print(serialise_units(data.getBoard()))
+            print(dump_units(units_document(data.getBoard())))
             print(describe_outcome(outcome))
             sys.exit(0)
 
@@ -147,7 +148,7 @@ def main(argv=None):
         # local would still be the old one
         resolved = data.getBoard()
         print_board(resolved)
-        print(serialise_units(resolved))
+        print(dump_units(units_document(resolved)))
 
 
 # run main()

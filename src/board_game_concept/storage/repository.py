@@ -71,7 +71,14 @@ class GameRepository:
         """Every unit on the board, as plain records."""
         raise NotImplementedError
 
-    def write_units(self, text):
+    def write_units(self, document):
+        """The authoritative units record, as a plain-data document.
+
+        A document is `{board, turn, player, units}`, the shape the files
+        already held. Each backend serialises it its own way; the YAML one
+        writes the same bytes it wrote before, and a database one inserts
+        rows.
+        """
         raise NotImplementedError
 
     # --- players
@@ -93,7 +100,8 @@ class GameRepository:
         """The units last published to this player, as plain records."""
         raise NotImplementedError
 
-    def write_view(self, number, text):
+    def write_view(self, number, document):
+        """What this player has learned, as a plain-data document."""
         raise NotImplementedError
 
     # --- orders, and the commit barrier they signal
@@ -105,7 +113,8 @@ class GameRepository:
     def read_orders(self, number):
         raise NotImplementedError
 
-    def write_orders(self, number, text):
+    def write_orders(self, number, document):
+        """The orders this player is publishing, as a plain-data document."""
         raise NotImplementedError
 
     def clear_orders(self):
@@ -161,14 +170,4 @@ class GameRepository:
         raise NotImplementedError
 
     def write_rejections(self, number, rejected, turn=None):
-        raise NotImplementedError
-
-    # --- telling the other side something has changed
-
-    def wake(self, name):
-        """Wake whoever is waiting under this name, if anyone is."""
-        raise NotImplementedError
-
-    def waiter(self, name):
-        """Something to block on until `wake` is called with the same name."""
         raise NotImplementedError

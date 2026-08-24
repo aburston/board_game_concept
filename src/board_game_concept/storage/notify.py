@@ -1,9 +1,9 @@
-"""Waking the other side of the file transport.
+"""Waking whichever process is on the other side.
 
-Players publish orders by writing files and the server publishes results the
-same way, so each side has to find out that the other has written something.
-Both used to discover it by looking again every few seconds, which cost up to
-fifteen seconds of dead time per turn for work that takes milliseconds.
+The notifier is the rendezvous between server and client. On the YAML backend
+that rendezvous is a FIFO; on a backend that carries no bus, it is nothing
+and no caller waits. Both are `Notifier`s and callers ask the notifier
+rather than the repository.
 
 A waiter blocks on a FIFO until somebody signals it. The signal is only ever a
 hint: every caller re-checks the condition it actually cares about before and
@@ -19,6 +19,7 @@ opening a FIFO would block forever.
 import os
 import select
 import time
+from abc import ABC, abstractmethod
 
 # how long a waiter blocks before re-checking on its own. A signal normally
 # arrives first; this is the backstop.
@@ -111,3 +112,72 @@ def signal(path):
     finally:
         os.close(fd)
     return True
+
+
+class Notifier(ABC):
+    """Something that carries a wake between processes, by name.
+
+    Split off the storage port so a backend that does not know how to
+    rendezvous - a database, most likely - has no method to leave
+    unimplemented. `Game` picks the notifier that fits the repository it
+    was handed, or takes one it was passed.
+    """
+
+    @abstractmethod
+    def wake(self, name):
+        """Wake whoever is waiting under this name, if anyone is."""
+
+    @abstractmethod
+    def waiter(self, name):
+        """Something to block on until `wake` is called with the same name."""
+
+
+class FifoNotifier(Notifier):
+    """The FIFO rendezvous the YAML backend used to expose from the port.
+
+    Takes a `data_path` directly, and knows the FIFO layout the backend
+    already used. `Game` builds one of these when the repository is the
+    YAML one, so the split is real: the ABC no longer promises the bus,
+    the backend still keeps its FIFO helpers around, and this is what
+    ties them to a `Notifier` shape.
+    """
+
+    def __init__(self, data_path):
+        self._data_path = data_path
+
+    def wake(self, name):
+        return signal(wake_path(self._data_path, str(name)))
+
+    def waiter(self, name):
+        return Waiter(wake_path(self._data_path, str(name)))
+
+
+class NullNotifier(Notifier):
+    """The no-op notifier a backend that carries no bus is fitted with.
+
+    `wake` is a lost signal and `waiter` hands back something that returns
+    from `wait` at once. Callers re-check what they were waiting on either
+    way, so a game with no notifier polls rather than blocking, which is
+    the honest thing to do when no rendezvous exists.
+    """
+
+    def wake(self, name):
+        return False
+
+    def waiter(self, name):
+        return _NullWaiter()
+
+
+class _NullWaiter:
+    # pylint: disable=unused-argument
+    def wait(self, timeout=SAFETY_TIMEOUT):
+        return False
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False

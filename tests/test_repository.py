@@ -38,10 +38,10 @@ def test_the_layout_is_the_one_the_spec_describes(tmp_path):
                                           'attack': 1, 'health': 1,
                                           'energy': 10}})
     repository.mark_committed(1)
-    repository.write_orders(1, 'units: None\n')
+    repository.write_orders(1, {'units': None})
     repository.write_rejections(1, [])
-    repository.write_view(1, 'units: None\n')
-    repository.write_units('units: None\n')
+    repository.write_view(1, {'units': None})
+    repository.write_units({'units': None})
 
     data = sorted(os.listdir(tmp_path / 'games' / '_one' / 'data'))
     players = sorted(os.listdir(tmp_path / 'games' / '_one' / 'players'))
@@ -75,9 +75,9 @@ def test_what_goes_in_comes_back(tmp_path):
 def test_orders_are_consumed_once(tmp_path):
     repository = YamlGameRepository('one', base_path=str(tmp_path))
     repository.ensure()
-    repository.write_orders(1, 'units: None\n')
-    repository.write_orders(2, 'units: None\n')
-    repository.write_view(1, 'units: None\n')
+    repository.write_orders(1, {'units': None})
+    repository.write_orders(2, {'units': None})
+    repository.write_view(1, {'units': None})
 
     assert repository.has_orders(1) is True
 
@@ -96,7 +96,7 @@ def test_committing_is_recorded_rather_than_inferred(tmp_path):
     """
     repository = YamlGameRepository('one', base_path=str(tmp_path))
     repository.ensure()
-    repository.write_orders(1, 'units: None\n')
+    repository.write_orders(1, {'units': None})
 
     assert repository.committed_players() == []
 
@@ -132,7 +132,7 @@ def test_a_marker_written_before_commits_recorded_a_turn(tmp_path):
 def test_a_view_is_not_mistaken_for_an_order(tmp_path):
     repository = YamlGameRepository('one', base_path=str(tmp_path))
     repository.ensure()
-    repository.write_view(11, 'units: None\n')
+    repository.write_view(11, {'units': None})
     assert repository.committed_players() == []
 
 

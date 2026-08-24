@@ -102,9 +102,9 @@ class YamlGameRepository(GameRepository):
         listed = units['units']
         return [] if listed == 'None' or not listed else listed
 
-    def write_units(self, text):
+    def write_units(self, document):
         with self._replace(os.path.join(self.data_path, 'units.yaml')) as file:
-            file.write(text)
+            file.write(dump_units(document))
 
     # --- players
 
@@ -142,9 +142,9 @@ class YamlGameRepository(GameRepository):
         listed = view['units']
         return [] if listed == 'None' or not listed else listed
 
-    def write_view(self, number, text):
+    def write_view(self, number, document):
         with self._replace(self._view_file(number)) as file:
-            file.write(text)
+            file.write(dump_units(document))
 
     # --- orders, and the commit barrier they signal
 
@@ -158,9 +158,9 @@ class YamlGameRepository(GameRepository):
         return self._read_yaml(self._orders_file(number),
                                f'the orders published by player {number}')
 
-    def write_orders(self, number, text):
+    def write_orders(self, number, document):
         with self._replace(self._orders_file(number)) as file:
-            file.write(text)
+            file.write(dump_units(document))
 
     def clear_orders(self):
         for name in os.listdir(self.player_path):
@@ -267,6 +267,60 @@ class YamlGameRepository(GameRepository):
 
     def waiter(self, name):
         return notify.Waiter(notify.wake_path(self.data_path, str(name)))
+
+
+def dump_units(document):
+    """A units document as the hand-crafted YAML text the files hold.
+
+    The file layout is a `board` mapping, a `turn` and `player` scalar (each
+    either a number or `None`), and a `units` sequence of flow mappings. The
+    empty case writes `units: None` rather than `units: []`, because that is
+    what the files already held and everything that reads them handles that
+    string. Byte-identical with what `serialise_units` used to produce.
+    """
+    board = document.get('board') or {}
+    size_x = board.get('size_x')
+    size_y = board.get('size_y')
+    text = "board: {" + f" size_x: {size_x}, size_y: {size_y}" + "}\n"
+    turn = document.get('turn')
+    if turn is not None:
+        text += f"turn: {turn}\n"
+    text += f"player: {document.get('player')}\n"
+
+    units = document.get('units') or []
+    if not units:
+        text += "units: None\n"
+        return text
+
+    text += "units:\n"
+    for unit in units:
+        text += "  - { " + _unit_line(unit) + " }\n"
+    return text
+
+
+def _unit_line(unit):
+    """One unit as the body of a YAML flow mapping, without the braces."""
+    # numbers stay as numbers so a player number that went out as text does
+    # not come back as text and no longer match the integer the rest of the
+    # game knew the player by
+    return (
+        f"id: {unit.get('id')}, "
+        f"player: {unit.get('player')}, "
+        f'type: "{unit.get("type")}", '
+        f'name: "{unit.get("name")}", '
+        f'symbol: "{unit.get("symbol")}", '
+        f"attack: {unit.get('attack')}, "
+        f"health: {unit.get('health')}, "
+        f"energy: {unit.get('energy')}, "
+        # the design, so that a type learned by contact is the type as its
+        # owner built it and not the state the unit was in when it was met
+        f"type_attack: {unit.get('type_attack')}, "
+        f"type_health: {unit.get('type_health')}, "
+        f"type_energy: {unit.get('type_energy')}, "
+        f"x: {unit.get('x')}, y: {unit.get('y')}, "
+        f"state: {unit.get('state')}, direction: {unit.get('direction')}, "
+        f"destroyed: {unit.get('destroyed')}, on_board: {unit.get('on_board')}"
+    )
 
 
 class _Replacement:
