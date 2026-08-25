@@ -754,12 +754,14 @@ endpoint and once against the service layer and holds both to one answer, by
 `bgcclient` subprocesses, and by `tests/test_turn_publication.py` for the
 refusal itself.
 
-**Worth noting.** Every test of the HTTP tier is pinned to the SQLite backend
-with `@pytest.mark.backend('sqlite')`, and CI runs `pytest` with no
-`BOARD_GAME_BACKEND` set, which is YAML — so the whole HTTP suite is skipped in
-CI. `tests/test_two_player_commit.py` is deliberately unpinned and runs the API
-on whichever backend the run is for. The pinning of the rest is a gap in what CI
-actually exercises, not just in what it covers.
+**What let it through CI.** Every test of the HTTP tier is pinned to the SQLite
+backend with `@pytest.mark.backend('sqlite')`, and CI ran `pytest` with no
+`BOARD_GAME_BACKEND` set, which is YAML — so the whole HTTP suite, some fifty
+tests, was skipped on every run. Nothing was failing; nothing was running. CI
+now runs the suite once per backend from a matrix, so a pinned test is executed
+by the job it is pinned to rather than by neither.
+`tests/test_two_player_commit.py` is deliberately unpinned and runs the API on
+whichever backend the run is for.
 
 ## Unspecified, and worth deciding
 
