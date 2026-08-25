@@ -742,11 +742,12 @@ an order had been given.
 Reproduction: register two players, deploy a unit for each, and commit one
 after the other. The second player is declared the winner on turn 1.
 
-Addressed here: the commit endpoint resolves as the administrator, and the
-answer it sends back is still read as the player who asked. `service/turn.py`
-refuses to resolve from a session not entitled to the whole game at all, so
-which session resolves is a rule of the game rather than something each caller
-is trusted to get right; `turn-commit` now says so.
+Addressed by the `resolve-a-turn-from-the-whole-game` change: the commit
+endpoint resolves as the administrator, and the answer it sends back is still
+read as the player who asked. `service/turn.py` refuses to resolve from any
+session not entitled to the whole game and allowed to change it, so which
+session resolves is a rule of the game rather than something each caller is
+trusted to get right; `turn-commit` now says so.
 
 Held by `tests/test_two_player_commit.py`, which plays the game once over the
 endpoint and once against the service layer and holds both to one answer, by
