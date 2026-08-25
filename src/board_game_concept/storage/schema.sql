@@ -25,9 +25,16 @@ CREATE TABLE IF NOT EXISTS eliminated (
 
 -- registered players. 0 (admin) and 1000 (observer) are sessions rather than
 -- seats, so they are not memberships.
+-- `budget` is the point budget the player was registered with, and is NOT
+-- NULL because a game set up without one is a game played by rules it was not
+-- set up under. An older database whose `memberships` has no such column is
+-- not migrated: `CREATE TABLE IF NOT EXISTS` will not add it, and the read
+-- that fails is turned into the same refusal the YAML backend gives.
 CREATE TABLE IF NOT EXISTS memberships (
     player_number INTEGER PRIMARY KEY
-        CHECK (player_number BETWEEN 1 AND 999)
+        CHECK (player_number BETWEEN 1 AND 999),
+    budget        INTEGER NOT NULL
+        CHECK (budget BETWEEN 1 AND 1000)
 );
 
 -- each player designs their own types; the (player, name) pair is the key.

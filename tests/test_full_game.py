@@ -8,7 +8,7 @@ Each player keeps a second unit well out of the way, so that losing the first
 does not end the game and the turns can keep coming.
 """
 
-from board_game_concept.domain import UnitType
+from board_game_concept.domain import Player, UnitType
 
 from game_harness import GameHarness
 
@@ -16,7 +16,7 @@ from game_harness import GameHarness
 def two_players(tmp_path, stats=(5, 5, 50), enemy=None):
     """A game with two units each: a duellist on the top row, and a reserve."""
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2])
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     attack, health, energy = stats
     harness.deploy(1, [('X', 'X', attack, health, energy)],
                    [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)])

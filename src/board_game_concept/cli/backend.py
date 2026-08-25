@@ -190,7 +190,8 @@ class LocalSession(Session):
             return views_module.types_view(self._game.getPlayers())
         if subject == 'players':
             return views_module.players_view(self._game.getPlayers(),
-                                             self._game.getEliminated())
+                                             self._game.getEliminated(),
+                                             self._game.getBoard())
         if subject == 'pending':
             return views_module.pending_view(self._game.getPlayers(),
                                              self._game.getBoard())

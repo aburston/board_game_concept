@@ -19,7 +19,7 @@ from board_game_concept.cli.parser import parse
 # than as sentences. `help` prints these, and this change was meant to be
 # invisible in what it prints
 USAGE_LINES = [
-    'add player <number>',
+    'add player <number> [<budget>]',
     'add type <name> <symbol> <attack> <health> <energy>',
     'add unit <type> <name> <x> <y>',
     'load board <file>',
@@ -57,7 +57,10 @@ def typed(usage, with_optionals=True):
             words.append(word)
         elif isinstance(word, Optional):
             if with_optionals:
-                words.append(word.word)
+                # an optional holds either a fixed word or a slot, and a slot
+                # is filled the same way a required one is
+                words.append(FILLERS[word.word.kind] if word.holds_slot()
+                             else word.word)
         else:
             words.append(FILLERS[word.kind])
     return ' '.join(words)

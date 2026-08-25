@@ -236,9 +236,19 @@ class SqliteGameRepository(GameRepository):
             'SELECT name, symbol, attack, health, energy '
             'FROM unit_types WHERE player_number=? ORDER BY name',
             (int(number),)).fetchall()
-        row = self._get(
-            'SELECT player_number FROM memberships WHERE player_number=?',
-            (int(number),)).fetchone()
+        try:
+            row = self._get(
+                'SELECT player_number, budget FROM memberships '
+                'WHERE player_number=?',
+                (int(number),)).fetchone()
+        except sqlite3.OperationalError as e:
+            # a database written before budgets existed has no such column.
+            # `CREATE TABLE IF NOT EXISTS` does not add one to a table that is
+            # already there, and this change carries no migration, so the game
+            # is refused the same way a YAML record with no budget is
+            raise UnreadableGame(
+                f"the record for player {number} in {self.db_path} "
+                f"carries no point budget", e) from e
         if row is None and not rows:
             return None
         types = {}
@@ -248,14 +258,23 @@ class SqliteGameRepository(GameRepository):
                 'attack': r['attack'], 'health': r['health'],
                 'energy': r['energy'],
             }
-        return {'number': int(number), 'types': types}
+        budget = None if row is None else row['budget']
+        if budget is None:
+            # written by another version, or by hand. A budget is a rule the
+            # game was set up under, so a record without one is refused rather
+            # than defaulted past
+            raise UnreadableGame(
+                f"the record for player {number} in {self.db_path} "
+                f"carries no point budget")
+        return {'number': int(number), 'budget': int(budget), 'types': types}
 
-    def write_player(self, number, types):
+    def write_player(self, number, types, budget):
         self.ensure()
         connection = self._get()
         connection.execute(
-            'INSERT OR IGNORE INTO memberships (player_number) '
-            'VALUES (?)', (int(number),))
+            'INSERT INTO memberships (player_number, budget) VALUES (?, ?) '
+            'ON CONFLICT(player_number) DO UPDATE SET budget=excluded.budget',
+            (int(number), int(budget)))
         connection.execute(
             'DELETE FROM unit_types WHERE player_number=?',
             (int(number),))

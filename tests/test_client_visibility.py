@@ -7,7 +7,7 @@ and nothing else.
 """
 
 from board_game_concept.cli.views import types_view
-from board_game_concept.domain import UnitType
+from board_game_concept.domain import Player, UnitType
 
 from game_harness import GameHarness
 
@@ -15,7 +15,7 @@ from game_harness import GameHarness
 def apart(tmp_path):
     """Two players who have not met."""
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2])
+    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('Sneaky', 'X', 9, 9, 90)], [('Sneaky', 'x1', 0, 0)])
     harness.deploy(2, [('Brute', 'O', 2, 2, 20)], [('Brute', 'o1', 3, 2)])
     harness.resolve()
@@ -60,7 +60,7 @@ def touching(tmp_path):
     so they trade a blow, the contest ends undecided, and both fall back.
     """
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2])
+    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('Sneaky', 'X', 3, 10, 4)], [('Sneaky', 'x1', 0, 0)])
     harness.deploy(2, [('Brute', 'O', 3, 10, 4)], [('Brute', 'o1', 2, 0)])
     harness.resolve()
@@ -96,6 +96,6 @@ def test_an_enemy_type_drops_out_when_contact_lapses(tmp_path):
 
 def test_a_client_with_no_view_yet_shows_what_it_deployed(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2])
+    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
     client = harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
     assert [unit.name for unit in client.getBoard().units] == ['x1']

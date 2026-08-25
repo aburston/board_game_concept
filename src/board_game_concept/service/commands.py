@@ -10,6 +10,7 @@ things that will walk this tree - an interpreter, and whatever prices a program
 by its size - are visitors over that shape.
 """
 
+from ..domain import Player
 from .errors import GameError
 
 
@@ -96,7 +97,14 @@ class SetBoard(Node):
 
 class AddPlayer(Node):
     kind = 'add_player'
-    fields = ('number',)
+    # the budget is defaulted rather than required, so that a draft written
+    # before budgets existed still replays as the command it was, and a caller
+    # that does not care about the budget need not name one
+    fields = ('number', 'budget')
+
+    def __init__(self, **values):
+        values.setdefault('budget', Player.DEFAULT_BUDGET)
+        super().__init__(**values)
 
 
 class AddType(Node):

@@ -64,6 +64,10 @@ def _next_element(usage, typed):
                     break
                 return None
             if isinstance(element, Optional):
+                if element.holds_slot():
+                    # an optional slot takes any one word, the same as a
+                    # required one; there is nothing to match it against
+                    break
                 if element.word == word:
                     break
                 continue
@@ -82,6 +86,8 @@ def _for_element(element, prefix, source):
     if isinstance(element, str):
         return (element,)
     if isinstance(element, Optional):
+        if element.holds_slot():
+            return _for_slot(element.word.kind, prefix, source)
         return (element.word,)
     if isinstance(element, Slot):
         return _for_slot(element.kind, prefix, source)

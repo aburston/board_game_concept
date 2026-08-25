@@ -54,13 +54,23 @@ class Slot:
 
 
 class Optional:
-    """A fixed word that may be typed here, or left out."""
+    """An element that may be typed here, or left out.
+
+    Holds either a fixed word - the trailing `json` of a `show` - or a `Slot`,
+    for an argument a command takes when it is given and does without when it
+    is not. What it renders as and what it completes to are asked of what it
+    holds rather than assumed to be a word, which is what lets one class serve
+    both without a second optional-shaped thing beside it.
+    """
 
     def __init__(self, word):
         self.word = word
 
+    def holds_slot(self):
+        return isinstance(self.word, Slot)
+
     def text(self):
-        return f'[{self.word}]'
+        return f'[{word_text(self.word)}]'
 
 
 def word_text(word):
@@ -96,8 +106,10 @@ def _show(subject, description):
 
 # every production the parser can produce, in the order help lists them
 USAGES = (
-    Usage('add_player', ('add', 'player', Slot('number', NUMBER)),
-          'add a player to the game, before it starts'),
+    Usage('add_player', ('add', 'player', Slot('number', NUMBER),
+                         Optional(Slot('budget', NUMBER))),
+          'add a player to the game, before it starts, with an optional '
+          'point budget'),
     Usage('add_type', ('add', 'type', Slot('name', NAME),
                        Slot('symbol', SYMBOL), Slot('attack', NUMBER),
                        Slot('health', NUMBER), Slot('energy', NUMBER)),

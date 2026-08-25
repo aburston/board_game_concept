@@ -104,9 +104,11 @@ def _print_table(entries, headers, keys, numeric, nothing):
 def print_types(entries):
     _print_table(
         entries,
-        headers=('PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY'),
-        keys=('player', 'name', 'symbol', 'attack', 'health', 'energy'),
-        numeric=('PLAYER', 'ATTACK', 'HEALTH', 'ENERGY'),
+        headers=('PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
+                 'COST'),
+        keys=('player', 'name', 'symbol', 'attack', 'health', 'energy',
+              'cost'),
+        numeric=('PLAYER', 'ATTACK', 'HEALTH', 'ENERGY', 'COST'),
         nothing='no unit types yet')
 
 
@@ -124,9 +126,9 @@ def print_units(entries):
 def print_players(entries):
     _print_table(
         entries,
-        headers=('PLAYER', 'STATUS'),
-        keys=('player', 'status'),
-        numeric=('PLAYER',),
+        headers=('PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT'),
+        keys=('player', 'status', 'budget', 'spent', 'left'),
+        numeric=('PLAYER', 'BUDGET', 'SPENT', 'LEFT'),
         nothing='no players yet')
 
 

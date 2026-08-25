@@ -250,14 +250,21 @@ class CliTestCase(unittest.TestCase):
         proc.read_until_count(prompt, before + 1)
 
     def established_game(self, game_number='test-01', players=(1, 2)):
-        """A server past setup: board sized, players registered, committed."""
+        """A server past setup: board sized, players registered, committed.
+
+        A player is named as a number, or as a `(number, budget)` pair where
+        the test cares what that player has to spend.
+        """
         server = self.start_server(game_number)
         server.read_until(SERVER_PROMPT)
         server.send_line('set board 4 4')
         server.read_until_count(SERVER_PROMPT, 2)
-        for number in players:
+        for entry in players:
             before = server.output.count(SERVER_PROMPT)
-            server.send_line(f'add player {number}')
+            if isinstance(entry, tuple):
+                server.send_line(f'add player {entry[0]} {entry[1]}')
+            else:
+                server.send_line(f'add player {entry}')
             server.read_until_count(SERVER_PROMPT, before + 1)
         server.send_line('commit')
         server.read_until('commit complete')

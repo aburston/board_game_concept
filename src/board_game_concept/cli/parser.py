@@ -139,9 +139,23 @@ class Parser:
         }[subject]()
 
     def _parse_add_player(self):
-        self._arity(1, 'must provide 1 arg for player')
+        """`add player <number> [<budget>]`.
+
+        The budget is optional: left out, the player is registered with the
+        default. It is read here rather than left to the service layer so that
+        a word that is not a number is a parse error naming the budget, the
+        same as every other number the grammar takes.
+        """
+        if self.tokens.remaining() not in (1, 2):
+            raise ParseError(
+                'must provide a player number and an optional budget',
+                self.tokens.position)
+        number = self._integer('player number must be a number')
+        if self.tokens.at_end():
+            return commands.AddPlayer(number=number)
         return commands.AddPlayer(
-            number=self._integer('player number must be a number'))
+            number=number,
+            budget=self._integer('budget must be a number'))
 
     def _parse_add_type(self):
         self._arity(5, 'must provide 5 args for type')

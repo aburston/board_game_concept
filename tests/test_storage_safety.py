@@ -82,7 +82,7 @@ def test_what_a_write_leaves_behind_is_not_read_as_a_game_file(tmp_path,
                                                                written):
     """The three places that classify a game's files by name must skip it."""
     made = repository(tmp_path)
-    made.write_player(1, {})
+    made.write_player(1, {}, 100)
     made.mark_committed(1, turn=0)
     made.write_orders(1, {'units': None})
 
@@ -149,7 +149,7 @@ def test_holding_a_game_inside_a_hold_of_it_does_not_wait_for_itself(tmp_path):
 
 def test_what_holds_a_game_is_not_one_of_its_files(tmp_path):
     made = repository(tmp_path)
-    made.write_player(1, {})
+    made.write_player(1, {}, 100)
     made.mark_committed(1, turn=0)
 
     with made.held():

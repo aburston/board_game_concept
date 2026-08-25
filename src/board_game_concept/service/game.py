@@ -262,9 +262,15 @@ class Game:
             if mine and player_data is None:
                 # gone since the players were listed
                 continue
+            # a budget comes from the record, and a record this session is not
+            # entitled to read leaves it unknown rather than defaulted: an
+            # opponent's budget is not this session's to guess at. The
+            # repository refuses a record that carries no budget at all, so a
+            # record that was read always has one
+            budget = player_data['budget'] if mine else None
             self.players[number] = {
                 'number': number,
-                'obj': Player(number),
+                'obj': Player(number, budget),
                 'types': {},
             }
             if not mine:

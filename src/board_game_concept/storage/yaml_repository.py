@@ -122,12 +122,24 @@ class YamlGameRepository(GameRepository):
         return sorted(numbers)
 
     def read_player(self, number):
-        return self._read_yaml(self._player_file(number),
-                               f'the file for player {number}')
+        record = self._read_yaml(self._player_file(number),
+                                 f'the file for player {number}')
+        if record is None:
+            return None
+        if record.get('budget') is None:
+            # a record this repository wrote always carries one, so a record
+            # without one was written by another version or edited by hand.
+            # Either way the game is about to be played by rules it was not
+            # set up under, which is not something to default past
+            raise UnreadableGame(
+                f"the file for player {number} at "
+                f"{self._player_file(number)} carries no point budget")
+        return record
 
-    def write_player(self, number, types):
+    def write_player(self, number, types, budget):
         with self._replace(self._player_file(number)) as file:
-            yaml.safe_dump({'number': number, 'types': types}, file)
+            yaml.safe_dump(
+                {'number': number, 'budget': budget, 'types': types}, file)
 
     # --- what a player can see
 

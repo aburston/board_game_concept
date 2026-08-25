@@ -39,7 +39,7 @@ VIEW_BUILDERS = {
     'units': lambda data: views_module.units_view(data.getBoard()),
     'types': lambda data: views_module.types_view(data.getPlayers()),
     'players': lambda data: views_module.players_view(
-        data.getPlayers(), data.getEliminated()),
+        data.getPlayers(), data.getEliminated(), data.getBoard()),
     'pending': lambda data: views_module.pending_view(
         data.getPlayers(), data.getBoard()),
 }

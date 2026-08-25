@@ -7,7 +7,7 @@ is asked who has committed; what that means is decided here.
 
 import sys
 
-from ..domain import UnitType
+from ..domain import UnitType, budget
 from ..storage.serialise import units_document
 from . import identity
 from .errors import GameError
@@ -34,7 +34,8 @@ def publish(game):
     # deletes every order file, must not overlap
     with repository.held():
         repository.write_player(
-            number, _types_without_objects(game.players[number]))
+            number, _types_without_objects(game.players[number]),
+            game.getPlayerObj(number).budget)
         repository.mark_committed(number, game.getTurnNumber())
         repository.write_orders(
             number,
@@ -93,10 +94,78 @@ def _contended_squares(game, orders):
     return {square for square, claimants in claimed.items() if len(claimants) > 1}
 
 
+def _unaffordable_deployments(game, deployments):
+    """The deployments no player's point budget will pay for this turn.
+
+    Judged before any of them is applied, against the board as the turn began,
+    so that every one of a player's deployments is charged against the same
+    starting position however many there are. Keyed by `(player, unit name)`,
+    which is what the loop below has in hand.
+
+    `deployments` are the `(player, order)` pairs that are deployments and have
+    not already been refused for some other reason.
+
+    The client already refuses what a player cannot afford, so nothing typed
+    at a prompt reaches this. What does is a loaded player file, or orders
+    written by something other than the client, and neither of those has been
+    through the rule on the way in.
+    """
+    by_player = {}
+    for p_number, unit in deployments:
+        try:
+            unit_type = game.players[p_number]['types'][unit['type']]['obj']
+        except KeyError:
+            # an order naming a type its owner has not defined. The loop below
+            # is where that has always been found, and it stays there
+            continue
+        by_player.setdefault(p_number, []).append(
+            (str(unit['name']), unit_type))
+
+    refused = {}
+    for p_number, priced in by_player.items():
+        player_obj = game.players[p_number]['obj']
+        for name, reason in budget.charge(
+                game.board, player_obj, priced).items():
+            refused[(p_number, name)] = reason
+    return refused
+
+
+def _refused_deployments(game, orders):
+    """Every deployment this turn will not carry out, and why.
+
+    Both reasons a deployment can be refused before it is even attempted are
+    decided here, against the board as the turn began: two players asking for
+    one square, and an owner whose points will not pay for it. Judged up front
+    rather than as the loop reaches each order, so that what one player is
+    refused cannot depend on how far through the list the loop happens to be.
+
+    Keyed by `(player, unit name)`, which is what the loop has in hand.
+    """
+    refusals = {}
+    contended = _contended_squares(game, orders)
+    standing = []
+    for p_number, unit in orders:
+        if not _is_deployment(game, p_number, unit):
+            continue
+        square = (int(unit['x']), int(unit['y']))
+        if square in contended:
+            refusals[(p_number, str(unit['name']))] = (
+                f"two units were deployed at {square}, so both were refused")
+            continue
+        standing.append((p_number, unit))
+
+    # only the deployments still standing are charged. One already refused for
+    # its square never reaches the board, so charging it would spend points on
+    # nothing - and could push another of that player's units over a budget it
+    # actually fits inside
+    refusals.update(_unaffordable_deployments(game, standing))
+    return refusals
+
+
 def _apply_orders(game, reject):
     """Merge every player's published orders into the board."""
     orders = _published_orders(game)
-    contended = _contended_squares(game, orders)
+    refused = _refused_deployments(game, orders)
 
     for p_number, unit in orders:
         owner = game.players[p_number]['obj']
@@ -112,9 +181,12 @@ def _apply_orders(game, reject):
             reject(p_number, unit, f"unit {name} has been destroyed")
             continue
 
-        if (int(x), int(y)) in contended and _is_deployment(game, p_number, unit):
-            reject(p_number, unit,
-                   f"two units were deployed at ({x}, {y}), so both were refused")
+        # a contested square, or a deployment its owner's budget will not pay
+        # for. The budget is applied here as well as at the client because an
+        # order file reaches this without having passed through one; either
+        # way, the rest of that player's orders are carried out as usual
+        if (p_number, str(name)) in refused:
+            reject(p_number, unit, refused[(p_number, str(name))])
             continue
 
         if state == UnitType.INITIAL:
@@ -261,7 +333,8 @@ def resolve(game):
         # on the turn is let go, because a released player reads it
 
         for number, player in game.players.items():
-            repository.write_player(number, _types_without_objects(player))
+            repository.write_player(number, _types_without_objects(player),
+                                    player['obj'].budget)
             # written every turn, so it always describes the turn just resolved
             # rather than accumulating stale refusals
             repository.write_rejections(number, rejected.get(number, []),
