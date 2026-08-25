@@ -452,6 +452,58 @@ continues. A session ends on `exit`, and also when its input runs out — so a
 role can be driven from a script or a pipe as well as from a keyboard.
 
 ---
+
+## R9. Every cost in one place
+
+Nothing new is stated here. This is the rules above, gathered into one table,
+because what a thing costs is the question most often asked of them and the
+answer is currently spread across four sections. **Where this table and a rule
+disagree, the rule is right** — and `tests/test_cost_table.py` holds the
+numbers in it to the ones the game actually charges.
+
+There are two currencies. **Points** are spent once, at deployment, out of a
+budget fixed for the game (**R2.3.1**). **Energy** belongs to the unit and is
+spent a little at a time, by moving and by attacking, and by nothing else.
+
+| What | What it costs | Rule |
+|---|---|---|
+| Defining a type | nothing | **R2.4** |
+| Deploying a unit | **points**: `attack + health + energy`, its type's price | **R2.9** |
+| — a unit that is destroyed | nothing back; there are no refunds | **R2.9** |
+| A move onto an empty square | **1 energy** | **R4.3** |
+| A move onto an occupied square | **1 energy** — the same fare, whatever it walks into | **R4.4** |
+| A head-on collision | **1 energy each**, though neither unit moves | **R4.9** |
+| A move nobody can pay for | **nothing** — the unit stays put, and the order is consumed | **R4.5** |
+| A move off the board | **nothing** — the unit stays at the edge, and the order is consumed | **R4.6** |
+| A round of combat | **the attacker's `attack` value**, charged once for the round however many opponents it strikes in it | **R5.3** |
+| — a round it cannot afford in full | **nothing** — it strikes nobody rather than striking some | **R5.4** |
+| — a round fought by a wall | **nothing** — a wall never attacks | **R2.10** |
+| Being attacked | **nothing in energy**; damage comes off health | **R5.5** |
+| A turn in which a unit did nothing | **gains 1 energy**, never above the energy its type was designed with | **R3.9** |
+| — a turn in which it was given any order | **gains nothing**, even if the order cost it nothing | **R3.9** |
+
+Three things follow from the table that are worth stating out loud, because
+they decide how the game is played and none of them is obvious from any single
+row:
+
+**A kill costs about the victim's health, whatever your attack is.** Killing a
+unit of health `h` takes `ceil(h ÷ a)` rounds at `a` energy each, so the bill
+is `a × ceil(h ÷ a)` — always at least `h`, and exactly `h` when `a` divides
+it. Attack 10 and attack 1 pay the same 10 energy to kill a ten-health unit;
+attack 10 pays ten times over for a one-health one. What a high attack buys is
+not efficiency, it is **speed**: the same energy spent in one round rather than
+ten, which is what decides a duel (**R5.11**).
+
+**Energy is paid for twice.** Once in points when the unit is bought, and then
+again a point at a time as it walks and fights. A unit's energy is both a line
+in its price and the number of actions left in it.
+
+**Standing still is a move you can make.** It is the only way to get energy
+back, it costs a turn, and it is refused to anything you gave an order to —
+so a unit ordered into the board's edge, which pays nothing, still learns
+nothing and gains nothing from the turn.
+
+---
 ---
 
 # Part 2 — What is still open
@@ -528,9 +580,11 @@ accept that a fight then depends on it rather than on the two units alone.
 | R2.4–R2.5 | `unit-types` | `domain/unit.py` |
 | R2.6–R2.8 | `board-model`, `turn-commit`, `player-client` | `service/games.py`, `domain/board.py` |
 | R2.9 | `point-budget` | `domain/budget.py`, `service/games.py`, `service/turn.py` |
-| R3.1–R3.8 | `turn-commit`, `game-persistence`, `game-outcome` | `service/turn.py`, `domain/board.py` (`commit`) |
+| R2.10 | `unit-types` | `domain/unit.py` (`UnitType.__init__`, `exchangeAttacks`) |
+| R3.1–R3.9 | `turn-commit`, `game-persistence`, `game-outcome` | `service/turn.py`, `domain/board.py` (`commit`, `_rest`) |
 | R4.1–R4.10 | `unit-movement` | `domain/unit.py` (`planMove`), `domain/board.py` (`_move`) |
 | R5.1–R5.11 | `combat-resolution` | `domain/unit.py` (`exchangeAttacks`, `resolveContest`, `resolveCollision`) |
 | R6.1–R6.6 | `visibility` | `storage/serialise.py`, `service/game.py` |
 | R7.1–R7.4 | `game-outcome` | `service/turn.py`, `cli/*.py` |
 | R8 | `game-server`, `player-client`, `game-observer` | `cli/roles.py`, `cli/grammar.py` |
+| R9 | nothing of its own — it restates the rules above | `tests/test_cost_table.py` |
