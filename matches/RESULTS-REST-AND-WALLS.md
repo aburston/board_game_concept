@@ -56,6 +56,10 @@ being left holding nothing but walls.
 "In play" counts units that could act again — every unit except a wall. A unit
 out of energy is in that count, because it will rest its way back.
 
+Game 84 is written up on its own in `matches/COMMENTARY-GAME-84.md`: thirty
+units destroyed in one turn, none of them by an enemy, and neither player ever
+seeing an opposing unit at all.
+
 ## Rest: armies stop freezing, so hunts finish
 
 Every game in the two previous series ended the same way — both armies standing
