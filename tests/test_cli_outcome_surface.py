@@ -18,9 +18,12 @@ class DecidedGame(CliTestCase):
         server.read_until(SERVER_PROMPT)
         server.send_line('set board 4 4')
         server.read_until_count(SERVER_PROMPT, 2)
-        server.send_line('add player 1')
+        # registered with the top budget, because this fixture's heavy unit
+        # costs 120 points and what is under test here is the outcome, not
+        # what an army may cost
+        server.send_line('add player 1 1000')
         server.read_until_count(SERVER_PROMPT, 3)
-        server.send_line('add player 2')
+        server.send_line('add player 2 1000')
         server.read_until_count(SERVER_PROMPT, 4)
         server.send_line('commit')
         server.read_until('commit complete')
@@ -101,7 +104,8 @@ class DecidedGame(CliTestCase):
         observer = self.start_observer('test-01')
         observer.read_until(OBSERVER_PROMPT)
         lines = self.shown_table(observer, OBSERVER_PROMPT, 'players')
-        assert ['2', 'eliminated'] in [line.split() for line in lines[1:]]
+        assert ['2', 'eliminated', '1000', '102', '898'] in [
+            line.split() for line in lines[1:]]
 
 
 if __name__ == '__main__':

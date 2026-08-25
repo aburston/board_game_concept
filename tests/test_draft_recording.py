@@ -9,6 +9,7 @@ grammar is asserted here rather than left to whoever adds the next command.
 import pytest
 
 from board_game_concept.cli.grammar import USAGES, Optional, Slot
+from board_game_concept.domain import Player
 from board_game_concept.cli.parser import parse
 from board_game_concept.service import games
 from board_game_concept.service.commands import AddType, AddUnit, Move
@@ -118,7 +119,8 @@ def test_the_administrator_records_setup_too(tmp_path):
     draft = harness.repository().read_draft(0)
     assert draft['commands'] == [
         {'kind': 'set_board', 'size_x': 5, 'size_y': 6},
-        {'kind': 'add_player', 'number': 1},
+        {'kind': 'add_player', 'number': 1,
+         'budget': Player.DEFAULT_BUDGET},
     ]
 
 

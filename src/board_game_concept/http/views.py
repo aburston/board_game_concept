@@ -15,7 +15,7 @@ The words are also chosen here rather than in the renderer: a state of 1 is
 `moving` in a table and in JSON alike, because that is content, not layout.
 """
 
-from ..domain import Empty, UnitType
+from ..domain import Empty, UnitType, budget
 
 # what the stored numbers mean, said the way a player says them
 DIRECTION_WORDS = {
@@ -86,13 +86,19 @@ def types_view(players):
     for number in players:
         for type_name in players[number].get('types', {}):
             unit_type = players[number]['types'][type_name]
+            attack = _as_int(unit_type['attack'])
+            health = _as_int(unit_type['health'])
+            energy = _as_int(unit_type['energy'])
             entries.append({
                 'player': number,
                 'name': unit_type['name'],
                 'symbol': unit_type['symbol'],
-                'attack': _as_int(unit_type['attack']),
-                'health': _as_int(unit_type['health']),
-                'energy': _as_int(unit_type['energy']),
+                'attack': attack,
+                'health': health,
+                'energy': energy,
+                # what deploying one unit of this type spends, so a player can
+                # read the price beside the design rather than adding it up
+                'cost': attack + health + energy,
             })
     return entries
 
@@ -123,12 +129,27 @@ def units_view(board):
     return entries
 
 
-def players_view(players, eliminated=()):
-    """Every registered player, and whether they are still in the game."""
-    return [{
-        'player': number,
-        'status': 'eliminated' if number in eliminated else 'active',
-    } for number in players]
+def players_view(players, eliminated=(), board=None):
+    """Every registered player, whether they are in the game, and their points.
+
+    The three point numbers are `None` where this session is not entitled to
+    know them. That is decided by whether the player's record was read at all
+    - a player reads their own and nobody else's - rather than by filtering
+    here, so there is nothing for a filter to be forgotten from.
+    """
+    entries = []
+    for number in players:
+        player = players[number].get('obj')
+        known = player is not None and player.budget is not None
+        spent = budget.spent(board, player) if known else None
+        entries.append({
+            'player': number,
+            'status': 'eliminated' if number in eliminated else 'active',
+            'budget': player.budget if known else None,
+            'spent': spent,
+            'left': player.budget - spent if known else None,
+        })
+    return entries
 
 
 def _is_deployment(board, owner, name):

@@ -10,7 +10,7 @@ import pytest
 from board_game_concept.cli.parser import ParseError, parse
 from board_game_concept.cli import roles
 from board_game_concept.service import commands
-from board_game_concept.domain import UnitType
+from board_game_concept.domain import Player, UnitType
 
 
 def refused(line):
@@ -110,9 +110,20 @@ class TestAdd:
     def test_a_player(self):
         assert parse('add player 2') == commands.AddPlayer(number=2)
 
-    @pytest.mark.parametrize('line', ['add player', 'add player 1 2'])
+    @pytest.mark.parametrize('line', ['add player', 'add player 1 2 3'])
     def test_a_player_with_the_wrong_arguments(self, line):
-        assert refused(line) == 'must provide 1 arg for player'
+        assert refused(line) == (
+            'must provide a player number and an optional budget')
+
+    def test_a_player_with_a_budget(self):
+        assert parse('add player 1 150') == commands.AddPlayer(
+            number=1, budget=150)
+
+    def test_a_player_without_a_budget_takes_the_default(self):
+        assert parse('add player 1').budget == Player.DEFAULT_BUDGET
+
+    def test_a_budget_that_is_not_a_number(self):
+        assert refused('add player 1 lots') == 'budget must be a number'
 
     def test_a_player_that_is_not_a_number(self):
         assert refused('add player two') == 'player number must be a number'

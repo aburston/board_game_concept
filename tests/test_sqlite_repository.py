@@ -10,6 +10,7 @@ import os
 
 import pytest
 
+from board_game_concept.service.errors import UnreadableGame
 from board_game_concept.storage.sqlite_repository import SqliteGameRepository
 
 pytestmark = pytest.mark.backend('sqlite')
@@ -163,3 +164,31 @@ def test_the_port_says_what_an_implementation_owes(tmp_path):
 
     with pytest.raises(NotImplementedError):
         Half().read_board()
+
+
+def test_a_budget_round_trips(tmp_path):
+    repository = SqliteGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_player(1, {}, 150)
+    assert repository.read_player(1)['budget'] == 150
+    # re-registering the same player carries the new budget, rather than
+    # leaving the row as `INSERT OR IGNORE` would have
+    repository.write_player(1, {}, 60)
+    assert repository.read_player(1)['budget'] == 60
+
+
+def test_a_membership_without_a_budget_column_is_refused(tmp_path):
+    # a database written before budgets existed. `CREATE TABLE IF NOT EXISTS`
+    # will not add the column, and this change carries no migration, so the
+    # read is refused the way a YAML record with no budget is
+    repository = SqliteGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_player(1, {}, 100)
+    connection = repository._get()
+    connection.execute('DROP TABLE memberships')
+    connection.execute(
+        'CREATE TABLE memberships (player_number INTEGER PRIMARY KEY)')
+    connection.execute('INSERT INTO memberships VALUES (1)')
+    with pytest.raises(UnreadableGame) as raised:
+        repository.read_player(1)
+    assert 'budget' in str(raised.value)

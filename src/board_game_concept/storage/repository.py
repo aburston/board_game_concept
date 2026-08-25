@@ -88,10 +88,22 @@ class GameRepository:
         raise NotImplementedError
 
     def read_player(self, number):
-        """One player's record, or None if there is no such player."""
+        """One player's record, or None if there is no such player.
+
+        A record holds the player's number, their point budget, and their unit
+        types. A stored record without a budget is malformed game data and is
+        refused rather than defaulted: a budget is a rule the game was set up
+        under, and carrying on without one would play the game by rules it was
+        not set up with.
+        """
         raise NotImplementedError
 
-    def write_player(self, number, types):
+    def write_player(self, number, types, budget):
+        """One player's types and the budget they were registered with.
+
+        The budget is written every time, so that a record this repository
+        produced always carries one and `read_player` never has to guess.
+        """
         raise NotImplementedError
 
     # --- what a player can see

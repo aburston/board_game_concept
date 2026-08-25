@@ -112,7 +112,7 @@ def test_two_units_ordered_into_each_other_do_not_swap():
 
 def a_two_player_game(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2])
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('Sneaky', 'X', 9, 9, 90)], [('Sneaky', 'x1', 0, 0)])
     harness.deploy(2, [('Brute', 'O', 2, 2, 20)], [('Brute', 'o1', 5, 2)])
     harness.resolve()
@@ -140,7 +140,7 @@ def test_a_client_lists_no_enemy_type_before_contact(tmp_path):
 
 def test_a_player_can_order_their_own_unit_when_a_name_is_shared(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2])
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     # player 2 deploys first, so their `scout` is registered first
     harness.deploy(2, [('O', 'O', 1, 5, 50)], [('O', 'scout', 5, 2)])
     harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'scout', 0, 0)])
@@ -173,7 +173,7 @@ def test_an_order_naming_a_destroyed_unit_is_refused(tmp_path):
     from board_game_concept.storage.serialise import units_document
 
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2])
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     # each keeps a reserve out of the way, so losing the duellist does not end
     # the game and there are further turns to play
     harness.deploy(1, [('X', 'X', 5, 5, 50)],

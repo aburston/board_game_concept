@@ -30,7 +30,7 @@ def test_types_view_lists_every_type_with_its_statistics(tmp_path):
     by_name = {entry['name']: entry for entry in entries}
     assert by_name['tank'] == {
         'player': 1, 'name': 'tank', 'symbol': 'T',
-        'attack': 3, 'health': 5, 'energy': 10}
+        'attack': 3, 'health': 5, 'energy': 10, 'cost': 18}
     assert by_name['scout']['player'] == 2
 
 
@@ -91,10 +91,28 @@ def test_units_view_gives_an_undeployed_unit_no_position():
 def test_players_view_marks_the_eliminated(tmp_path):
     session = a_game(tmp_path).session(0)
 
-    entries = views.players_view(session.getPlayers(), eliminated=(2,))
+    entries = views.players_view(session.getPlayers(), eliminated=(2,),
+                                 board=session.getBoard())
 
-    assert entries == [{'player': 1, 'status': 'active'},
-                       {'player': 2, 'status': 'eliminated'}]
+    # the administrator reads every record, so every player's points are known
+    assert entries == [
+        {'player': 1, 'status': 'active',
+         'budget': 100, 'spent': 18, 'left': 82},
+        {'player': 2, 'status': 'eliminated',
+         'budget': 100, 'spent': 13, 'left': 87}]
+
+
+def test_players_view_leaves_another_players_points_unknown(tmp_path):
+    session = a_game(tmp_path).session(1)
+
+    entries = views.players_view(session.getPlayers(),
+                                 board=session.getBoard())
+
+    by_number = {entry['player']: entry for entry in entries}
+    assert by_number[1]['budget'] == 100
+    assert by_number[1]['spent'] == 18
+    assert (by_number[2]['budget'], by_number[2]['spent'],
+            by_number[2]['left']) == (None, None, None)
 
 
 def test_pending_view_names_the_order_each_unit_holds(tmp_path):

@@ -6,14 +6,14 @@ still held the commit barrier open, and nothing anywhere counted turns.
 
 import pytest
 
-from board_game_concept.domain import UnitType
+from board_game_concept.domain import Player, UnitType
 
 from game_harness import GameHarness
 
 
 def duel(tmp_path, mine=(5, 5, 50), theirs=None, my_units=None, their_units=None):
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2])
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', *mine)], my_units or [('X', 'x1', 0, 0)])
     harness.deploy(2, [('O', 'O', *(theirs or mine))],
                    their_units or [('O', 'o1', 1, 0)])
@@ -30,7 +30,7 @@ def outcome(harness):
 
 def test_the_setup_commit_is_not_a_turn(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2])
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     assert harness.session(0).getTurnNumber() == 0
 
 
@@ -88,7 +88,7 @@ def test_an_inert_unit_keeps_its_owner_in_the_game(tmp_path):
 
 def test_a_player_who_deployed_nothing_is_eliminated(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2])
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
     harness.deploy(2, [('O', 'O', 1, 5, 50)], [])
     harness.resolve()
@@ -120,7 +120,7 @@ def test_a_one_player_game_is_never_decided(tmp_path):
     # there is nobody to be the last player standing against, which is what
     # keeps a solo game usable as a sandbox
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1])
+    harness.create(6, 3, [1], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
     harness.resolve()
     harness.turn({1: []})

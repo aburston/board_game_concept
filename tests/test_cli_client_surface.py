@@ -97,7 +97,7 @@ class DefiningUnitTypes(ClientTestCase):
         client.send_line('add type Cross X 1 1 10')
         client.read_until_count(CLIENT_PROMPT, 2)
         lines = self.shown_table(client, CLIENT_PROMPT, 'types')
-        assert lines[1].split() == ['1', 'Cross', 'X', '1', '1', '10']
+        assert lines[1].split() == ['1', 'Cross', 'X', '1', '1', '10', '12']
 
     def test_wrong_argument_count(self):
         client = self.player_client()
@@ -164,6 +164,21 @@ class DeployingUnits(ClientTestCase):
         client.send_line('add unit Cross x9 2 2')
         client.read_until("can't add units after first turn")
 
+    def test_deploying_more_than_the_budget_can_pay_for(self):
+        client = self.player_client(players=((1, 30),))
+        client.send_line('add type Cross X 1 10 10')
+        client.read_until_count(CLIENT_PROMPT, 2)
+        client.send_line('add unit Cross x1 0 0')
+        client.read_until_count(CLIENT_PROMPT, 3)
+        # 21 spent of 30, so a second costs more than the 9 that are left
+        client.send_line('add unit Cross x2 1 1')
+        client.read_until('costs 21 points')
+        client.read_until('9 of player 1')
+        client.read_until('30-point budget')
+        # the session survives the refusal, and the square is still free
+        client.send_line('show units')
+        client.read_until_count(CLIENT_PROMPT, 5)
+
 
 class OrderingMovement(ClientTestCase):
 
@@ -210,8 +225,8 @@ class ClientDisplayCommands(ClientTestCase):
         client.read_until_count(CLIENT_PROMPT, 2)
         lines = self.shown_table(client, CLIENT_PROMPT, 'types')
         assert lines[0].split() == [
-            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY']
-        assert lines[1].split() == ['1', 'Cross', 'X', '1', '1', '10']
+            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY', 'COST']
+        assert lines[1].split() == ['1', 'Cross', 'X', '1', '1', '10', '12']
 
     def test_showing_units(self):
         client = self.with_a_unit()
@@ -229,8 +244,20 @@ class ClientDisplayCommands(ClientTestCase):
     def test_showing_players(self):
         client = self.player_client()
         lines = self.shown_table(client, CLIENT_PROMPT, 'players')
-        assert lines[0].split() == ['PLAYER', 'STATUS']
-        assert ['1', 'active'] in [line.split() for line in lines[1:]]
+        assert lines[0].split() == [
+            'PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT']
+        # a player reads their own points, and a `-` where another player's
+        # record was never theirs to read
+        assert ['1', 'active', '100', '0', '100'] in [
+            line.split() for line in lines[1:]]
+
+    def test_another_players_points_are_not_shown(self):
+        client = self.player_client(players=(1, 2), player=1)
+        lines = self.shown_table(client, CLIENT_PROMPT, 'players')
+        rows = {line.split()[0]: line.split() for line in lines[1:]}
+        # player 2's record is not this session's to read, so the three point
+        # columns have nothing to put in them
+        assert rows['2'][2:] == ['-', '-', '-']
 
     def test_showing_the_board_with_a_legend(self):
         client = self.with_a_unit()

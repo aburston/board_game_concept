@@ -74,6 +74,12 @@ class TestWordsOfTheLanguage:
             'east', 'north', 'south', 'west']
         assert candidates('move alpha s', roles.CLIENT) == ['south']
 
+    def test_an_optional_number_offers_nothing(self):
+        # `add player <number> [<budget>]`: an optional slot completes the way
+        # a required one does, and a number is the person's to choose
+        assert candidates('add player ', roles.SERVER) == []
+        assert candidates('add player 1 ', roles.SERVER) == []
+
     def test_a_word_that_is_not_in_the_grammar_offers_nothing(self):
         assert candidates('wibble ', roles.CLIENT) == []
         assert candidates('show wibble ', roles.CLIENT) == []

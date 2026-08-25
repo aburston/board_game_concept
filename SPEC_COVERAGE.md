@@ -20,6 +20,7 @@ source of truth for intended behaviour.
 | `game-observer` | The `bgcobserver` read-only command surface |
 | `game-outcome` | Player elimination, victory, draw, how a decided game stops, turn numbering |
 | `cli-completion` | What completes at each point in a session, where the candidates come from, and the shell completion for launching a role |
+| `point-budget` | What a player's point budget is and when it is fixed, what a type costs, how spend is derived from the board, and when a deployment is refused |
 
 Validate them with:
 

@@ -54,9 +54,16 @@ resized.
 draws row `y=0` first, so north is up the screen.
 
 **R2.3 Players.** The administrator registers each player before play starts,
-with `add player <number>` or `load player <file>`. Player numbers are integers.
-Player 0 is the administrator and holds no units. No player can be added once
-the game has started.
+with `add player <number> [budget]` or `load player <file>`. Player numbers are
+integers. Player 0 is the administrator and holds no units. No player can be
+added once the game has started.
+
+**R2.3.1 The point budget.** Each player is registered with a **point budget**,
+which is what bounds the army they may deploy (**R2.9**). It is an integer from
+**1 to 1000**, and is **100** where the administrator does not name one. Two
+players of the same game may be given different budgets. A budget is fixed at
+registration: nothing in play raises or lowers it. A player file may carry a
+`budget:` key; one that does not gets the default.
 
 **R2.4 Unit types.** Each player defines their own unit types with
 `add type <name> <symbol> <attack> <health> <energy>`:
@@ -85,7 +92,8 @@ copy of one of your own types, at those coordinates. It is refused if:
 - the coordinates are off the board, or
 - you already have a unit of that name (**R2.7**), or
 - the square is already held, or already claimed by another unit waiting to be
-  deployed this turn.
+  deployed this turn, or
+- your point budget will not pay for it (**R2.9**).
 
 **R2.7 Unit names.** A name must be unique **within one player's** units. Two
 different players may both have a unit called `scout`; an order is always
@@ -95,6 +103,26 @@ resolved against the units the ordering player owns.
 define types and deploy units but may not order movement. After it you may order
 movement but may no longer define types or deploy units. There is no way to
 reinforce later.
+
+**R2.9 What a unit costs.** A type costs `attack + health + energy` points, so
+`add type Cross X 1 10 10` costs **21**. The cheapest type a player can define
+costs 3 and the dearest costs 120. Defining a type is free; **deploying** is
+what spends. Each unit deployed costs its type's price again, so four Crosses
+cost 84 of a 100-point budget and a fifth is refused.
+
+What you have spent is the total price of every unit you have deployed,
+including the ones that have since been destroyed. **There are no refunds**:
+points buy a unit, not the time it survives for. A deployment that would take
+you past your budget is refused, naming the cost and what you have left; one
+that spends exactly what is left is allowed. `show types` prints each type's
+`COST`, and `show players` prints your `BUDGET`, `SPENT` and `LEFT`.
+
+The rule is applied again when the turn resolves, so a deployment that reaches
+the server without passing through a client — a loaded player file, most
+likely — is refused there instead, and reported as a rejected order. Where more
+deployments arrive in one turn than the budget can pay for, they are charged in
+order of unit name, so which ones survive is decided by the rules and not by the
+order they were written in.
 
 ---
 
@@ -332,7 +360,7 @@ Every role: `help`, `exit`, `show ...`.
 | Command | Server | Client | Observer |
 |---|:--:|:--:|:--:|
 | `set board <x> <y>` | ✔ | | |
-| `add player <number>` | ✔ | | |
+| `add player <number> [budget]` | ✔ | | |
 | `load board <file>` | ✔ | | |
 | `load player <file>` | ✔ | | |
 | `add type <name> <symbol> <attack> <health> <energy>` | | ✔ | |
@@ -423,9 +451,10 @@ accept that a fight then depends on it rather than on the two units alone.
 | Rules | Specified in | Verified against |
 |---|---|---|
 | R2.1–R2.2 | `board-model` | `domain/board.py` |
-| R2.3 | `game-server` | `service/games.py` |
+| R2.3, R2.3.1 | `game-server`, `point-budget` | `service/games.py`, `domain/player.py` |
 | R2.4–R2.5 | `unit-types` | `domain/unit.py` |
 | R2.6–R2.8 | `board-model`, `turn-commit`, `player-client` | `service/games.py`, `domain/board.py` |
+| R2.9 | `point-budget` | `domain/budget.py`, `service/games.py`, `service/turn.py` |
 | R3.1–R3.8 | `turn-commit`, `game-persistence`, `game-outcome` | `service/turn.py`, `domain/board.py` (`commit`) |
 | R4.1–R4.10 | `unit-movement` | `domain/unit.py` (`planMove`), `domain/board.py` (`_move`) |
 | R5.1–R5.11 | `combat-resolution` | `domain/unit.py` (`exchangeAttacks`, `resolveContest`, `resolveCollision`) |

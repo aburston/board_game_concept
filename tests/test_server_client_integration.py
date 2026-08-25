@@ -467,9 +467,11 @@ class TestServerClientIntegration(unittest.TestCase):
 
         server.send_line('set board 3 3')
         server.read_until('bgcserver> ')
-        server.send_line('add player 1')
+        # the top budget: the types below cost 111 and 104, and what is
+        # under test here is a view of a unit fought over several rounds
+        server.send_line('add player 1 1000')
         server.read_until('bgcserver> ')
-        server.send_line('add player 2')
+        server.send_line('add player 2 1000')
         server.read_until('bgcserver> ')
         server.send_line('commit')
         server.read_until('wait for player commit')

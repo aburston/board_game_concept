@@ -11,7 +11,7 @@ holding only the part that is genuinely theirs - what to say, and to whom.
 
 import yaml
 
-from ..domain import Board, Player, UnitType
+from ..domain import Board, Player, UnitType, budget
 from . import identity
 from .errors import GameError
 
@@ -32,27 +32,28 @@ def set_board_size(data, command):
     data.setBoard(board)
 
 
-def _player(number):
+def _player(number, points=Player.DEFAULT_BUDGET):
     """A player of that number, or a refusal saying why there cannot be one.
 
-    The range is the domain's and `Player` states it; this turns the refusal
-    into one a caller can act on, as `set_board_size` does for the board's own
-    limits. Without it the assertion escapes as an `AssertionError`, which the
-    roles do not catch, and a mistyped number ends the session.
+    The range is the domain's and `Player` states it - both the number's and
+    the budget's; this turns the refusal into one a caller can act on, as
+    `set_board_size` does for the board's own limits. Without it the assertion
+    escapes as an `AssertionError`, which the roles do not catch, and a
+    mistyped number ends the session.
     """
     if not identity.is_player(number):
         raise GameError(identity.out_of_range(number))
     try:
-        return Player(number)
+        return Player(number, points)
     except AssertionError as e:
         raise GameError(str(e)) from e
 
 
 def add_player(data, command):
-    """Register a player, before the game starts."""
+    """Register a player, with their point budget, before the game starts."""
     if data.getNewGame() is False:
         raise GameError("can't add players to an existing game")
-    player = _player(command.number)
+    player = _player(command.number, command.budget)
     data.getPlayers()[command.number] = {
         'obj': player,
         'types': {},
@@ -82,8 +83,16 @@ def load_player(data, command):
     player_data = _read_yaml(command.path, 'player')
     number = int(player_data['number'])
     # a file is written by hand, so its number is checked here at the edge the
-    # same way one typed at the prompt is
-    player = _player(number)
+    # same way one typed at the prompt is - and so is its budget. A file with
+    # no `budget:` is a budget the author did not choose, which is what the
+    # default is for; a *stored* record with none is a different thing and
+    # `game-persistence` refuses it
+    points = player_data.get('budget', Player.DEFAULT_BUDGET)
+    try:
+        points = int(points)
+    except (TypeError, ValueError) as e:
+        raise GameError(f"budget must be a number in {command.path}") from e
+    player = _player(number, points)
     data.getPlayers()[number] = {
         'obj': player,
         'types': player_data['types'],
@@ -121,6 +130,19 @@ def deploy_unit(data, command):
     try:
         unit_type = (data.getPlayers()[data.player_number]
                      ['types'][command.type_name]['obj'])
+    except Exception as e:
+        raise GameError(f"error creating new unit {e}") from e
+
+    # what the budget will not pay for is refused before anything is placed,
+    # so a refusal leaves the game exactly as it was and `perform` records
+    # nothing. The board asked is the client's own view, which holds all of
+    # this player's own units - including one deployed a moment ago - so the
+    # spend it is judged against is complete
+    refusal = budget.refusal(board, player_obj, unit_type)
+    if refusal is not None:
+        raise GameError(refusal)
+
+    try:
         # the client holds one board, which is the view it was published, so a
         # unit deployed this turn goes into it and is visible to its owner at
         # once. It used to hold a second, fuller board as well, which had to be

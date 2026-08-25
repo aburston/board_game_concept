@@ -12,6 +12,7 @@ import pytest
 
 from board_game_concept import Game, YamlGameRepository
 from board_game_concept.domain import Board, Player, UnitType
+from board_game_concept.service.errors import UnreadableGame
 from board_game_concept.storage.repository import GameRepository
 
 # this file is about the YAML backend specifically: the directory layout,
@@ -42,7 +43,7 @@ def test_the_layout_is_the_one_the_spec_describes(tmp_path):
     repository.write_board(4, 5)
     repository.write_player(1, {'Cross': {'name': 'Cross', 'symbol': 'X',
                                           'attack': 1, 'health': 1,
-                                          'energy': 10}})
+                                          'energy': 10}}, 100)
     repository.mark_committed(1)
     repository.write_orders(1, {'units': None})
     repository.write_rejections(1, [])
@@ -65,7 +66,7 @@ def test_what_goes_in_comes_back(tmp_path):
     assert repository.read_board() == (4, 5)
 
     assert repository.player_numbers() == []
-    repository.write_player(2, {})
+    repository.write_player(2, {}, 100)
     assert repository.player_numbers() == [2]
     assert repository.read_player(2)['number'] == 2
 
@@ -241,7 +242,7 @@ def test_a_draft_is_not_mistaken_for_a_player(tmp_path):
     """
     repository = YamlGameRepository('one', base_path=str(tmp_path))
     repository.ensure()
-    repository.write_player(1, {})
+    repository.write_player(1, {}, 100)
     repository.write_draft(1, {'turn': 0, 'commands': []})
 
     assert repository.player_numbers() == [1]
@@ -255,3 +256,23 @@ def test_a_draft_is_not_mistaken_for_published_orders(tmp_path):
 
     assert repository.committed_players() == []
     assert repository.has_orders(1) is False
+
+
+def test_a_budget_round_trips(tmp_path):
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_player(1, {}, 150)
+    assert repository.read_player(1)['budget'] == 150
+
+
+def test_a_record_written_without_a_budget_is_refused(tmp_path):
+    # a file written by another version, or edited by hand. A budget is a rule
+    # the game was set up under, so the game is refused rather than defaulted
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_player(1, {}, 100)
+    path = tmp_path / 'games' / '_one' / 'players' / '1.yaml'
+    path.write_text('number: 1\ntypes: {}\n')
+    with pytest.raises(UnreadableGame) as raised:
+        repository.read_player(1)
+    assert 'budget' in str(raised.value)

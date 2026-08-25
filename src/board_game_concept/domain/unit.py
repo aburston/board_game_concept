@@ -71,6 +71,18 @@ class UnitType:
         # so that an undecided contest can send it back where it came from
         self.moved_from = None
 
+    @property
+    def cost(self):
+        """What deploying one unit of this design spends of a point budget.
+
+        Read from the design this unit was made from rather than from the
+        values play wears down, so a unit that has lost health and spent
+        energy still costs what it cost when it was deployed - and a destroyed
+        one is not free. Computed rather than stored: a second copy of a number
+        the type already holds can only ever disagree with it.
+        """
+        return self.type_attack + self.type_health + self.type_energy
+
     def move(self, direction):
         self.state = UnitType.MOVING
         self.direction = direction

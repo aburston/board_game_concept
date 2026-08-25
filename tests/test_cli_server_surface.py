@@ -133,8 +133,29 @@ class RegisteringPlayers(CliTestCase):
     def test_wrong_argument_count(self):
         server = self.start_server()
         server.read_until(SERVER_PROMPT)
-        server.send_line('add player 1 2')
-        server.read_until('must provide 1 arg for player')
+        server.send_line('add player 1 2 3')
+        server.read_until(
+            'must provide a player number and an optional budget')
+
+    def test_a_player_with_a_budget(self):
+        server = self.start_server()
+        server.read_until(SERVER_PROMPT)
+        server.send_line('add player 1 150')
+        server.read_until_count(SERVER_PROMPT, 2)
+        server.send_line('show players')
+        server.read_until('150')
+
+    def test_a_budget_that_is_not_a_number(self):
+        server = self.start_server()
+        server.read_until(SERVER_PROMPT)
+        server.send_line('add player 1 lots')
+        server.read_until('budget must be a number')
+
+    def test_a_budget_out_of_range(self):
+        server = self.start_server()
+        server.read_until(SERVER_PROMPT)
+        server.send_line('add player 1 5000')
+        server.read_until('budget must be from 1 to 1000')
 
     def test_add_without_a_subject(self):
         server = self.start_server()
@@ -208,8 +229,8 @@ class ServerDisplayCommands(CliTestCase):
         server.read_until_count(SERVER_PROMPT, 3)
         lines = self.shown_table(server, SERVER_PROMPT, 'types')
         assert lines[0].split() == [
-            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY']
-        assert lines[1].split() == ['1', 'O', 'O', '1', '1', '10']
+            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY', 'COST']
+        assert lines[1].split() == ['1', 'O', 'O', '1', '1', '10', '12']
 
     def test_showing_units(self):
         # the server's prompt is setup, and a loaded player's units only reach
@@ -222,8 +243,9 @@ class ServerDisplayCommands(CliTestCase):
         server.send_line('add player 1')
         server.read_until_count(SERVER_PROMPT, 3)
         lines = self.shown_table(server, SERVER_PROMPT, 'players')
-        assert lines[0].split() == ['PLAYER', 'STATUS']
-        assert lines[1].split() == ['1', 'active']
+        assert lines[0].split() == [
+            'PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT']
+        assert lines[1].split() == ['1', 'active', '100', '0', '100']
 
     def test_showing_pending_orders(self):
         server = self._sized()
@@ -235,7 +257,8 @@ class ServerDisplayCommands(CliTestCase):
         server.send_line('add player 1')
         server.read_until_count(SERVER_PROMPT, 3)
         assert self.shown_json(server, SERVER_PROMPT, 'players') == {
-            'players': [{'player': 1, 'status': 'active'}]}
+            'players': [{'player': 1, 'status': 'active',
+                         'budget': 100, 'spent': 0, 'left': 100}]}
 
     def test_an_empty_subject_as_json_is_an_empty_list(self):
         server = self._sized()

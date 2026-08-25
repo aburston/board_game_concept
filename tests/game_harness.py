@@ -51,12 +51,28 @@ class GameHarness:
 
     # --- setting a game up
 
-    def create(self, size_x, size_y, player_numbers):
-        """Size the board and register the players, as the administrator does."""
+    def create(self, size_x, size_y, player_numbers, budget=None):
+        """Size the board and register the players, as the administrator does.
+
+        A player is named as a number, or as a `(number, budget)` pair where
+        the test cares what that player has to spend. `budget` sets it for
+        every player named as a bare number - which is what a test about some
+        other rule wants, so that a fixture built when deploying was free is
+        not quietly turned into a test of the point budget.
+        """
         server = self.session(0)
         games.set_board_size(server, SetBoard(size_x=size_x, size_y=size_y))
-        for number in player_numbers:
-            games.add_player(server, AddPlayer(number=number))
+        for entry in player_numbers:
+            if isinstance(entry, tuple):
+                number, player_budget = entry
+            else:
+                number, player_budget = entry, budget
+            if player_budget is None:
+                games.add_player(server, AddPlayer(number=number))
+            else:
+                games.add_player(server,
+                                 AddPlayer(number=number,
+                                           budget=player_budget))
         assert server.serverSave()
         return server
 

@@ -8,6 +8,7 @@ the draft off disk afterwards.
 import pytest
 import yaml
 
+from board_game_concept.domain import Player
 from cli_harness import (CLIENT_PROMPT, GAMES_DIR, SERVER_PROMPT, CliTestCase)
 
 # these tests read the YAML draft file off disk to check what a session
@@ -106,7 +107,8 @@ class ServerDrafts(CliTestCase):
         draft = draft_of('test-01', 0)
         self.assertEqual(draft['commands'],
                          [{'kind': 'set_board', 'size_x': 4, 'size_y': 4},
-                          {'kind': 'add_player', 'number': 1}])
+                          {'kind': 'add_player', 'number': 1,
+                           'budget': Player.DEFAULT_BUDGET}])
 
     def test_committing_setup_leaves_no_draft_behind(self):
         server = self.established_game(players=(1,))

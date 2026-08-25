@@ -69,6 +69,33 @@ Two backends behind the same `GameRepository` port:
 Pick one at startup and stay with it: a game written by one backend is
 not readable by the other, and there is no migration between them.
 
+## Point budgets
+
+Each player is registered with a point budget, which is what bounds the
+army they may deploy. The administrator names it as an optional second
+argument:
+
+```
+bgcserver> add player 1 150     # 150 points to spend
+bgcserver> add player 2         # the default: 100
+```
+
+A budget is an integer from 1 to 1000 and is fixed for the life of the
+game. A type costs the sum of its statistics — `add type Cross X 1 10
+10` costs 21 — and every unit deployed from it costs that again, so a
+100-point budget buys four Crosses and refuses a fifth. Defining a type
+is free; deploying is what spends, and a destroyed unit is not refunded.
+`show types` prints each type's `COST` and `show players` prints your
+`BUDGET`, `SPENT` and `LEFT`.
+
+A player file handed to `load player` may carry a `budget:` key; one
+that leaves it out gets the default.
+
+**A game saved before budgets existed cannot be opened.** A stored
+player record with no budget is refused rather than defaulted, because
+defaulting one would play the game by rules it was not set up under.
+Delete the game directory and start a new one.
+
 ## Web service - what's next
  * Authentication and TLS
 
@@ -94,6 +121,13 @@ The suite runs the installed commands when they are on your path and falls
 back to the module files when they are not, so it passes either way — but
 `tests/test_cli_installation.py` skips unless you have installed the package,
 and that is the file that proves the commands work at all.
+
+**Install editable, not plain, while you are working.** A `pip install .`
+copies the source into `site-packages`, and the suites that drive the roles
+as subprocesses — `tests/test_cli_*_surface.py` and
+`tests/test_server_client_integration.py` — then run that copy rather than
+what you have just edited. They go green against the code you replaced, which
+looks exactly like passing. `pip install -e` points them at `src/`.
 
 # Console scripts
 

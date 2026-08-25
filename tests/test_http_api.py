@@ -11,6 +11,7 @@ from board_game_concept import Game
 from board_game_concept.domain import Board, Player, UnitType
 from board_game_concept.http.app import create_app
 from board_game_concept.service import games as game_ops
+from board_game_concept.domain import Player
 from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
                                                  SetBoard)
 from board_game_concept.storage.sqlite_repository import SqliteGameRepository
@@ -100,7 +101,9 @@ def test_views_return_the_same_json_the_show_command_renders(tmp_path):
     assert [t['name'] for t in types['types']] == ['Cross']
 
     players = client.get('/games/one/players/1/views/players').get_json()
-    assert players['players'] == [{'player': 1, 'status': 'active'}]
+    assert players['players'] == [
+        {'player': 1, 'status': 'active',
+         'budget': Player.DEFAULT_BUDGET, 'spent': 16, 'left': 84}]
 
 
 def test_a_missing_game_is_404(tmp_path):
@@ -314,3 +317,59 @@ def test_a_deployed_unit_is_visible_over_the_view(tmp_path):
     units = client.get('/games/two/players/1/views/units').get_json()
     names = sorted(u['name'] for u in units['units'])
     assert names == ['o1']
+
+
+# --- the point budget over the wire
+
+
+def test_posting_add_player_carries_its_budget(tmp_path):
+    """`AddPlayer` gained a field, and `as_record` carries it with no route
+    change of its own."""
+    client = _client(tmp_path)
+    client.post('/games/budgeted/players/0/commands',
+                json={'kind': 'set_board', 'size_x': 4, 'size_y': 4})
+
+    response = client.post(
+        '/games/budgeted/players/0/commands',
+        json={'kind': 'add_player', 'number': 1, 'budget': 150})
+    assert response.status_code == 204, response.get_json()
+
+    client.post('/games/budgeted/players/0/commit')
+    players = client.get(
+        '/games/budgeted/players/0/views/players').get_json()['players']
+    assert players[0]['budget'] == 150
+    assert players[0]['spent'] == 0
+    assert players[0]['left'] == 150
+
+
+def test_a_command_without_a_budget_takes_the_default(tmp_path):
+    client = _client(tmp_path)
+    client.post('/games/defaulted/players/0/commands',
+                json={'kind': 'set_board', 'size_x': 4, 'size_y': 4})
+
+    response = client.post(
+        '/games/defaulted/players/0/commands',
+        json={'kind': 'add_player', 'number': 1})
+    assert response.status_code == 204, response.get_json()
+
+    client.post('/games/defaulted/players/0/commit')
+    players = client.get(
+        '/games/defaulted/players/0/views/players').get_json()['players']
+    assert players[0]['budget'] == Player.DEFAULT_BUDGET
+
+
+def test_a_player_does_not_read_another_players_points(tmp_path):
+    _set_up(tmp_path)
+    client = _client(tmp_path)
+    players = client.get(
+        '/games/one/players/1/views/players').get_json()['players']
+    own = [entry for entry in players if entry['player'] == 1][0]
+    assert own['budget'] == Player.DEFAULT_BUDGET
+    assert own['spent'] == 16
+
+
+def test_a_type_carries_its_cost_over_the_wire(tmp_path):
+    _set_up(tmp_path)
+    client = _client(tmp_path)
+    types = client.get('/games/one/players/1/views/types').get_json()['types']
+    assert types[0]['cost'] == 16

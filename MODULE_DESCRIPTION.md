@@ -34,10 +34,20 @@ touching the parts that do not care.
 ### domain - the rules
 
 - **`square.py`** - `Empty`, what a square holds when nothing else does.
-- **`player.py`** - `Player`, identified by an integer number.
+- **`player.py`** - `Player`, identified by an integer number, and holding the
+  point budget they were registered with. A budget of `None` means the session
+  is not entitled to know it - a player reads their own record and nobody
+  else's.
 - **`unit.py`** - `UnitType`, which is both a type and, once copied onto the
   board, a unit: name, symbol, attack, health, energy, plus the direction and
-  state constants. Holds movement, combat and contest resolution.
+  state constants. Holds movement, combat and contest resolution, and `cost` -
+  what deploying one unit of the design spends.
+- **`budget.py`** - what a player has spent of their points, what they have
+  left, and whether they can afford a type. Spend is summed off the board
+  rather than counted, so no total can drift out of step with the army; there
+  are no refunds for a destroyed unit. Both places a unit can reach the board
+  - the client's `add unit` and the turn's resolution - ask this one module,
+  so the refusal and the rejection cannot come to disagree.
 - **`board.py`** - `Board`, the grid and the units on it. Placement, lookup,
   visibility bookkeeping, and `commit`, which resolves a turn in two phases:
   every unit moves, and only then is combat resolved in every contested square.

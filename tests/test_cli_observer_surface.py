@@ -120,8 +120,8 @@ class ObserverDisplayCommands(ObserverTestCase):
         observer = self.watching_a_played_game()
         lines = self.shown_table(observer, OBSERVER_PROMPT, 'types')
         assert lines[0].split() == [
-            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY']
-        assert lines[1].split() == ['1', 'O', 'O', '1', '1', '10']
+            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY', 'COST']
+        assert lines[1].split() == ['1', 'O', 'O', '1', '1', '10', '12']
 
     def test_showing_units(self):
         observer = self.watching_a_played_game()
@@ -152,9 +152,12 @@ class ObserverDisplayCommands(ObserverTestCase):
     def test_showing_players(self):
         observer = self.watching()
         lines = self.shown_table(observer, OBSERVER_PROMPT, 'players')
-        assert lines[0].split() == ['PLAYER', 'STATUS']
+        assert lines[0].split() == [
+            'PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT']
+        # the observer reads every record, so every player's points are known
         assert [line.split() for line in lines[1:]] == [
-            ['1', 'active'], ['2', 'active']]
+            ['1', 'active', '100', '0', '100'],
+            ['2', 'active', '100', '0', '100']]
 
     def test_showing_pending_orders(self):
         # a player who has committed while the server still waits for the

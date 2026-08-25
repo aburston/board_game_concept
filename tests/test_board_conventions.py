@@ -63,7 +63,7 @@ def test_each_direction_moves_the_axis_the_rules_say():
 
 def duel_to_the_death(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2])
+    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', 5, 5, 50)],
                    [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)])
     harness.deploy(2, [('O', 'O', 5, 5, 50)],
