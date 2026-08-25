@@ -1,0 +1,84 @@
+=== game 77: p1 Bulwark vs p2 Drain
+  board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
+  p1 Bulwark: 10 x wall (a0 h10 e0) across the frontier + 2 x (a2 h10 e28)
+  p2 Drain: 10 x (a1 h10 e9), one per column, walk in and soak
+  p1 deploys: add type W W 0 10 0; add unit W w1 0 4; add unit W w2 1 4; add unit W w3 2 4; add unit W w4 3 4; add unit W w5 4 4; add unit W w6 5 4; add unit W w7 6 4; add unit W w8 7 4; add unit W w9 8 4; add unit W w10 9 4; add type K K 2 10 28; add unit K k1 3 2; add unit K k2 6 2; add type S s 1 1 18; add unit S s1 0 0
+  p2 deploys: add type D D 1 10 9; add unit D d1 0 5; add unit D d2 1 5; add unit D d3 2 5; add unit D d4 3 5; add unit D d5 4 5; add unit D d6 5 5; add unit D d7 6 5; add unit D d8 7 5; add unit D d9 8 5; add unit D d10 9 5
+    after turn 1: in play 3 v 10  (spent: 10 v 0)
+  -- turn 2
+    p1: holds
+    p2: move d1 north; move d10 north; move d2 north; move d3 north; move d4 north; move d5 north; move d6 north; move d7 north; move d8 north; move d9 north
+    p1: 10 order(s) rejected last turn:
+    p1: - w1 at (0,4): the contest at (0, 4) was undecided
+    p1: - w2 at (1,4): the contest at (1, 4) was undecided
+    p1: - w3 at (2,4): the contest at (2, 4) was undecided
+    p1: - w4 at (3,4): the contest at (3, 4) was undecided
+    p1: - w5 at (4,4): the contest at (4, 4) was undecided
+    p1: - w6 at (5,4): the contest at (5, 4) was undecided
+    p1: - w7 at (6,4): the contest at (6, 4) was undecided
+    p1: - w8 at (7,4): the contest at (7, 4) was undecided
+    p1: - w9 at (8,4): the contest at (8, 4) was undecided
+    p1: - w10 at (9,4): the contest at (9, 4) was undecided
+    p2: 10 order(s) rejected last turn:
+    p2: - d1 at (0,5): the contest at (0, 4) was undecided
+    p2: - d2 at (1,5): the contest at (1, 4) was undecided
+    p2: - d3 at (2,5): the contest at (2, 4) was undecided
+    p2: - d4 at (3,5): the contest at (3, 4) was undecided
+    p2: - d5 at (4,5): the contest at (4, 4) was undecided
+    p2: - d6 at (5,5): the contest at (5, 4) was undecided
+    p2: - d7 at (6,5): the contest at (6, 4) was undecided
+    p2: - d8 at (7,5): the contest at (7, 4) was undecided
+    p2: - d9 at (8,5): the contest at (8, 4) was undecided
+    p2: - d10 at (9,5): the contest at (9, 4) was undecided
+    after turn 2: in play 3 v 0  (spent: 10 v 10)
++-+-+-+-+-+-+-+-+-+-+
+|s|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|K|#|#|K|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|W|W|W|W|W|W|W|W|W|W|
++-+-+-+-+-+-+-+-+-+-+
+|D|D|D|D|D|D|D|D|D|D|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+D            2  D
+K            1  K
+W            1  W
+s            1  S
+  game over: player 1 wins on turn 2
+  final units:
+    p1 k1   K   a2 h10 (3,2) hp 10 en 28
+    p1 k2   K   a2 h10 (6,2) hp 10 en 28
+    p1 s1   S   a1 h1 (0,0) hp 1 en 18
+    p1 w1   W   a0 h2 (0,4) hp 2 en 0
+    p1 w10  W   a0 h2 (9,4) hp 2 en 0
+    p1 w2   W   a0 h2 (1,4) hp 2 en 0
+    p1 w3   W   a0 h2 (2,4) hp 2 en 0
+    p1 w4   W   a0 h2 (3,4) hp 2 en 0
+    p1 w5   W   a0 h2 (4,4) hp 2 en 0
+    p1 w6   W   a0 h2 (5,4) hp 2 en 0
+    p1 w7   W   a0 h2 (6,4) hp 2 en 0
+    p1 w8   W   a0 h2 (7,4) hp 2 en 0
+    p1 w9   W   a0 h2 (8,4) hp 2 en 0
+    p2 d1   D   a1 h10 (0,5) hp 10 en 0
+    p2 d10  D   a1 h10 (9,5) hp 10 en 0
+    p2 d2   D   a1 h10 (1,5) hp 10 en 0
+    p2 d3   D   a1 h10 (2,5) hp 10 en 0
+    p2 d4   D   a1 h10 (3,5) hp 10 en 0
+    p2 d5   D   a1 h10 (4,5) hp 10 en 0
+    p2 d6   D   a1 h10 (5,5) hp 10 en 0
+    p2 d7   D   a1 h10 (6,5) hp 10 en 0
+    p2 d8   D   a1 h10 (7,5) hp 10 en 0
+    p2 d9   D   a1 h10 (8,5) hp 10 en 0

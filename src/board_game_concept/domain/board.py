@@ -211,9 +211,10 @@ class Board:
     def commit(self):
         """Resolve the turn, and report what happened while doing it.
 
-        Three phases: units waiting to be deployed are placed, then every move
+        Four phases: units waiting to be deployed are placed, then every move
         is planned against the board as the turn began and applied together,
-        then every square more than one unit finished in is fought out.
+        then every square more than one unit finished in is fought out, and
+        then every unit that did none of it recovers a point of energy.
 
         Movement used to be each unit resolving itself against a live board, so
         what a unit found at its destination depended on who had already moved.
@@ -230,10 +231,44 @@ class Board:
             if unit.on_board:
                 unit.seen_by = []
                 unit.moved_from = None
+        # what each unit that was given no order held before the turn ran, so
+        # that resting can tell the ones that did nothing from the ones that
+        # were made to fight. Taken here because the movement phase consumes
+        # the order it is read from (R3.3)
+        resting = {unit: unit.energy for unit in self.units
+                   if unit.on_board and not unit.destroyed
+                   and unit.state != UnitType.MOVING}
         self._deploy(events)
         pairs, free = self._move(events)
         self._fight(events, pairs, free)
+        self._rest(events, resting)
         return events
+
+    def _rest(self, events, resting):
+        """Give a point of energy back to every unit that did nothing.
+
+        Doing nothing means two things together: the unit was given no order,
+        and it paid for nothing while the turn resolved. A unit ordered to
+        move has acted whether or not the move happened - it was ordered off
+        the board, or could not pay the fare - so it does not rest, and
+        walking a unit into the edge every turn is not a way to refuel. A unit
+        that was attacked and could not afford to strike back has taken no
+        action either, and does rest.
+
+        Nothing recovers past the energy its type was designed with, and a
+        destroyed unit recovers nothing.
+        """
+        for unit, before in resting.items():
+            if unit.destroyed or not unit.on_board:
+                continue
+            if unit.energy != before:
+                continue
+            if unit.energy >= unit.type_energy:
+                continue
+            unit.energy = min(unit.type_energy,
+                              unit.energy + UnitType.REST_GAIN)
+            events.append(Event('rested', unit=unit.name,
+                                energy=unit.energy))
 
     def _deploy(self, events):
         """Place the units waiting to be put on the board."""

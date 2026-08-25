@@ -27,6 +27,13 @@ class UnitType:
     # where it yielded 2 - so it read as though it scaled and never did
     MOVE_COST = 1
 
+    # what a turn spent doing nothing gives back. Energy used to be spent and
+    # never replenished, which left an exhausted unit a permanent obstacle
+    # and every game a race to the bottom of two pockets. A unit that was
+    # given no order and landed no attack recovers this much, and never past
+    # the energy its type was designed with
+    REST_GAIN = 1
+
     def __init__(self, name, symbol, attack, health, energy):
         self.name = name
         self.type_name = name
@@ -40,8 +47,8 @@ class UnitType:
 
         self.attack = attack
         assert isinstance(attack, int), "attack must be an integer value"
-        assert ((attack >= 1) and (attack <= 10)
-                ), "attack must be a value from 1 to 10"
+        assert ((attack >= 0) and (attack <= 10)
+                ), "attack must be a value from 0 to 10"
 
         self.health = health
         assert isinstance(health, int), "health must be an integer value"
@@ -49,9 +56,19 @@ class UnitType:
                 ), "health must be a value from 1 to 10"
 
         self.energy = energy
-        assert isinstance(energy, int), "health must be an integer value"
-        assert ((energy >= 1) and (energy <= 100)
-                ), "energy must be a value from 1 to 100"
+        assert isinstance(energy, int), "energy must be an integer value"
+        assert ((energy >= 0) and (energy <= 100)
+                ), "energy must be a value from 0 to 100"
+
+        # a wall: no attack and no energy, so it cannot move, cannot fight,
+        # and cannot be worn down - it is health and a square, and the only
+        # way past it is through it. The two zeroes go together: a unit with
+        # no energy and an attack it can never pay for is a wall that was
+        # charged for an attack, and a unit with energy and no attack is a
+        # scout the rules already allow at attack 1
+        assert ((attack == 0) == (energy == 0)), (
+            "a type with no attack must have no energy, and a type with no "
+            "energy must have no attack: that pair is a wall")
 
         # the design this unit was made from, kept alongside the values play
         # wears down. `type_name` was already preserved through the copy for
@@ -235,6 +252,11 @@ def exchangeAttacks(contestants, events=None):
             # unit that could afford some but not all of its attacks struck
             # whichever opponents came first in the list, which is a rule
             # decided by list position rather than by the rules
+            if unit.attack <= 0:
+                # a wall does not fight. Without this it would pay nothing,
+                # deal nothing, and still count as an attack landed, and a
+                # round that lands an attack is a round that repeats (R5.6)
+                continue
             if unit.energy < unit.attack:
                 # too spent to attack: inert, but not destroyed. The round is
                 # all or nothing, so there is no half-paid round to hand out

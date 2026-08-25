@@ -19,6 +19,10 @@ refused before it is typed, and the refusal is logged.
 Everything else is as before — real `bgcserver` and `bgcclient` sessions, each
 bot handed its own player view and nothing else.
 
+> Played again after this with two further changes — energy regeneration for a
+> unit that took no action, and walls — in `matches/RESULTS-REST-AND-WALLS.md`.
+> Eight of those twenty games were decided, against two of these thirty.
+
 ## What the changes did
 
 **The armies now actually fight.** In the open-board series, nine of thirteen

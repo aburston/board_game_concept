@@ -72,9 +72,12 @@ registration: nothing in play raises or lowers it. A player file may carry a
 |---|---|
 | `name` | one or more characters |
 | `symbol` | **exactly one** character — this is how the unit is drawn |
-| `attack` | integer, **1 to 10** |
+| `attack` | integer, **0 to 10** |
 | `health` | integer, **1 to 10** |
-| `energy` | integer, **1 to 100** |
+| `energy` | integer, **0 to 100** |
+
+**Attack 0 and energy 0 go together, and make a wall (R2.10).** A type with one
+of them at zero and the other above it is refused.
 
 A type is rejected at the moment it is defined, not later during play. Types are
 private to the player who defined them: an opponent learns of one only by
@@ -83,8 +86,8 @@ fighting a unit of it (**R6.2**).
 **R2.5 What the three statistics mean.**
 - **attack** — damage dealt per attack, *and* the energy that attack costs.
 - **health** — total damage the unit absorbs before it is destroyed.
-- **energy** — the single resource spent by both moving and attacking. It is
-  never replenished (**Q1**).
+- **energy** — the single resource spent by both moving and attacking. A unit
+  that takes no action during a turn gets **1** of it back (**R3.9**).
 
 **R2.6 Deploying units.** `add unit <type> <name> <x> <y>` creates one unit as a
 copy of one of your own types, at those coordinates. It is refused if:
@@ -124,6 +127,18 @@ deployments arrive in one turn than the budget can pay for, they are charged in
 order of unit name, so which ones survive is decided by the rules and not by the
 order they were written in.
 
+**R2.10 Walls.** A type with **attack 0 and energy 0** is a wall: health
+standing on a square. It can never be ordered to move, because a move costs 1
+energy it does not have and never will (**R3.9** gives nothing back to a type
+designed with none). It never attacks and never defends itself, so a round in
+which only walls could act lands no attacks and the fight ends (**R5.6**). It
+can be destroyed like anything else, it blocks a square like anything else, and
+it costs its health and nothing else — a wall of 10 health costs 10 points.
+
+Because a wall holds no energy, **it does not keep its owner in the game**
+(**R7.1**). An army of nothing but walls has already lost; walls are ground you
+deny an opponent, not an army.
+
 ---
 
 ## R3. The turn
@@ -142,12 +157,14 @@ client blocks and waits for the server rather than accepting further orders.
 cleared and its state returns to `NOP`. An order never carries over to the next
 turn. A unit given no order stays where it is.
 
-**R3.4 A turn resolves in three phases, in this order:**
+**R3.4 A turn resolves in four phases, in this order:**
 1. **Deployment** — units waiting to be placed are put on the board.
 2. **Movement** — every unit's destination is worked out against the board *as
    the turn began*, and then every move is applied at once. Squares that end up
    holding more than one unit are collected.
 3. **Combat** — every one of those squares is fought out to a conclusion.
+4. **Rest** — every unit that did none of the above gets a point of energy
+   back (**R3.9**).
 
 Because destinations are decided before any move is applied, the outcome of a
 turn never depends on the order the units happen to be held in. Both later
@@ -169,6 +186,21 @@ The list describes only the turn just resolved — it does not accumulate.
 would not carry out is reported back to you: an order refused while it was
 being applied, a move nobody could pay for, a move off the board, and a contest
 of yours that ended undecided. Each names the unit, its square, and the reason.
+
+**R3.9 A unit that does nothing recovers 1 energy.** At the end of every turn,
+each unit standing on the board that **was given no order** and **paid for
+nothing** while the turn resolved gets 1 energy back. It never recovers past
+the energy its type was designed with, and a destroyed unit recovers nothing.
+
+Both halves matter. A unit ordered to move has acted whether or not the move
+happened — one ordered off the board pays nothing (**R4.6**) and still does not
+rest, so walking into the edge is not a way to refuel. A unit that was attacked
+and could not afford to strike back has done nothing at all, and does rest:
+being hit is not an action.
+
+Rest happens after combat and before the game is judged (**R7**), so a unit
+that spends its last energy acting is out before it can recover it, while one
+that merely stood still is not.
 
 **R3.8 Turns are numbered.** Resolved turns count from 1, and the number is
 recorded with the board, with each player's view, and with each player's list of
@@ -290,7 +322,10 @@ no longer attack or defend itself, but is *not* removed. It stays on the board,
 holds its square, blocks movement, and can only be cleared by being killed. It
 keeps its owner in the game while it has any energy left; once it is down to
 zero it is spent, and a player whose every unit is spent is out (**R7.1**).
-Energy is never replenished, so this is permanent — see **Q1**.
+This is no longer permanent: a unit that stands still recovers 1 energy a turn
+(**R3.9**), so an inert unit is a unit that needs to rest rather than a unit
+that is finished. A **wall** (**R2.10**) is the exception — its type was
+designed with no energy, so it has nothing to recover to.
 
 **R5.11 Two consequences worth spelling out, because they decide how the game
 plays:**
@@ -404,32 +439,38 @@ in `SPEC_COVERAGE.md`, along with two more found afterwards. The board position
 the specs called a *cell* and the source called a *square* is a **square**
 everywhere now.
 
-Two questions were never defects. They are design choices, and they are still
-yours to make.
+Two questions were never defects. They are design choices. **Q1 has since been
+decided** — energy regenerates for a unit that took no action, and a unit at
+zero no longer keeps its owner in the game — and is kept here with what was
+decided and why. **Q2 is still yours to make.**
 
 ---
 
-## Q1. Energy never comes back, so an exhausted unit is a permanent obstacle
+## Q1. Energy never came back — answered
 
-**What happens.** Energy is spent by moving and by attacking and is never
-replenished. A unit that spends down below its attack value can still shuffle
-around at 1 energy a move but can never fight again; at 0 energy it can do
-nothing at all — while still holding its square, still blocking, and still
-killable (**R5.10**). Two inert units can hold a square against each other for
-the rest of the game. A unit at 0 energy no longer keeps its owner in the game
-(**R7.1**), so an army spent down to nothing loses while its pieces are still
-standing on the board.
+**What it was.** Energy was spent by moving and by attacking and never
+replenished, so a unit that spent down below its attack value could never fight
+again and one at 0 energy could do nothing at all, while still holding its
+square. Two inert units could hold a square against each other for the rest of
+the game, and every match was a race to the bottom of two pockets.
 
-**Why it is still here.** Attrition to exhaustion is a coherent design, and it
-now has somewhere to end: the win condition (**R7**) decides a game whose units
-have run down, rather than leaving it running forever. Changing it changes how
-every game plays.
+**What was decided.** Both halves of it, in the end:
 
-**To decide.** Energy regeneration — for every unit each turn, or only for one
-that took no action? A way to withdraw or scuttle a spent unit? Or leave it, and
-let the win condition carry the endgame. Note that the win condition now carries
-part of it either way: an army with nothing left to spend has lost, though its
-squares stay blocked by the pieces that lost it.
+- A unit that **takes no action** in a turn recovers **1 energy**, never past
+  the energy its type was designed with (**R3.9**). Standing still is now a
+  move you can make, resting is a decision with a cost — a turn — and an
+  exhausted unit is a unit that needs to withdraw rather than one that is
+  finished.
+- A unit at **0 energy no longer keeps its owner in the game** (**R7.1**), so
+  an army worn down to nothing loses rather than lingering. Rest happens before
+  that is judged, so the two do not fight each other: standing still saves you,
+  spending your last point does not.
+
+**What it opened.** Two things worth watching, now that a spent unit is not
+finished: a defender that is never reached recovers for free, which makes a
+holding position stronger than it was; and a **wall** (**R2.10**) is the one
+kind of unit rest can never help, because its type was designed with no energy
+at all.
 
 ---
 

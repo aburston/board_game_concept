@@ -9,6 +9,38 @@ player gains an advantage from committing early or late.
 
 ## Requirements
 
+### Requirement: Energy Regeneration
+
+The system SHALL give back `REST_GAIN` energy, at the end of each turn, to
+every unit on the board that took no action during it — one that was given no
+order **and** paid for nothing while the turn resolved. A unit SHALL NOT
+recover past the energy its type was designed with, and a destroyed unit SHALL
+recover nothing. Regeneration SHALL happen after combat and before elimination
+is judged, so a unit that spent its last energy acting is out before it can
+recover, while one that merely stood still is not.
+
+#### Scenario: A unit that was given no order
+
+- **WHEN** a turn resolves in which a unit was given no order and paid for nothing
+- **THEN** that unit's energy is one higher than it was, up to the energy its type was designed with
+
+#### Scenario: A unit that was ordered to move
+
+- **WHEN** a turn resolves in which a unit was ordered to move
+- **THEN** that unit does not recover energy, whether or not the move was carried out
+
+#### Scenario: A unit that was attacked but could not pay to fight back
+
+- **WHEN** a turn resolves in which a unit was attacked and could not afford to attack
+- **THEN** that unit recovers energy: being attacked is not an action
+
+#### Scenario: A unit that spent its last energy
+
+- **WHEN** a turn resolves in which a unit spent the last of its energy acting
+- **THEN** it does not recover that turn
+- **AND** elimination is judged against the energy it has left
+
+
 ### Requirement: Two-Phase Turn Resolution
 
 The system SHALL resolve a turn in two phases: a movement phase that decides
