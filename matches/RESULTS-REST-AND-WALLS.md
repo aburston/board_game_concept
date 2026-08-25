@@ -111,12 +111,15 @@ zero at the end of the turn it first moved, with every wall still up on 2
 health. A hundred points of wall had emptied a two-hundred-point army's pockets
 in a single move.
 
-And then, under R7.1, nothing happened. The attackers rest, recover, and come
-back — they spend the next fifty turns chewing through the line, and the game
-ends undecided with the walls gone and seven attackers inside Bulwark's half.
-That is the right answer and it is worth being clear about why: **a wall
-converts an attacker's energy into nothing, and energy is no longer something
-you can take away for good.**
+And then, under R7.1, nothing happened — and it turns out the line was a toll
+booth rather than a fortress. The attackers rest two turns, assault again, rest
+two more, and assault a third time: **the whole line is gone by turn 8**, having
+cost them 130 energy — more than the 90 they started with, the difference made
+up by standing still. The game runs to the cap undecided with seven attackers
+loose in Bulwark's half and two swords trying to hold them. A wall converts an
+attacker's energy into *time*, at a fixed rate, and energy is no longer
+something you can take away for good. Game 97 is written up in full in
+`matches/COMMENTARY-GAME-97.md`.
 
 The other edge of it is **game 100**, and it is the wall clause doing exactly
 the work it was written for. Duellist's attack-10 champions break a wall in one
