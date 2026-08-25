@@ -15,13 +15,13 @@ from common import mine, serpentine, size
 
 class Bot(Sweeper):
     name = 'Mixed'
-    doctrine = 'scout (a1 h1 e30) + assassin (a10 h1 e21) + tank (a1 h10 e20)'
-    army = (('C', 'C', 1, 1, 30, [(0, 0)]),
-            ('A', 'A', 10, 1, 21, [(0, 2)]),
-            ('G', 'G', 1, 10, 20, [(0, 4)]))
+    doctrine = '2 scouts (a1 h1 e30) + 2 assassins (a10 h1 e21) + 2 tanks (a1 h10 e20)'
+    army = (('C', 'C', 1, 1, 30, [(2, 4), (7, 4)]),
+            ('A', 'A', 10, 1, 21, [(3, 2), (6, 2)]),
+            ('G', 'G', 1, 10, 20, [(1, 3), (8, 3)]))
 
     def floor(self, unit):
-        return 1 if unit['type'] == 'C' else unit['attack']
+        return unit['attack'] if unit['type'] == 'A' else 1
 
     def plan_routes(self, view):
         """Only the scout sweeps. The other two wait on what it finds."""
@@ -29,7 +29,10 @@ class Bot(Sweeper):
         for unit in mine(view):
             if unit['type'] != 'C' or unit['name'] in self.routes:
                 continue
-            route = serpentine(size_y, list(range(size_x)), 0, True)
+            # sweep away from my own back row, which is into enemy ground
+            downwards = self.north
+            route = serpentine(size_y, list(range(size_x)),
+                               0 if downwards else size_y - 1, downwards)
             self.routes[unit['name']] = route
             self.at[unit['name']] = 0
 

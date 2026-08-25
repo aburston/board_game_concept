@@ -18,11 +18,13 @@ from common import DIRECTIONS
 
 class Bot(Sweeper):
     name = 'Nomad'
-    doctrine = '3 x (a1 h1 e30), keep moving, never fight'
-    army = (('N', 'N', 1, 1, 30, [(2, 9), (5, 9), (8, 9)]),)
+    doctrine = '6 x (a1 h1 e30), keep moving, never fight, never reach zero'
+    army = (('N', 'N', 1, 1, 30, [(0, 0), (2, 0), (4, 0), (6, 0), (8, 0), (9, 1)]),)
 
     def floor(self, unit):
-        return 0
+        # never spend the last point: a unit at zero energy no longer keeps
+        # its owner in the game, so the whole doctrine turns on holding one
+        return 1
 
     def wish(self, view, unit, contacts):
         """Away from anything that has been seen, and otherwise onward."""

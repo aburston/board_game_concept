@@ -14,9 +14,9 @@ from common import mine, serpentine, size
 
 class Bot(Sweeper):
     name = 'Duellist'
-    doctrine = '2 x (a10 h10 e20) + scout (a1 h1 e18), champions hold centre'
-    army = (('C', 'C', 10, 10, 20, [(9, 0), (9, 9)]),
-            ('S', 's', 1, 1, 18, [(9, 5)]))
+    doctrine = '4 x (a10 h10 e20) + 2 scouts (a1 h1 e18), champions hold the frontier'
+    army = (('C', 'C', 10, 10, 20, [(2, 2), (4, 2), (5, 2), (7, 2)]),
+            ('S', 's', 1, 1, 18, [(0, 4), (9, 4)]))
 
     # a champion is worth walking a long way for
     reach = 6

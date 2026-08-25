@@ -1,5 +1,11 @@
 # Thirteen games on a ten by ten board
 
+> The same exercise was played again under three changes — two hundred points a
+> player, the board halved at deployment, and a unit at zero energy no longer
+> counting towards its owner staying in the game. That series is in
+> `matches/RESULTS-FRONTIER.md`. This one is the open board at a hundred
+> points, and the win condition as it stood before the change.
+
 Thirteen two-player games, played through the real CLI roles — one
 `bgcserver` resolving turns, one `bgcclient` session per player for the whole
 game, an observer writing the log. Every order in every game was typed into a

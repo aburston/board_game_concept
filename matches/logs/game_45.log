@@ -1,0 +1,285 @@
+=== game 45: p1 Drain vs p2 Grinder
+  board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
+  p1 Drain: 10 x (a1 h10 e9), one per column, walk in and soak
+  p2 Grinder: 6 x (a1 h10 e20), spread across the middle, grind forward
+  p1 deploys: add type D D 1 10 9; add unit D d1 0 4; add unit D d2 1 4; add unit D d3 2 4; add unit D d4 3 4; add unit D d5 4 4; add unit D d6 5 4; add unit D d7 6 4; add unit D d8 7 4; add unit D d9 8 4; add unit D d10 9 4
+  p2 deploys: add type G G 1 10 20; add unit G g1 0 6; add unit G g2 2 6; add unit G g3 4 6; add unit G g4 5 6; add unit G g5 7 6; add unit G g6 9 6
+    after turn 1: standing 10 v 6
+  -- turn 2
+    p1: move d1 south; move d10 south; move d2 south; move d3 south; move d4 south; move d5 south; move d6 south; move d7 south; move d8 south; move d9 south
+    p2: move g1 north; move g2 west; move g3 west; move g4 west; move g5 west; move g6 west
+    after turn 2: standing 9 v 6
+  -- turn 3
+    p1: move d10 south; move d2 west; move d3 west; move d4 west; move d5 south; move d6 south; move d7 south; move d8 south; move d9 south
+    p2: move g1 north; move g2 north; move g3 west; move g4 east; move g5 east; move g6 east
+    after turn 3: standing 5 v 6
+  -- turn 4
+    p1: move d2 east; move d4 east; move d5 east; move d7 south; move d9 west
+    p2: move g1 north; move g2 north; move g3 east; move g4 north; move g5 north; move g6 north
+    after turn 4: standing 5 v 6
+  -- turn 5
+    p1: move d2 south; move d4 south; move d5 west; move d7 south; move d9 east
+    p2: move g1 north; move g2 north; move g3 north; move g4 west; move g5 west; move g6 west
+    after turn 5: standing 4 v 6
+  -- turn 6
+    p1: move d2 east; move d5 west; move d7 south; move d9 south
+    p2: move g1 north; move g2 north; move g3 west; move g4 north; move g5 north; move g6 north
+    after turn 6: standing 4 v 6
+  -- turn 7
+    p1: move d2 west; move d5 east; move d7 north; move d9 south
+    p2: move g1 north; move g2 north; move g3 north; move g4 east; move g5 east; move g6 east
+    after turn 7: standing 4 v 6
+  -- turn 8
+    p1: move d2 south; move d5 south; move d7 north; move d9 south
+    p2: move g1 south; move g2 north; move g3 east; move g4 north; move g5 north; move g6 north
+    after turn 8: standing 4 v 6
+  -- turn 9
+    p1: move d2 south; move d5 south; move d7 north; move d9 north
+    p2: move g1 south; move g2 south; move g3 north; move g4 west; move g5 west; move g6 west
+    after turn 9: standing 4 v 6
+  -- turn 10
+    p1: holds
+    p2: move g1 south; move g2 south; move g3 west; move g4 north; move g5 north; move g6 north
+    after turn 10: standing 4 v 6
+  -- turn 11
+    p1: holds
+    p2: holds
+    after turn 11: standing 4 v 6
+  -- turn 12
+    p1: holds
+    p2: holds
+    after turn 12: standing 4 v 6
+  -- turn 13
+    p1: holds
+    p2: holds
+    after turn 13: standing 4 v 6
+  -- turn 14
+    p1: holds
+    p2: holds
+    after turn 14: standing 4 v 6
+  -- turn 15
+    p1: holds
+    p2: holds
+    after turn 15: standing 4 v 6
+  -- turn 16
+    p1: holds
+    p2: holds
+    after turn 16: standing 4 v 6
+  -- turn 17
+    p1: holds
+    p2: holds
+    after turn 17: standing 4 v 6
+  -- turn 18
+    p1: holds
+    p2: holds
+    after turn 18: standing 4 v 6
+  -- turn 19
+    p1: holds
+    p2: holds
+    after turn 19: standing 4 v 6
+  -- turn 20
+    p1: holds
+    p2: holds
+    after turn 20: standing 4 v 6
+  -- turn 21
+    p1: holds
+    p2: holds
+    after turn 21: standing 4 v 6
+  -- turn 22
+    p1: holds
+    p2: holds
+    after turn 22: standing 4 v 6
+  -- turn 23
+    p1: holds
+    p2: holds
+    after turn 23: standing 4 v 6
+  -- turn 24
+    p1: holds
+    p2: holds
+    after turn 24: standing 4 v 6
+  -- turn 25
+    p1: holds
+    p2: holds
+    after turn 25: standing 4 v 6
+  -- turn 26
+    p1: holds
+    p2: holds
+    after turn 26: standing 4 v 6
+  -- turn 27
+    p1: holds
+    p2: holds
+    after turn 27: standing 4 v 6
+  -- turn 28
+    p1: holds
+    p2: holds
+    after turn 28: standing 4 v 6
+  -- turn 29
+    p1: holds
+    p2: holds
+    after turn 29: standing 4 v 6
+  -- turn 30
+    p1: holds
+    p2: holds
+    after turn 30: standing 4 v 6
+  -- turn 31
+    p1: holds
+    p2: holds
+    after turn 31: standing 4 v 6
+  -- turn 32
+    p1: holds
+    p2: holds
+    after turn 32: standing 4 v 6
+  -- turn 33
+    p1: holds
+    p2: holds
+    after turn 33: standing 4 v 6
+  -- turn 34
+    p1: holds
+    p2: holds
+    after turn 34: standing 4 v 6
+  -- turn 35
+    p1: holds
+    p2: holds
+    after turn 35: standing 4 v 6
+  -- turn 36
+    p1: holds
+    p2: holds
+    after turn 36: standing 4 v 6
+  -- turn 37
+    p1: holds
+    p2: holds
+    after turn 37: standing 4 v 6
+  -- turn 38
+    p1: holds
+    p2: holds
+    after turn 38: standing 4 v 6
+  -- turn 39
+    p1: holds
+    p2: holds
+    after turn 39: standing 4 v 6
+  -- turn 40
+    p1: holds
+    p2: holds
+    after turn 40: standing 4 v 6
+  -- turn 41
+    p1: holds
+    p2: holds
+    after turn 41: standing 4 v 6
+  -- turn 42
+    p1: holds
+    p2: holds
+    after turn 42: standing 4 v 6
+  -- turn 43
+    p1: holds
+    p2: holds
+    after turn 43: standing 4 v 6
+  -- turn 44
+    p1: holds
+    p2: holds
+    after turn 44: standing 4 v 6
+  -- turn 45
+    p1: holds
+    p2: holds
+    after turn 45: standing 4 v 6
+  -- turn 46
+    p1: holds
+    p2: holds
+    after turn 46: standing 4 v 6
+  -- turn 47
+    p1: holds
+    p2: holds
+    after turn 47: standing 4 v 6
+  -- turn 48
+    p1: holds
+    p2: holds
+    after turn 48: standing 4 v 6
+  -- turn 49
+    p1: holds
+    p2: holds
+    after turn 49: standing 4 v 6
+  -- turn 50
+    p1: holds
+    p2: holds
+    after turn 50: standing 4 v 6
+  -- turn 51
+    p1: holds
+    p2: holds
+    after turn 51: standing 4 v 6
+  -- turn 52
+    p1: holds
+    p2: holds
+    after turn 52: standing 4 v 6
+  -- turn 53
+    p1: holds
+    p2: holds
+    after turn 53: standing 4 v 6
+  -- turn 54
+    p1: holds
+    p2: holds
+    after turn 54: standing 4 v 6
+  -- turn 55
+    p1: holds
+    p2: holds
+    after turn 55: standing 4 v 6
+  -- turn 56
+    p1: holds
+    p2: holds
+    after turn 56: standing 4 v 6
+  -- turn 57
+    p1: holds
+    p2: holds
+    after turn 57: standing 4 v 6
+  -- turn 58
+    p1: holds
+    p2: holds
+    after turn 58: standing 4 v 6
+  -- turn 59
+    p1: holds
+    p2: holds
+    after turn 59: standing 4 v 6
+  -- turn 60
+    p1: holds
+    p2: holds
+    after turn 60: standing 4 v 6
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|G|#|#|G|#|G|#|G|#|
++-+-+-+-+-+-+-+-+-+-+
+|G|#|G|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|D|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|D|#|#|D|#|#|#|D|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+D            1  D
+G            2  G
+  undecided after 60 turns
+  final units:
+    p1 d1   D   a1 h0 destroyed
+    p1 d10  D   a1 h0 destroyed
+    p1 d2   D   a1 h10 (1,8) hp 10 en 1
+    p1 d3   D   a1 h0 destroyed
+    p1 d4   D   a1 h0 destroyed
+    p1 d5   D   a1 h10 (4,8) hp 10 en 1
+    p1 d6   D   a1 h0 destroyed
+    p1 d7   D   a1 h10 (6,6) hp 10 en 1
+    p1 d8   D   a1 h0 destroyed
+    p1 d9   D   a1 h10 (8,8) hp 10 en 1
+    p2 g1   G   a1 h2 (0,3) hp 2 en 1
+    p2 g2   G   a1 h3 (1,2) hp 3 en 1
+    p2 g3   G   a1 h5 (2,3) hp 5 en 1
+    p2 g4   G   a1 h3 (4,2) hp 3 en 1
+    p2 g5   G   a1 h3 (6,2) hp 3 en 1
+    p2 g6   G   a1 h3 (8,2) hp 3 en 1

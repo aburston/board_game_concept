@@ -424,6 +424,9 @@ what `combat-resolution` says.
 Addressed by the `fix-rules-defects` change: a new `game-outcome` capability. A
 player is eliminated when every unit they own is destroyed; an inert unit still
 counts as alive, which settles the disagreement in `combat-resolution`'s favour.
+**Since revised**: a unit at *zero* energy no longer counts, which settles the
+same disagreement in `design.md`'s favour for the zero case only. A unit with
+energy left counts however little it can afford to do with it; see R7.1.
 The last player standing wins, simultaneous elimination is a draw, eliminated
 players stop being waited for, and a decided game stops. Turns are numbered, and
 the number is written with every record published for a turn.

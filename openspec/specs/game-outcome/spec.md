@@ -29,20 +29,29 @@ and no player SHALL be eliminated by it.
 
 ### Requirement: Player Elimination
 
-The system SHALL treat a player as eliminated once every unit they own has been
-destroyed. A unit that is on the board and not destroyed SHALL keep its owner in
-the game whatever its energy: a unit too spent to act is inert, not lost.
+The system SHALL treat a player as eliminated once no unit they own is both
+standing and holding energy. A unit that is on the board, not destroyed, and
+holding **more than zero energy** SHALL keep its owner in the game, whatever
+its attack value. A unit at **zero energy** SHALL NOT: it can no longer move,
+attack or defend itself, and a player whose every unit is spent is out even
+though their pieces are still on the board.
 
 #### Scenario: The last unit is destroyed
 
 - **WHEN** a turn is resolved in which a player's last undestroyed unit is destroyed
 - **THEN** that player is eliminated
 
-#### Scenario: An inert unit keeps its owner in the game
+#### Scenario: A unit with energy left keeps its owner in the game
 
-- **WHEN** a player's only remaining unit has energy below its attack value
+- **WHEN** a player's only remaining unit has energy above zero but below its attack value
 - **THEN** that player is not eliminated
 - **AND** the game continues
+
+#### Scenario: A player whose every unit is spent is eliminated
+
+- **WHEN** a turn is resolved after which every unit a player owns is destroyed or at zero energy
+- **THEN** that player is eliminated
+- **AND** their units at zero energy stay on the board, holding their squares
 
 #### Scenario: A player who never deployed a unit
 

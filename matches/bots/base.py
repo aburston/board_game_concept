@@ -18,7 +18,11 @@ class Sweeper:
 
     name = 'sweeper'
     doctrine = ''
-    # each entry: (type name, symbol, attack, health, energy, [squares])
+    # each entry: (type name, symbol, attack, health, energy, [squares]),
+    # and a square is (x, depth): depth 0 is my own back row and depth 4 is
+    # the row against the frontier. Which rows those are depends on which
+    # half of the board I hold, so an army is written once and deploys the
+    # same way from either side
     army = ()
 
     def floor(self, unit):
@@ -31,21 +35,29 @@ class Sweeper:
 
     def __init__(self, player):
         self.player = player
+        # player 1 holds the north half, player 2 the south. Both know the
+        # rule; neither learns anything from it that the other does not
+        self.north = player == 1
         self.routes = {}
         self.at = {}
         self.seen = {}          # unit name -> where an enemy was last met
 
     # --------------------------------------------------------------- setting up
 
+    def row(self, depth, size_y=10):
+        """The board row this depth in my own half is."""
+        return depth if self.north else size_y - 1 - depth
+
     def setup(self, view):
+        size_y = size(view)[1]
         commands = []
         for kind in self.army:
             name, symbol, attack, health, energy, squares = kind
             commands.append(
                 f'add type {name} {symbol} {attack} {health} {energy}')
-            for index, (x, y) in enumerate(squares):
-                commands.append(
-                    f'add unit {name} {name.lower()}{index + 1} {x} {y}')
+            for index, (x, depth) in enumerate(squares):
+                commands.append(f'add unit {name} {name.lower()}{index + 1} '
+                                f'{x} {self.row(depth, size_y)}')
         return commands
 
     # ------------------------------------------------------------------ routes
@@ -54,7 +66,13 @@ class Sweeper:
         """One serpentine lane per unit, out of the squares nobody has swept."""
         size_x, size_y = size(view)
         units = sorted(mine(view), key=lambda u: (u['x'], u['y'], u['name']))
-        share = lanes(size_x, max(len(units), 1))
+        if len(units) >= size_x:
+            # more units than there are columns to give them: each sweeps the
+            # column it is standing in, and the ones sharing a column follow
+            # each other down it (R4.8)
+            share = [[unit['x']] for unit in units]
+        else:
+            share = lanes(size_x, max(len(units), 1))
         for unit, columns in zip(units, share):
             if unit['name'] in self.routes:
                 continue

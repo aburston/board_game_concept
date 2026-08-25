@@ -13,9 +13,10 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Ambush'
-    doctrine = '4 x (a1 h10 e10) + 1 x (a1 h5 e10), centre squares, never move'
-    army = (('A', 'A', 1, 10, 10, [(3, 3), (6, 3), (3, 6), (6, 6)]),
-            ('B', 'B', 1, 5, 10, [(5, 5)]))
+    doctrine = '8 x (a1 h10 e10) + 2 x (a1 h5 e10), behind the frontier, never move'
+    army = (('A', 'A', 1, 10, 10,
+             [(0, 3), (3, 3), (6, 3), (9, 3), (1, 2), (4, 2), (5, 2), (8, 2)]),
+            ('B', 'B', 1, 5, 10, [(2, 1), (7, 1)]))
 
     def orders(self, view):
         return []

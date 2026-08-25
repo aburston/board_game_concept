@@ -228,7 +228,13 @@ def has_started(game):
 
 
 def eliminated_players(game):
-    """The players holding no unit that is on the board and not destroyed.
+    """The players holding no unit that is standing and still has energy.
+
+    A unit at zero energy is on the board and cannot be got rid of, but it can
+    no longer move, attack or defend itself: it is a spent piece, not a
+    fighting one, and it does not keep its owner in the game. A unit with any
+    energy left does, whatever its attack value - what it can afford to do
+    with that energy is its owner's problem.
 
     Derived from the board every turn rather than tracked, so that who is out
     cannot drift out of step with what is standing.
@@ -239,6 +245,7 @@ def eliminated_players(game):
     for number, player in game.players.items():
         alive = any(unit.player.number == number
                     and unit.on_board and not unit.destroyed
+                    and unit.energy > 0
                     for unit in game.board.units)
         if not alive:
             out.append(number)

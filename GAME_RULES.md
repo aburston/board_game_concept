@@ -288,8 +288,9 @@ the record as a casualty (**R6.6**).
 **R5.10 Inert units.** A unit whose energy has fallen below its attack value can
 no longer attack or defend itself, but is *not* removed. It stays on the board,
 holds its square, blocks movement, and can only be cleared by being killed. It
-still keeps its owner in the game (**R7.1**). Energy is never replenished, so
-this is permanent — see **Q1**.
+keeps its owner in the game while it has any energy left; once it is down to
+zero it is spent, and a player whose every unit is spent is out (**R7.1**).
+Energy is never replenished, so this is permanent — see **Q1**.
 
 **R5.11 Two consequences worth spelling out, because they decide how the game
 plays:**
@@ -333,14 +334,17 @@ your view for that turn only, and drops out like any other contact (**R6.3**).
 
 ## R7. Ending the game
 
-**R7.1 You are eliminated when you have nothing left standing.** A player is out
-once every unit they own has been destroyed. A unit that is on the board and not
-destroyed keeps you in, whatever its energy: an inert unit is spent, not lost. A
+**R7.1 You are eliminated when you have nothing left that can act.** A player is
+out once every unit they own is either destroyed or down to **zero energy**. A
+unit on the board and not destroyed keeps you in only while it has energy left
+to spend — one point is enough, whatever its attack value. A unit at zero energy
+stays on the board and still holds its square (**R5.10**), but it can no longer
+move, attack or defend itself, and it no longer keeps its owner in the game. A
 player who deployed nothing is out on the first turn with units on the board.
 
 **R7.2 The last player standing wins.** The game is decided at the end of the
 turn in which every other player becomes eliminated. If the last players are
-wiped out together, it is a **draw**.
+wiped out — or spent — together, it is a **draw**.
 
 **R7.3 A game with fewer than two registered players is never decided.** There
 is nobody to be the last player standing against; a solo game is a sandbox.
@@ -412,7 +416,9 @@ replenished. A unit that spends down below its attack value can still shuffle
 around at 1 energy a move but can never fight again; at 0 energy it can do
 nothing at all — while still holding its square, still blocking, and still
 killable (**R5.10**). Two inert units can hold a square against each other for
-the rest of the game.
+the rest of the game. A unit at 0 energy no longer keeps its owner in the game
+(**R7.1**), so an army spent down to nothing loses while its pieces are still
+standing on the board.
 
 **Why it is still here.** Attrition to exhaustion is a coherent design, and it
 now has somewhere to end: the win condition (**R7**) decides a game whose units
@@ -421,7 +427,9 @@ every game plays.
 
 **To decide.** Energy regeneration — for every unit each turn, or only for one
 that took no action? A way to withdraw or scuttle a spent unit? Or leave it, and
-let the win condition carry the endgame.
+let the win condition carry the endgame. Note that the win condition now carries
+part of it either way: an army with nothing left to spend has lost, though its
+squares stay blocked by the pieces that lost it.
 
 ---
 

@@ -1,0 +1,631 @@
+=== game 44: p1 Drain vs p2 Duellist
+  board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
+  p1 Drain: 10 x (a1 h10 e9), one per column, walk in and soak
+  p2 Duellist: 4 x (a10 h10 e20) + 2 scouts (a1 h1 e18), champions hold the frontier
+  p1 deploys: add type D D 1 10 9; add unit D d1 0 4; add unit D d2 1 4; add unit D d3 2 4; add unit D d4 3 4; add unit D d5 4 4; add unit D d6 5 4; add unit D d7 6 4; add unit D d8 7 4; add unit D d9 8 4; add unit D d10 9 4
+  p2 deploys: add type C C 10 10 20; add unit C c1 2 7; add unit C c2 4 7; add unit C c3 5 7; add unit C c4 7 7; add type S s 1 1 18; add unit S s1 0 5; add unit S s2 9 5
+    after turn 1: standing 10 v 6
+  -- turn 2
+    p1: move d1 south; move d10 south; move d2 south; move d3 south; move d4 south; move d5 south; move d6 south; move d7 south; move d8 south; move d9 south
+    p2: move c1 east; move c2 east; move c3 north; move c4 west; move s1 north; move s2 west
+    after turn 2: standing 10 v 4
+  -- turn 3
+    p1: move d1 south; move d10 south; move d2 south; move d3 south; move d4 south; move d5 south; move d6 south; move d7 south; move d8 south; move d9 south
+    p2: move c1 west; move c2 east; move c3 east; move c4 east
+    after turn 3: standing 9 v 4
+  -- turn 4
+    p1: move d1 south; move d10 west; move d2 south; move d3 south; move d4 east; move d5 east; move d6 east; move d8 south; move d9 west
+    p2: move c1 west; move c2 east; move c4 north
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 4: standing 8 v 2
+  -- turn 5
+    p1: move d1 east; move d10 east; move d3 south; move d4 east; move d5 west
+    p2: holds
+    p1: 6 order(s) rejected last turn:
+    p1: - d1 at (0,7): the contest at (1, 7) was undecided
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p1: - d4 at (4,6): the contest at (4, 6) was undecided
+    p1: - d5 at (5,6): the contest at (4, 6) was undecided
+    p2: 2 order(s) rejected last turn:
+    p2: - c1 at (1,7): the contest at (1, 7) was undecided
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 5: standing 8 v 2
+  -- turn 6
+    p1: move d10 south; move d3 west
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 6: standing 8 v 2
+  -- turn 7
+    p1: move d10 south; move d3 east
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 7: standing 8 v 2
+  -- turn 8
+    p1: move d10 south; move d3 south
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 8: standing 8 v 2
+  -- turn 9
+    p1: move d10 north; move d3 north
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 9: standing 8 v 2
+  -- turn 10
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 10: standing 8 v 2
+  -- turn 11
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 11: standing 8 v 2
+  -- turn 12
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 12: standing 8 v 2
+  -- turn 13
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 13: standing 8 v 2
+  -- turn 14
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 14: standing 8 v 2
+  -- turn 15
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 15: standing 8 v 2
+  -- turn 16
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 16: standing 8 v 2
+  -- turn 17
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 17: standing 8 v 2
+  -- turn 18
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 18: standing 8 v 2
+  -- turn 19
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 19: standing 8 v 2
+  -- turn 20
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 20: standing 8 v 2
+  -- turn 21
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 21: standing 8 v 2
+  -- turn 22
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 22: standing 8 v 2
+  -- turn 23
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 23: standing 8 v 2
+  -- turn 24
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 24: standing 8 v 2
+  -- turn 25
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 25: standing 8 v 2
+  -- turn 26
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 26: standing 8 v 2
+  -- turn 27
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 27: standing 8 v 2
+  -- turn 28
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 28: standing 8 v 2
+  -- turn 29
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 29: standing 8 v 2
+  -- turn 30
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 30: standing 8 v 2
+  -- turn 31
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 31: standing 8 v 2
+  -- turn 32
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 32: standing 8 v 2
+  -- turn 33
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 33: standing 8 v 2
+  -- turn 34
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 34: standing 8 v 2
+  -- turn 35
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 35: standing 8 v 2
+  -- turn 36
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 36: standing 8 v 2
+  -- turn 37
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 37: standing 8 v 2
+  -- turn 38
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 38: standing 8 v 2
+  -- turn 39
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 39: standing 8 v 2
+  -- turn 40
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 40: standing 8 v 2
+  -- turn 41
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 41: standing 8 v 2
+  -- turn 42
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 42: standing 8 v 2
+  -- turn 43
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 43: standing 8 v 2
+  -- turn 44
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 44: standing 8 v 2
+  -- turn 45
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 45: standing 8 v 2
+  -- turn 46
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 46: standing 8 v 2
+  -- turn 47
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 47: standing 8 v 2
+  -- turn 48
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 48: standing 8 v 2
+  -- turn 49
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 49: standing 8 v 2
+  -- turn 50
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 50: standing 8 v 2
+  -- turn 51
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 51: standing 8 v 2
+  -- turn 52
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 52: standing 8 v 2
+  -- turn 53
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 53: standing 8 v 2
+  -- turn 54
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 54: standing 8 v 2
+  -- turn 55
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 55: standing 8 v 2
+  -- turn 56
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 56: standing 8 v 2
+  -- turn 57
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 57: standing 8 v 2
+  -- turn 58
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 58: standing 8 v 2
+  -- turn 59
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 59: standing 8 v 2
+  -- turn 60
+    p1: holds
+    p2: holds
+    p1: 3 order(s) rejected last turn:
+    p1: - d6 at (6,6): the contest at (6, 6) was undecided
+    p1: - d8 at (7,6): the contest at (7, 6) was undecided
+    p1: - d9 at (7,6): the contest at (7, 6) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - c3 at (6,6): the contest at (6, 6) was undecided
+    after turn 60: standing 8 v 2
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|D|D|D|D|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|D|C|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|D|#|#|#|#|#|#|D|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+C            2  C
+D            1  D
+  undecided after 60 turns
+  final units:
+    p1 d1   D   a1 h9 (0,7) hp 9 en 0
+    p1 d10  D   a1 h10 (9,8) hp 10 en 1
+    p1 d2   D   a1 h0 destroyed
+    p1 d3   D   a1 h10 (2,8) hp 10 en 1
+    p1 d4   D   a1 h5 (4,6) hp 5 en 0
+    p1 d5   D   a1 h5 (5,6) hp 5 en 0
+    p1 d6   D   a1 h10 (6,6) hp 10 en 0
+    p1 d7   D   a1 h0 destroyed
+    p1 d8   D   a1 h5 (7,6) hp 5 en 0
+    p1 d9   D   a1 h3 (7,6) hp 3 en 0
+    p2 c1   C   a10 h5 (1,7) hp 5 en 7
+    p2 c2   C   a10 h0 destroyed
+    p2 c3   C   a10 h3 (6,6) hp 3 en 8
+    p2 c4   C   a10 h0 destroyed
+    p2 s1   S   a1 h0 destroyed
+    p2 s2   S   a1 h0 destroyed

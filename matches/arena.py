@@ -158,11 +158,12 @@ class Session:
 
 
 class Match:
-    def __init__(self, gameno, bots, max_turns=60, budgets=None):
+    def __init__(self, gameno, bots, max_turns=60, budgets=None, split=True):
         self.gameno = gameno
         self.bots = bots                      # {player_number: Bot}
         self.max_turns = max_turns
         self.budgets = budgets or {}          # {player_number: points}
+        self.split = split                    # deploy in your own half only
         self.log_file = open(LOGS / f'game_{gameno}.log', 'w',
                              encoding='utf-8')
         self.server = None
@@ -203,6 +204,38 @@ class Match:
                 LOGS / f'game_{self.gameno}_p{player}.txt')
             session.wait_for(lambda text: 'bgcclient> ' in text)
             self.clients[player] = session
+
+    # -------------------------------------------------------------- the referee
+
+    def half(self, player, size_y=10):
+        """The rows this player may deploy in, under the split-board rule.
+
+        The game itself lets a player deploy anywhere on the board (R2.6), so
+        halving it is a house rule, and a house rule needs a referee. Player 1
+        holds the north half, player 2 the south; the frontier runs between
+        them and nothing stops a unit crossing it once play has started.
+        """
+        if not self.split:
+            return range(size_y)
+        if player == 1:
+            return range(0, size_y // 2)
+        return range(size_y - size_y // 2, size_y)
+
+    def vet(self, player, commands):
+        """Drop any deployment outside this player's half, and say so."""
+        allowed = self.half(player)
+        kept = []
+        for command in commands:
+            parts = command.split()
+            if parts[:1] == ['add'] and parts[1:2] == ['unit']:
+                y = int(parts[5])
+                if y not in allowed:
+                    self.log(f'    p{player}: REFEREE refused "{command}" - '
+                             f'y={y} is outside rows '
+                             f'{allowed.start}-{allowed.stop - 1}')
+                    continue
+            kept.append(command)
+        return kept
 
     # ------------------------------------------------------------------ views
 
@@ -297,12 +330,17 @@ class Match:
         self.create()
         self.log(f'=== game {self.gameno}: '
                  f'p1 {self.bots[1].name} vs p2 {self.bots[2].name}')
+        points = ' / '.join(f'p{p}: {self.budgets.get(p, 100)}'
+                            for p in sorted(self.bots))
+        self.log(f'  board 10x10, budget {points}, deployment '
+                 + ('split: p1 in rows 0-4, p2 in rows 5-9'
+                    if self.split else 'anywhere'))
         for player, bot in self.bots.items():
             self.log(f'  p{player} {bot.name}: {bot.doctrine}')
 
         orders = {}
         for player, bot in self.bots.items():
-            commands = bot.setup(self.read_view(player))
+            commands = self.vet(player, bot.setup(self.read_view(player)))
             orders[player] = commands
             self.log(f'  p{player} deploys: {"; ".join(commands)}')
         self.turn = 1
@@ -332,15 +370,22 @@ class Match:
 
     def record(self):
         board, units = self.observe()
-        alive = {}
+        alive, spent = {}, {}
         for unit in units:
-            # a unit off the board has no square; `state` says why
-            if unit.get('x') is not None:
-                alive[unit['player']] = alive.get(unit['player'], 0) + 1
+            # a unit off the board has no square; `state` says why. A unit at
+            # zero energy is still on its square but no longer counts towards
+            # keeping its owner in the game (R7.1)
+            if unit.get('x') is None:
+                continue
+            tally = alive if unit['energy'] > 0 else spent
+            tally[unit['player']] = tally.get(unit['player'], 0) + 1
         self.history.append({'turn': self.turn, 'board': board,
-                             'units': units, 'alive': alive})
-        self.log(f'    after turn {self.turn}: standing '
-                 f'{alive.get(1, 0)} v {alive.get(2, 0)}')
+                             'units': units, 'alive': alive, 'spent': spent})
+        note = ''
+        if spent:
+            note = (f"  (spent: {spent.get(1, 0)} v {spent.get(2, 0)})")
+        self.log(f'    after turn {self.turn}: in play '
+                 f'{alive.get(1, 0)} v {alive.get(2, 0)}{note}')
 
     def summarise(self, units):
         self.log('  final units:')
@@ -376,13 +421,18 @@ def main():
     parser.add_argument('--max-turns', type=int, default=60)
     parser.add_argument('--budget1', type=int)
     parser.add_argument('--budget2', type=int)
+    parser.add_argument('--budget', type=int,
+                        help='the same budget for both players')
+    parser.add_argument('--no-split', action='store_true',
+                        help='let either player deploy anywhere on the board')
     args = parser.parse_args()
 
     LOGS.mkdir(parents=True, exist_ok=True)
     bots = {1: load_bot(args.p1, 1), 2: load_bot(args.p2, 2)}
-    budgets = {1: args.budget1, 2: args.budget2}
+    budgets = {1: args.budget1 or args.budget, 2: args.budget2 or args.budget}
     Match(args.game, bots, max_turns=args.max_turns,
-          budgets={k: v for k, v in budgets.items() if v}).play()
+          budgets={k: v for k, v in budgets.items() if v},
+          split=not args.no_split).play()
 
 
 if __name__ == '__main__':

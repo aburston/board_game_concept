@@ -13,8 +13,8 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Hunter'
-    doctrine = '2 x (a10 h10 e30), lawnmower sweep of half the board each'
-    army = (('H', 'H', 10, 10, 30, [(9, 0), (9, 9)]),)
+    doctrine = '4 x (a10 h10 e30), lawnmower sweep of a quarter of the board each'
+    army = (('H', 'H', 10, 10, 30, [(0, 2), (3, 2), (6, 2), (9, 2)]),)
 
     def floor(self, unit):
         return 10

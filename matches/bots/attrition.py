@@ -15,11 +15,13 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Attrition'
-    doctrine = '2 x (a1 h10 e30) + scout (a1 h1 e16), sweep and grind'
-    army = (('T', 'T', 1, 10, 30, [(0, 0), (0, 9)]),
-            ('S', 's', 1, 1, 16, [(0, 5)]))
+    doctrine = '4 x (a1 h10 e30) + 2 scouts (a1 h1 e16), sweep and grind'
+    army = (('T', 'T', 1, 10, 30, [(1, 2), (4, 2), (6, 2), (9, 2)]),
+            ('S', 's', 1, 1, 16, [(0, 4), (9, 4)]))
 
     def floor(self, unit):
         # the tanks keep ten energy back, which is a whole enemy of full
         # health; the scout spends everything it has on walking
-        return 10 if unit['type'] == 'T' else 1
+        # attack 1 spends one energy a round, so two in hand is a fight in
+        # hand. The rest is legs
+        return 2 if unit['type'] == 'T' else 1

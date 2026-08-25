@@ -14,7 +14,7 @@ from base import Sweeper
 class Bot(Sweeper):
     name = 'Marksman'
     doctrine = '3 x (a5 h10 e100) on a 400-point budget, sweep and clear'
-    army = (('M', 'M', 5, 10, 100, [(0, 0), (0, 4), (0, 9)]),)
+    army = (('M', 'M', 5, 10, 100, [(0, 0), (0, 2), (0, 4)]),)
 
     def floor(self, unit):
         return 5

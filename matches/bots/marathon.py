@@ -16,7 +16,7 @@ from base import Sweeper
 class Bot(Sweeper):
     name = 'Marathon'
     doctrine = '3 x (a1 h10 e100) on a 400-point budget, sweep until it ends'
-    army = (('M', 'M', 1, 10, 100, [(0, 0), (0, 4), (0, 9)]),)
+    army = (('M', 'M', 1, 10, 100, [(0, 0), (0, 2), (0, 4)]),)
 
     def floor(self, unit):
         # walk down to the last point: one energy still buys an attack round,

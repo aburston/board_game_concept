@@ -18,9 +18,9 @@ from common import mine, serpentine, size
 
 class Bot(Sweeper):
     name = 'Sharpshooter'
-    doctrine = '2 x (a2 h10 e28) + scout (a1 h1 e18), duel-winning statistics'
-    army = (('K', 'K', 2, 10, 28, [(9, 0), (9, 9)]),
-            ('S', 's', 1, 1, 18, [(9, 5)]))
+    doctrine = '4 x (a2 h10 e28) + 2 scouts (a1 h1 e18), duel-winning statistics'
+    army = (('K', 'K', 2, 10, 28, [(1, 3), (3, 3), (6, 3), (8, 3)]),
+            ('S', 's', 1, 1, 18, [(0, 4), (9, 4)]))
 
     reach = 6
 

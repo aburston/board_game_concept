@@ -15,9 +15,11 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Turtle'
-    doctrine = '4 x (a1 h10 e10) + 1 x (a1 h10 e5), dispersed, never move'
-    army = (('F', 'F', 1, 10, 10, [(0, 9), (9, 0), (0, 4), (9, 5)]),
-            ('T', 'T', 1, 10, 5, [(4, 9)]))
+    doctrine = '9 x (a1 h10 e10) + 1 x (a1 h5 e5), dispersed at the back, never move'
+    army = (('F', 'F', 1, 10, 10,
+             [(0, 0), (3, 0), (6, 0), (9, 0), (1, 1), (5, 1), (8, 1),
+              (2, 2), (7, 2)]),
+            ('T', 'T', 1, 5, 5, [(4, 2)]))
 
     def orders(self, view):
         return []

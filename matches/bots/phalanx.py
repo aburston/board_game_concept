@@ -13,9 +13,9 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Phalanx'
-    doctrine = '5 x (a1 h5 e10) + 1 x (a1 h5 e5), rank abreast, advance north'
-    army = (('P', 'P', 1, 5, 10, [(x, 9) for x in range(2, 7)]),
-            ('R', 'R', 1, 5, 5, [(0, 9)]))
+    doctrine = '12 x (a1 h5 e10), a full rank on the frontier, advance in step'
+    army = (('P', 'P', 1, 5, 10,
+             [(x, 4) for x in range(10)] + [(4, 3), (5, 3)]),)
 
     def floor(self, unit):
         return 5
@@ -25,4 +25,7 @@ class Bot(Sweeper):
         engage = self.engage_step(unit, contacts) + self.approach(unit, contacts)
         if engage:
             return engage
-        return [(0, -1), (1, 0), (-1, 0)]
+        # forward is across the frontier, which is whichever way the other
+        # half of the board lies
+        forward = (0, 1) if self.north else (0, -1)
+        return [forward, (1, 0), (-1, 0)]
