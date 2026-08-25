@@ -130,3 +130,12 @@ dmypy.json
 
 # board game concept stuff
 games/
+
+# match harness: raw session transcripts and per-turn board snapshots are
+# working files; the turn-by-turn match logs are the record of the games and
+# are kept, against the *.log rule above
+matches/logs/*_p[12].txt
+matches/logs/*_server.txt
+matches/logs/*_observer.txt
+matches/logs/*_history.json
+!matches/logs/game_*.log

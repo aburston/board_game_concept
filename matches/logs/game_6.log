@@ -1,0 +1,279 @@
+=== game 6: p1 Attrition vs p2 Tide
+  p1 Attrition: 2 x (a1 h10 e30) + scout (a1 h1 e16), sweep and grind
+  p2 Tide: 8 x (a1 h1 e10), line abreast, sweep and keep sweeping
+  p1 deploys: add type T T 1 10 30; add unit T t1 0 0; add unit T t2 0 9; add type S s 1 1 16; add unit S s1 0 5
+  p2 deploys: add type W w 1 1 10; add unit W w1 1 0; add unit W w2 2 0; add unit W w3 3 0; add unit W w4 4 0; add unit W w5 5 0; add unit W w6 6 0; add unit W w7 7 0; add unit W w8 8 0
+    after turn 1: standing 3 v 8
+  -- turn 2
+    p1: move s1 east; move t1 east; move t2 east
+    p2: move w1 west; move w2 west; move w3 west; move w4 west; move w5 west; move w6 west; move w7 west; move w8 east
+    after turn 2: standing 3 v 6
+  -- turn 3
+    p1: move s1 east; move t1 east; move t2 east
+    p2: move w3 south; move w4 south; move w5 south; move w6 south; move w7 east; move w8 south
+    after turn 3: standing 3 v 6
+  -- turn 4
+    p1: move s1 east; move t1 east; move t2 east
+    p2: move w3 south; move w4 south; move w5 south; move w6 south; move w7 south; move w8 west
+    after turn 4: standing 3 v 6
+  -- turn 5
+    p1: move s1 east; move t1 south; move t2 east
+    p2: move w3 south; move w4 south; move w5 south; move w6 south; move w7 west; move w8 south
+    after turn 5: standing 3 v 6
+  -- turn 6
+    p1: move s1 east; move t1 west; move t2 east
+    p2: move w3 south; move w4 south; move w5 south; move w6 south; move w7 south; move w8 east
+    after turn 6: standing 3 v 6
+  -- turn 7
+    p1: move s1 north; move t1 west; move t2 east
+    p2: move w3 south; move w4 south; move w5 south; move w6 south; move w7 east; move w8 south
+    after turn 7: standing 2 v 5
+  -- turn 8
+    p1: move t1 south; move t2 east
+    p2: move w3 south; move w4 south; move w5 south; move w7 south; move w8 west
+    after turn 8: standing 2 v 5
+  -- turn 9
+    p1: move t1 east; move t2 east
+    p2: move w3 south; move w4 south; move w5 south; move w7 west; move w8 south
+    after turn 9: standing 2 v 5
+  -- turn 10
+    p1: move t1 east; move t2 east
+    p2: move w3 south; move w4 south; move w5 south; move w7 south; move w8 east
+    after turn 10: standing 2 v 5
+  -- turn 11
+    p1: move t1 south; move t2 north
+    p2: holds
+    after turn 11: standing 2 v 5
+  -- turn 12
+    p1: move t1 west; move t2 west
+    p2: holds
+    after turn 12: standing 2 v 5
+  -- turn 13
+    p1: move t1 west; move t2 west
+    p2: holds
+    after turn 13: standing 2 v 5
+  -- turn 14
+    p1: move t1 south; move t2 west
+    p2: holds
+    after turn 14: standing 2 v 5
+  -- turn 15
+    p1: move t1 east; move t2 north
+    p2: holds
+    after turn 15: standing 2 v 5
+  -- turn 16
+    p1: move t1 east; move t2 east
+    p2: holds
+    after turn 16: standing 2 v 5
+  -- turn 17
+    p1: move t1 south; move t2 east
+    p2: holds
+    after turn 17: standing 2 v 5
+  -- turn 18
+    p1: move t1 west; move t2 east
+    p2: holds
+    after turn 18: standing 2 v 5
+  -- turn 19
+    p1: move t1 west; move t2 north
+    p2: holds
+    after turn 19: standing 2 v 5
+  -- turn 20
+    p1: move t1 south; move t2 west
+    p2: holds
+    after turn 20: standing 2 v 5
+  -- turn 21
+    p1: move t1 east; move t2 west
+    p2: holds
+    after turn 21: standing 2 v 5
+  -- turn 22
+    p1: holds
+    p2: holds
+    after turn 22: standing 2 v 5
+  -- turn 23
+    p1: holds
+    p2: holds
+    after turn 23: standing 2 v 5
+  -- turn 24
+    p1: holds
+    p2: holds
+    after turn 24: standing 2 v 5
+  -- turn 25
+    p1: holds
+    p2: holds
+    after turn 25: standing 2 v 5
+  -- turn 26
+    p1: holds
+    p2: holds
+    after turn 26: standing 2 v 5
+  -- turn 27
+    p1: holds
+    p2: holds
+    after turn 27: standing 2 v 5
+  -- turn 28
+    p1: holds
+    p2: holds
+    after turn 28: standing 2 v 5
+  -- turn 29
+    p1: holds
+    p2: holds
+    after turn 29: standing 2 v 5
+  -- turn 30
+    p1: holds
+    p2: holds
+    after turn 30: standing 2 v 5
+  -- turn 31
+    p1: holds
+    p2: holds
+    after turn 31: standing 2 v 5
+  -- turn 32
+    p1: holds
+    p2: holds
+    after turn 32: standing 2 v 5
+  -- turn 33
+    p1: holds
+    p2: holds
+    after turn 33: standing 2 v 5
+  -- turn 34
+    p1: holds
+    p2: holds
+    after turn 34: standing 2 v 5
+  -- turn 35
+    p1: holds
+    p2: holds
+    after turn 35: standing 2 v 5
+  -- turn 36
+    p1: holds
+    p2: holds
+    after turn 36: standing 2 v 5
+  -- turn 37
+    p1: holds
+    p2: holds
+    after turn 37: standing 2 v 5
+  -- turn 38
+    p1: holds
+    p2: holds
+    after turn 38: standing 2 v 5
+  -- turn 39
+    p1: holds
+    p2: holds
+    after turn 39: standing 2 v 5
+  -- turn 40
+    p1: holds
+    p2: holds
+    after turn 40: standing 2 v 5
+  -- turn 41
+    p1: holds
+    p2: holds
+    after turn 41: standing 2 v 5
+  -- turn 42
+    p1: holds
+    p2: holds
+    after turn 42: standing 2 v 5
+  -- turn 43
+    p1: holds
+    p2: holds
+    after turn 43: standing 2 v 5
+  -- turn 44
+    p1: holds
+    p2: holds
+    after turn 44: standing 2 v 5
+  -- turn 45
+    p1: holds
+    p2: holds
+    after turn 45: standing 2 v 5
+  -- turn 46
+    p1: holds
+    p2: holds
+    after turn 46: standing 2 v 5
+  -- turn 47
+    p1: holds
+    p2: holds
+    after turn 47: standing 2 v 5
+  -- turn 48
+    p1: holds
+    p2: holds
+    after turn 48: standing 2 v 5
+  -- turn 49
+    p1: holds
+    p2: holds
+    after turn 49: standing 2 v 5
+  -- turn 50
+    p1: holds
+    p2: holds
+    after turn 50: standing 2 v 5
+  -- turn 51
+    p1: holds
+    p2: holds
+    after turn 51: standing 2 v 5
+  -- turn 52
+    p1: holds
+    p2: holds
+    after turn 52: standing 2 v 5
+  -- turn 53
+    p1: holds
+    p2: holds
+    after turn 53: standing 2 v 5
+  -- turn 54
+    p1: holds
+    p2: holds
+    after turn 54: standing 2 v 5
+  -- turn 55
+    p1: holds
+    p2: holds
+    after turn 55: standing 2 v 5
+  -- turn 56
+    p1: holds
+    p2: holds
+    after turn 56: standing 2 v 5
+  -- turn 57
+    p1: holds
+    p2: holds
+    after turn 57: standing 2 v 5
+  -- turn 58
+    p1: holds
+    p2: holds
+    after turn 58: standing 2 v 5
+  -- turn 59
+    p1: holds
+    p2: holds
+    after turn 59: standing 2 v 5
+  -- turn 60
+    p1: holds
+    p2: holds
+    after turn 60: standing 2 v 5
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|w|#|#|w|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|T|#|#|#|#|#|T|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|w|w|w|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+T            1  T
+w            2  W
+  undecided after 60 turns
+  final units:
+    p1 s1   S   a1 h0 destroyed
+    p1 t1   T   a1 h10 (1,6) hp 10 en 10
+    p1 t2   T   a1 h10 (7,6) hp 10 en 10
+    p2 w1   W   a1 h0 destroyed
+    p2 w2   W   a1 h0 destroyed
+    p2 w3   W   a1 h1 (2,8) hp 1 en 1
+    p2 w4   W   a1 h1 (3,8) hp 1 en 1
+    p2 w5   W   a1 h1 (4,8) hp 1 en 1
+    p2 w6   W   a1 h0 destroyed
+    p2 w7   W   a1 h1 (6,4) hp 1 en 1
+    p2 w8   W   a1 h1 (9,4) hp 1 en 1

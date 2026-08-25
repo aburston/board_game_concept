@@ -107,7 +107,20 @@ class DefiningUnitTypes(ClientTestCase):
     def test_invalid_statistics(self):
         client = self.player_client()
         client.send_line('add type Cross X 99 1 10')
-        client.read_until('error adding unit type: attack must be a value from 1 to 10')
+        client.read_until(
+            'error adding unit type: attack must be a value from 0 to 10')
+
+    def test_a_wall_needs_both_zeroes(self):
+        client = self.player_client()
+        client.send_line('add type Half H 0 10 5')
+        client.read_until('error adding unit type: a type with no attack must '
+                          'have no energy')
+
+    def test_defining_a_wall(self):
+        client = self.player_client()
+        client.send_line('add type Wall W 0 10 0')
+        client.send_line('show types')
+        client.read_until('Wall')
 
     def test_defining_a_type_after_setup(self):
         client = self.in_play()
