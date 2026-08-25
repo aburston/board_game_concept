@@ -9,6 +9,8 @@ import sys
 
 from ..domain import UnitType
 from ..storage.serialise import units_document
+from . import identity
+from .errors import GameError
 
 
 def _types_without_objects(player):
@@ -191,7 +193,23 @@ def decide(game, turn_number, eliminated):
 
 
 def resolve(game):
-    """Apply every player's orders, end the turn, and publish the result."""
+    """Apply every player's orders, end the turn, and publish the result.
+
+    Only a session entitled to the whole game and allowed to change it may
+    resolve one, which today is the administrator's. A player's session is
+    built from that player's own published view and loads no other player's
+    orders, so resolving from one would apply a single player's orders and
+    republish a board holding only the units that player may see - every other
+    player wiped off the record and eliminated for having nothing standing.
+    The observer sees the whole game and changes nothing, so a turn resolved
+    from one would be a read that wrote. Both are a caller's mistake rather
+    than a rule of the game, and both are refused here where the damage would
+    be done rather than left to whichever layer opened the session.
+    """
+    if not (game.seesEverything() and identity.may_change(game.player_number)):
+        raise GameError(
+            f"{identity.describe(game.player_number)} may not resolve a turn: "
+            f"a turn is resolved by the administrator")
     if game.getSizeX() <= 1 or game.getSizeY() <= 1:
         print(f"the board size is too small ({game.getSizeX()}, {game.getSizeY()})")
         return False

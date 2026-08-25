@@ -17,6 +17,18 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # the suite is run once per storage backend. A test that is about one of
+    # them is marked `@pytest.mark.backend(...)` and is skipped by the run
+    # for the other, so a single run has never been the whole suite: with
+    # only the default (YAML) job, every test of the HTTP tier - which is
+    # pinned to SQLite - was skipped and nothing here ever exercised it
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [yaml, sqlite]
+
+    name: build (${{ matrix.backend }})
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.10
@@ -39,5 +51,10 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
+      env:
+        # which backend this job is for. `tests/conftest.py` reads it to
+        # decide which pinned tests belong to this run, and the roles and
+        # the API server read it to decide what they store a game in
+        BOARD_GAME_BACKEND: ${{ matrix.backend }}
       run: |
         pytest -v

@@ -65,7 +65,8 @@ Numbers 12 to 21 were found by reading the specs and the source back as one set
 of rules, which is `GAME_RULES.md`, and reproducing each candidate against the
 code rather than inferring it. All were fixed by the `fix-rules-defects` change.
 Numbers 22 and 23 were found afterwards, one by playing a game through the
-console scripts and one by questioning a rule.
+console scripts and one by questioning a rule. Number 30 was found the same way,
+by playing a two-player game over the HTTP tier.
 The gap that let the worst of them survive 227 passing tests is that nothing
 played a game on past a unit's death; `tests/test_full_game.py` does.
 
@@ -713,6 +714,55 @@ client publishes, and the server resolves. Making whichever commit completes the
 barrier resolve the turn inline is option (b) of §5 in
 `ARCHITECTURE_OPTIONS.md`, and it removes `game-server`'s unattended cycle
 rather than tightening it. It needs exactly the operation this change adds.
+
+### 30. Whoever committed last won the game — fixed
+
+Number 29's closing note named what was still not one act, and the
+`post-commit-with-inline-resolve` change did it: the commit that closes the
+barrier resolves the turn during the request, so an HTTP game needs no
+unattended `bgcserver`. The resolution was run from a session opened as the
+committing player.
+
+A player's session is not a view of the game with parts hidden as it is drawn —
+it is built from that player's own published view, holds only the units that
+player may see, and is given no other player's orders. `visibility` requires
+exactly that, and it is what makes a player's session the wrong thing to
+resolve a turn from. Resolving from one applied a single player's orders and
+then published that half-sighted board as `units` — the record of the game —
+so every other player's units were not moved, not fought, but erased. The turn
+then judged elimination from what was left: everybody but the committer had
+nothing standing, and the game was decided in their favour on turn 1.
+
+A one-player game could not show it — the only player sees all of their own
+units, so the board they resolve from is the whole board — and the tests that
+existed for the endpoint used one player, or stopped at the commit before the
+one that resolves. The first two-player game played over the API ended before
+an order had been given.
+
+Reproduction: register two players, deploy a unit for each, and commit one
+after the other. The second player is declared the winner on turn 1.
+
+Addressed by the `resolve-a-turn-from-the-whole-game` change: the commit
+endpoint resolves as the administrator, and the answer it sends back is still
+read as the player who asked. `service/turn.py` refuses to resolve from any
+session not entitled to the whole game and allowed to change it, so which
+session resolves is a rule of the game rather than something each caller is
+trusted to get right; `turn-commit` now says so.
+
+Held by `tests/test_two_player_commit.py`, which plays the game once over the
+endpoint and once against the service layer and holds both to one answer, by
+`tests/test_client_over_http.py`, which plays it end to end through two
+`bgcclient` subprocesses, and by `tests/test_turn_publication.py` for the
+refusal itself.
+
+**What let it through CI.** Every test of the HTTP tier is pinned to the SQLite
+backend with `@pytest.mark.backend('sqlite')`, and CI ran `pytest` with no
+`BOARD_GAME_BACKEND` set, which is YAML — so the whole HTTP suite, some fifty
+tests, was skipped on every run. Nothing was failing; nothing was running. CI
+now runs the suite once per backend from a matrix, so a pinned test is executed
+by the job it is pinned to rather than by neither.
+`tests/test_two_player_commit.py` is deliberately unpinned and runs the API on
+whichever backend the run is for.
 
 ## Unspecified, and worth deciding
 

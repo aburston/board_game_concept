@@ -140,12 +140,20 @@ def create_app(base_path=None, backend=None):
                     return jsonify(
                         {'error': 'the board is too small to commit'}), 400
                 # a fresh session for the resolve so the load reflects the
-                # commit that just landed rather than the state before it
-                resolver = Game(_repository(gameno), int(number))
+                # commit that just landed rather than the state before it -
+                # and the administrator's, not the committing player's. A
+                # player's session is built from that player's own published
+                # view, so resolving from one applies only that player's
+                # orders and republishes a board holding only the units that
+                # player may see. Every other player is wiped off the record,
+                # found to have nothing standing, and eliminated - which
+                # handed the game to whoever committed last
+                resolver = Game(_repository(gameno), identity.ADMINISTRATOR)
                 resolved = resolver.resolveWhenReady()
-                data = resolver if resolved else game
-                data.load()
-                payload = _commit_payload(data, resolved=bool(resolved))
+                # the answer goes back to the player who asked, read as they
+                # are entitled to read it
+                game.load()
+                payload = _commit_payload(game, resolved=bool(resolved))
                 return jsonify(payload), (200 if resolved else 202)
             # the administrator: the setup resolution has no barrier
             game.load()
