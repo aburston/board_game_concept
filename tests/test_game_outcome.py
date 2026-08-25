@@ -87,10 +87,9 @@ def test_a_unit_with_energy_left_keeps_its_owner_in_the_game(tmp_path):
     assert outcome(harness) is None
 
 
-def test_a_player_whose_every_unit_is_spent_is_eliminated(tmp_path):
-    # o1 has one point of energy and walks it off. It is still on the board
-    # and still holds its square, but it can do nothing ever again, and a
-    # player with nothing left that can act is out
+def test_a_spent_unit_still_keeps_its_owner_in_the_game(tmp_path):
+    # o1 has one point of energy and walks it off. It is out of energy, not
+    # out of the game: resting will give it back (R3.9), so it still counts
     harness = duel(tmp_path, mine=(1, 10, 50), theirs=(1, 10, 1),
                    their_units=[('O', 'o1', 5, 2)])
     harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
@@ -98,16 +97,35 @@ def test_a_player_whose_every_unit_is_spent_is_eliminated(tmp_path):
     spent = harness.units()['o1']
     assert spent.energy == 0
     assert spent.on_board and not spent.destroyed
-    assert (spent.x, spent.y) == (5, 1)
+    assert harness.session(0).getEliminated() == []
+    assert outcome(harness) is None
+
+
+def test_a_player_left_holding_only_walls_is_eliminated(tmp_path):
+    # a wall was designed with no energy, so resting gives it nothing and it
+    # can never act. Nothing that can play is nothing at all
+    harness = GameHarness(tmp_path)
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', 5, 10, 50)], [('X', 'x1', 0, 0)])
+    harness.deploy(2, [('W', 'W', 0, 1, 0), ('O', 'O', 1, 1, 10)],
+                   [('W', 'w1', 5, 2), ('O', 'o1', 1, 0)])
+    harness.resolve()
+    assert harness.session(0).getEliminated() == []
+
+    # x1 destroys o1, and what player 2 has left is a wall
+    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    units = harness.units()
+    assert units['o1'].destroyed
+    assert units['w1'].on_board and not units['w1'].destroyed
     assert harness.session(0).getEliminated() == [2]
-    assert outcome(harness) == {'decided': True, 'winner': 1, 'turn': 2}
+    assert outcome(harness)['winner'] == 1
 
 
-def test_both_players_spent_together_is_a_draw(tmp_path):
-    harness = duel(tmp_path, mine=(1, 10, 1), theirs=(1, 10, 1),
+def test_both_players_losing_their_last_playable_unit_is_a_draw(tmp_path):
+    harness = duel(tmp_path, mine=(1, 1, 10), theirs=(1, 1, 10),
                    my_units=[('X', 'x1', 0, 0)],
-                   their_units=[('O', 'o1', 5, 2)])
-    harness.turn({1: [('x1', UnitType.SOUTH)], 2: [('o1', UnitType.NORTH)]})
+                   their_units=[('O', 'o1', 1, 0)])
+    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     assert harness.session(0).getEliminated() == [1, 2]
     assert outcome(harness)['winner'] is None
 

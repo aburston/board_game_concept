@@ -1,70 +1,70 @@
-=== game 75: p1 Bulwark vs p2 Reaper
+=== game 95: p1 Bulwark vs p2 Reaper
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Bulwark: 10 x wall (a0 h10 e0) across the frontier + 2 x (a2 h10 e28)
   p2 Reaper: 2 x (a10 h10 e80), sweep the enemy half and clear it
   p1 deploys: add type W W 0 10 0; add unit W w1 0 4; add unit W w2 1 4; add unit W w3 2 4; add unit W w4 3 4; add unit W w5 4 4; add unit W w6 5 4; add unit W w7 6 4; add unit W w8 7 4; add unit W w9 8 4; add unit W w10 9 4; add type K K 2 10 28; add unit K k1 3 2; add unit K k2 6 2; add type S s 1 1 18; add unit S s1 0 0
   p2 deploys: add type R R 10 10 80; add unit R r1 2 6; add unit R r2 7 6
-    after turn 1: in play 3 v 2  (spent: 10 v 0)
+    after turn 1: in play 3 v 2  (walls: 10 v 0)
   -- turn 2
     p1: holds
     p2: move r1 west; move r2 west
-    after turn 2: in play 3 v 2  (spent: 10 v 0)
+    after turn 2: in play 3 v 2  (walls: 10 v 0)
   -- turn 3
     p1: holds
     p2: move r1 west; move r2 west
-    after turn 3: in play 3 v 2  (spent: 10 v 0)
+    after turn 3: in play 3 v 2  (walls: 10 v 0)
   -- turn 4
     p1: holds
     p2: move r1 east; move r2 east
-    after turn 4: in play 3 v 2  (spent: 10 v 0)
+    after turn 4: in play 3 v 2  (walls: 10 v 0)
   -- turn 5
     p1: holds
     p2: move r1 east; move r2 east
-    after turn 5: in play 3 v 2  (spent: 10 v 0)
+    after turn 5: in play 3 v 2  (walls: 10 v 0)
   -- turn 6
     p1: holds
     p2: move r1 east; move r2 east
-    after turn 6: in play 3 v 2  (spent: 10 v 0)
+    after turn 6: in play 3 v 2  (walls: 10 v 0)
   -- turn 7
     p1: holds
     p2: move r1 east; move r2 east
-    after turn 7: in play 3 v 2  (spent: 10 v 0)
+    after turn 7: in play 3 v 2  (walls: 10 v 0)
   -- turn 8
     p1: holds
     p2: move r1 north; move r2 north
-    after turn 8: in play 3 v 2  (spent: 10 v 0)
+    after turn 8: in play 3 v 2  (walls: 10 v 0)
   -- turn 9
     p1: holds
     p2: move r1 west; move r2 west
-    after turn 9: in play 3 v 2  (spent: 10 v 0)
+    after turn 9: in play 3 v 2  (walls: 10 v 0)
   -- turn 10
     p1: holds
     p2: move r1 west; move r2 west
-    after turn 10: in play 3 v 2  (spent: 10 v 0)
+    after turn 10: in play 3 v 2  (walls: 10 v 0)
   -- turn 11
     p1: holds
     p2: move r1 west; move r2 west
-    after turn 11: in play 3 v 2  (spent: 10 v 0)
+    after turn 11: in play 3 v 2  (walls: 10 v 0)
   -- turn 12
     p1: holds
     p2: move r1 west; move r2 west
-    after turn 12: in play 3 v 2  (spent: 10 v 0)
+    after turn 12: in play 3 v 2  (walls: 10 v 0)
   -- turn 13
     p1: holds
     p2: move r1 north; move r2 north
-    after turn 13: in play 3 v 2  (spent: 8 v 0)
+    after turn 13: in play 3 v 2  (walls: 8 v 0)
   -- turn 14
     p1: move k1 east; move k2 south; move s1 south
     p2: move r1 east; move r2 east
-    after turn 14: in play 3 v 2  (spent: 6 v 0)
+    after turn 14: in play 3 v 2  (walls: 6 v 0)
   -- turn 15
     p1: move k1 east; move k2 south; move s1 south
     p2: move r1 east; move r2 east
-    after turn 15: in play 3 v 2  (spent: 4 v 0)
+    after turn 15: in play 3 v 2  (walls: 4 v 0)
   -- turn 16
     p1: move k1 east; move k2 east; move s1 east
     p2: move r1 east; move r2 east
-    after turn 16: in play 3 v 2  (spent: 2 v 0)
+    after turn 16: in play 3 v 2  (walls: 2 v 0)
   -- turn 17
     p1: move k1 east; move k2 east; move s1 east
     p2: move r1 east; move r2 east

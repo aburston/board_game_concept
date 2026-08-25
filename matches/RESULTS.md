@@ -1,11 +1,12 @@
 # Thirteen games on a ten by ten board
 
-> The same exercise was played again under three changes — two hundred points a
-> player, the board halved at deployment, and a unit at zero energy no longer
-> counting towards its owner staying in the game. That series is in
-> `matches/RESULTS-FRONTIER.md`, and again with energy regeneration and walls
-> in `matches/RESULTS-REST-AND-WALLS.md`. This one is the open board at a
-> hundred points, before any of those changes.
+> **Played under the rules as they stood before this branch changed them.**
+> Energy never came back, a unit at zero energy still kept its owner in the
+> game, and there were no walls. These thirty-odd games are what argued for
+> changing all three, and they would not play the same way today — the current
+> rules are in `GAME_RULES.md`, and the series played against them is
+> `matches/RESULTS-REST-AND-WALLS.md`. The series in between, at two hundred
+> points across a split board, is `matches/RESULTS-FRONTIER.md`.
 
 Thirteen two-player games, played through the real CLI roles — one
 `bgcserver` resolving turns, one `bgcclient` session per player for the whole

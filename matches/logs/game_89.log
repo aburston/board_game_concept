@@ -1,4 +1,4 @@
-=== game 69: p1 Sponge vs p2 Duellist
+=== game 89: p1 Sponge vs p2 Duellist
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Sponge: 11 x (a1 h10 e6) + 1 x (a1 h10 e2), walk in and soak
   p2 Duellist: 4 x (a10 h10 e20) + 2 scouts (a1 h1 e18), champions hold the frontier
@@ -22,7 +22,7 @@
     p1: - s9 at (7,6): the contest at (7, 6) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - c3 at (6,6): the contest at (6, 6) was undecided
-    after turn 4: in play 7 v 2  (spent: 3 v 0)
+    after turn 4: in play 10 v 2
   -- turn 5
     p1: move s1 east; move s10 east; move s11 east; move s3 south; move s4 west; move s5 west
     p2: holds
@@ -36,7 +36,7 @@
     p2: 2 order(s) rejected last turn:
     p2: - c1 at (1,7): the contest at (1, 7) was undecided
     p2: - c3 at (6,6): the contest at (6, 6) was undecided
-    after turn 5: in play 7 v 2  (spent: 3 v 0)
+    after turn 5: in play 10 v 2
   -- turn 6
     p1: move s10 south; move s3 west; move s4 west
     p2: holds
@@ -46,7 +46,7 @@
     p1: - s9 at (7,6): the contest at (7, 6) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - c1 at (1,7): the contest at (1, 7) was undecided
-    after turn 6: in play 6 v 1  (spent: 3 v 1)
+    after turn 6: in play 9 v 2
   -- turn 7
     p1: move d1 east
     p2: holds
@@ -60,7 +60,7 @@
     p1: 2 order(s) rejected last turn:
     p1: - s8 at (7,6): the contest at (7, 6) was undecided
     p1: - s9 at (7,6): the contest at (7, 6) was undecided
-    after turn 8: in play 7 v 2  (spent: 2 v 0)
+    after turn 8: in play 9 v 2
   -- turn 9
     p1: move d1 west; move s4 east
     p2: move c1 west
@@ -74,7 +74,7 @@
     p1: 2 order(s) rejected last turn:
     p1: - s8 at (7,6): the contest at (7, 6) was undecided
     p1: - s9 at (7,6): the contest at (7, 6) was undecided
-    after turn 10: in play 7 v 2  (spent: 2 v 0)
+    after turn 10: in play 9 v 2
   -- turn 11
     p1: move d1 south; move s4 south
     p2: move c1 east
@@ -88,7 +88,7 @@
     p1: 2 order(s) rejected last turn:
     p1: - s8 at (7,6): the contest at (7, 6) was undecided
     p1: - s9 at (7,6): the contest at (7, 6) was undecided
-    after turn 12: in play 7 v 2  (spent: 2 v 0)
+    after turn 12: in play 9 v 2
   -- turn 13
     p1: move d1 south; move s4 south
     p2: move c1 west
@@ -102,7 +102,7 @@
     p1: 2 order(s) rejected last turn:
     p1: - s8 at (7,6): the contest at (7, 6) was undecided
     p1: - s9 at (7,6): the contest at (7, 6) was undecided
-    after turn 14: in play 6 v 1  (spent: 2 v 1)
+    after turn 14: in play 8 v 2
   -- turn 15
     p1: move d1 south; move s4 north
     p2: holds
@@ -113,7 +113,7 @@
   -- turn 16
     p1: move s10 north; move s3 north
     p2: holds
-    after turn 16: in play 6 v 2  (spent: 1 v 0)
+    after turn 16: in play 7 v 2
   -- turn 17
     p1: move d1 south; move s4 north
     p2: holds
@@ -141,7 +141,7 @@
   -- turn 23
     p1: move d1 north; move s4 north; move s8 south
     p2: holds
-    after turn 23: in play 6 v 1  (spent: 0 v 1)
+    after turn 23: in play 6 v 2
   -- turn 24
     p1: move s10 north; move s11 north; move s3 north; move s5 north
     p2: holds

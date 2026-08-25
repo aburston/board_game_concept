@@ -1,4 +1,4 @@
-=== game 68: p1 Sponge vs p2 Ambush
+=== game 88: p1 Sponge vs p2 Ambush
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Sponge: 11 x (a1 h10 e6) + 1 x (a1 h10 e2), walk in and soak
   p2 Ambush: 8 x (a1 h10 e10) + 2 x (a1 h5 e10), behind the frontier, never move
@@ -12,7 +12,7 @@
   -- turn 3
     p1: move s1 south; move s10 south; move s11 south; move s2 south; move s3 south; move s4 south; move s5 south; move s6 south; move s7 south; move s8 south; move s9 south
     p2: holds
-    after turn 3: in play 8 v 6  (spent: 0 v 4)
+    after turn 3: in play 8 v 10
   -- turn 4
     p1: move d1 south; move s11 west; move s2 west; move s3 east; move s5 south; move s6 east; move s8 south; move s9 east
     p2: holds
@@ -26,7 +26,7 @@
     p2: - a2 at (3,6): the contest at (3, 6) was undecided
     p2: - a3 at (6,6): the contest at (6, 6) was undecided
     p2: - a4 at (9,6): the contest at (9, 6) was undecided
-    after turn 4: in play 3 v 9  (spent: 4 v 1)
+    after turn 4: in play 7 v 10
   -- turn 5
     p1: move s11 south; move s8 west
     p2: holds
@@ -34,7 +34,7 @@
     p1: - s11 at (3,5): the contest at (3, 6) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - a2 at (3,6): the contest at (3, 6) was undecided
-    after turn 5: in play 6 v 9  (spent: 1 v 1)
+    after turn 5: in play 7 v 10
   -- turn 6
     p1: move d1 west; move s8 east
     p2: holds
@@ -42,7 +42,7 @@
   -- turn 7
     p1: move s2 south; move s3 south; move s6 south; move s9 south
     p2: holds
-    after turn 7: in play 4 v 7  (spent: 0 v 3)
+    after turn 7: in play 4 v 10
   -- turn 8
     p1: move d1 south; move s11 east; move s8 east
     p2: holds
@@ -50,11 +50,11 @@
     p1: - s8 at (7,7): the contest at (8, 7) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - a8 at (8,7): the contest at (8, 7) was undecided
-    after turn 8: in play 3 v 10  (spent: 1 v 0)
+    after turn 8: in play 4 v 10
   -- turn 9
     p1: move s3 south
     p2: holds
-    after turn 9: in play 3 v 9  (spent: 0 v 1)
+    after turn 9: in play 3 v 10
   -- turn 10
     p1: move d1 east; move s11 south
     p2: holds
@@ -62,7 +62,7 @@
   -- turn 11
     p1: move s8 south
     p2: holds
-    after turn 11: in play 2 v 9  (spent: 0 v 1)
+    after turn 11: in play 2 v 10
   -- turn 12
     p1: move d1 south; move s11 south
     p2: holds
@@ -72,7 +72,51 @@
     p2: 2 order(s) rejected last turn:
     p2: - a6 at (4,7): the contest at (4, 7) was undecided
     p2: - a7 at (5,7): the contest at (5, 7) was undecided
-    after turn 12: in play 0 v 8  (spent: 2 v 2)
+    after turn 12: in play 2 v 10
+  -- turn 13
+    p1: holds
+    p2: holds
+    after turn 13: in play 2 v 10
+  -- turn 14
+    p1: holds
+    p2: holds
+    after turn 14: in play 2 v 10
+  -- turn 15
+    p1: move d1 south; move s11 south
+    p2: holds
+    p1: 1 order(s) rejected last turn:
+    p1: - d1 at (5,6): the contest at (5, 7) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - a7 at (5,7): the contest at (5, 7) was undecided
+    after turn 15: in play 1 v 10
+  -- turn 16
+    p1: holds
+    p2: holds
+    after turn 16: in play 1 v 10
+  -- turn 17
+    p1: holds
+    p2: holds
+    after turn 17: in play 1 v 10
+  -- turn 18
+    p1: move d1 south
+    p2: holds
+    p1: 1 order(s) rejected last turn:
+    p1: - d1 at (5,6): the contest at (5, 7) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - a7 at (5,7): the contest at (5, 7) was undecided
+    after turn 18: in play 1 v 10
+  -- turn 19
+    p1: holds
+    p2: holds
+    after turn 19: in play 1 v 10
+  -- turn 20
+    p1: holds
+    p2: holds
+    after turn 20: in play 1 v 10
+  -- turn 21
+    p1: move d1 south
+    p2: holds
+    after turn 21: in play 0 v 10
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
@@ -86,7 +130,7 @@
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
-|A|#|#|A|S|D|A|#|#|A|
+|A|#|#|A|#|#|A|#|#|A|
 +-+-+-+-+-+-+-+-+-+-+
 |#|A|#|#|A|A|#|#|A|#|
 +-+-+-+-+-+-+-+-+-+-+
@@ -97,14 +141,12 @@
 SYMBOL  PLAYER  TYPE
 A            2  A
 B            2  B
-D            1  D
-S            1  S
-  game over: player 2 wins on turn 12
+  game over: player 2 wins on turn 21
   final units:
-    p1 d1   D   a1 h6 (5,6) hp 6 en 0
+    p1 d1   D   a1 h0 destroyed
     p1 s1   S   a1 h0 destroyed
     p1 s10  S   a1 h0 destroyed
-    p1 s11  S   a1 h2 (4,6) hp 2 en 0
+    p1 s11  S   a1 h0 destroyed
     p1 s2   S   a1 h0 destroyed
     p1 s3   S   a1 h0 destroyed
     p1 s4   S   a1 h0 destroyed
@@ -113,13 +155,13 @@ S            1  S
     p1 s7   S   a1 h0 destroyed
     p1 s8   S   a1 h0 destroyed
     p1 s9   S   a1 h0 destroyed
-    p2 a1   A   a1 h3 (0,6) hp 3 en 9
-    p2 a2   A   a1 h1 (3,6) hp 1 en 7
-    p2 a3   A   a1 h3 (6,6) hp 3 en 9
-    p2 a4   A   a1 h3 (9,6) hp 3 en 9
-    p2 a5   A   a1 h9 (1,7) hp 9 en 5
-    p2 a6   A   a1 h6 (4,7) hp 6 en 0
-    p2 a7   A   a1 h8 (5,7) hp 8 en 0
-    p2 a8   A   a1 h8 (8,7) hp 8 en 5
-    p2 b1   B   a1 h4 (2,8) hp 4 en 3
-    p2 b2   B   a1 h4 (7,8) hp 4 en 1
+    p2 a1   A   a1 h3 (0,6) hp 3 en 10
+    p2 a2   A   a1 h1 (3,6) hp 1 en 10
+    p2 a3   A   a1 h3 (6,6) hp 3 en 10
+    p2 a4   A   a1 h3 (9,6) hp 3 en 10
+    p2 a5   A   a1 h9 (1,7) hp 9 en 10
+    p2 a6   A   a1 h5 (4,7) hp 5 en 6
+    p2 a7   A   a1 h5 (5,7) hp 5 en 0
+    p2 a8   A   a1 h8 (8,7) hp 8 en 10
+    p2 b1   B   a1 h4 (2,8) hp 4 en 10
+    p2 b2   B   a1 h4 (7,8) hp 4 en 10

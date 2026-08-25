@@ -89,26 +89,16 @@ def test_a_unit_too_spent_to_strike_back_still_rests(tmp_path):
     assert o1.health < 10, 'and it was attacked while doing it'
 
 
-def test_a_unit_spending_its_last_point_is_out_before_it_can_rest(tmp_path):
-    # resting happens at the end of the turn and elimination is judged after
-    # it, so a unit that acted its way to zero does not get to recover first
+def test_a_unit_that_spends_its_last_point_is_spent_and_not_lost(tmp_path):
+    # walking to zero is a bad afternoon rather than a death: elimination asks
+    # whether a unit could ever act again (R7.1), and this one can
     harness = a_game(tmp_path, mine=(1, 10, 50), theirs=(1, 10, 2),
                      their_units=[('O', 'o1', 5, 2)])
     harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
     harness.turn({1: [], 2: [('o1', UnitType.SOUTH)]})
     assert harness.units()['o1'].energy == 0
-    assert harness.session(0).getEliminated() == [2]
-
-
-def test_a_spent_unit_recovers_while_its_owner_is_still_in(tmp_path):
-    # o2 keeps player 2 in the game, so o1 lives to rest off zero and comes
-    # back into the count
-    harness = a_game(tmp_path, mine=(1, 10, 50), theirs=(1, 10, 2),
-                     their_units=[('O', 'o1', 5, 2), ('O', 'o2', 5, 0)])
-    harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
-    harness.turn({1: [], 2: [('o1', UnitType.WEST)]})
-    assert harness.units()['o1'].energy == 0
     assert harness.session(0).getEliminated() == []
 
+    # and the next quiet turn puts it back on its feet
     harness.turn({1: [], 2: []})
     assert harness.units()['o1'].energy == 1

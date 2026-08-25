@@ -1,4 +1,4 @@
-=== game 72: p1 Drain vs p2 Turtle
+=== game 92: p1 Drain vs p2 Turtle
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Drain: 10 x (a1 h10 e9), one per column, walk in and soak
   p2 Turtle: 9 x (a1 h10 e10) + 1 x (a1 h5 e5), dispersed at the back, never move
@@ -16,11 +16,11 @@
   -- turn 4
     p1: move d1 south; move d10 south; move d2 south; move d3 south; move d4 south; move d5 south; move d6 south; move d7 south; move d8 south; move d9 south
     p2: holds
-    after turn 4: in play 8 v 7  (spent: 0 v 2)
+    after turn 4: in play 8 v 9
   -- turn 5
     p1: move d1 east; move d10 west; move d2 east; move d4 south; move d6 east; move d7 east; move d9 south
     p2: holds
-    after turn 5: in play 7 v 6  (spent: 0 v 1)
+    after turn 5: in play 7 v 7
   -- turn 6
     p1: move d1 west; move d10 south; move d4 south; move d5 south; move d6 south
     p2: holds
@@ -28,7 +28,7 @@
     p1: - d10 at (8,7): the contest at (8, 8) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - f7 at (8,8): the contest at (8, 8) was undecided
-    after turn 6: in play 5 v 6  (spent: 1 v 1)
+    after turn 6: in play 6 v 7
   -- turn 7
     p1: move d1 south; move d2 south; move d6 east; move d7 west
     p2: holds
@@ -36,11 +36,11 @@
   -- turn 8
     p1: move d1 south; move d5 south; move d6 west
     p2: holds
-    after turn 8: in play 5 v 6  (spent: 0 v 1)
+    after turn 8: in play 5 v 7
   -- turn 9
     p1: move d10 east; move d2 west; move d6 west; move d7 south
     p2: holds
-    after turn 9: in play 3 v 5  (spent: 0 v 2)
+    after turn 9: in play 3 v 7
   -- turn 10
     p1: move d5 east
     p2: holds
@@ -48,7 +48,7 @@
   -- turn 11
     p1: move d10 south; move d7 south
     p2: holds
-    after turn 11: in play 2 v 6  (spent: 0 v 1)
+    after turn 11: in play 2 v 7
   -- turn 12
     p1: move d5 east
     p2: holds
@@ -56,11 +56,11 @@
     p1: - d5 at (5,9): the contest at (6, 9) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - f3 at (6,9): the contest at (6, 9) was undecided
-    after turn 12: in play 1 v 7  (spent: 1 v 0)
+    after turn 12: in play 2 v 7
   -- turn 13
     p1: move d10 south
     p2: holds
-    after turn 13: in play 1 v 6  (spent: 0 v 1)
+    after turn 13: in play 1 v 7
   -- turn 14
     p1: holds
     p2: holds

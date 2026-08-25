@@ -1,4 +1,4 @@
-=== game 73: p1 Reaper vs p2 Ambush
+=== game 93: p1 Reaper vs p2 Ambush
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Reaper: 2 x (a10 h10 e80), sweep the enemy half and clear it
   p2 Ambush: 8 x (a1 h10 e10) + 2 x (a1 h5 e10), behind the frontier, never move

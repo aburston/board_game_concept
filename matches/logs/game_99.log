@@ -1,4 +1,4 @@
-=== game 79: p1 Sharpshooter vs p2 Attrition
+=== game 99: p1 Sharpshooter vs p2 Attrition
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Sharpshooter: 4 x (a2 h10 e28) + 2 scouts (a1 h1 e18), duel-winning statistics
   p2 Attrition: 4 x (a1 h10 e30) + 2 scouts (a1 h1 e16), sweep and grind

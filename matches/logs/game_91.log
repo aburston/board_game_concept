@@ -1,4 +1,4 @@
-=== game 71: p1 Drain vs p2 Ambush
+=== game 91: p1 Drain vs p2 Ambush
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Drain: 10 x (a1 h10 e9), one per column, walk in and soak
   p2 Ambush: 8 x (a1 h10 e10) + 2 x (a1 h5 e10), behind the frontier, never move
@@ -12,11 +12,11 @@
   -- turn 3
     p1: move d1 south; move d10 south; move d2 south; move d3 south; move d4 south; move d5 south; move d6 south; move d7 south; move d8 south; move d9 south
     p2: holds
-    after turn 3: in play 6 v 6  (spent: 0 v 4)
+    after turn 3: in play 6 v 10
   -- turn 4
     p1: move d2 west; move d3 east; move d5 south; move d6 east; move d8 south; move d9 east
     p2: holds
-    after turn 4: in play 5 v 5  (spent: 0 v 1)
+    after turn 4: in play 5 v 6
   -- turn 5
     p1: move d2 east; move d3 east; move d6 west; move d8 west; move d9 west
     p2: holds
@@ -24,7 +24,7 @@
   -- turn 6
     p1: move d2 south; move d3 west; move d6 south; move d8 east; move d9 south
     p2: holds
-    after turn 6: in play 2 v 3  (spent: 0 v 3)
+    after turn 6: in play 2 v 6
   -- turn 7
     p1: move d8 east
     p2: holds
@@ -32,7 +32,7 @@
     p1: - d8 at (7,7): the contest at (8, 7) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - a8 at (8,7): the contest at (8, 7) was undecided
-    after turn 7: in play 1 v 6  (spent: 1 v 0)
+    after turn 7: in play 2 v 6
   -- turn 8
     p1: move d3 west
     p2: holds
@@ -44,7 +44,7 @@
   -- turn 10
     p1: move d3 south; move d8 south
     p2: holds
-    after turn 10: in play 1 v 5  (spent: 0 v 1)
+    after turn 10: in play 1 v 6
   -- turn 11
     p1: holds
     p2: holds
@@ -52,7 +52,7 @@
   -- turn 12
     p1: move d3 south
     p2: holds
-    after turn 12: in play 0 v 5  (spent: 0 v 1)
+    after turn 12: in play 0 v 6
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+

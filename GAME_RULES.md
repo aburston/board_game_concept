@@ -135,9 +135,9 @@ which only walls could act lands no attacks and the fight ends (**R5.6**). It
 can be destroyed like anything else, it blocks a square like anything else, and
 it costs its health and nothing else — a wall of 10 health costs 10 points.
 
-Because a wall holds no energy, **it does not keep its owner in the game**
-(**R7.1**). An army of nothing but walls has already lost; walls are ground you
-deny an opponent, not an army.
+Because a wall can never recover and never act, **it does not keep its owner in
+the game** (**R7.1**). An army of nothing but walls has already lost; walls are
+ground you deny an opponent, not an army.
 
 ---
 
@@ -320,12 +320,11 @@ the record as a casualty (**R6.6**).
 **R5.10 Inert units.** A unit whose energy has fallen below its attack value can
 no longer attack or defend itself, but is *not* removed. It stays on the board,
 holds its square, blocks movement, and can only be cleared by being killed. It
-keeps its owner in the game while it has any energy left; once it is down to
-zero it is spent, and a player whose every unit is spent is out (**R7.1**).
-This is no longer permanent: a unit that stands still recovers 1 energy a turn
-(**R3.9**), so an inert unit is a unit that needs to rest rather than a unit
-that is finished. A **wall** (**R2.10**) is the exception — its type was
-designed with no energy, so it has nothing to recover to.
+keeps its owner in the game whatever it holds, because a unit that stands still
+recovers 1 energy a turn (**R3.9**): an inert unit is one that needs to rest,
+not one that is finished. A **wall** (**R2.10**) is the exception — its type was
+designed with no energy, so it has nothing to recover to, and it is the one
+kind of unit that does not keep its owner in the game (**R7.1**).
 
 **R5.11 Two consequences worth spelling out, because they decide how the game
 plays:**
@@ -369,17 +368,19 @@ your view for that turn only, and drops out like any other contact (**R6.3**).
 
 ## R7. Ending the game
 
-**R7.1 You are eliminated when you have nothing left that can act.** A player is
-out once every unit they own is either destroyed or down to **zero energy**. A
-unit on the board and not destroyed keeps you in only while it has energy left
-to spend — one point is enough, whatever its attack value. A unit at zero energy
-stays on the board and still holds its square (**R5.10**), but it can no longer
-move, attack or defend itself, and it no longer keeps its owner in the game. A
-player who deployed nothing is out on the first turn with units on the board.
+**R7.1 You are eliminated when you have nothing left that could ever act
+again.** A player is out once every unit they own is either destroyed or is a
+**wall** (**R2.10**). What matters is whether a unit has a future, not what it
+holds this turn: a unit at zero energy recovers a point for every turn it does
+nothing (**R3.9**), so it is spent for the moment rather than finished, and it
+keeps you in. A wall is the one unit that never recovers, because its type was
+designed with no energy at all — it can never move and never strike, so it holds
+a square for you and nothing else. A player who deployed nothing is out on the
+first turn with units on the board.
 
 **R7.2 The last player standing wins.** The game is decided at the end of the
-turn in which every other player becomes eliminated. If the last players are
-wiped out — or spent — together, it is a **draw**.
+turn in which every other player becomes eliminated. If the last players lose
+their last playable unit together, it is a **draw**.
 
 **R7.3 A game with fewer than two registered players is never decided.** There
 is nobody to be the last player standing against; a solo game is a sandbox.
@@ -461,10 +462,11 @@ the game, and every match was a race to the bottom of two pockets.
   move you can make, resting is a decision with a cost — a turn — and an
   exhausted unit is a unit that needs to withdraw rather than one that is
   finished.
-- A unit at **0 energy no longer keeps its owner in the game** (**R7.1**), so
-  an army worn down to nothing loses rather than lingering. Rest happens before
-  that is judged, so the two do not fight each other: standing still saves you,
-  spending your last point does not.
+- Elimination is judged on whether a unit **could ever act again** (**R7.1**)
+  rather than on what it holds this turn. Zero energy was a death sentence
+  while energy never came back, and counting a unit out for it was right then;
+  with rest it is a bad afternoon, and only a **wall** — designed with no
+  energy — can never come back from it.
 
 **What it opened.** Two things worth watching, now that a spent unit is not
 finished: a defender that is never reached recovers for free, which makes a

@@ -1,4 +1,4 @@
-=== game 74: p1 Reaper vs p2 Turtle
+=== game 94: p1 Reaper vs p2 Turtle
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Reaper: 2 x (a10 h10 e80), sweep the enemy half and clear it
   p2 Turtle: 9 x (a1 h10 e10) + 1 x (a1 h5 e5), dispersed at the back, never move
@@ -164,7 +164,7 @@
   -- turn 41
     p1: move r1 east; move r2 east
     p2: holds
-    after turn 41: in play 1 v 1  (spent: 1 v 0)
+    after turn 41: in play 2 v 1
   -- turn 42
     p1: holds
     p2: holds
@@ -172,7 +172,7 @@
   -- turn 43
     p1: move r2 east
     p2: holds
-    after turn 43: in play 1 v 0  (spent: 1 v 0)
+    after turn 43: in play 2 v 0
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+

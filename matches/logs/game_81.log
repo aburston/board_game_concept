@@ -1,4 +1,4 @@
-=== game 61: p1 Swarm vs p2 Grinder
+=== game 81: p1 Swarm vs p2 Grinder
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Swarm: 18 x (a1 h1 e9), two ranks abreast, sweep across the frontier
   p2 Grinder: 6 x (a1 h10 e20), spread across the middle, grind forward
@@ -116,7 +116,7 @@
   -- turn 29
     p1: move s5 north
     p2: move g1 north; move g3 south; move g4 west; move g5 west; move g6 south
-    after turn 29: in play 2 v 5  (spent: 0 v 1)
+    after turn 29: in play 2 v 6
   -- turn 30
     p1: move s16 north
     p2: move g2 north
@@ -124,7 +124,7 @@
     p1: - s16 at (6,4): the contest at (6, 3) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - g5 at (6,3): the contest at (6, 3) was undecided
-    after turn 30: in play 1 v 6  (spent: 1 v 0)
+    after turn 30: in play 2 v 6
   -- turn 31
     p1: move s5 east
     p2: move g1 north; move g3 west; move g4 east; move g6 west
@@ -132,7 +132,7 @@
   -- turn 32
     p1: holds
     p2: move g2 north; move g5 south
-    after turn 32: in play 1 v 5  (spent: 0 v 1)
+    after turn 32: in play 1 v 6
   -- turn 33
     p1: move s5 south
     p2: move g1 north; move g3 south; move g4 west; move g6 east
@@ -240,7 +240,7 @@
   -- turn 59
     p1: move s5 south
     p2: move g1 north; move g3 north; move g4 north; move g5 north; move g6 north
-    after turn 59: in play 0 v 5  (spent: 0 v 1)
+    after turn 59: in play 0 v 6
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+

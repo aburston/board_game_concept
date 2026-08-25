@@ -1,4 +1,4 @@
-=== game 65: p1 Hunter vs p2 Grinder
+=== game 85: p1 Hunter vs p2 Grinder
   board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
   p1 Hunter: 4 x (a10 h10 e30), lawnmower sweep of a quarter of the board each
   p2 Grinder: 6 x (a1 h10 e20), spread across the middle, grind forward
@@ -132,7 +132,7 @@
   -- turn 33
     p1: move h1 east; move h2 north; move h3 east; move h4 east
     p2: holds
-    after turn 33: in play 3 v 2  (spent: 1 v 0)
+    after turn 33: in play 4 v 2
   -- turn 34
     p1: holds
     p2: move g4 west; move g6 west
@@ -140,7 +140,7 @@
     p1: - h2 at (3,4): the contest at (3, 4) was undecided
     p2: 1 order(s) rejected last turn:
     p2: - g4 at (4,4): the contest at (3, 4) was undecided
-    after turn 34: in play 4 v 1  (spent: 0 v 1)
+    after turn 34: in play 4 v 2
   -- turn 35
     p1: move h1 north; move h3 east; move h4 east
     p2: holds
@@ -192,7 +192,7 @@
   -- turn 47
     p1: move h1 north; move h2 north; move h3 east; move h4 north
     p2: move g4 south
-    after turn 47: in play 3 v 1  (spent: 1 v 0)
+    after turn 47: in play 4 v 1
   -- turn 48
     p1: holds
     p2: holds

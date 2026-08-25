@@ -424,9 +424,14 @@ what `combat-resolution` says.
 Addressed by the `fix-rules-defects` change: a new `game-outcome` capability. A
 player is eliminated when every unit they own is destroyed; an inert unit still
 counts as alive, which settles the disagreement in `combat-resolution`'s favour.
-**Since revised**: a unit at *zero* energy no longer counts, which settles the
-same disagreement in `design.md`'s favour for the zero case only. A unit with
-energy left counts however little it can afford to do with it; see R7.1.
+**Since revised twice**, by `rest-walls-and-what-counts`. First a unit at zero
+energy stopped counting, which settled the same disagreement in `design.md`'s
+favour for the zero case. Then energy regeneration (R3.9) made zero a state a
+unit passes through rather than the end of it, and the test became whether a
+unit could ever act again: every unit counts however spent it is, and a
+**wall** — a type designed with no energy — never does. The final answer is
+`combat-resolution`'s for units that can recover and `design.md`'s for the one
+kind that cannot. See R7.1.
 The last player standing wins, simultaneous elimination is a draw, eliminated
 players stop being waited for, and a decided game stops. Turns are numbered, and
 the number is written with every record published for a turn.

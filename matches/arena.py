@@ -372,18 +372,20 @@ class Match:
         board, units = self.observe()
         alive, spent = {}, {}
         for unit in units:
-            # a unit off the board has no square; `state` says why. A unit at
-            # zero energy is still on its square but no longer counts towards
-            # keeping its owner in the game (R7.1)
+            # a unit off the board has no square; `state` says why. What keeps
+            # a player in the game is holding a unit that could act again
+            # (R7.1), which is every unit except a wall - and a wall is the
+            # only thing with no attack (R2.10). A unit merely out of energy
+            # counts, because resting gives it back
             if unit.get('x') is None:
                 continue
-            tally = alive if unit['energy'] > 0 else spent
+            tally = alive if unit['attack'] > 0 else spent
             tally[unit['player']] = tally.get(unit['player'], 0) + 1
         self.history.append({'turn': self.turn, 'board': board,
                              'units': units, 'alive': alive, 'spent': spent})
         note = ''
         if spent:
-            note = (f"  (spent: {spent.get(1, 0)} v {spent.get(2, 0)})")
+            note = f"  (walls: {spent.get(1, 0)} v {spent.get(2, 0)})"
         self.log(f'    after turn {self.turn}: in play '
                  f'{alive.get(1, 0)} v {alive.get(2, 0)}{note}')
 

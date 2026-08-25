@@ -228,13 +228,19 @@ def has_started(game):
 
 
 def eliminated_players(game):
-    """The players holding no unit that is standing and still has energy.
+    """The players holding no unit that could ever act again.
 
-    A unit at zero energy is on the board and cannot be got rid of, but it can
-    no longer move, attack or defend itself: it is a spent piece, not a
-    fighting one, and it does not keep its owner in the game. A unit with any
-    energy left does, whatever its attack value - what it can afford to do
-    with that energy is its owner's problem.
+    What counts is whether a unit has a future, not what it happens to hold
+    this turn. A unit at zero energy used to be finished, because energy never
+    came back, and not counting it was the honest reading; now a unit that
+    stands still recovers a point a turn, so being at zero is a bad afternoon
+    rather than a death, and judging a player on it would decide games on the
+    timing of a snapshot.
+
+    A **wall** is the one unit that has no future: its type was designed with
+    no energy at all, so resting gives it nothing, it can never move and it
+    can never strike. A player holding nothing but walls holds nothing that
+    can play, and is out.
 
     Derived from the board every turn rather than tracked, so that who is out
     cannot drift out of step with what is standing.
@@ -245,7 +251,7 @@ def eliminated_players(game):
     for number, player in game.players.items():
         alive = any(unit.player.number == number
                     and unit.on_board and not unit.destroyed
-                    and unit.energy > 0
+                    and unit.type_energy > 0
                     for unit in game.board.units)
         if not alive:
             out.append(number)

@@ -82,18 +82,26 @@ def test_a_wall_cannot_be_ordered_to_move(tmp_path):
 
 
 def test_an_army_of_walls_is_an_army_that_has_lost(tmp_path):
-    # player 2 holds a wall and one real unit; when the real one is spent,
-    # what is left is scenery
+    # player 2 holds a wall and one real unit. The wall keeps nobody in the
+    # game, so player 2 is out the moment the real one is destroyed - but a
+    # unit merely out of energy still counts, because it can rest (R7.1)
     harness = GameHarness(tmp_path)
     harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', 1, 10, 50)], [('X', 'x1', 0, 0)])
-    harness.deploy(2, [('W', 'W', 0, 10, 0), ('O', 'O', 1, 10, 1)],
-                   [('W', 'w1', 3, 0), ('O', 'o1', 5, 2)])
+    harness.deploy(1, [('X', 'X', 5, 10, 50)], [('X', 'x1', 0, 0)])
+    harness.deploy(2, [('W', 'W', 0, 10, 0), ('O', 'O', 1, 1, 1)],
+                   [('W', 'w1', 3, 0), ('O', 'o1', 1, 0)])
     harness.resolve()
+
+    # o1 walks itself down to nothing, and player 2 is still in
+    harness.turn({1: [], 2: [('o1', UnitType.EAST)]})
+    assert harness.units()['o1'].energy == 0
     assert harness.session(0).getEliminated() == []
 
-    harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
+    # destroyed is another matter: what is left is a wall, and scenery does
+    # not keep you in
+    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     units = harness.units()
-    assert units['o1'].energy == 0
+    assert units['o1'].destroyed
     assert not units['w1'].destroyed and units['w1'].on_board
     assert harness.session(0).getEliminated() == [2]
