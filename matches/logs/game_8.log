@@ -1,259 +1,272 @@
-=== game 8: p1 Nomad vs p2 Attrition
-  p1 Nomad: 3 x (a1 h1 e30), keep moving, never fight
-  p2 Attrition: 2 x (a1 h10 e30) + scout (a1 h1 e16), sweep and grind
-  p1 deploys: add type N N 1 1 30; add unit N n1 2 9; add unit N n2 5 9; add unit N n3 8 9
-  p2 deploys: add type T T 1 10 30; add unit T t1 0 0; add unit T t2 0 9; add type S s 1 1 16; add unit S s1 0 5
-    after turn 1: standing 3 v 3
+=== game 8: p1 Sponge vs p2 Ambush
+  board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
+  p1 Sponge: 5 x (a1 h8 e31), a line bought to be hit
+  p2 Ambush: 5 x (a1 h5 e34), on the traffic lanes, hold 15 turns then advance
+  p1 deploys: add type S S 1 8 31; add unit S s1 0 4; add unit S s2 2 4; add unit S s3 4 4; add unit S s4 7 4; add unit S s5 9 4
+  p2 deploys: add type A A 1 5 34; add unit A a1 0 6; add unit A a2 3 6; add unit A a3 6 6; add unit A a4 9 6; add unit A a5 4 7
+    after turn 1: in play 5 v 5
   -- turn 2
-    p1: move n1 west; move n2 west; move n3 west
-    p2: move s1 east; move t1 east; move t2 east
-    after turn 2: standing 2 v 3
+    p1: move s1 east; move s2 east; move s3 east; move s4 west; move s5 west
+    p2: holds
+    after turn 2: in play 5 v 5
   -- turn 3
-    p1: move n2 east; move n3 east
-    p2: move s1 east; move t1 east; move t2 east
-    after turn 3: standing 2 v 3
+    p1: move s1 south; move s2 south; move s3 south; move s4 east; move s5 east
+    p2: holds
+    after turn 3: in play 5 v 5
   -- turn 4
-    p1: move n2 west; move n3 west
-    p2: move s1 east; move t1 south; move t2 east
-    after turn 4: standing 2 v 3
+    p1: move s1 west; move s2 west; move s3 west; move s4 south; move s5 south
+    p2: holds
+    after turn 4: in play 5 v 5
   -- turn 5
-    p1: move n2 west; move n3 west
-    p2: move s1 east; move t1 west; move t2 east
-    after turn 5: standing 1 v 3
+    p1: move s1 south; move s2 south; move s3 south; move s4 west; move s5 west
+    p2: holds
+    after turn 5: in play 5 v 4
   -- turn 6
-    p1: move n3 east
-    p2: move s1 east; move t1 west; move t2 east
-    after turn 6: standing 1 v 3
+    p1: move s1 east; move s2 east; move s3 east; move s4 south; move s5 south
+    p2: move a2 west; move a3 east; move a4 west; move a5 east
+    after turn 6: in play 5 v 2
   -- turn 7
-    p1: move n3 east
-    p2: move s1 north; move t1 south; move t2 east
-    after turn 7: standing 1 v 3
+    p1: move s1 south; move s2 south; move s3 south; move s4 east; move s5 east
+    p2: move a3 east; move a5 west
+    after turn 7: in play 5 v 2
   -- turn 8
-    p1: move n3 east
-    p2: move s1 west; move t1 east; move t2 east
-    after turn 8: standing 1 v 3
+    p1: move s1 west; move s2 west; move s3 west; move s4 south; move s5 south
+    p2: move a3 west; move a5 east
+    after turn 8: in play 5 v 1
   -- turn 9
-    p1: move n3 north
-    p2: move s1 west; move t1 east; move t2 east
-    after turn 9: standing 1 v 3
+    p1: move s1 south; move s2 south; move s3 south; move s4 west; move s5 west
+    p2: move a3 north
+    after turn 9: in play 5 v 1
   -- turn 10
-    p1: move n3 west
-    p2: move s1 north; move t1 south; move t2 east
-    after turn 10: standing 1 v 3
+    p1: move s1 east; move s2 east; move s3 east; move s4 south; move s5 south
+    p2: move a3 west
+    after turn 10: in play 5 v 1
   -- turn 11
-    p1: move n3 west
-    p2: move s1 east; move t1 west; move t2 north
-    after turn 11: standing 1 v 3
+    p1: move s1 south; move s2 south; move s3 south; move s4 east; move s5 east
+    p2: move a3 north
+    after turn 11: in play 5 v 1
   -- turn 12
-    p1: move n3 west
-    p2: move s1 east; move t1 west; move t2 west
-    after turn 12: standing 1 v 3
+    p1: move s1 west; move s2 west; move s3 west; move s4 south; move s5 south
+    p2: move a3 east
+    after turn 12: in play 5 v 1
   -- turn 13
-    p1: move n3 north
-    p2: move s1 north; move t1 south; move t2 west
-    after turn 13: standing 1 v 3
+    p1: move s1 east; move s2 east; move s3 east; move s4 west; move s5 west
+    p2: move a3 north
+    after turn 13: in play 5 v 1
   -- turn 14
-    p1: move n3 east
-    p2: move s1 west; move t1 east; move t2 west
-    after turn 14: standing 1 v 3
+    p1: move s4 east
+    p2: move a3 west
+    after turn 14: in play 5 v 1
   -- turn 15
-    p1: move n3 east
-    p2: move s1 west; move t1 east; move t2 north
-    after turn 15: standing 1 v 3
+    p1: move s1 north; move s2 north; move s3 north; move s4 north; move s5 east
+    p2: move a3 north
+    after turn 15: in play 5 v 1
   -- turn 16
-    p1: move n3 east
-    p2: move s1 north; move t1 south; move t2 east
-    after turn 16: standing 1 v 3
+    p1: move s4 west
+    p2: move a3 east
+    after turn 16: in play 5 v 1
   -- turn 17
-    p1: move n3 north
-    p2: move t1 west; move t2 east
-    after turn 17: standing 1 v 3
+    p1: holds
+    p2: move a3 north
+    after turn 17: in play 5 v 1
   -- turn 18
-    p1: move n3 west
-    p2: move t1 west; move t2 east
-    after turn 18: standing 1 v 3
+    p1: move s1 west; move s2 west; move s3 west; move s5 north
+    p2: move a3 west
+    after turn 18: in play 5 v 1
   -- turn 19
-    p1: move n3 west
-    p2: move t1 south; move t2 north
-    after turn 19: standing 1 v 3
+    p1: move s4 north
+    p2: move a3 north
+    after turn 19: in play 5 v 1
   -- turn 20
-    p1: move n3 west
-    p2: move t1 east
-    after turn 20: standing 1 v 3
+    p1: holds
+    p2: move a3 east
+    after turn 20: in play 5 v 1
   -- turn 21
-    p1: move n3 north
-    p2: move t1 east
-    after turn 21: standing 1 v 3
+    p1: move s1 north; move s2 north; move s3 north; move s5 west
+    p2: move a3 west
+    after turn 21: in play 5 v 1
   -- turn 22
-    p1: move n3 east
+    p1: move s4 east
     p2: holds
-    after turn 22: standing 1 v 3
+    after turn 22: in play 5 v 1
   -- turn 23
-    p1: move n3 east
-    p2: holds
-    after turn 23: standing 1 v 3
+    p1: holds
+    p2: move a3 east
+    after turn 23: in play 5 v 1
   -- turn 24
-    p1: move n3 east
+    p1: move s1 east; move s2 east; move s3 east; move s5 north
     p2: holds
-    after turn 24: standing 1 v 3
+    after turn 24: in play 5 v 1
   -- turn 25
-    p1: move n3 north
+    p1: move s4 north
     p2: holds
-    after turn 25: standing 1 v 3
+    after turn 25: in play 5 v 1
   -- turn 26
-    p1: move n3 west
-    p2: holds
-    after turn 26: standing 1 v 3
+    p1: holds
+    p2: move a3 south
+    after turn 26: in play 5 v 1
   -- turn 27
-    p1: move n3 west
+    p1: move s1 north; move s2 north; move s3 north; move s5 east
     p2: holds
-    after turn 27: standing 1 v 3
+    after turn 27: in play 5 v 1
   -- turn 28
-    p1: move n3 west
+    p1: move s4 west
     p2: holds
-    after turn 28: standing 1 v 3
+    after turn 28: in play 5 v 1
   -- turn 29
-    p1: move n3 north
-    p2: holds
-    after turn 29: standing 1 v 3
+    p1: holds
+    p2: move a3 west
+    after turn 29: in play 5 v 1
   -- turn 30
-    p1: move n3 east
+    p1: move s1 west; move s2 west; move s3 west; move s5 north
     p2: holds
-    after turn 30: standing 1 v 3
+    after turn 30: in play 5 v 1
   -- turn 31
-    p1: move n3 east
+    p1: move s4 north
     p2: holds
-    after turn 31: standing 1 v 3
+    after turn 31: in play 5 v 1
   -- turn 32
     p1: holds
-    p2: holds
-    after turn 32: standing 1 v 3
+    p2: move a3 south
+    after turn 32: in play 5 v 1
   -- turn 33
-    p1: holds
+    p1: move s1 north; move s2 north; move s3 north; move s5 west
     p2: holds
-    after turn 33: standing 1 v 3
+    after turn 33: in play 5 v 1
   -- turn 34
-    p1: holds
+    p1: move s4 east
     p2: holds
-    after turn 34: standing 1 v 3
+    after turn 34: in play 5 v 1
   -- turn 35
     p1: holds
-    p2: holds
-    after turn 35: standing 1 v 3
+    p2: move a3 east
+    after turn 35: in play 5 v 1
   -- turn 36
-    p1: holds
+    p1: move s1 east; move s2 east; move s3 east; move s5 north
     p2: holds
-    after turn 36: standing 1 v 3
+    after turn 36: in play 5 v 1
   -- turn 37
-    p1: holds
+    p1: move s4 north
     p2: holds
-    after turn 37: standing 1 v 3
+    after turn 37: in play 5 v 1
   -- turn 38
     p1: holds
-    p2: holds
-    after turn 38: standing 1 v 3
+    p2: move a3 south
+    after turn 38: in play 5 v 1
   -- turn 39
-    p1: holds
+    p1: move s1 north; move s2 north; move s3 north; move s5 east
     p2: holds
-    after turn 39: standing 1 v 3
+    after turn 39: in play 5 v 1
   -- turn 40
-    p1: holds
+    p1: move s4 west
     p2: holds
-    after turn 40: standing 1 v 3
+    after turn 40: in play 5 v 1
   -- turn 41
     p1: holds
-    p2: holds
-    after turn 41: standing 1 v 3
+    p2: move a3 west
+    after turn 41: in play 5 v 1
   -- turn 42
-    p1: holds
+    p1: move s1 west; move s2 west; move s3 west; move s5 north
     p2: holds
-    after turn 42: standing 1 v 3
+    after turn 42: in play 5 v 1
   -- turn 43
-    p1: holds
+    p1: move s4 north
     p2: holds
-    after turn 43: standing 1 v 3
+    p1: 1 order(s) rejected last turn:
+    p1: - s4 at (6,4): the contest at (6, 3) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - a3 at (6,3): the contest at (6, 3) was undecided
+    after turn 43: in play 5 v 1
   -- turn 44
     p1: holds
     p2: holds
-    after turn 44: standing 1 v 3
+    after turn 44: in play 5 v 1
   -- turn 45
-    p1: holds
+    p1: move s1 north; move s2 north; move s3 north; move s5 west
     p2: holds
-    after turn 45: standing 1 v 3
+    after turn 45: in play 5 v 1
   -- turn 46
     p1: holds
     p2: holds
-    after turn 46: standing 1 v 3
+    after turn 46: in play 5 v 1
   -- turn 47
-    p1: holds
-    p2: holds
-    after turn 47: standing 1 v 3
+    p1: move s4 north
+    p2: move a3 south
+    p1: 1 order(s) rejected last turn:
+    p1: - s4 at (6,4): the contest at (6, 4) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - a3 at (6,3): the contest at (6, 4) was undecided
+    after turn 47: in play 5 v 1
   -- turn 48
-    p1: holds
+    p1: move s1 east; move s2 east; move s3 east; move s5 west
     p2: holds
-    after turn 48: standing 1 v 3
+    after turn 48: in play 5 v 1
   -- turn 49
     p1: holds
     p2: holds
-    after turn 49: standing 1 v 3
+    after turn 49: in play 5 v 1
   -- turn 50
     p1: holds
     p2: holds
-    after turn 50: standing 1 v 3
+    after turn 50: in play 5 v 1
   -- turn 51
-    p1: holds
-    p2: holds
-    after turn 51: standing 1 v 3
+    p1: move s1 north; move s2 north; move s3 north; move s4 north; move s5 east
+    p2: move a3 south
+    p1: 1 order(s) rejected last turn:
+    p1: - s4 at (6,4): the contest at (6, 4) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - a3 at (6,3): the contest at (6, 4) was undecided
+    after turn 51: in play 5 v 1
   -- turn 52
     p1: holds
     p2: holds
-    after turn 52: standing 1 v 3
+    after turn 52: in play 5 v 1
   -- turn 53
     p1: holds
     p2: holds
-    after turn 53: standing 1 v 3
+    after turn 53: in play 5 v 1
   -- turn 54
-    p1: holds
+    p1: move s1 west; move s2 west; move s3 west; move s5 north
     p2: holds
-    after turn 54: standing 1 v 3
+    after turn 54: in play 5 v 1
   -- turn 55
-    p1: holds
-    p2: holds
-    after turn 55: standing 1 v 3
+    p1: move s4 north
+    p2: move a3 south
+    p1: 1 order(s) rejected last turn:
+    p1: - s4 at (6,4): the contest at (6, 4) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2: - a3 at (6,3): the contest at (6, 4) was undecided
+    after turn 55: in play 5 v 1
   -- turn 56
     p1: holds
     p2: holds
-    after turn 56: standing 1 v 3
+    after turn 56: in play 5 v 1
   -- turn 57
-    p1: holds
+    p1: move s1 north; move s2 north; move s3 north; move s5 east
     p2: holds
-    after turn 57: standing 1 v 3
+    after turn 57: in play 5 v 1
   -- turn 58
     p1: holds
     p2: holds
-    after turn 58: standing 1 v 3
+    after turn 58: in play 5 v 1
   -- turn 59
-    p1: holds
-    p2: holds
-    after turn 59: standing 1 v 3
-  -- turn 60
-    p1: holds
-    p2: holds
-    after turn 60: standing 1 v 3
+    p1: move s4 north
+    p2: move a3 south
+    after turn 59: in play 5 v 0
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
-|#|#|#|s|#|#|#|#|#|#|
+|S|#|S|#|S|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
-|#|#|#|#|#|#|#|#|N|#|
+|#|#|#|#|#|#|S|#|#|S|
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
-|#|#|T|#|#|#|#|#|#|T|
+|#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
@@ -262,14 +275,16 @@
 |#|#|#|#|#|#|#|#|#|#|
 +-+-+-+-+-+-+-+-+-+-+
 SYMBOL  PLAYER  TYPE
-N            1  N
-T            2  T
-s            2  S
-  undecided after 60 turns
+S            1  S
+  game over: player 1 wins on turn 59
   final units:
-    p1 n1   N   a1 h0 destroyed
-    p1 n2   N   a1 h0 destroyed
-    p1 n3   N   a1 h1 (8,3) hp 1 en 0
-    p2 s1   S   a1 h1 (3,1) hp 1 en 1
-    p2 t1   T   a1 h10 (2,6) hp 10 en 10
-    p2 t2   T   a1 h8 (9,6) hp 8 en 10
+    p1 s1   S   a1 h3 (0,1) hp 3 en 3
+    p1 s2   S   a1 h3 (2,1) hp 3 en 3
+    p1 s3   S   a1 h3 (4,1) hp 3 en 3
+    p1 s4   S   a1 h2 (6,3) hp 2 en 0
+    p1 s5   S   a1 h3 (9,3) hp 3 en 3
+    p2 a1   A   a1 h0 destroyed
+    p2 a2   A   a1 h0 destroyed
+    p2 a3   A   a1 h0 destroyed
+    p2 a4   A   a1 h0 destroyed
+    p2 a5   A   a1 h0 destroyed

@@ -25,6 +25,17 @@ class Sweeper:
     # same way from either side
     army = ()
 
+    # how many turns this doctrine will sit on its deployment before it has to
+    # come forward. Nothing here may hold for ever: a game is won by taking
+    # the other player's units off the board (R7.1), so a doctrine that never
+    # advances cannot win one - the most it can do is not lose, and a series
+    # of games neither side is trying to win measures nothing. Patience buys a
+    # defender the thing it is built for, which is meeting an attacker on full
+    # pockets; it does not buy it the whole game. Contact overrides it: once
+    # this player has seen an enemy there is something to go at, and waiting
+    # is no longer a plan
+    patience = 0
+
     def floor(self, unit):
         """How much energy a unit refuses to walk below.
 
@@ -41,6 +52,7 @@ class Sweeper:
         self.routes = {}
         self.at = {}
         self.seen = {}          # unit name -> where an enemy was last met
+        self.turn = 0           # turns this bot has been asked to order
 
     # --------------------------------------------------------------- setting up
 
@@ -142,15 +154,31 @@ class Sweeper:
                 + self.approach(unit, contacts)
                 + self.route_step(unit))
 
+    def holding(self, view, contacts):
+        """Whether to spend another turn standing where I deployed.
+
+        Only while nothing has been seen and the doctrine's patience has not
+        run out. A unit that holds is a unit that rests (R3.9), so waiting is
+        not free of consequence for the other side either - but it stops being
+        a plan the moment there is an enemy to go at, or the moment the clock
+        says this doctrine has had its turn at being a fortress.
+        """
+        return (self.turn <= self.patience
+                and not contacts and not self.seen)
+
     def orders(self, view):
+        self.turn += 1
         self.plan_routes(view)
         contacts = self.targets(view)
+        if self.holding(view, contacts):
+            return []
         fare = fares(view)
         wishes = {}
         for unit in mine(view):
             # what is left after paying for the step has to clear the floor,
-            # and the step costs this unit its designed health (R4.3) rather
-            # than the flat 1 every doctrine here was first written against
+            # and the step costs a quarter of this unit's designed health
+            # (R4.3), not the flat 1 every doctrine here was first written
+            # against
             if unit['energy'] - fare[unit['name']] < self.floor(unit):
                 continue
             wishes[unit['name']] = self.wish(view, unit, contacts)

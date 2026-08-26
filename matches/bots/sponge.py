@@ -18,11 +18,11 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Sponge'
-    doctrine = '11 x (a1 h10 e6) + 1 x (a1 h9 e3), a line bought to be hit'
-    army = (('S', 'S', 1, 10, 6,
-             [(0, 4), (1, 4), (2, 4), (3, 4), (4, 4), (5, 4), (6, 4), (7, 4),
-              (8, 4), (9, 4), (4, 3)]),
-            ('D', 'D', 1, 9, 3, [(5, 3)]))
+    doctrine = '5 x (a1 h8 e31), a line bought to be hit'
+    army = (
+        ('S', 'S', 1, 8, 31,
+         [(0, 4), (2, 4), (4, 4), (7, 4), (9, 4)]),
+    )
 
     def floor(self, unit):
         # a sponge spends everything on getting there. Holding a point back

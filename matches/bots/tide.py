@@ -11,9 +11,11 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Tide'
-    doctrine = '16 x (a1 h1 e10), two ranks, sweep and keep sweeping'
-    army = (('W', 'w', 1, 1, 10,
-             [(x, 4) for x in range(10)] + [(x, 3) for x in range(2, 8)]),)
+    doctrine = '6 x (a1 h1 e31), a rank abreast, sweep and keep sweeping'
+    army = (
+        ('W', 'w', 1, 1, 31,
+         [(0, 4), (2, 4), (4, 4), (5, 4), (7, 4), (9, 4)]),
+    )
 
     def floor(self, unit):
         return 1

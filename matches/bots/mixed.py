@@ -10,30 +10,52 @@ The weakness it accepts: three units, one of which is bought to die.
 """
 
 from base import Sweeper
-from common import mine, serpentine, size
+from common import lanes, mine, serpentine, size
 
 
 class Bot(Sweeper):
     name = 'Mixed'
-    doctrine = '2 scouts (a1 h1 e30) + 2 assassins (a10 h1 e21) + 2 tanks (a1 h10 e20)'
-    army = (('C', 'C', 1, 1, 30, [(2, 4), (7, 4)]),
-            ('A', 'A', 10, 1, 21, [(3, 2), (6, 2)]),
-            ('G', 'G', 1, 10, 20, [(1, 3), (8, 3)]))
+    doctrine = '1 scout (a1 h1 e60) + 2 x (a10 h1 e30) + 1 x (a1 h10 e45), combined arms'
+    # the type letters matter: `plan_routes` and `wish` below key off them, so
+    # the scout has to be a C and anything that fights must not be
+    army = (
+        ('C', 'c', 1, 1, 60,
+         [(0, 4)]),
+        ('A', 'A', 10, 1, 30,
+         [(3, 4), (6, 4)]),
+        ('G', 'G', 1, 10, 45,
+         [(9, 3)]),
+    )
 
     def floor(self, unit):
         return unit['attack'] if unit['type'] == 'A' else 1
 
     def plan_routes(self, view):
-        """Only the scout sweeps. The other two wait on what it finds."""
+        """The scout sweeps the whole board; everybody else gets a lane.
+
+        The killers used to get no route at all, on the theory that they
+        should wait on what the scout finds. What that produced was a bot
+        that gave no order for sixty-six turns of a hundred: the scout was
+        killed early, no intelligence ever arrived, and two units with an
+        attack of ten stood on their deployment squares until the game ran
+        out. Waiting on a scout is only a plan while there is a scout.
+        """
         size_x, size_y = size(view)
-        for unit in mine(view):
-            if unit['type'] != 'C' or unit['name'] in self.routes:
+        units = sorted(mine(view), key=lambda u: u['name'])
+        others = [unit for unit in units if unit['type'] != 'C']
+        share = lanes(size_x, max(len(others), 1))
+        # sweep away from my own back row, which is into enemy ground
+        downwards = self.north
+        start = 0 if downwards else size_y - 1
+        for unit in units:
+            if unit['name'] in self.routes:
                 continue
-            # sweep away from my own back row, which is into enemy ground
-            downwards = self.north
-            route = serpentine(size_y, list(range(size_x)),
-                               0 if downwards else size_y - 1, downwards)
-            self.routes[unit['name']] = route
+            if unit['type'] == 'C':
+                columns = list(range(size_x))
+            else:
+                columns = share[others.index(unit) % len(share)]
+            self.routes[unit['name']] = serpentine(
+                size_y, columns, start, downwards)
             self.at[unit['name']] = 0
 
     def wish(self, view, unit, contacts):
@@ -42,7 +64,8 @@ class Bot(Sweeper):
             # the scout is bought to look, not to fight: it walks its sweep
             # and steps around anything it has found
             return self.route_step(unit)
-        # the killers go to the last place anybody was seen, and stand still
-        # until there is one
+        # the killers go to the last place anybody was seen - and when nobody
+        # has been seen, they go looking themselves rather than stand
         return (self.engage_step(unit, contacts)
-                + self.approach(unit, contacts or remembered))
+                + self.approach(unit, contacts or remembered)
+                + self.route_step(unit))

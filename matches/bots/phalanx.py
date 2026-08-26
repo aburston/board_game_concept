@@ -13,12 +13,18 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Phalanx'
-    doctrine = '12 x (a1 h5 e10), a full rank on the frontier, advance in step'
-    army = (('P', 'P', 1, 5, 10,
-             [(x, 4) for x in range(10)] + [(4, 3), (5, 3)]),)
+    doctrine = '6 x (a1 h4 e28), a rank abreast, no gaps'
+    army = (
+        ('P', 'P', 1, 4, 28,
+         [(0, 4), (2, 4), (4, 4), (5, 4), (7, 4), (9, 4)]),
+    )
 
     def floor(self, unit):
-        return 5
+        # a reserve of one, which is what an attack of 1 costs. This was 5
+        # when the rank was health-5 units on a fare of 5 a square; on the
+        # quarter fare a health-4 unit pays 1, and holding back five energy
+        # it has no use for just stops the rank moving
+        return 1
 
     def wish(self, view, unit, contacts):
         """Hold the rank: everybody steps the same way unless there is contact."""

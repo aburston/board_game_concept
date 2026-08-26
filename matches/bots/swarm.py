@@ -14,9 +14,11 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Swarm'
-    doctrine = '18 x (a1 h1 e9), two ranks abreast, sweep across the frontier'
-    army = (('S', 's', 1, 1, 9,
-             [(x, 4) for x in range(9)] + [(x, 3) for x in range(9)]),)
+    doctrine = '7 x (a1 h1 e26), a rank abreast, sweep across the frontier'
+    army = (
+        ('S', 's', 1, 1, 26,
+         [(0, 4), (3, 4), (6, 4), (9, 4), (0, 3), (4, 3), (9, 3)]),
+    )
 
     def floor(self, unit):
         # a body with one energy left can still land a killing blow, and this

@@ -14,9 +14,13 @@ from common import mine, serpentine, size
 
 class Bot(Sweeper):
     name = 'Duellist'
-    doctrine = '4 x (a10 h10 e20) + 2 scouts (a1 h1 e18), champions hold the frontier'
-    army = (('C', 'C', 10, 10, 20, [(2, 2), (4, 2), (5, 2), (7, 2)]),
-            ('S', 's', 1, 1, 18, [(0, 4), (9, 4)]))
+    doctrine = '2 x (a10 h10 e60) + 1 x (a1 h1 e38), champions and an eye'
+    army = (
+        ('C', 'C', 10, 10, 60,
+         [(3, 3), (6, 3)]),
+        ('S', 's', 1, 1, 38,
+         [(0, 4)]),
+    )
 
     # a champion is worth walking a long way for
     reach = 6
@@ -25,7 +29,14 @@ class Bot(Sweeper):
         return 10 if unit['type'] == 'C' else 1
 
     def plan_routes(self, view):
-        """The scout sweeps the board; the champions only walk to the middle."""
+        """The scout sweeps the board; a champion takes a post, then sweeps.
+
+        The post used to be the whole of a champion's route, so a champion
+        that reached it stood on it for the rest of the game waiting for
+        somebody to walk past. A champion with sixty energy has twenty
+        squares in it, and standing on one of them is not what they were
+        bought for: the post is where the sweep starts, not where it ends.
+        """
         size_x, size_y = size(view)
         for unit in mine(view):
             if unit['name'] in self.routes:
@@ -34,8 +45,12 @@ class Bot(Sweeper):
                 self.routes[unit['name']] = serpentine(
                     size_y, list(range(size_x)), 0, True)
             else:
-                post = (4, 3) if unit['y'] < size_y // 2 else (5, 6)
-                self.routes[unit['name']] = [post]
+                north = unit['y'] < size_y // 2
+                post = (4, 3) if north else (5, 6)
+                half = list(range(size_x // 2)) if north \
+                    else list(range(size_x // 2, size_x))
+                self.routes[unit['name']] = [post] + serpentine(
+                    size_y, half, post[1], north)
             self.at[unit['name']] = 0
 
     def wish(self, view, unit, contacts):

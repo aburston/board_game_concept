@@ -15,9 +15,13 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Attrition'
-    doctrine = '4 x (a1 h10 e30) + 2 scouts (a1 h1 e16), sweep and grind'
-    army = (('T', 'T', 1, 10, 30, [(1, 2), (4, 2), (6, 2), (9, 2)]),
-            ('S', 's', 1, 1, 16, [(0, 4), (9, 4)]))
+    doctrine = '2 x (a1 h10 e60) + 2 x (a1 h1 e27), grind and scout'
+    army = (
+        ('T', 'T', 1, 10, 60,
+         [(3, 2), (6, 2)]),
+        ('S', 's', 1, 1, 27,
+         [(0, 4), (9, 4)]),
+    )
 
     def floor(self, unit):
         # the tanks keep ten energy back, which is a whole enemy of full

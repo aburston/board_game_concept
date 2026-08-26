@@ -17,7 +17,10 @@ from base import Sweeper
 class Bot(Sweeper):
     name = 'Reaper'
     doctrine = '2 x (a10 h10 e80), sweep the enemy half and clear it'
-    army = (('R', 'R', 10, 10, 80, [(2, 3), (7, 3)]),)
+    army = (
+        ('R', 'R', 10, 10, 80,
+         [(2, 3), (7, 3)]),
+    )
 
     reach = 6
 

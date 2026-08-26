@@ -15,8 +15,11 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Assassin'
-    doctrine = '6 x (a10 h1 e21), on the frontier, kill one thing each'
-    army = (('A', 'A', 10, 1, 21, [(0, 4), (2, 4), (4, 4), (5, 4), (7, 4), (9, 4)]),)
+    doctrine = '5 x (a10 h1 e29), one round one kill, hunt in a line'
+    army = (
+        ('A', 'A', 10, 1, 29,
+         [(0, 4), (2, 4), (4, 4), (7, 4), (9, 4)]),
+    )
 
     def floor(self, unit):
         # never walk below the ten energy the one kill costs

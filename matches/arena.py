@@ -158,7 +158,10 @@ class Session:
 
 
 class Match:
-    def __init__(self, gameno, bots, max_turns=60, budgets=None, split=True):
+    #: consecutive orderless turns after which a bot is called out in the log
+    STALLED = 30
+
+    def __init__(self, gameno, bots, max_turns=100, budgets=None, split=True):
         self.gameno = gameno
         self.bots = bots                      # {player_number: Bot}
         self.max_turns = max_turns
@@ -347,6 +350,13 @@ class Match:
         self.phase(orders)
         self.record()
 
+        # consecutive turns each player has given no order at all. A doctrine
+        # is entitled to wait - resting is a move (R3.9), and a defender that
+        # holds is playing - but a doctrine that has not given an order in
+        # thirty turns has usually stopped playing rather than chosen to wait,
+        # and the last time that happened it was a bot keying off a type name
+        # its army no longer used. Silent is the wrong thing for that to be
+        idle = {player: 0 for player in self.bots}
         while self.outcome is None and self.turn < self.max_turns:
             self.turn += 1
             orders = {}
@@ -357,8 +367,17 @@ class Match:
             for player in sorted(orders):
                 self.log(f'    p{player}: '
                          f'{"; ".join(orders[player]) or "holds"}')
+                idle[player] = 0 if orders[player] else idle[player] + 1
+                if idle[player] == self.STALLED:
+                    self.log(f'    ** p{player} has given no order in '
+                             f'{self.STALLED} turns')
             self.phase(orders)
             self.record()
+
+        for player, count in sorted(idle.items()):
+            if count >= self.STALLED:
+                self.log(f'  ** p{player} finished the game having given no '
+                         f'order for {count} turns')
 
         board, units = self.observe()
         self.log(board)
@@ -420,7 +439,7 @@ def main():
     parser.add_argument('--game', type=int, required=True)
     parser.add_argument('--p1', required=True)
     parser.add_argument('--p2', required=True)
-    parser.add_argument('--max-turns', type=int, default=60)
+    parser.add_argument("--max-turns", type=int, default=100)
     parser.add_argument('--budget1', type=int)
     parser.add_argument('--budget2', type=int)
     parser.add_argument('--budget', type=int,

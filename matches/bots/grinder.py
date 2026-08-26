@@ -14,8 +14,11 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Grinder'
-    doctrine = '6 x (a1 h10 e20), spread across the middle, grind forward'
-    army = (('G', 'G', 1, 10, 20, [(0, 3), (2, 3), (4, 3), (5, 3), (7, 3), (9, 3)]),)
+    doctrine = '3 x (a1 h10 e55), spread across the middle, grind forward'
+    army = (
+        ('G', 'G', 1, 10, 55,
+         [(0, 4), (4, 4), (9, 4)]),
+    )
 
     def floor(self, unit):
         # keep half the tank's energy for the grinding it is bought for
