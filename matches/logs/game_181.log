@@ -1,0 +1,200 @@
+=== game 181: p1 Swarm vs p2 Grinder
+  board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
+  p1 Swarm: 18 x (a1 h1 e9), two ranks abreast, sweep across the frontier
+  p2 Grinder: 6 x (a1 h10 e20), spread across the middle, grind forward
+  p1 deploys: add type S s 1 1 9; add unit S s1 0 4; add unit S s2 1 4; add unit S s3 2 4; add unit S s4 3 4; add unit S s5 4 4; add unit S s6 5 4; add unit S s7 6 4; add unit S s8 7 4; add unit S s9 8 4; add unit S s10 0 3; add unit S s11 1 3; add unit S s12 2 3; add unit S s13 3 3; add unit S s14 4 3; add unit S s15 5 3; add unit S s16 6 3; add unit S s17 7 3; add unit S s18 8 3
+  p2 deploys: add type G G 1 10 20; add unit G g1 0 6; add unit G g2 2 6; add unit G g3 4 6; add unit G g4 5 6; add unit G g5 7 6; add unit G g6 9 6
+    after turn 1: in play 18 v 6
+  -- turn 2
+    p1: move s1 south; move s10 south; move s11 south; move s12 south; move s13 south; move s14 south; move s15 south; move s16 south; move s17 south; move s18 south; move s2 south; move s3 south; move s4 south; move s5 south; move s6 south; move s7 south; move s8 south; move s9 south
+    p2: move g1 north; move g2 west; move g3 west; move g4 west; move g5 west; move g6 west
+    after turn 2: in play 17 v 6
+  -- turn 3
+    p1: move s10 south; move s11 west; move s12 west; move s13 south; move s14 south; move s15 south; move s16 south; move s17 south; move s18 south; move s2 south; move s3 west; move s4 west; move s5 south; move s6 south; move s7 south; move s8 south; move s9 south
+    p2: move g1 north; move g2 north; move g3 west; move g4 east; move g5 east; move g6 east
+    after turn 3: in play 11 v 6
+  -- turn 4
+    p1: move s12 east; move s13 south; move s14 east; move s15 south; move s16 south; move s17 south; move s18 west; move s4 east; move s5 south; move s7 south; move s9 south
+    p2: move g1 north; move g2 north; move g3 east; move g4 north; move g5 north; move g6 north
+    after turn 4: in play 6 v 6
+  -- turn 5
+    p1: move s12 south; move s16 west; move s4 south; move s5 west; move s7 south; move s9 south
+    p2: move g1 north; move g2 north; move g3 north; move g4 north; move g5 north; move g6 west
+    after turn 5: in play 5 v 6
+  -- turn 6
+    p1: move s12 east; move s16 west; move s5 north; move s7 south; move s9 south
+    p2: move g1 north; move g2 north; move g3 west; move g4 west; move g5 west; move g6 north
+    after turn 6: in play 4 v 6
+  -- turn 7
+    p1: move s16 west; move s5 west; move s7 north; move s9 north
+    p2: move g1 north; move g2 north; move g4 north; move g5 north; move g6 east
+    after turn 7: in play 4 v 6
+  -- turn 8
+    p1: move s16 east; move s5 east; move s7 north; move s9 north
+    p2: holds
+    after turn 8: in play 4 v 6
+  -- turn 9
+    p1: move s16 east; move s5 south; move s7 north; move s9 north
+    p2: move g3 north
+    after turn 9: in play 4 v 6
+  -- turn 10
+    p1: holds
+    p2: move g2 north; move g6 north
+    after turn 10: in play 4 v 6
+  -- turn 11
+    p1: move s16 east; move s5 east; move s7 north; move s9 north
+    p2: move g1 north; move g4 east; move g5 east
+    after turn 11: in play 4 v 6
+  -- turn 12
+    p1: holds
+    p2: holds
+    after turn 12: in play 4 v 6
+  -- turn 13
+    p1: move s16 south; move s5 south; move s7 north; move s9 north
+    p2: move g3 east
+    after turn 13: in play 4 v 6
+  -- turn 14
+    p1: holds
+    p2: move g2 north; move g6 west
+    after turn 14: in play 4 v 6
+  -- turn 15
+    p1: move s16 south; move s5 south; move s7 north; move s9 north
+    p2: move g1 south; move g4 north; move g5 north
+    after turn 15: in play 3 v 6
+  -- turn 16
+    p1: holds
+    p2: holds
+    after turn 16: in play 3 v 6
+  -- turn 17
+    p1: move s16 south; move s5 north; move s7 north
+    p2: move g3 north
+    after turn 17: in play 3 v 6
+  -- turn 18
+    p1: holds
+    p2: move g2 south
+    after turn 18: in play 3 v 6
+  -- turn 19
+    p1: move s16 north; move s5 north; move s7 north
+    p2: move g1 south; move g4 west; move g5 west
+    after turn 19: in play 3 v 6
+  -- turn 20
+    p1: holds
+    p2: move g6 north
+    after turn 20: in play 3 v 6
+  -- turn 21
+    p1: move s16 north; move s5 north; move s7 north
+    p2: move g3 west
+    after turn 21: in play 3 v 6
+  -- turn 22
+    p1: holds
+    p2: move g2 south
+    after turn 22: in play 3 v 6
+  -- turn 23
+    p1: move s16 north; move s5 north; move s7 south
+    p2: move g1 south; move g4 north; move g5 north
+    after turn 23: in play 3 v 6
+  -- turn 24
+    p1: holds
+    p2: move g6 east
+    after turn 24: in play 3 v 6
+  -- turn 25
+    p1: move s16 north; move s5 north; move s7 south
+    p2: move g3 north
+    after turn 25: in play 2 v 6
+  -- turn 26
+    p1: holds
+    p2: move g2 south
+    after turn 26: in play 2 v 6
+  -- turn 27
+    p1: move s16 north; move s5 north
+    p2: move g1 south; move g4 east
+    after turn 27: in play 2 v 6
+  -- turn 28
+    p1: holds
+    p2: move g6 north
+    after turn 28: in play 2 v 6
+  -- turn 29
+    p1: move s16 north; move s5 north
+    p2: move g3 east; move g5 east
+    after turn 29: in play 2 v 6
+  -- turn 30
+    p1: holds
+    p2: move g2 south
+    after turn 30: in play 2 v 6
+  -- turn 31
+    p1: move s16 north; move s5 north
+    p2: move g1 south; move g4 north
+    after turn 31: in play 2 v 6
+  -- turn 32
+    p1: holds
+    p2: move g6 west
+    after turn 32: in play 2 v 6
+  -- turn 33
+    p1: move s16 north; move s5 north
+    p2: move g3 north; move g5 north
+    after turn 33: in play 2 v 6
+  -- turn 34
+    p1: holds
+    p2: move g2 south
+    after turn 34: in play 2 v 6
+  -- turn 35
+    p1: move s16 north; move s5 south
+    p2: move g1 south; move g4 west
+    after turn 35: in play 1 v 6
+  -- turn 36
+    p1: holds
+    p2: move g6 north
+    after turn 36: in play 1 v 6
+  -- turn 37
+    p1: move s16 south
+    p2: move g3 west; move g5 west
+    after turn 37: in play 0 v 6
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|G|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|G|#|G|#|G|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|G|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|G|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+G            2  G
+  game over: player 2 wins on turn 37
+  final units:
+    p1 s1   S   a1 h0 destroyed
+    p1 s10  S   a1 h0 destroyed
+    p1 s11  S   a1 h0 destroyed
+    p1 s12  S   a1 h0 destroyed
+    p1 s13  S   a1 h0 destroyed
+    p1 s14  S   a1 h0 destroyed
+    p1 s15  S   a1 h0 destroyed
+    p1 s16  S   a1 h0 destroyed
+    p1 s17  S   a1 h0 destroyed
+    p1 s18  S   a1 h0 destroyed
+    p1 s2   S   a1 h0 destroyed
+    p1 s3   S   a1 h0 destroyed
+    p1 s4   S   a1 h0 destroyed
+    p1 s5   S   a1 h0 destroyed
+    p1 s6   S   a1 h0 destroyed
+    p1 s7   S   a1 h0 destroyed
+    p1 s8   S   a1 h0 destroyed
+    p1 s9   S   a1 h0 destroyed
+    p2 g1   G   a1 h9 (0,6) hp 9 en 3
+    p2 g2   G   a1 h10 (1,5) hp 10 en 4
+    p2 g3   G   a1 h7 (2,1) hp 7 en 1
+    p2 g4   G   a1 h8 (4,1) hp 8 en 2
+    p2 g5   G   a1 h7 (6,1) hp 7 en 0
+    p2 g6   G   a1 h9 (8,0) hp 9 en 2

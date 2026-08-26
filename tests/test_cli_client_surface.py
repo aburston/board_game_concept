@@ -118,9 +118,11 @@ class DefiningUnitTypes(ClientTestCase):
 
     def test_a_type_that_cannot_afford_a_move_is_refused(self):
         client = self.player_client()
-        client.send_line('add type Heavy H 3 6 5')
+        # health 6 costs 2 to move, so 1 energy is a design that could never
+        # take a step
+        client.send_line('add type Heavy H 3 6 1')
         client.read_until('error adding unit type: a type that can move must '
-                          'have at least as much energy as health')
+                          'have at least its movement cost in energy')
 
     def test_defining_a_wall(self):
         client = self.player_client()

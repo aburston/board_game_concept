@@ -153,9 +153,9 @@ def test_crossing_open_ground_and_engaging_cost_the_same_move():
 
 
 def test_a_unit_too_spent_to_attack_still_arrives():
-    board = _facing_pair(attacker_energy=6)
+    board = _facing_pair(attacker_energy=2)
     attacker = board.getUnitByName('a')[0]
-    # exactly the fare - six health is six energy a square - and so nothing
+    # exactly the fare - six health is two energy a square - and so nothing
     # left to attack with. Under simultaneous
     # resolution there is no order-independent moment at which "occupied" can
     # be tested, so a mover needs only the fare: it arrives and is inert in the

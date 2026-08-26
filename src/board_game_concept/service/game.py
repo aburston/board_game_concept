@@ -349,14 +349,21 @@ class Game:
         if not design and attack != 0:
             # a record carrying no `type_*` fields has already lost the design
             # and leaves only what play has worn the unit down to. Current
-            # energy is routinely below current health - that is what spending
-            # looks like - so reconstructing from it would build a type the
-            # rules refuse and turn a legitimate sighting into a crash. This
-            # reconstruction exists to describe an enemy that was seen, not to
-            # price one, so it takes the floor the rule asks for and carries
-            # on. A wall is left alone: its 0 energy is not spending, it is
-            # what makes it a wall, and floored it would fail the wall rule
-            energy = max(energy, health)
+            # energy is routinely below the floor a type is held to - that is
+            # what spending looks like - so reconstructing from it would build
+            # a type the rules refuse and turn a legitimate sighting into a
+            # crash. This reconstruction exists to describe an enemy that was
+            # seen, not to price one, so it takes the floor the rule asks for
+            # and carries on. A wall is left alone: its 0 energy is not
+            # spending, it is what makes it a wall, and floored it would fail
+            # the wall rule.
+            #
+            # The floor is the movement cost and not a point more. What comes
+            # out of here is what a player is shown about an enemy, so energy
+            # raised further than the rule requires is an overstatement of what
+            # that enemy has left - a floor of the health would report a spent
+            # unit as a fresh one
+            energy = max(energy, (health + 3) // 4)
         unit_type = UnitType(unit['type'], unit['symbol'], attack, health, energy)
         types[unit['type']] = {
             'name': unit['type'],

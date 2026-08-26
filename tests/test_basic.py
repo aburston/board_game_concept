@@ -59,14 +59,23 @@ def test_unit_type_constraints():
 
 
 def test_a_type_that_can_move_needs_energy_for_at_least_one_move():
-    # a move costs the type's health, so energy below health is a design that
-    # could never move at all
+    # a move costs a quarter of the type's health, so energy below that is a
+    # design that could never move at all
     with pytest.raises(AssertionError) as refused:
-        UnitType('Heavy', 'H', 1, 6, 5)
-    assert 'energy' in str(refused.value) and 'health' in str(refused.value)
+        UnitType('Heavy', 'H', 1, 6, 1)
+    assert 'energy' in str(refused.value) and 'movement cost' in str(refused.value)
 
-    exactly_enough = UnitType('Heavy', 'H', 1, 6, 6)
-    assert exactly_enough.move_cost == 6, 'one move and then it must rest'
+    exactly_enough = UnitType('Heavy', 'H', 1, 6, 2)
+    assert exactly_enough.move_cost == 2, 'one move and then it must rest'
+
+
+def test_the_floor_only_ever_relaxed():
+    # every design the old floor allowed - energy at least health - is still
+    # allowed, and designs it refused are now legal
+    for health in range(1, 11):
+        UnitType('Old', 'O', 1, health, health)
+    lean = UnitType('Lean', 'L', 1, 10, 3)
+    assert lean.move_cost == 3, 'the old floor would have wanted 10'
 
 
 def test_board_creation():

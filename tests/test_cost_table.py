@@ -32,27 +32,48 @@ def cost_table(rules):
 
 
 def test_the_move_cost_is_the_one_the_game_charges(cost_table):
-    # R9 says the fare is the health the type was designed with, not a
-    # constant, so it is checked against a unit rather than against a number
-    heavy = UnitType('Heavy', 'H', 1, 10, 30)
-    assert heavy.move_cost == heavy.type_health == 10
-    scout = UnitType('Scout', 'S', 1, 1, 30)
-    assert scout.move_cost == scout.type_health == 1
+    # R9 says the fare is a quarter of the health the type was designed with,
+    # rounded up - not a constant, so it is checked against units rather than
+    # against a number
+    for health, fare in ((1, 1), (4, 1), (5, 2), (8, 2), (9, 3), (10, 3)):
+        kind = UnitType('Kind', 'K', 1, health, 30)
+        assert kind.move_cost == fare, (
+            f'health {health} should cost {fare} to move')
+
+    # never zero, whatever the health: the fare rounds up
+    assert all(UnitType('K', 'K', 1, health, 30).move_cost >= 1
+               for health in range(1, 11))
 
     # and it is read from the design, never from the health play wore down
+    heavy = UnitType('Heavy', 'H', 1, 10, 30)
     heavy.health = 2
-    assert heavy.move_cost == 10, 'damage is not weight shed'
+    assert heavy.move_cost == 3, 'damage is not weight shed'
 
-    assert "**the unit's maximum health**" in cost_table
+    assert '**a quarter of the unit\'s maximum health, rounded up**' in cost_table
     assert '**the fare, from both units**' in cost_table
+
+
+def test_the_fare_table_in_the_rules_is_the_one_the_game_charges(rules):
+    # R4.3 prints a health-to-fare table. Every row of it is checked, so the
+    # table cannot say one thing while the game charges another
+    printed = dict()
+    for healths, fare in re.findall(r'^\| ([\d, ]+) \| \*\*(\d)\*\* \|$', rules,
+                                    flags=re.M):
+        for health in healths.split(','):
+            printed[int(health)] = int(fare)
+    assert set(printed) == set(range(1, 11)), (
+        "R4.3's fare table does not cover every permitted health")
+    for health, fare in printed.items():
+        assert UnitType('K', 'K', 1, health, 30).move_cost == fare, (
+            f'R4.3 says health {health} costs {fare} to move; it does not')
 
 
 def test_a_type_that_could_never_move_is_refused(cost_table):
     # the table says so in the row about defining a type
-    assert 'at least its health in energy' in cost_table
+    assert 'at least its movement cost in energy' in cost_table
     with pytest.raises(AssertionError):
-        UnitType('Stuck', 'S', 3, 6, 5)
-    UnitType('Legal', 'L', 3, 6, 6)          # exactly enough is enough
+        UnitType('Stuck', 'S', 3, 6, 1)
+    UnitType('Legal', 'L', 3, 6, 2)          # exactly enough is enough
     UnitType('Wall', 'W', 0, 10, 0)          # a wall is exempt
 
 

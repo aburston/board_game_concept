@@ -1,0 +1,85 @@
+=== game 191: p1 Drain vs p2 Ambush
+  board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
+  p1 Drain: 10 x (a1 h10 e9), one per column, walk in and soak
+  p2 Ambush: 8 x (a1 h10 e10) + 2 x (a1 h5 e10), behind the frontier, never move
+  p1 deploys: add type D D 1 10 9; add unit D d1 0 4; add unit D d2 1 4; add unit D d3 2 4; add unit D d4 3 4; add unit D d5 4 4; add unit D d6 5 4; add unit D d7 6 4; add unit D d8 7 4; add unit D d9 8 4; add unit D d10 9 4
+  p2 deploys: add type A A 1 10 10; add unit A a1 0 6; add unit A a2 3 6; add unit A a3 6 6; add unit A a4 9 6; add unit A a5 1 7; add unit A a6 4 7; add unit A a7 5 7; add unit A a8 8 7; add type B B 1 5 10; add unit B b1 2 8; add unit B b2 7 8
+    after turn 1: in play 10 v 10
+  -- turn 2
+    p1: move d1 south; move d10 south; move d2 south; move d3 south; move d4 south; move d5 south; move d6 south; move d7 south; move d8 south; move d9 south
+    p2: holds
+    after turn 2: in play 10 v 10
+  -- turn 3
+    p1: move d1 south; move d10 south; move d2 south; move d3 south; move d4 south; move d5 south; move d6 south; move d7 south; move d8 south; move d9 south
+    p2: holds
+    after turn 3: in play 6 v 10
+  -- turn 4
+    p1: holds
+    p2: holds
+    after turn 4: in play 6 v 10
+  -- turn 5
+    p1: move d2 south; move d3 south; move d5 south; move d6 south; move d8 south; move d9 south
+    p2: holds
+    after turn 5: in play 2 v 10
+  -- turn 6
+    p1: holds
+    p2: holds
+    after turn 6: in play 2 v 10
+  -- turn 7
+    p1: holds
+    p2: holds
+    after turn 7: in play 2 v 10
+  -- turn 8
+    p1: holds
+    p2: holds
+    after turn 8: in play 2 v 10
+  -- turn 9
+    p1: move d3 south; move d8 south
+    p2: holds
+    after turn 9: in play 0 v 10
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|A|#|#|A|#|#|A|#|#|A|
++-+-+-+-+-+-+-+-+-+-+
+|#|A|#|#|A|A|#|#|A|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|B|#|#|#|#|B|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+A            2  A
+B            2  B
+  game over: player 2 wins on turn 9
+  final units:
+    p1 d1   D   a1 h0 destroyed
+    p1 d10  D   a1 h0 destroyed
+    p1 d2   D   a1 h0 destroyed
+    p1 d3   D   a1 h0 destroyed
+    p1 d4   D   a1 h0 destroyed
+    p1 d5   D   a1 h0 destroyed
+    p1 d6   D   a1 h0 destroyed
+    p1 d7   D   a1 h0 destroyed
+    p1 d8   D   a1 h0 destroyed
+    p1 d9   D   a1 h0 destroyed
+    p2 a1   A   a1 h7 (0,6) hp 7 en 6
+    p2 a2   A   a1 h7 (3,6) hp 7 en 6
+    p2 a3   A   a1 h7 (6,6) hp 7 en 6
+    p2 a4   A   a1 h7 (9,6) hp 7 en 6
+    p2 a5   A   a1 h9 (1,7) hp 9 en 4
+    p2 a6   A   a1 h9 (4,7) hp 9 en 4
+    p2 a7   A   a1 h9 (5,7) hp 9 en 4
+    p2 a8   A   a1 h9 (8,7) hp 9 en 4
+    p2 b1   B   a1 h4 (2,8) hp 4 en 0
+    p2 b2   B   a1 h4 (7,8) hp 4 en 0

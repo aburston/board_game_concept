@@ -34,13 +34,14 @@ def at(board, name):
 # --- what a move costs
 
 
-def test_a_move_costs_the_units_health_from_any_starting_energy():
-    # the fare is the unit's health, and it is the same fare however much it
-    # happens to be carrying. `test_movement_cost.py` is about the rule itself
-    for energy in (5, 6, 50, 99, 100):
+def test_a_move_costs_the_units_fare_from_any_starting_energy():
+    # the fare is a quarter of the unit's health, and it is the same fare
+    # however much it happens to be carrying. `test_movement_cost.py` is about
+    # the rule itself
+    for energy in (2, 6, 50, 99, 100):
         board = board_with([(1, 'u', 0, 0, 1, 5, energy)])
         order(board, ('u', UnitType.EAST))
-        assert board.getUnitByName('u')[0].energy == energy - 5
+        assert board.getUnitByName('u')[0].energy == energy - 2
 
 
 def test_a_unit_with_no_energy_does_not_move():
@@ -143,11 +144,11 @@ def test_neither_survivor_leaves_both_cells_empty():
 
 
 def test_an_undecided_collision_leaves_both_where_they_started():
-    board = facing(5, 5, 5, 5, energy=5)
+    board = facing(5, 5, 5, 5, energy=2)
     events = collide(board)
     a = board.getUnitByName('a')[0]
     b = board.getUnitByName('b')[0]
-    # five health is a fare of five, which is everything either of them had:
+    # five health is a fare of two, which is everything either of them had:
     # both paid it, and neither could then pay to attack
     assert a.energy == 0 and b.energy == 0
     assert (a.x, a.y) == (0, 0) and (b.x, b.y) == (1, 0)

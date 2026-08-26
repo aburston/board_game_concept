@@ -1,7 +1,8 @@
 """Reading a game stored before a type could be refused for its energy.
 
-A type that can move must hold at least its health in energy, because a move
-costs its health. Two reading paths predate that rule and must not break on it:
+A type that can move must hold at least its movement cost in energy, because
+it could otherwise never take a step. Two reading paths predate that rule and
+must not break on it:
 a player's own file, which may have been written when the rule did not exist,
 and the reconstruction of an enemy's type from a unit seen in contact, which
 falls back to what play has worn that unit down to.
@@ -45,7 +46,7 @@ def a_session(repository):
 def test_a_stored_type_that_cannot_afford_a_move_is_refused(tmp_path):
     repository = a_player_file(tmp_path, {
         'Heavy': {'name': 'Heavy', 'symbol': 'H',
-                  'attack': '3', 'health': '6', 'energy': '5'},
+                  'attack': '3', 'health': '6', 'energy': '1'},
     })
     with pytest.raises(UnreadableGame) as raised:
         Game(repository, 1).load()
@@ -56,11 +57,11 @@ def test_a_stored_type_that_cannot_afford_a_move_is_refused(tmp_path):
 def test_a_stored_type_that_can_afford_a_move_still_loads(tmp_path):
     repository = a_player_file(tmp_path, {
         'Heavy': {'name': 'Heavy', 'symbol': 'H',
-                  'attack': '3', 'health': '6', 'energy': '6'},
+                  'attack': '3', 'health': '6', 'energy': '2'},
     })
     session = Game(repository, 1)
     session.load()
-    assert session.players[1]['types']['Heavy']['obj'].move_cost == 6
+    assert session.players[1]['types']['Heavy']['obj'].move_cost == 2
 
 
 # --- an enemy type rebuilt from a sighting
@@ -72,7 +73,16 @@ def test_a_sighting_of_a_spent_unit_is_read_not_refused(tmp_path):
     session = a_session(a_player_file(tmp_path, {}))
     rebuilt = session._type_for(1, a_seen_unit())
     assert rebuilt.type_health == 5
-    assert rebuilt.type_energy == 5, 'floored to the fare it must be able to pay'
+    assert rebuilt.type_energy == 2, 'floored to the fare it must be able to pay'
+
+
+def test_the_sighting_floor_is_the_fare_and_not_a_point_more(tmp_path):
+    # what comes out of here is what a player is told about an enemy, so a
+    # floor higher than the rule needs would report a spent unit as a fresh one
+    session = a_session(a_player_file(tmp_path, {}))
+    rebuilt = session._type_for(
+        1, a_seen_unit(health='8', energy='2'))
+    assert rebuilt.type_energy == 2, 'read as seen; the old floor said 8'
 
 
 def test_a_sighting_of_a_wall_keeps_its_nothing(tmp_path):
@@ -101,4 +111,4 @@ def test_a_carried_design_below_the_rule_is_not_floored(tmp_path):
     session = a_session(a_player_file(tmp_path, {}))
     with pytest.raises(AssertionError):
         session._type_for(1, a_seen_unit(
-            type_attack='3', type_health='6', type_energy='5'))
+            type_attack='3', type_health='6', type_energy='1'))

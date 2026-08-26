@@ -24,10 +24,10 @@ def a_game(tmp_path, mine=(1, 2, 10), theirs=None, my_units=None,
 
 def test_a_unit_given_no_order_recovers_a_point(tmp_path):
     harness = a_game(tmp_path)
-    # two squares at two energy a square - the fare is the unit's health -
-    # and then stand still for two turns
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
-    harness.turn({1: [('x1', UnitType.WEST)], 2: []})
+    # four squares at one energy a square - the fare is a quarter of the
+    # unit's health, rounded up - and then stand still for two turns
+    for direction in (UnitType.EAST, UnitType.WEST) * 2:
+        harness.turn({1: [('x1', direction)], 2: []})
     assert harness.units()['x1'].energy == 6
 
     harness.turn({1: [], 2: []})
@@ -48,10 +48,10 @@ def test_a_unit_that_was_ordered_does_not_rest(tmp_path):
     # and it is still an order, so there is no refuelling by walking into a wall
     harness = a_game(tmp_path)
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
-    assert harness.units()['x1'].energy == 8
+    assert harness.units()['x1'].energy == 9
     for _ in range(3):
         harness.turn({1: [('x1', UnitType.NORTH)], 2: []})
-    assert harness.units()['x1'].energy == 8
+    assert harness.units()['x1'].energy == 9
 
 
 def test_a_unit_that_fought_does_not_rest(tmp_path):
@@ -61,19 +61,20 @@ def test_a_unit_that_fought_does_not_rest(tmp_path):
                      their_units=[('O', 'o1', 1, 0)])
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     units = harness.units()
-    # x1 paid ten to move - its health - and then its share of the fight; o1
+    # x1 paid three to move - a quarter of its health - and then its share of
+    # the fight; o1
     # stood still and paid only for the fight, so neither is back at twenty
     assert units['x1'].energy < 20
     assert units['o1'].energy < 20
 
 
 def test_a_unit_too_spent_to_strike_back_still_rests(tmp_path):
-    # o1 has attack 5 and is walked down to one energy - four squares at four
-    # energy each, which is what its health costs it - so it cannot pay to
-    # attack. Being hit is not an action, and doing nothing is what rests.
-    # Both players keep a reserve out of the way so that nobody runs out of
-    # units while this plays out
-    harness = a_game(tmp_path, mine=(1, 2, 6), theirs=(5, 4, 17),
+    # o1 has attack 5 and is walked down to one energy - four squares at one
+    # energy each, which is what a quarter of its health costs it - so it
+    # cannot pay to attack. Being hit is not an action, and doing nothing is
+    # what rests. Both players keep a reserve out of the way so that nobody
+    # runs out of units while this plays out
+    harness = a_game(tmp_path, mine=(1, 2, 4), theirs=(5, 4, 5),
                      my_units=[('X', 'x1', 0, 0), ('X', 'x2', 0, 2)],
                      their_units=[('O', 'o1', 2, 0), ('O', 'o2', 5, 2)])
     for step in range(4):
@@ -94,7 +95,7 @@ def test_a_unit_too_spent_to_strike_back_still_rests(tmp_path):
 def test_a_unit_that_spends_its_last_point_is_spent_and_not_lost(tmp_path):
     # walking to zero is a bad afternoon rather than a death: elimination asks
     # whether a unit could ever act again (R7.1), and this one can
-    harness = a_game(tmp_path, mine=(1, 10, 50), theirs=(1, 2, 4),
+    harness = a_game(tmp_path, mine=(1, 10, 50), theirs=(1, 2, 2),
                      their_units=[('O', 'o1', 5, 2)])
     harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
     harness.turn({1: [], 2: [('o1', UnitType.SOUTH)]})
