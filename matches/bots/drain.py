@@ -18,8 +18,8 @@ from base import Sweeper
 
 class Bot(Sweeper):
     name = 'Drain'
-    doctrine = '10 x (a1 h10 e9), one per column, walk in and soak'
-    army = (('D', 'D', 1, 10, 9, [(x, 4) for x in range(10)]),)
+    doctrine = '9 x (a1 h10 e10), one per column, one step in and soak'
+    army = (('D', 'D', 1, 10, 10, [(x, 4) for x in range(9)]),)
 
     def floor(self, unit):
         return 1

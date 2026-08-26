@@ -32,11 +32,28 @@ def cost_table(rules):
 
 
 def test_the_move_cost_is_the_one_the_game_charges(cost_table):
-    # every row that charges for a move quotes MOVE_COST
-    assert UnitType.MOVE_COST == 1, (
-        'MOVE_COST changed; R9 says a move costs 1 energy')
-    assert f'**{UnitType.MOVE_COST} energy**' in cost_table
-    assert f'**{UnitType.MOVE_COST} energy each**' in cost_table
+    # R9 says the fare is the health the type was designed with, not a
+    # constant, so it is checked against a unit rather than against a number
+    heavy = UnitType('Heavy', 'H', 1, 10, 30)
+    assert heavy.move_cost == heavy.type_health == 10
+    scout = UnitType('Scout', 'S', 1, 1, 30)
+    assert scout.move_cost == scout.type_health == 1
+
+    # and it is read from the design, never from the health play wore down
+    heavy.health = 2
+    assert heavy.move_cost == 10, 'damage is not weight shed'
+
+    assert "**the unit's maximum health**" in cost_table
+    assert '**the fare, from both units**' in cost_table
+
+
+def test_a_type_that_could_never_move_is_refused(cost_table):
+    # the table says so in the row about defining a type
+    assert 'at least its health in energy' in cost_table
+    with pytest.raises(AssertionError):
+        UnitType('Stuck', 'S', 3, 6, 5)
+    UnitType('Legal', 'L', 3, 6, 6)          # exactly enough is enough
+    UnitType('Wall', 'W', 0, 10, 0)          # a wall is exempt
 
 
 def test_the_rest_gain_is_the_one_the_game_gives(cost_table):

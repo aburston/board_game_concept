@@ -1,0 +1,66 @@
+=== game 164: p1 Phalanx vs p2 Swarm
+  board 10x10, budget p1: 200 / p2: 200, deployment split: p1 in rows 0-4, p2 in rows 5-9
+  p1 Phalanx: 12 x (a1 h5 e10), a full rank on the frontier, advance in step
+  p2 Swarm: 18 x (a1 h1 e9), two ranks abreast, sweep across the frontier
+  p1 deploys: add type P P 1 5 10; add unit P p1 0 4; add unit P p2 1 4; add unit P p3 2 4; add unit P p4 3 4; add unit P p5 4 4; add unit P p6 5 4; add unit P p7 6 4; add unit P p8 7 4; add unit P p9 8 4; add unit P p10 9 4; add unit P p11 4 3; add unit P p12 5 3
+  p2 deploys: add type S s 1 1 9; add unit S s1 0 5; add unit S s2 1 5; add unit S s3 2 5; add unit S s4 3 5; add unit S s5 4 5; add unit S s6 5 5; add unit S s7 6 5; add unit S s8 7 5; add unit S s9 8 5; add unit S s10 0 6; add unit S s11 1 6; add unit S s12 2 6; add unit S s13 3 6; add unit S s14 4 6; add unit S s15 5 6; add unit S s16 6 6; add unit S s17 7 6; add unit S s18 8 6
+    after turn 1: in play 12 v 18
+  -- turn 2
+    p1: move p1 south; move p10 south; move p11 south; move p12 south; move p2 south; move p3 south; move p4 south; move p5 south; move p6 south; move p7 south; move p8 south; move p9 south
+    p2: move s1 north; move s10 north; move s11 north; move s12 north; move s13 north; move s14 north; move s15 north; move s16 north; move s17 north; move s18 north; move s2 north; move s3 north; move s4 north; move s5 north; move s6 north; move s7 north; move s8 north; move s9 north
+    after turn 2: in play 8 v 0
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|P|P|P|P|#|#|P|P|P|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|P|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+|#|#|#|#|#|#|#|#|#|#|
++-+-+-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+P            1  P
+  game over: player 1 wins on turn 2
+  final units:
+    p1 p1   P   a1 h5 (0,4) hp 5 en 5
+    p1 p10  P   a1 h5 (9,5) hp 5 en 5
+    p1 p11  P   a1 h0 destroyed
+    p1 p12  P   a1 h0 destroyed
+    p1 p2   P   a1 h5 (1,4) hp 5 en 5
+    p1 p3   P   a1 h5 (2,4) hp 5 en 5
+    p1 p4   P   a1 h5 (3,4) hp 5 en 5
+    p1 p5   P   a1 h0 destroyed
+    p1 p6   P   a1 h0 destroyed
+    p1 p7   P   a1 h5 (6,4) hp 5 en 5
+    p1 p8   P   a1 h5 (7,4) hp 5 en 5
+    p1 p9   P   a1 h5 (8,4) hp 5 en 5
+    p2 s1   S   a1 h0 destroyed
+    p2 s10  S   a1 h0 destroyed
+    p2 s11  S   a1 h0 destroyed
+    p2 s12  S   a1 h0 destroyed
+    p2 s13  S   a1 h0 destroyed
+    p2 s14  S   a1 h0 destroyed
+    p2 s15  S   a1 h0 destroyed
+    p2 s16  S   a1 h0 destroyed
+    p2 s17  S   a1 h0 destroyed
+    p2 s18  S   a1 h0 destroyed
+    p2 s2   S   a1 h0 destroyed
+    p2 s3   S   a1 h0 destroyed
+    p2 s4   S   a1 h0 destroyed
+    p2 s5   S   a1 h0 destroyed
+    p2 s6   S   a1 h0 destroyed
+    p2 s7   S   a1 h0 destroyed
+    p2 s8   S   a1 h0 destroyed
+    p2 s9   S   a1 h0 destroyed

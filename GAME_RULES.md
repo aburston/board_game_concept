@@ -465,14 +465,18 @@ There are two currencies. **Points** are spent once, at deployment, out of a
 budget fixed for the game (**R2.3.1**). **Energy** belongs to the unit and is
 spent a little at a time, by moving and by attacking, and by nothing else.
 
+The fare for a move is not a constant: it is **the health the unit's type was
+designed with** (**R4.3**), read from the design and never from the health play
+has worn down.
+
 | What | What it costs | Rule |
 |---|---|---|
-| Defining a type | nothing | **R2.4** |
+| Defining a type | nothing — but a type that is not a wall must be designed holding at least its health in energy, or it could never afford one move | **R2.4** |
 | Deploying a unit | **points**: `attack + health + energy`, its type's price | **R2.9** |
 | — a unit that is destroyed | nothing back; there are no refunds | **R2.9** |
-| A move onto an empty square | **1 energy** | **R4.3** |
-| A move onto an occupied square | **1 energy** — the same fare, whatever it walks into | **R4.4** |
-| A head-on collision | **1 energy each**, though neither unit moves | **R4.9** |
+| A move onto an empty square | **the unit's maximum health**, in energy | **R4.3** |
+| A move onto an occupied square | **the same fare**, whatever it walks into | **R4.4** |
+| A head-on collision | **the fare, from both units**, though neither moves | **R4.9** |
 | A move nobody can pay for | **nothing** — the unit stays put, and the order is consumed | **R4.5** |
 | A move off the board | **nothing** — the unit stays at the edge, and the order is consumed | **R4.6** |
 | A round of combat | **the attacker's `attack` value**, charged once for the round however many opponents it strikes in it | **R5.3** |
@@ -494,6 +498,12 @@ attack 10 pays ten times over for a one-health one. What a high attack buys is
 not efficiency, it is **speed**: the same energy spent in one round rather than
 ten, which is what decides a duel (**R5.11**).
 
+**Health is paid for three times.** Once at the till, in points. Again every
+square the unit walks, because the fare is its health. And a third time by the
+enemy, who must spend about that much energy to kill it. A unit's `energy ÷
+health` is simply the number of squares it has left in it, so armour and
+mobility are the same dial turned in opposite directions.
+
 **Energy is paid for twice.** Once in points when the unit is bought, and then
 again a point at a time as it walks and fights. A unit's energy is both a line
 in its price and the number of actions left in it.
@@ -501,7 +511,8 @@ in its price and the number of actions left in it.
 **Standing still is a move you can make.** It is the only way to get energy
 back, it costs a turn, and it is refused to anything you gave an order to —
 so a unit ordered into the board's edge, which pays nothing, still learns
-nothing and gains nothing from the turn.
+nothing and gains nothing from the turn. Rest returns 1 whatever the unit is,
+so a heavy unit takes its whole health in quiet turns to buy back one square.
 
 ---
 ---
