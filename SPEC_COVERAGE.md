@@ -8,9 +8,9 @@ source of truth for intended behaviour.
 
 | Capability | Covers |
 |---|---|
-| `unit-types` | Unit type definition, statistic ranges, state and direction constants |
+| `unit-types` | Unit type definition, statistic ranges, energy against health, state and direction constants |
 | `board-model` | Board creation, unit placement, name uniqueness, lookup, rendering |
-| `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, energy cost |
+| `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, the energy a move costs |
 | `combat-resolution` | Contested squares, simultaneous attack rounds, damage, destruction is final |
 | `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
 | `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given |
@@ -356,6 +356,12 @@ something and never did.
 Addressed by the `fix-rules-defects` change: a move costs 1. The vestigial
 `speed` statistic still described in a comment in `unit.py`, from a design that
 no longer exists anywhere in the code, went with it.
+
+The flat 1 has since been replaced in turn. The `move-costs-max-health` change
+charges a move the moving unit's maximum health, so the cost does scale with
+the design — with the one statistic that was already there — and a type that is
+not a wall must be designed holding at least its health in energy, or it could
+never afford a square.
 
 ### 17. Hidden information was hidden only when drawn (`Q5`) — fixed
 

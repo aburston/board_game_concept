@@ -53,12 +53,13 @@ def test_a_move_nobody_can_pay_for_is_reported(tmp_path):
 
 
 def test_an_undecided_contest_is_reported_to_both_owners(tmp_path):
-    # attack 5 on energy 4: each can pay the fare to step into the same square
-    # and neither can then pay to attack, so the contest decides nothing
+    # attack 5 on energy 5, against a fare of 5: each can pay to step into the
+    # same square and arrives with nothing, so neither can then pay to attack
+    # and the contest decides nothing
     harness = GameHarness(tmp_path)
     harness.create(4, 3, [1, 2])
-    harness.deploy(1, [('X', 'X', 5, 5, 4)], [('X', 'x1', 1, 0)])
-    harness.deploy(2, [('O', 'O', 5, 5, 4)], [('O', 'o1', 3, 0)])
+    harness.deploy(1, [('X', 'X', 5, 5, 5)], [('X', 'x1', 1, 0)])
+    harness.deploy(2, [('O', 'O', 5, 5, 5)], [('O', 'o1', 3, 0)])
     harness.resolve()
 
     harness.turn({1: [('x1', UnitType.EAST)], 2: [('o1', UnitType.WEST)]})

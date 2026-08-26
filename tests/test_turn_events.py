@@ -58,9 +58,10 @@ def test_a_contest_reports_every_attack_and_who_held_the_square():
 def test_an_undecided_contest_reports_the_retreat():
     board = Board(4, 2)
     p1, p2 = Player(1), Player(2)
-    # neither can pay for an attack, so neither can win the square
-    board.add(p1, 0, 0, 'a1', UnitType('Attacker', 'A', 9, 5, 1))
-    board.add(p2, 2, 0, 'b1', UnitType('Brawler', 'B', 9, 5, 1))
+    # the fare takes everything either of them has, so neither can pay for an
+    # attack once it arrives and neither can win the square
+    board.add(p1, 0, 0, 'a1', UnitType('Attacker', 'A', 9, 5, 5))
+    board.add(p2, 2, 0, 'b1', UnitType('Brawler', 'B', 9, 5, 5))
     board.commit()
 
     board.getUnitByName('a1')[0].move(UnitType.EAST)
@@ -98,11 +99,17 @@ def test_a_units_numbers_survive_a_round_trip_as_numbers():
 
 
 def _facing_pair(attacker_energy=40, defender_energy=40):
+    # the energies are the units', not the types': a type must be designed
+    # holding at least its health, since that is what one move costs, and
+    # spending it down is what play does. Set after the deployment turn has
+    # resolved, because a unit holding less than its design rests through it
     board = Board(4, 2)
     p1, p2 = Player(1), Player(2)
-    board.add(p1, 0, 0, 'a', UnitType('A', 'A', 3, 6, attacker_energy))
-    board.add(p2, 1, 0, 'b', UnitType('B', 'B', 3, 6, defender_energy))
+    board.add(p1, 0, 0, 'a', UnitType('A', 'A', 3, 6, 40))
+    board.add(p2, 1, 0, 'b', UnitType('B', 'B', 3, 6, 40))
     board.commit()
+    board.getUnitByName('a')[0].setEnergy(attacker_energy)
+    board.getUnitByName('b')[0].setEnergy(defender_energy)
     return board
 
 
@@ -115,9 +122,10 @@ def test_engaging_a_standing_unit_costs_a_move():
     attacker.move(UnitType.EAST)
     board.commit()
 
-    # one move at E // 100 + 1, and then the attacks the contest landed
+    # the fare, which is the unit's health, and then the attacks the contest
+    # landed
     spent = before - attacker.energy
-    assert spent >= 1, "engaging a standing unit was free"
+    assert spent >= attacker.move_cost, "engaging a standing unit was free"
 
 
 def test_crossing_open_ground_and_engaging_cost_the_same_move():
@@ -145,9 +153,10 @@ def test_crossing_open_ground_and_engaging_cost_the_same_move():
 
 
 def test_a_unit_too_spent_to_attack_still_arrives():
-    board = _facing_pair(attacker_energy=1)
+    board = _facing_pair(attacker_energy=6)
     attacker = board.getUnitByName('a')[0]
-    # enough to pay for the move but not to attack. Under simultaneous
+    # exactly the fare - six health is six energy a square - and so nothing
+    # left to attack with. Under simultaneous
     # resolution there is no order-independent moment at which "occupied" can
     # be tested, so a mover needs only the fare: it arrives and is inert in the
     # contest it walked into

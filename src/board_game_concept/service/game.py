@@ -279,12 +279,21 @@ class Game:
                 unit_type = player_data['types'][type_name]
                 # a player file can be written by hand, so its statistics are
                 # converted here, at the edge, and are numbers everywhere below
-                unit_type['obj'] = UnitType(
-                    unit_type['name'],
-                    unit_type['symbol'],
-                    int(unit_type['attack']),
-                    int(unit_type['health']),
-                    int(unit_type['energy']))
+                # a type the rules refuse is a game that cannot be read, not
+                # a command that can be turned down and the session carry on.
+                # `define_type` catches the same assertions at the prompt; here
+                # they would escape as a bare AssertionError and kill the role
+                try:
+                    unit_type['obj'] = UnitType(
+                        unit_type['name'],
+                        unit_type['symbol'],
+                        int(unit_type['attack']),
+                        int(unit_type['health']),
+                        int(unit_type['energy']))
+                except (AssertionError, ValueError, TypeError) as e:
+                    raise UnreadableGame(
+                        f"{self.repository.data_path} holds a type that "
+                        f"cannot exist: {type_name}: {e}") from e
                 self.players[number]['types'][unit_type['name']] = unit_type
 
             orders = self.repository.read_orders(number)
@@ -333,9 +342,21 @@ class Game:
         known = types.get(unit['type'])
         if known is not None and 'obj' in known:
             return known['obj']
+        design = 'type_health' in unit
         attack = int(unit.get('type_attack', unit['attack']))
         health = int(unit.get('type_health', unit['health']))
         energy = int(unit.get('type_energy', unit['energy']))
+        if not design and attack != 0:
+            # a record carrying no `type_*` fields has already lost the design
+            # and leaves only what play has worn the unit down to. Current
+            # energy is routinely below current health - that is what spending
+            # looks like - so reconstructing from it would build a type the
+            # rules refuse and turn a legitimate sighting into a crash. This
+            # reconstruction exists to describe an enemy that was seen, not to
+            # price one, so it takes the floor the rule asks for and carries
+            # on. A wall is left alone: its 0 energy is not spending, it is
+            # what makes it a wall, and floored it would fail the wall rule
+            energy = max(energy, health)
         unit_type = UnitType(unit['type'], unit['symbol'], attack, health, energy)
         types[unit['type']] = {
             'name': unit['type'],

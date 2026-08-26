@@ -56,17 +56,19 @@ def test_no_enemy_type_is_listed_before_contact(tmp_path):
 def touching(tmp_path):
     """Two players whose units fight, and survive to tell of it.
 
-    Attack 3 on energy 4: after the fare each can land one attack and no more,
-    so they trade a blow, the contest ends undecided, and both fall back.
+    The fare is a unit's health, so ten of the fourteen goes on the square
+    itself. That leaves four against an attack of 3: each can land one blow
+    and no more, so they trade one, the contest ends undecided, and both fall
+    back.
 
-    Five energy rather than four, so that the blow does not leave both units
+    Fourteen rather than thirteen, so that the blow does not leave both units
     on nothing: a player whose every unit is spent is out (R7.1), and a game
     that has been decided resolves no further turn.
     """
     harness = GameHarness(tmp_path)
     harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('Sneaky', 'X', 3, 10, 5)], [('Sneaky', 'x1', 0, 0)])
-    harness.deploy(2, [('Brute', 'O', 3, 10, 5)], [('Brute', 'o1', 2, 0)])
+    harness.deploy(1, [('Sneaky', 'X', 3, 10, 14)], [('Sneaky', 'x1', 0, 0)])
+    harness.deploy(2, [('Brute', 'O', 3, 10, 14)], [('Brute', 'o1', 2, 0)])
     harness.resolve()
     # both step into (1, 0) and fight there
     harness.turn({1: [('x1', UnitType.EAST)], 2: [('o1', UnitType.WEST)]})
@@ -87,7 +89,7 @@ def test_contact_reveals_the_enemy_type_as_it_was_designed(tmp_path):
     # the design, not the state the unit happened to be in when it was met
     assert brute[0]['attack'] == 3
     assert brute[0]['health'] == 10
-    assert brute[0]['energy'] == 5
+    assert brute[0]['energy'] == 14
 
 
 def test_an_enemy_type_drops_out_when_contact_lapses(tmp_path):

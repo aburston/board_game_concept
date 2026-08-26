@@ -78,11 +78,14 @@ def test_a_player_who_loses_their_last_unit_is_eliminated(tmp_path):
 
 
 def test_a_unit_with_energy_left_keeps_its_owner_in_the_game(tmp_path):
-    # attack 5 on energy 1: o1 can neither attack nor move, but a point of
-    # energy is a point of energy and its owner is still in
-    harness = duel(tmp_path, mine=(1, 10, 50), theirs=(5, 10, 1),
+    # one square costs o1 three energy - its health - and leaves it a point it
+    # can do nothing at all with: too little to move again, far too little for
+    # an attack of 5. A point of energy is still a point of energy, and its
+    # owner is still in
+    harness = duel(tmp_path, mine=(1, 10, 50), theirs=(5, 3, 4),
                    their_units=[('O', 'o1', 5, 2)])
-    harness.turn({1: [], 2: []})
+    harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
+    assert harness.units()['o1'].energy == 1
     assert harness.session(0).getEliminated() == []
     assert outcome(harness) is None
 
@@ -90,7 +93,7 @@ def test_a_unit_with_energy_left_keeps_its_owner_in_the_game(tmp_path):
 def test_a_spent_unit_still_keeps_its_owner_in_the_game(tmp_path):
     # o1 has one point of energy and walks it off. It is out of energy, not
     # out of the game: resting will give it back (R3.9), so it still counts
-    harness = duel(tmp_path, mine=(1, 10, 50), theirs=(1, 10, 1),
+    harness = duel(tmp_path, mine=(1, 10, 50), theirs=(1, 2, 2),
                    their_units=[('O', 'o1', 5, 2)])
     harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
 

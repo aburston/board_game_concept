@@ -38,6 +38,23 @@ def test_no_attack_without_no_energy():
         UnitType('Half', 'H', 3, 10, 0)
 
 
+def test_a_wall_is_exempt_from_needing_energy_for_a_move():
+    # every other type must hold at least its health in energy, or it could
+    # never move. A wall holds none against a fare of 7, which is the whole
+    # point of it, so the rule that would abolish it does not reach it
+    wall = UnitType('Wall', 'W', 0, 7, 0)
+    assert wall.move_cost == 7
+    assert wall.energy == 0
+
+
+def test_a_broken_wall_is_told_it_is_a_broken_wall():
+    # attack 0 with energy above 0 fails the wall rule, not the energy rule:
+    # the wall check comes first so the message names the right mistake
+    with pytest.raises(AssertionError) as refused:
+        UnitType('Half', 'H', 0, 10, 5)
+    assert 'wall' in str(refused.value)
+
+
 def test_the_ranges_still_hold():
     for bad in ((-1, 10, 10), (11, 10, 10), (1, 0, 10), (1, 11, 10),
                 (1, 10, -1), (1, 10, 101)):
@@ -48,7 +65,9 @@ def test_the_ranges_still_hold():
 def test_a_wall_lands_no_attacks_and_the_fight_still_ends(tmp_path):
     # without the guard this is the fight that never terminates: the wall
     # pays nothing, deals nothing, and counts as having attacked
-    harness = a_game(tmp_path, wall=(0, 10, 0), attacker=(2, 10, 4))
+    # ten to cross the square - the fare is the attacker's health - and two
+    # more, which buys it exactly one attack and no second round
+    harness = a_game(tmp_path, wall=(0, 10, 0), attacker=(2, 10, 12))
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
 
     units = harness.units()

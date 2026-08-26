@@ -58,6 +58,17 @@ def test_unit_type_constraints():
         UnitType('Invalid', 'AB', 5, 5, 50)
 
 
+def test_a_type_that_can_move_needs_energy_for_at_least_one_move():
+    # a move costs the type's health, so energy below health is a design that
+    # could never move at all
+    with pytest.raises(AssertionError) as refused:
+        UnitType('Heavy', 'H', 1, 6, 5)
+    assert 'energy' in str(refused.value) and 'health' in str(refused.value)
+
+    exactly_enough = UnitType('Heavy', 'H', 1, 6, 6)
+    assert exactly_enough.move_cost == 6, 'one move and then it must rest'
+
+
 def test_board_creation():
     board_4x4 = Board(4, 4)
     board_8x8 = Board(8, 8)

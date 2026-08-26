@@ -35,9 +35,13 @@ def commit_within(board, seconds=30):
 
 
 def _spent_board():
-    """Two units with less energy than their attack value, facing each other."""
-    red_type = UnitType('Red', 'R', 4, 7, 3)
-    blue_type = UnitType('Blue', 'B', 3, 5, 2)
+    """Two units the fare leaves too spent to attack, facing each other.
+
+    A move costs a unit its health, so each of these arrives having spent
+    everything it had on getting there and can pay for no attack at all.
+    """
+    red_type = UnitType('Red', 'R', 4, 7, 7)
+    blue_type = UnitType('Blue', 'B', 3, 5, 5)
 
     p1 = Player(1)
     p2 = Player(2)
@@ -100,14 +104,16 @@ def test_stalemated_units_retreat_and_nobody_takes_the_cell():
 def test_inert_unit_holds_its_cell_and_the_attacker_falls_back():
     # a spent defender standing still is inert, not dead: it keeps its square, and
     # an attacker that cannot finish it off returns to its own
-    defender_type = UnitType('Defender', 'D', 5, 6, 1)
-    attacker_type = UnitType('Attacker', 'A', 6, 6, 2)
+    defender_type = UnitType('Defender', 'D', 5, 6, 6)
+    attacker_type = UnitType('Attacker', 'A', 6, 6, 6)
 
     p1 = Player(1)
     p2 = Player(2)
     board = Board(4, 2)
+    # the attacker holds exactly the fare, so it arrives with nothing left to
+    # strike with; the defender was run down to a point long ago
     board.add(p1, 0, 0, 'a1', attacker_type)
-    board.add(p2, 1, 0, 'd1', defender_type)
+    board.add(p2, 1, 0, 'd1', defender_type, energy=1)
     board.commit()
 
     attacker = board.getUnitByName('a1')[0]
@@ -123,14 +129,14 @@ def test_inert_unit_holds_its_cell_and_the_attacker_falls_back():
 
 
 def test_inert_unit_can_still_be_destroyed_by_an_opponent_with_energy():
-    inert_type = UnitType('Inert', 'I', 9, 2, 1)
+    inert_type = UnitType('Inert', 'I', 9, 2, 2)
     strong_type = UnitType('Strong', 'S', 4, 8, 100)
 
     p1 = Player(1)
     p2 = Player(2)
     board = Board(4, 2)
     board.add(p1, 0, 0, 's1', strong_type)
-    board.add(p2, 1, 0, 'i1', inert_type)
+    board.add(p2, 1, 0, 'i1', inert_type, energy=1)
     board.commit()
 
     strong = board.getUnitByName('s1')[0]
@@ -326,10 +332,13 @@ def _shared_cell_board():
     holding more than one unit is a contest nobody won in which every survivor
     found the square it came from already taken.
     """
-    aye_type = UnitType('Aye', 'A', 5, 5, 2)
-    bee_type = UnitType('Bee', 'B', 5, 5, 1)
-    cee_type = UnitType('Cee', 'C', 5, 5, 1)
-    dee_type = UnitType('Dee', 'D', 5, 5, 1)
+    # light enough to afford the fare twice over, and hitting far harder than
+    # it can pay for: each arrives holding less than its attack value, so the
+    # contest in the middle square is one nobody can win
+    aye_type = UnitType('Aye', 'A', 5, 2, 4)
+    bee_type = UnitType('Bee', 'B', 5, 2, 4)
+    cee_type = UnitType('Cee', 'C', 5, 2, 2)
+    dee_type = UnitType('Dee', 'D', 5, 2, 2)
 
     p1 = Player(1)
     p2 = Player(2)
@@ -403,7 +412,7 @@ def test_shared_square_survives_a_save_and_load_round_trip():
         # then overrides health and energy per unit, so a unit that has spent
         # all its energy still reloads
         types.setdefault(unit['type'], UnitType(
-            unit['type'], unit['symbol'], int(unit['attack']), 5, 2))
+            unit['type'], unit['symbol'], int(unit['attack']), 2, 4))
         reloaded.add(
             players[number], unit['x'], unit['y'], unit['name'],
             types[unit['type']], int(unit['health']), int(unit['energy']),
