@@ -31,8 +31,12 @@ def build(spec, order, size=(4, 3)):
     for index in order:
         number, name, x, y, attack, health, energy, _ = spec[index]
         player = players.setdefault(number, Player(number))
+        # the type is designed holding at least the fare one move costs it,
+        # which is its health; the drawn energy is what play has left the unit
+        # with, and is set on the unit below
         board.add(player, x, y, name,
-                  UnitType(name, name[0].upper(), attack, health, energy))
+                  UnitType(name, name[0].upper(), attack, health,
+                           max(energy, health)))
     board.commit()
     for index in order:
         number, name, x, y, attack, health, energy, direction = spec[index]

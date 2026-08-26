@@ -326,7 +326,7 @@ class Board:
 
         # everything planned is paid for, whether it arrives or collides
         for unit, origin, destination in plans:
-            unit.energy = unit.energy - UnitType.MOVE_COST
+            unit.energy = unit.energy - unit.move_cost
 
         movers = [plan for plan in plans if id(plan[0]) not in paired]
 

@@ -14,9 +14,10 @@ from board_game_concept.domain.unit import exchangeAttacks
 
 
 def unit(name, attack, health, energy):
-    # a type must be built with at least 1 energy; play is what runs it down,
-    # so a unit that has spent everything is made and then set
-    made = UnitType(name, name[0].upper(), attack, health, max(energy, 1))
+    # a type must be built holding at least its health in energy, because that
+    # is what one move costs; play is what runs it down, so a unit that has
+    # spent everything is made whole and then set
+    made = UnitType(name, name[0].upper(), attack, health, max(energy, health))
     made.setName(name)
     made.setPlayer(Player(1))
     made.setEnergy(energy)

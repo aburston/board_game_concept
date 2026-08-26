@@ -22,11 +22,6 @@ class UnitType:
     MOVING = 1
     NOP = 2
 
-    # what one move costs. This was `energy // 100 + 1`, which under the
-    # 1 to 100 energy cap only ever yielded 1 - except from exactly 100,
-    # where it yielded 2 - so it read as though it scaled and never did
-    MOVE_COST = 1
-
     # what a turn spent doing nothing gives back. Energy used to be spent and
     # never replenished, which left an exhausted unit a permanent obstacle
     # and every game a race to the bottom of two pockets. A unit that was
@@ -70,6 +65,18 @@ class UnitType:
             "a type with no attack must have no energy, and a type with no "
             "energy must have no attack: that pair is a wall")
 
+        # a move costs a unit its health in energy and rest returns 1 a turn,
+        # so a type designed with less energy than health could never afford a
+        # single move at any point in its life. Saying so once, here, beats
+        # leaving a player to discover it a turn at a time from refused
+        # orders. A wall is exempt and is checked for first: 0 energy against
+        # a fare it can never pay is what makes it a wall, and holding it to
+        # this rule would abolish it
+        assert (attack == 0 or energy >= health), (
+            f"a type that can move must have at least as much energy as "
+            f"health: health {health} needs energy {health} or more, not "
+            f"{energy}")
+
         # the design this unit was made from, kept alongside the values play
         # wears down. `type_name` was already preserved through the copy for
         # the same reason; a unit's current health is not its type's health,
@@ -99,6 +106,21 @@ class UnitType:
         the type already holds can only ever disagree with it.
         """
         return self.type_attack + self.type_health + self.type_energy
+
+    @property
+    def move_cost(self):
+        """What one move costs this unit in energy: its maximum health.
+
+        A move used to cost 1 whatever the unit was, so weight was free and
+        health bought durability without ever buying a penalty. It costs the
+        health the type was designed with instead, so armour is paid for in
+        the field. Read from the design rather than from the health play has
+        worn down: a wounded unit that moved more cheaply would make taking
+        damage a way to buy tempo, and would make the fare something a player
+        has to recompute after every contest. Computed rather than stored, for
+        the reason `cost` above gives.
+        """
+        return self.type_health
 
     def move(self, direction):
         self.state = UnitType.MOVING
@@ -167,7 +189,7 @@ class UnitType:
 
         if not (0 <= dest_x < self.board_max_x and 0 <= dest_y < self.board_max_y):
             return None, 'the move would leave the board'
-        if self.energy < UnitType.MOVE_COST:
+        if self.energy < self.move_cost:
             return None, 'not enough energy to move'
         return (dest_x, dest_y), None
 

@@ -82,8 +82,8 @@ def test_registration_order_does_not_change_the_outcome():
     # `chase` follows `lead` into the square `lead` is leaving. Resolved unit by
     # unit against a live board, whether it gets there depends on whether
     # `lead` has moved yet
-    lead = (1, 'lead', 1, 0, (4, 5, 4))
-    chase = (2, 'chase', 2, 0, (3, 3, 1))
+    lead = (1, 'lead', 1, 0, (4, 5, 5))
+    chase = (2, 'chase', 2, 0, (3, 3, 3))
     orders = (('lead', UnitType.SOUTH), ('chase', UnitType.WEST))
 
     lead_first = resolved(*orders, lead, chase)

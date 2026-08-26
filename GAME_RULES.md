@@ -79,13 +79,23 @@ registration: nothing in play raises or lowers it. A player file may carry a
 **Attack 0 and energy 0 go together, and make a wall (R2.10).** A type with one
 of them at zero and the other above it is refused.
 
+**A type that is not a wall must hold at least its health in energy.** A move
+costs a unit its health (**R4.3**) and rest gives back 1 a turn (**R3.9**), so a
+type with less energy than health could never afford a single move at any point
+in its life. `add type Heavy H 3 6 5` is refused; `add type Heavy H 3 6 6` is a
+unit that can cross one square and must then stand still for six turns. A wall
+is exempt: its 0 energy against a fare it can never pay is the whole point of
+it (**R2.10**).
+
 A type is rejected at the moment it is defined, not later during play. Types are
 private to the player who defined them: an opponent learns of one only by
 fighting a unit of it (**R6.2**).
 
 **R2.5 What the three statistics mean.**
 - **attack** — damage dealt per attack, *and* the energy that attack costs.
-- **health** — total damage the unit absorbs before it is destroyed.
+- **health** — total damage the unit absorbs before it is destroyed, *and* the
+  energy each of its moves costs (**R4.3**). Health is paid for twice over:
+  once at the till, and again every square the unit walks.
 - **energy** — the single resource spent by both moving and attacking. A unit
   that takes no action during a turn gets **1** of it back (**R3.9**).
 
@@ -128,9 +138,9 @@ order of unit name, so which ones survive is decided by the rules and not by the
 order they were written in.
 
 **R2.10 Walls.** A type with **attack 0 and energy 0** is a wall: health
-standing on a square. It can never be ordered to move, because a move costs 1
-energy it does not have and never will (**R3.9** gives nothing back to a type
-designed with none). It never attacks and never defends itself, so a round in
+standing on a square. It can never be ordered to move, because a move costs it
+its health in energy (**R4.3**) and it holds none, and never will (**R3.9**
+gives nothing back to a type designed with none). It never attacks and never defends itself, so a round in
 which only walls could act lands no attacks and the fight ends (**R5.6**). It
 can be destroyed like anything else, it blocks a square like anything else, and
 it costs its health and nothing else — a wall of 10 health costs 10 points.
@@ -223,9 +233,16 @@ No diagonals, no multi-square moves, no standing order.
 
 **R4.2 You may only order your own units, and only units on the board.**
 
-**R4.3 Moving costs energy.** A move costs **1 energy**, always, whatever the
-unit finds at its destination. A unit's energy is therefore the number of
-actions it has left in it.
+**R4.3 Moving costs energy.** A move costs a unit **its maximum health** in
+energy — the health its type was designed with — whatever the unit finds at its
+destination. A 1-health scout crosses a square for 1; a 10-health brute pays 10
+for the same square. The fare is read from the design and never from the health
+play has worn down, so a unit that has been hurt pays exactly what it paid while
+whole: damage is not weight shed.
+
+Weight therefore costs mobility. A unit's energy divided by its health is the
+number of squares it has left in it, and armour is paid for twice — once at the
+till (**R2.9**), and again every square it walks.
 
 **R4.4 You pay for every move that happens, including starting a fight.**
 Stepping onto an occupied square is charged exactly like stepping onto an empty
@@ -249,15 +266,17 @@ units *finish* the turn, not on where they started it:
 | Held by other units that also moved in | They contest the square. |
 | Held by a unit that did not move | They contest the square. |
 
-A unit needs only the fare — 1 energy — to arrive. A unit that cannot then
-afford to attack still arrives, and is inert in the fight it has walked into.
+A unit needs only the fare — its health in energy — to arrive. A unit that
+cannot then afford to attack still arrives, and is inert in the fight it has
+walked into.
 
 **R4.8 A unit that follows another out of its square arrives cleanly.** If the
 unit standing in your destination is itself moving away this turn, you simply
 take the square: nothing is contested.
 
 **R4.9 Two units ordered into each other's squares collide.** They do not pass
-through one another. Neither completes its move, both pay the fare, and they
+through one another. Neither completes its move, each pays its own fare — which
+is its own health, and need not match the other's — and they
 fight where they stand:
 - one survivor → it completes its move into the square the loser held;
 - no survivor → both squares are left empty;
@@ -375,7 +394,10 @@ holds this turn: a unit at zero energy recovers a point for every turn it does
 nothing (**R3.9**), so it is spent for the moment rather than finished, and it
 keeps you in. A wall is the one unit that never recovers, because its type was
 designed with no energy at all — it can never move and never strike, so it holds
-a square for you and nothing else. A player who deployed nothing is out on the
+a square for you and nothing else. It is the *only* such unit, and that is what
+the energy-at-least-health rule of **R2.4** is for: without it a type could be
+designed that rests for ever and never affords a square, which would be a wall
+in everything but name while still keeping its owner in the game. A player who deployed nothing is out on the
 first turn with units on the board.
 
 **R7.2 The last player standing wins.** The game is decided at the end of the
