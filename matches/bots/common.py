@@ -56,17 +56,41 @@ def steps_towards(unit, target):
     return options
 
 
-def can_move(unit, keep_attack=True):
-    """Whether to spend a point of energy on a step.
+def fare_for(health):
+    """A quarter of a health, rounded up, in whole numbers (R4.3)."""
+    return (health + 3) // 4
+
+
+def fares(view):
+    """What a step costs each of my units: a quarter of the health its type
+    was designed with, rounded up (R4.3).
+
+    Not the health it is standing on now - damage is not weight shed - so it
+    is read from my own type list, which is mine to know. A unit whose type is
+    somehow missing falls back to its current health, which is the same number
+    while the unit is whole.
+
+    Health is 1 to 10, so this is 1, 2 or 3. It is a step and not a slope:
+    health 1 to 4 all cost 1 a square, which makes health 4 the best value on
+    the board and health 5 the worst.
+    """
+    designs = {kind['name']: kind['health'] for kind in view.get('types', ())
+               if kind.get('player', view['me']) == view['me']}
+    return {unit['name']: fare_for(designs.get(unit['type'], unit['health']))
+            for unit in mine(view)}
+
+
+def can_move(unit, fare, keep_attack=True):
+    """Whether to spend the fare on a step.
 
     Movement and attacking come out of the same pocket (R2.5), so a unit that
-    walks itself down below its attack value is inert for the rest of the game
-    (R5.10). `keep_attack` is a bot saying it would rather stand still than be
-    unable to fight.
+    walks itself below its attack value is inert until it has rested the
+    difference back (R5.10, R3.9). `keep_attack` is a bot saying it would
+    rather stand still than be unable to fight.
     """
-    if unit['energy'] < 1:
+    if unit['energy'] < fare:
         return False
-    if keep_attack and unit['energy'] - 1 < unit['attack']:
+    if keep_attack and unit['energy'] - fare < unit['attack']:
         return False
     return True
 
@@ -81,6 +105,7 @@ def resolve(view, wishes, keep_attack=True):
     orders.
     """
     standing = {(unit['x'], unit['y']): unit['name'] for unit in mine(view)}
+    fare = fares(view)
 
     def pass_over(leaving):
         moving_out = set(leaving)
@@ -90,7 +115,7 @@ def resolve(view, wishes, keep_attack=True):
             steps = wishes.get(unit['name']) or []
             if isinstance(steps, tuple):
                 steps = [steps]
-            if not can_move(unit, keep_attack):
+            if not can_move(unit, fare[unit['name']], keep_attack):
                 continue
             for step in steps:
                 x, y = unit['x'] + step[0], unit['y'] + step[1]

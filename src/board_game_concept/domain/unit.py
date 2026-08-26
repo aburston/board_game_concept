@@ -65,25 +65,33 @@ class UnitType:
             "a type with no attack must have no energy, and a type with no "
             "energy must have no attack: that pair is a wall")
 
-        # a move costs a unit its health in energy and rest returns 1 a turn,
-        # so a type designed with less energy than health could never afford a
-        # single move at any point in its life. Saying so once, here, beats
-        # leaving a player to discover it a turn at a time from refused
-        # orders. A wall is exempt and is checked for first: 0 energy against
-        # a fare it can never pay is what makes it a wall, and holding it to
-        # this rule would abolish it
-        assert (attack == 0 or energy >= health), (
-            f"a type that can move must have at least as much energy as "
-            f"health: health {health} needs energy {health} or more, not "
-            f"{energy}")
-
         # the design this unit was made from, kept alongside the values play
         # wears down. `type_name` was already preserved through the copy for
         # the same reason; a unit's current health is not its type's health,
-        # and a destroyed one has none at all
+        # and a destroyed one has none at all.
+        #
+        # These are set before the energy floor below rather than after every
+        # assert, because the floor is stated against `move_cost` and
+        # `move_cost` reads `type_health`. Asking the property for the fare is
+        # the point: it makes the rule the constructor enforces the same
+        # expression movement charges, where a second copy of the arithmetic
+        # here could state a different rule from the one a unit is held to in
+        # play
         self.type_attack = attack
         self.type_health = health
         self.type_energy = energy
+
+        # a move costs a unit a quarter of its health in energy, so a type
+        # designed with less energy than that could never afford a single move
+        # at any point in its life. Saying so once, here, beats leaving a
+        # player to discover it a turn at a time from refused orders. A wall is
+        # exempt and is checked for first: 0 energy against a fare it can never
+        # pay is what makes it a wall, and holding it to this rule would
+        # abolish it
+        assert (attack == 0 or energy >= self.move_cost), (
+            f"a type that can move must have at least its movement cost in "
+            f"energy: health {health} costs {self.move_cost} to move, so it "
+            f"needs energy {self.move_cost} or more, not {energy}")
 
         self.state = UnitType.INITIAL
         self.direction = UnitType.NONE
@@ -109,18 +117,39 @@ class UnitType:
 
     @property
     def move_cost(self):
-        """What one move costs this unit in energy: its maximum health.
+        """What one move costs this unit in energy: a quarter of its maximum
+        health, rounded up.
 
         A move used to cost 1 whatever the unit was, so weight was free and
-        health bought durability without ever buying a penalty. It costs the
-        health the type was designed with instead, so armour is paid for in
-        the field. Read from the design rather than from the health play has
-        worn down: a wounded unit that moved more cheaply would make taking
-        damage a way to buy tempo, and would make the fare something a player
-        has to recompute after every contest. Computed rather than stored, for
-        the reason `cost` above gives.
+        health bought durability without ever buying a penalty. It costs a
+        share of the health the type was designed with instead, so armour is
+        paid for in the field. The share was the whole of it to begin with,
+        which priced a health-10 unit at ten energy a square against a rest
+        rate of one a turn - a unit that crossed the board at a square every
+        ten turns and was furniture rather than an army. A quarter keeps
+        weight costing mobility and leaves a heavy unit able to campaign.
+
+        Read from the design rather than from the health play has worn down:
+        a wounded unit that moved more cheaply would make taking damage a way
+        to buy tempo, and would make the fare something a player has to
+        recompute after every contest. Computed rather than stored, for the
+        reason `cost` above gives.
+
+        Rounded up, and in whole numbers. Up, because rounding down would
+        make health 1 to 3 move for nothing, and a unit that moves for
+        nothing is outside the energy economy the rest of the game is built
+        on - which would be a worse rule than the flat 1 this replaced, and
+        would hand it to the cheapest units on the board. In whole numbers,
+        because `(h + 3) // 4` on two integers is exact where `h / 4` is a
+        float: a float in a rule that decides a turn is the kind of thing the
+        determinism invariant exists to keep out.
+
+        Health is 1 to 10, so the fare is 1 for health 1 to 4, 2 for health 5
+        to 8, and 3 for health 9 or 10. That is a step, not a slope: two types
+        that differ only in health can pay the same fare, which is the price
+        of a fare that fits in three values while health fits in ten.
         """
-        return self.type_health
+        return (self.type_health + 3) // 4
 
     def move(self, direction):
         self.state = UnitType.MOVING

@@ -5,8 +5,8 @@ not in the bookkeeping of walking, so the bookkeeping lives here. Nothing in
 this file looks at anything but the view its own player was published.
 """
 
-from common import (enemies, lanes, mine, resolve, serpentine, size,
-                    steps_towards)
+from common import (enemies, fares, lanes, mine, resolve, serpentine,
+                    size, steps_towards)
 
 
 class Sweeper:
@@ -145,9 +145,13 @@ class Sweeper:
     def orders(self, view):
         self.plan_routes(view)
         contacts = self.targets(view)
+        fare = fares(view)
         wishes = {}
         for unit in mine(view):
-            if unit['energy'] - 1 < self.floor(unit):
+            # what is left after paying for the step has to clear the floor,
+            # and the step costs this unit its designed health (R4.3) rather
+            # than the flat 1 every doctrine here was first written against
+            if unit['energy'] - fare[unit['name']] < self.floor(unit):
                 continue
             wishes[unit['name']] = self.wish(view, unit, contacts)
         return resolve(view, wishes, keep_attack=False)

@@ -357,11 +357,22 @@ Addressed by the `fix-rules-defects` change: a move costs 1. The vestigial
 `speed` statistic still described in a comment in `unit.py`, from a design that
 no longer exists anywhere in the code, went with it.
 
-The flat 1 has since been replaced in turn. The `move-costs-max-health` change
-charges a move the moving unit's maximum health, so the cost does scale with
-the design — with the one statistic that was already there — and a type that is
-not a wall must be designed holding at least its health in energy, or it could
-never afford a square.
+The flat 1 has since been replaced twice. The `move-costs-max-health` change
+charged a move the moving unit's maximum health, so the cost did scale with the
+design — with the one statistic that was already there. Twenty games under that
+rule (`matches/RESULTS-MOVE-COSTS-HEALTH.md`) showed the slope was far too
+steep: at a rest rate of 1 a turn a ten-health unit bought a square every ten
+turns, and armies that wanted to engage could not afford to arrive. The
+`move-costs-a-quarter-of-health` change keeps the scaling and reduces the rate
+to a quarter of the health, rounded up, so the fare is 1, 2 or 3 rather than 1
+to 10. A type that is not a wall must be designed holding at least its movement
+cost in energy, or it could never afford a square.
+
+The formula now varies with the design, which is what `Q4` was asking for, and
+it varies in steps rather than continuously: health 1 to 4 all pay 1. That is
+the price of a fare that fits in three values while health fits in ten, and
+`GAME_RULES.md` R4.3 prints the whole mapping rather than leaving it to be
+worked out.
 
 ### 17. Hidden information was hidden only when drawn (`Q5`) — fixed
 

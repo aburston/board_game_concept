@@ -79,13 +79,14 @@ registration: nothing in play raises or lowers it. A player file may carry a
 **Attack 0 and energy 0 go together, and make a wall (R2.10).** A type with one
 of them at zero and the other above it is refused.
 
-**A type that is not a wall must hold at least its health in energy.** A move
-costs a unit its health (**R4.3**) and rest gives back 1 a turn (**R3.9**), so a
-type with less energy than health could never afford a single move at any point
-in its life. `add type Heavy H 3 6 5` is refused; `add type Heavy H 3 6 6` is a
-unit that can cross one square and must then stand still for six turns. A wall
-is exempt: its 0 energy against a fare it can never pay is the whole point of
-it (**R2.10**).
+**A type that is not a wall must hold at least its movement cost in energy.** A
+move costs a unit a quarter of its health, rounded up (**R4.3**), and rest gives
+back 1 a turn (**R3.9**), so a type with less energy than that could never
+afford a single move at any point in its life. `add type Heavy H 3 6 1` is
+refused, because health 6 costs 2 to move; `add type Heavy H 3 6 2` is a unit
+that can cross one square and must then stand still for two turns. A wall is
+exempt: its 0 energy against a fare it can never pay is the whole point of it
+(**R2.10**).
 
 A type is rejected at the moment it is defined, not later during play. Types are
 private to the player who defined them: an opponent learns of one only by
@@ -139,7 +140,8 @@ order they were written in.
 
 **R2.10 Walls.** A type with **attack 0 and energy 0** is a wall: health
 standing on a square. It can never be ordered to move, because a move costs it
-its health in energy (**R4.3**) and it holds none, and never will (**R3.9**
+a quarter of its health in energy (**R4.3**) and it holds none, and never will
+(**R3.9**
 gives nothing back to a type designed with none). It never attacks and never defends itself, so a round in
 which only walls could act lands no attacks and the fight ends (**R5.6**). It
 can be destroyed like anything else, it blocks a square like anything else, and
@@ -233,14 +235,31 @@ No diagonals, no multi-square moves, no standing order.
 
 **R4.2 You may only order your own units, and only units on the board.**
 
-**R4.3 Moving costs energy.** A move costs a unit **its maximum health** in
-energy — the health its type was designed with — whatever the unit finds at its
-destination. A 1-health scout crosses a square for 1; a 10-health brute pays 10
-for the same square. The fare is read from the design and never from the health
-play has worn down, so a unit that has been hurt pays exactly what it paid while
-whole: damage is not weight shed.
+**R4.3 Moving costs energy.** A move costs a unit **a quarter of its maximum
+health, rounded up** — a quarter of the health its type was designed with —
+whatever the unit finds at its destination. The fare is read from the design and
+never from the health play has worn down, so a unit that has been hurt pays
+exactly what it paid while whole: damage is not weight shed.
 
-Weight therefore costs mobility. A unit's energy divided by its health is the
+Health is 1 to 10, so the fare is one of three numbers:
+
+| maximum health | fare per square |
+|---|---|
+| 1, 2, 3, 4 | **1** |
+| 5, 6, 7, 8 | **2** |
+| 9, 10 | **3** |
+
+Two things follow from that table, and both are worth knowing before you buy.
+**The fare is a step, not a slope**: health 4 is four times the durability of
+health 1 for the same fare, and is the best value on the board. **Health 5 is
+the worst**: one more point of health than health 4, for double the running
+cost, for ever.
+
+Rounding is upward, so **no unit ever moves for nothing**. A fare of zero would
+put a unit outside the energy economy entirely — it could cross the board for
+ever and never need to rest — and it is the cheapest units that would escape.
+
+Weight therefore costs mobility. A unit's energy divided by its fare is the
 number of squares it has left in it, and armour is paid for twice — once at the
 till (**R2.9**), and again every square it walks.
 
@@ -266,7 +285,8 @@ units *finish* the turn, not on where they started it:
 | Held by other units that also moved in | They contest the square. |
 | Held by a unit that did not move | They contest the square. |
 
-A unit needs only the fare — its health in energy — to arrive. A unit that
+A unit needs only the fare — a quarter of its health in energy — to arrive. A
+unit that
 cannot then afford to attack still arrives, and is inert in the fight it has
 walked into.
 
@@ -452,6 +472,78 @@ continues. A session ends on `exit`, and also when its input runs out — so a
 role can be driven from a script or a pipe as well as from a keyboard.
 
 ---
+
+## R9. Every cost in one place
+
+Nothing new is stated here. This is the rules above, gathered into one table,
+because what a thing costs is the question most often asked of them and the
+answer is currently spread across four sections. **Where this table and a rule
+disagree, the rule is right** — and `tests/test_cost_table.py` holds the
+numbers in it to the ones the game actually charges.
+
+There are two currencies. **Points** are spent once, at deployment, out of a
+budget fixed for the game (**R2.3.1**). **Energy** belongs to the unit and is
+spent a little at a time, by moving and by attacking, and by nothing else.
+
+The fare for a move is not a constant: it is **a quarter of the health the
+unit's type was designed with, rounded up** (**R4.3**), read from the design and
+never from the health play has worn down. Health is 1 to 10, so the fare is 1
+for health 1 to 4, 2 for health 5 to 8, and 3 for health 9 or 10 — and never 0,
+because it rounds up.
+
+| What | What it costs | Rule |
+|---|---|---|
+| Defining a type | nothing — but a type that is not a wall must be designed holding at least its movement cost in energy, or it could never afford one move | **R2.4** |
+| Deploying a unit | **points**: `attack + health + energy`, its type's price | **R2.9** |
+| — a unit that is destroyed | nothing back; there are no refunds | **R2.9** |
+| A move onto an empty square | **a quarter of the unit's maximum health, rounded up**, in energy | **R4.3** |
+| A move onto an occupied square | **the same fare**, whatever it walks into | **R4.4** |
+| A head-on collision | **the fare, from both units**, though neither moves | **R4.9** |
+| A move nobody can pay for | **nothing** — the unit stays put, and the order is consumed | **R4.5** |
+| A move off the board | **nothing** — the unit stays at the edge, and the order is consumed | **R4.6** |
+| A round of combat | **the attacker's `attack` value**, charged once for the round however many opponents it strikes in it | **R5.3** |
+| — a round it cannot afford in full | **nothing** — it strikes nobody rather than striking some | **R5.4** |
+| — a round fought by a wall | **nothing** — a wall never attacks | **R2.10** |
+| Being attacked | **nothing in energy**; damage comes off health | **R5.5** |
+| A turn in which a unit did nothing | **gains 1 energy**, never above the energy its type was designed with | **R3.9** |
+| — a turn in which it was given any order | **gains nothing**, even if the order cost it nothing | **R3.9** |
+
+Three things follow from the table that are worth stating out loud, because
+they decide how the game is played and none of them is obvious from any single
+row:
+
+**A kill costs about the victim's health, whatever your attack is.** Killing a
+unit of health `h` takes `ceil(h ÷ a)` rounds at `a` energy each, so the bill
+is `a × ceil(h ÷ a)` — always at least `h`, and exactly `h` when `a` divides
+it. Attack 10 and attack 1 pay the same 10 energy to kill a ten-health unit;
+attack 10 pays ten times over for a one-health one. What a high attack buys is
+not efficiency, it is **speed**: the same energy spent in one round rather than
+ten, which is what decides a duel (**R5.11**).
+
+**Health is paid for three times.** Once at the till, in points. Again every
+square the unit walks, because the fare is a quarter of its health. And a third
+time by the enemy, who must spend about the whole of it in energy to kill it.
+A unit's `energy ÷ fare` is simply the number of squares it has left in it, so
+armour and mobility are the same dial turned in opposite directions.
+
+Because the fare rounds up in steps of four, that dial has **notches rather
+than a slope**. Health 1, 2, 3 and 4 all cost 1 a square, so health 4 is four
+times the durability of health 1 for exactly the same mobility — the best value
+in the game. Health 5 buys one more point of durability and doubles the running
+cost for the rest of the game — the worst. The same edge sits between 8 and 9.
+
+**Energy is paid for twice.** Once in points when the unit is bought, and then
+again a point at a time as it walks and fights. A unit's energy is both a line
+in its price and the number of actions left in it.
+
+**Standing still is a move you can make.** It is the only way to get energy
+back, it costs a turn, and it is refused to anything you gave an order to —
+so a unit ordered into the board's edge, which pays nothing, still learns
+nothing and gains nothing from the turn. Rest returns 1 whatever the unit is,
+so a heavy unit takes a quarter of its health in quiet turns to buy back one
+square — three, at health 9 or 10.
+
+---
 ---
 
 # Part 2 — What is still open
@@ -528,9 +620,11 @@ accept that a fight then depends on it rather than on the two units alone.
 | R2.4–R2.5 | `unit-types` | `domain/unit.py` |
 | R2.6–R2.8 | `board-model`, `turn-commit`, `player-client` | `service/games.py`, `domain/board.py` |
 | R2.9 | `point-budget` | `domain/budget.py`, `service/games.py`, `service/turn.py` |
-| R3.1–R3.8 | `turn-commit`, `game-persistence`, `game-outcome` | `service/turn.py`, `domain/board.py` (`commit`) |
+| R2.10 | `unit-types` | `domain/unit.py` (`UnitType.__init__`, `exchangeAttacks`) |
+| R3.1–R3.9 | `turn-commit`, `game-persistence`, `game-outcome` | `service/turn.py`, `domain/board.py` (`commit`, `_rest`) |
 | R4.1–R4.10 | `unit-movement` | `domain/unit.py` (`planMove`), `domain/board.py` (`_move`) |
 | R5.1–R5.11 | `combat-resolution` | `domain/unit.py` (`exchangeAttacks`, `resolveContest`, `resolveCollision`) |
 | R6.1–R6.6 | `visibility` | `storage/serialise.py`, `service/game.py` |
 | R7.1–R7.4 | `game-outcome` | `service/turn.py`, `cli/*.py` |
 | R8 | `game-server`, `player-client`, `game-observer` | `cli/roles.py`, `cli/grammar.py` |
+| R9 | nothing of its own — it restates the rules above | `tests/test_cost_table.py` |

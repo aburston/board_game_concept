@@ -9,8 +9,14 @@ This is the same unit with nine energy rather than six, ten of them rather
 than twelve, one to a column. Each walks into the enemy half and keeps walking
 until something kills it - and whatever kills it pays its attack value every
 round for ten rounds to do it, which is a camper's whole pocket. Ten sponges
-against ten campers is ten empty pockets, and a player with nothing left
-holding energy is out.
+against ten campers is ten empty pockets.
+
+This design was briefly illegal. While a move cost a unit its whole designed
+health, a type had to hold at least its health in energy, so ten health on
+nine was refused and the doctrine had to be rebuilt at ten energy - where it
+could afford exactly one step and never moved at all. The fare is a quarter of
+the health now, so ten health costs three a square and nine energy is three
+squares: the original army is back, and it can walk.
 """
 
 from base import Sweeper

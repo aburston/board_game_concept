@@ -28,16 +28,16 @@ require the two to be zero together: a type with an attack of 0 and any energy
 above 0 is refused, as is a type with energy 0 and any attack above 0. Such a
 type is a **wall** — health standing on a square.
 
-A wall SHALL never be able to move, because a move costs its health in energy
-and it has none, and regeneration gives nothing to a type designed with none.
-It SHALL land no attacks: a round in which only walls could act lands no
-attacks and ends the fight, rather than repeating for ever on an attack that
-costs nothing and deals nothing. It SHALL block a square and be destroyable
-like any other unit, and it SHALL cost its health and nothing else.
+A wall SHALL never be able to move, because a move costs a quarter of its
+health in energy and it has none, and regeneration gives nothing to a type
+designed with none. It SHALL land no attacks: a round in which only walls could
+act lands no attacks and ends the fight, rather than repeating for ever on an
+attack that costs nothing and deals nothing. It SHALL block a square and be
+destroyable like any other unit, and it SHALL cost its health and nothing else.
 
 A wall SHALL be exempt from the rule that a type's energy is at least its
-health: 0 energy against a movement cost it can never pay is what makes it a
-wall, and requiring otherwise would abolish the wall.
+movement cost: 0 energy against a movement cost it can never pay is what makes
+it a wall, and requiring otherwise would abolish the wall.
 
 #### Scenario: A wall is defined
 
@@ -77,11 +77,13 @@ integer from **0 to 100**; attack and energy are zero only together, as the
 Walls requirement states.
 
 The system SHALL further require that a type that is not a wall is designed
-with **energy at least equal to its health**, and SHALL refuse it otherwise.
-A move costs a unit its health in energy and rest returns 1 energy a turn, so a
-type with less energy than health could never afford a single move at any point
-in its life; refusing it at construction says so once, rather than leaving a
-player to discover it a turn at a time from refused orders.
+with **energy at least equal to its movement cost** — a quarter of its health,
+rounded up — and SHALL refuse it otherwise. A type with less energy than that
+could never afford a single move at any point in its life; refusing it at
+construction says so once, rather than leaving a player to discover it a turn
+at a time from refused orders. The floor is the movement cost rather than the
+health, so that it moves with the fare and cannot state a different rule from
+the one movement charges.
 
 #### Scenario: Name must be non-empty
 
@@ -108,22 +110,28 @@ player to discover it a turn at a time from refused orders.
 - **WHEN** a type is created with a non-integer energy, or an energy below 0 or above 100
 - **THEN** creation fails
 
-#### Scenario: Energy below health is refused
+#### Scenario: Energy below the movement cost is refused
 
-- **WHEN** a type with an attack above 0 is created with health 6 and energy 5
+- **WHEN** a type with an attack above 0 is created with health 6 and energy 1
 - **THEN** creation fails
-- **AND** the failure names energy being below health as the reason
+- **AND** the failure names energy being below the movement cost as the reason
 
-#### Scenario: Energy equal to health is allowed
+#### Scenario: Energy equal to the movement cost is allowed
 
-- **WHEN** a type with an attack above 0 is created with health 6 and energy 6
+- **WHEN** a type with an attack above 0 is created with health 6 and energy 2
 - **THEN** the type is created
 - **AND** a unit of that type can afford exactly one move before it must rest
+
+#### Scenario: Energy that the old health floor would have refused is allowed
+
+- **WHEN** a type with an attack above 0 is created with health 10 and energy 3
+- **THEN** the type is created
+- **AND** no type that was legal before this rule changed is refused by it
 
 #### Scenario: A wall is not held to the rule
 
 - **WHEN** a type is created with attack 0, health 7 and energy 0
-- **THEN** the type is created, energy below health notwithstanding
+- **THEN** the type is created, energy below its movement cost notwithstanding
 
 ### Requirement: Type Identity Survives Instantiation
 
@@ -162,13 +170,13 @@ movement.
 - **WHEN** a unit type's statistics are interpreted
 - **THEN** attack is the damage dealt per attack, and the energy that attack costs
 - **AND** health is the total damage the unit absorbs before being destroyed,
-  and the energy each of its moves costs
+  and a quarter of it, rounded up, is the energy each of its moves costs
 - **AND** energy is the resource consumed by both moving and attacking
 
 #### Scenario: Health is paid for twice over
 
 - **WHEN** two types are compared that differ only in health
 - **THEN** the heavier absorbs more damage before being destroyed
-- **AND** the heavier pays more energy for each square it moves
-- **AND** the heavier therefore moves fewer times before it must rest
+- **AND** the heavier pays at least as much energy for each square it moves
+- **AND** the heavier therefore moves no more times than the lighter before it must rest
 
