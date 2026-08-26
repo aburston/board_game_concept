@@ -28,12 +28,16 @@ require the two to be zero together: a type with an attack of 0 and any energy
 above 0 is refused, as is a type with energy 0 and any attack above 0. Such a
 type is a **wall** — health standing on a square.
 
-A wall SHALL never be able to move, because a move costs energy it does not
-have and regeneration gives nothing to a type designed with none. It SHALL land
-no attacks: a round in which only walls could act lands no attacks and ends the
-fight, rather than repeating for ever on an attack that costs nothing and deals
-nothing. It SHALL block a square and be destroyable like any other unit, and it
-SHALL cost its health and nothing else.
+A wall SHALL never be able to move, because a move costs its health in energy
+and it has none, and regeneration gives nothing to a type designed with none.
+It SHALL land no attacks: a round in which only walls could act lands no
+attacks and ends the fight, rather than repeating for ever on an attack that
+costs nothing and deals nothing. It SHALL block a square and be destroyable
+like any other unit, and it SHALL cost its health and nothing else.
+
+A wall SHALL be exempt from the rule that a type's energy is at least its
+health: 0 energy against a movement cost it can never pay is what makes it a
+wall, and requiring otherwise would abolish the wall.
 
 #### Scenario: A wall is defined
 
@@ -72,6 +76,13 @@ an integer from **0 to 10**, health an integer from **1 to 10**, and energy an
 integer from **0 to 100**; attack and energy are zero only together, as the
 Walls requirement states.
 
+The system SHALL further require that a type that is not a wall is designed
+with **energy at least equal to its health**, and SHALL refuse it otherwise.
+A move costs a unit its health in energy and rest returns 1 energy a turn, so a
+type with less energy than health could never afford a single move at any point
+in its life; refusing it at construction says so once, rather than leaving a
+player to discover it a turn at a time from refused orders.
+
 #### Scenario: Name must be non-empty
 
 - **WHEN** a type is created with an empty name
@@ -96,6 +107,23 @@ Walls requirement states.
 
 - **WHEN** a type is created with a non-integer energy, or an energy below 0 or above 100
 - **THEN** creation fails
+
+#### Scenario: Energy below health is refused
+
+- **WHEN** a type with an attack above 0 is created with health 6 and energy 5
+- **THEN** creation fails
+- **AND** the failure names energy being below health as the reason
+
+#### Scenario: Energy equal to health is allowed
+
+- **WHEN** a type with an attack above 0 is created with health 6 and energy 6
+- **THEN** the type is created
+- **AND** a unit of that type can afford exactly one move before it must rest
+
+#### Scenario: A wall is not held to the rule
+
+- **WHEN** a type is created with attack 0, health 7 and energy 0
+- **THEN** the type is created, energy below health notwithstanding
 
 ### Requirement: Type Identity Survives Instantiation
 
@@ -132,6 +160,15 @@ movement.
 #### Scenario: Statistic meanings
 
 - **WHEN** a unit type's statistics are interpreted
-- **THEN** attack is the damage dealt per attack
-- **AND** health is the total damage the unit absorbs before being destroyed
+- **THEN** attack is the damage dealt per attack, and the energy that attack costs
+- **AND** health is the total damage the unit absorbs before being destroyed,
+  and the energy each of its moves costs
 - **AND** energy is the resource consumed by both moving and attacking
+
+#### Scenario: Health is paid for twice over
+
+- **WHEN** two types are compared that differ only in health
+- **THEN** the heavier absorbs more damage before being destroyed
+- **AND** the heavier pays more energy for each square it moves
+- **AND** the heavier therefore moves fewer times before it must rest
+
