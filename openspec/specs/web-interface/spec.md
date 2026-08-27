@@ -348,6 +348,42 @@ drawn alike.
 - **WHEN** the interface is used on a touchscreen
 - **THEN** health is readable without hovering anything
 
+### Requirement: A Committed Setup Is Shown As Committed
+
+The system SHALL show a player who has committed a setup what they committed,
+where they committed it, and that it takes the field when the first turn
+resolves.
+
+Until that turn resolves the army is published orders and stands on no board,
+so a screen drawn from the board alone shows a player nothing of theirs and
+reads as work lost.
+
+A seat that has committed SHALL be taken to the board rather than to the
+armoury, and the armoury SHALL NOT offer to design or deploy for a seat whose
+setup is committed.
+
+#### Scenario: The board before the first turn
+
+- **WHEN** a player has committed a setup and the first turn has not resolved
+- **THEN** the units they committed are shown where they deployed them
+- **AND** they are shown as not yet on the board
+- **AND** the screen says the first turn is what puts them there
+
+#### Scenario: Coming back from the lobby
+
+- **WHEN** a player who has committed a setup opens their seat from the lobby
+- **THEN** they are taken to the board
+
+#### Scenario: The armoury after committing
+
+- **WHEN** a player who has committed a setup reaches the armoury
+- **THEN** it says the setup is committed and offers no design or deployment
+
+#### Scenario: Who is being waited for
+
+- **WHEN** a player has committed a setup and another seat has not
+- **THEN** the seats still to commit a setup are named
+
 ### Requirement: The Forces Are Listed Where They Can Be Compared
 
 The system SHALL list, beside the board, the player's own units with what each

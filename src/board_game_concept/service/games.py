@@ -100,10 +100,25 @@ def load_player(data, command):
     }
 
 
+def _setup_is_closed(data, what):
+    """Why nothing more may be added, said as it actually is.
+
+    Setup closes when this session commits it, which is before the first turn
+    is resolved rather than after it. Telling a player who has just committed
+    that they cannot deploy "after first turn" describes a turn that has not
+    happened, on a board that is showing them nothing of theirs - so it reads
+    as a defect rather than as the rule it is.
+    """
+    if data.getTurnNumber() == 0:
+        return (f"your setup is committed, so no more {what} can be added - "
+                "the game begins when every player has committed")
+    return f"can't add {what} after first turn"
+
+
 def define_type(data, command):
     """Define a unit type for the player whose session this is."""
     if not data.getNewGame():
-        raise GameError("can't add types after first turn")
+        raise GameError(_setup_is_closed(data, 'types'))
     try:
         obj = UnitType(command.name, command.symbol, command.attack,
                        command.health, command.energy)
@@ -125,7 +140,7 @@ def deploy_unit(data, command):
     if board is None:
         raise GameError("board must be loaded in order to place units")
     if not data.getNewGame():
-        raise GameError("can't add units after first turn")
+        raise GameError(_setup_is_closed(data, 'units'))
     player_obj = data.getPlayerObj(data.player_number)
     try:
         unit_type = (data.getPlayers()[data.player_number]

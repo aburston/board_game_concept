@@ -80,6 +80,35 @@ export function renderPlay() {
   return wrap;
 }
 
+/**
+ * The army this seat has committed and the turn has not yet placed.
+ *
+ * Between committing a setup and the first turn resolving, a player's units
+ * are published orders and are on no board anywhere: the units view is
+ * empty, and this screen drew an empty board and said nothing. They are
+ * drawn from the pending orders instead, marked as not yet on the field.
+ */
+export function committedArmy(game) {
+  if (game.turn_number) return [];
+  return (game.pending || [])
+    .filter((entry) => entry.player === game.number
+      && entry.x !== null && entry.y !== null)
+    .map((entry) => ({
+      player: entry.player,
+      name: entry.unit,
+      type: entry.type,
+      symbol: entry.symbol || '?',
+      attack: entry.attack,
+      health: entry.health,
+      energy: entry.energy,
+      x: entry.x,
+      y: entry.y,
+      state: 'waiting',
+      direction: null,
+      pending: true,
+    }));
+}
+
 // --- the forces: what you have, and what you have met
 //
 // A player deciding whether to attack is comparing two designs, and until
@@ -105,9 +134,11 @@ function renderForces(game) {
         (unit) => unit.player === player)));
     }
   } else {
+    const waiting = committedArmy(game);
     card.append(element('h3', {}, 'Yours'));
-    card.append(mine.length
-      ? rosterTable(game, mine)
+    const held = mine.concat(waiting);
+    card.append(held.length
+      ? rosterTable(game, held)
       : element('p', { class: 'muted small' }, 'Nothing deployed.'));
   }
 
@@ -149,9 +180,11 @@ function rosterTable(game, units) {
       element('td', { class: 'number' }, String(unit.energy)),
       element('td', { class: 'small' }, gone
         ? element('span', { class: 'tag warn' }, 'destroyed')
-        : (unit.x === null || unit.y === null
-          ? element('span', { class: 'muted' }, 'not deployed')
-          : `(${unit.x}, ${unit.y})`))));
+        : (unit.pending
+          ? element('span', { class: 'tag' }, `committed (${unit.x}, ${unit.y})`)
+          : (unit.x === null || unit.y === null
+            ? element('span', { class: 'muted' }, 'not deployed')
+            : `(${unit.x}, ${unit.y})`)))));
   }
   table.append(body);
   return table;
@@ -276,6 +309,8 @@ function renderBoardCard(game) {
   const watching = game.number === 1000;
   const selected = state.selected
     && standing(game).find((unit) => unit.name === state.selected);
+  const waiting = committedArmy(game);
+  const drawn = (game.units || []).concat(waiting);
 
   // who is mine is read off the feed's own names against this seat's units,
   // including units that were destroyed and are no longer on the board
@@ -283,7 +318,7 @@ function renderBoardCard(game) {
   const fought = marksFrom(feedFor(lastTurnInFeed()),
                            (name) => ours.has(name));
 
-  card.append(renderBoard(game.board, game.units, {
+  card.append(renderBoard(game.board, drawn, {
     mine: game.number,
     selected: state.selected,
     cursor: watching ? null : state.cursor,
@@ -318,6 +353,12 @@ function renderBoardCard(game) {
       `${entry.symbol} = ${entry.type} (player ${entry.player})`), '  ');
   }
   if ((game.board.legend || []).length) card.append(legend);
+  if (waiting.length) {
+    card.append(element('p', { class: 'small muted' },
+      `Your ${waiting.length === 1 ? 'unit is' : 'units are'} drawn where you `
+      + 'deployed them and are not on the board yet: a committed setup takes '
+      + 'the field when the first turn resolves.'));
+  }
   if (fought.size) {
     card.append(element('p', { class: 'small muted' },
       element('span', { class: 'clash-key' }, '⚔'),
@@ -355,8 +396,14 @@ function renderOrders(game) {
 
   const units = standing(game);
   if (units.length === 0) {
-    card.append(element('p', { class: 'muted' },
-      'Nothing of yours is on the board.'));
+    const waiting = committedArmy(game);
+    card.append(element('p', { class: waiting.length ? 'notice' : 'muted' },
+      waiting.length
+        ? `Your setup is committed: ${waiting.length} `
+          + `${waiting.length === 1 ? 'unit takes' : 'units take'} the field `
+          + 'when the first turn resolves. There is nothing to order until '
+          + 'then.'
+        : 'Nothing of yours is on the board.'));
     return card;
   }
 
@@ -520,14 +567,23 @@ function renderCommit(game) {
 
 function renderWaiting(game) {
   const card = element('div', { class: 'card' });
-  const missing = (state.waiting && state.waiting.waiting_on) || [];
+  // whichever of the two knows: the answer to the commit that was just made,
+  // or the barrier read when the seat was loaded. Arriving here from the
+  // armoury there is no commit answer, and "waiting for the turn to resolve"
+  // when it is waiting for a person is the wrong thing to be told
+  const missing = ((state.waiting && state.waiting.waiting_on)
+    || (state.barrier && state.barrier.waiting_on) || [])
+    .filter((number) => number !== game.number);
+  const setup = !game.turn_number;
   card.append(element('h2', { class: 'waiting' },
-                      `Turn ${game.turn_number + 1} is committed`));
+    setup ? 'Your setup is committed'
+          : `Turn ${game.turn_number + 1} is committed`));
   card.append(element('p', {},
-    element('strong', {}, 'Your orders are in. '),
+    element('strong', {},
+            setup ? 'Your army is published. ' : 'Your orders are in. '),
     missing.length
       ? `Waiting for ${missing.length === 1 ? 'seat' : 'seats'} ` +
-        `${missing.join(', ')} to commit.`
+        `${missing.join(', ')} to commit${setup ? ' a setup' : ''}.`
       : 'Waiting for the turn to resolve.'));
   card.append(element('p', { class: 'small muted' },
     'The board moves on by itself when everybody has committed - there is '

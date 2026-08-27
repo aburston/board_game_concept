@@ -67,6 +67,12 @@ function renderGame(game) {
   }
   if (mine.length) heading.append(' ', element('span', { class: 'tag mine' },
                                                'yours'));
+  const waited = game.seats.filter((seat) => seat.held_by && !seat.committed);
+  if (game.state === 'setting up' && mine.length
+      && game.seats.some((seat) => mine.includes(seat.number)
+                                   && seat.committed)) {
+    heading.append(' ', element('span', { class: 'tag' }, 'committed'));
+  }
   card.append(heading);
 
   if (game.state === 'unreadable') {
@@ -89,6 +95,12 @@ function renderGame(game) {
   if (game.state === 'setting up' && game.open_seats > 0) {
     card.append(element('p', { class: 'small muted' },
       `${game.open_seats} of ${game.seats.length} seats still open.`));
+  }
+  if (game.state === 'setting up' && game.open_seats === 0 && waited.length) {
+    card.append(element('p', { class: 'small muted' },
+      `Waiting for ${waited.length === 1 ? 'seat' : 'seats'} `
+      + `${waited.map((seat) => seat.number).join(', ')} to commit a setup. `
+      + 'The first turn resolves when they have.'));
   }
 
   if (state.account.kind === 'admin') {
@@ -130,10 +142,15 @@ function renderSeats(game, mine) {
 
 function seatAction(game, seat, isMine) {
   if (isMine) {
-    const where = game.state === 'setting up' ? 'setup' : 'play';
+    // a seat that has committed goes to the board, whatever the game is
+    // doing. Sending it back to the armoury - because the game is still
+    // "setting up" until somebody else commits - landed a player on a
+    // screen where every command they could give would be refused
+    const where = game.state === 'setting up' && !seat.committed
+      ? 'setup' : 'play';
     const actions = element('span', {},
       link('Play', `#/${where}/${encodeURIComponent(game.gameno)}/${seat.number}`));
-    if (game.state === 'setting up') {
+    if (game.state === 'setting up' && !seat.committed) {
       actions.append(' ', button('give up', async () => {
         try {
           await api.releaseSeat(game.gameno, seat.number);

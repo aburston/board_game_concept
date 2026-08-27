@@ -151,7 +151,8 @@ export function renderBoard(board, units, options) {
     if (unit.x === null || unit.y === null) continue;
     const own = unit.player === mine;
     const group = svg('g', {
-      class: `unit ${own ? 'mine' : 'theirs'} player-${unit.player}`,
+      class: `unit ${own ? 'mine' : 'theirs'} player-${unit.player}`
+        + (unit.pending ? ' pending' : ''),
       transform: `translate(${PAD + unit.x * SQUARE}, ${PAD + unit.y * SQUARE})`,
     });
     // an invisible target covering the square. The ring is 23px across on a

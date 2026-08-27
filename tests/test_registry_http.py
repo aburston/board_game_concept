@@ -148,7 +148,14 @@ def test_a_game_being_set_up_says_how_many_seats_are_open(client, base_path):
 
 
 def test_the_listing_carries_nothing_private(client, base_path):
-    """A username and a number, and nothing about anybody's army."""
+    """A username, a number, and whether that seat has committed.
+
+    `committed` is how the lobby knows to send a player who has committed to
+    the board rather than back to the armoury, where every command they could
+    give would be refused. It says that somebody has finished their turn and
+    nothing whatever about what is in it - the same fact the barrier already
+    tells the players it is waiting on.
+    """
     _game(base_path, 'one')
     ada = _player(client, 'ada')
     client.post('/games/one/seats/2', headers=ada)
@@ -158,7 +165,8 @@ def test_the_listing_carries_nothing_private(client, base_path):
     for leaked in ('units', 'types', 'rows', 'budget', 'spent', 'password'):
         assert leaked not in listed
     for seat in listed['seats']:
-        assert set(seat) == {'number', 'held_by', 'open'}
+        assert set(seat) == {'number', 'held_by', 'open', 'committed'}
+        assert isinstance(seat['committed'], bool)
 
 
 def test_a_game_made_by_a_role_appears_without_registration(client,

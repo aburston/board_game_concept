@@ -63,6 +63,7 @@ def register_routes(app):
         so a seat is only ever one the administrator registered.
         """
         held = store().seats_of_game(str(record['gameno']))
+        committed = set(record.get('committed') or ())
         seats = []
         for number in record['players']:
             account_id = held.get(number)
@@ -70,7 +71,10 @@ def register_routes(app):
                       if account_id is not None else None)
             seats.append({'number': number,
                           'held_by': holder.username if holder else None,
-                          'open': holder is None})
+                          'open': holder is None,
+                          # so the lobby can send a seat that has committed
+                          # to the board rather than back to its armoury
+                          'committed': number in committed})
         described = dict(record)
         described['seats'] = seats
         described['open_seats'] = sum(1 for seat in seats if seat['open'])

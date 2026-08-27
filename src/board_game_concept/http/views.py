@@ -221,6 +221,16 @@ def pending_view(players, board=None):
                 'order': order,
                 'x': _as_int(unit.get('x')),
                 'y': _as_int(unit.get('y')),
+                # what the unit is, as well as what it was told to do. An
+                # army that has been committed and not yet resolved is on no
+                # board anywhere, so this is the only thing that can be drawn
+                # for it - and a player who has just committed their setup
+                # was looking at an empty board because of it
+                'type': unit.get('type_name') or unit.get('type'),
+                'symbol': unit.get('symbol'),
+                'attack': _as_int(unit.get('attack')),
+                'health': _as_int(unit.get('health')),
+                'energy': _as_int(unit.get('energy')),
             })
     return entries
 

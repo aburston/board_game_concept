@@ -80,7 +80,22 @@ def describe(gameno, backend=None, base_path=None):
         'outcome': outcome,
         'players': list(numbers),
         'eliminated': list(progress.get('eliminated') or []),
+        # who has committed the turn that is open. A game being set up looks
+        # exactly like one nobody has committed yet, and sending a player who
+        # has committed back to the setup screen - where every command is
+        # refused - is what that looked like from the lobby
+        'committed': sorted(_committed(repository, turn_number)),
     }
+
+
+def _committed(repository, turn_number):
+    """The players whose orders for the open turn are in, or none."""
+    try:
+        return [int(number)
+                for number in repository.committed_players(turn_number)]
+    except Exception:                     # pylint: disable=broad-except
+        # a lobby that cannot be listed is worse than one missing a mark
+        return []
 
 
 def _state(turn_number, outcome):

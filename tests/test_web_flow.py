@@ -398,6 +398,87 @@ def test_the_observer_reads_the_whole_log(app):
     assert deployed == {'u1', 'u2'}
 
 
+def test_a_committed_setup_is_readable_before_the_first_turn(app):
+    """What a player has committed, in the gap before the turn resolves.
+
+    Committing a setup publishes the army as orders. Until the first turn
+    resolves it is on no board anywhere, so the units view is empty - and the
+    interface drew an empty board, the lobby sent the player back to the
+    armoury because the game was still "setting up", and the armoury refused
+    every command with "can't add units after first turn" for a turn that had
+    not happened. Three screens, one missing fact: this is that fact.
+    """
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    assert ada.commit(GAME, 1).status_code == 202
+
+    # the army is not on any board yet
+    assert ada.read_view(GAME, 1, 'units').get_json()['units'] == []
+
+    # and it is here, with enough of the unit to draw it
+    pending = ada.read_view(GAME, 1, 'pending').get_json()['pending']
+    assert [entry['unit'] for entry in pending] == ['u1']
+    assert pending[0]['order'] == 'deploy'
+    assert (pending[0]['x'], pending[0]['y']) == (0, 0)
+    assert pending[0]['symbol'] == 'X'
+    assert pending[0]['type'] == 'T1'
+    assert pending[0]['health'] == 8
+
+
+def test_the_lobby_says_which_seats_have_committed(app):
+    """So it can send a committed seat to the board rather than the armoury."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+
+    def seats():
+        listed = [entry for entry in ada.list_games().get_json()['games']
+                  if entry['gameno'] == GAME][0]
+        return {seat['number']: seat['committed'] for seat in listed['seats']}
+
+    assert seats() == {1: False, 2: False}
+    ada.commit(GAME, 1)
+    assert seats() == {1: True, 2: False}, (
+        'the lobby cannot tell a committed seat from one still deploying')
+
+
+def test_deploying_after_committing_a_setup_says_what_is_true(app):
+    """The refusal described a turn that had not happened.
+
+    A player who has just committed is looking at a board with nothing of
+    theirs on it, so "can't add units after first turn" reads as the game
+    having lost their work rather than as setup being closed.
+    """
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    ada.commit(GAME, 1)
+
+    refused = ada.perform(GAME, 1, {
+        'kind': 'add_unit', 'type_name': 'T1', 'name': 'u9', 'x': 2, 'y': 2})
+    assert refused.status_code == 400
+    said = refused.get_json()['error']
+    assert 'committed' in said
+    assert 'first turn' not in said, said
+
+    # and once a turn really has been played, it says that instead
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    bob.commit(GAME, 2)
+    later = ada.perform(GAME, 1, {
+        'kind': 'add_unit', 'type_name': 'T1', 'name': 'u9', 'x': 2, 'y': 2})
+    assert "can't add units after first turn" in later.get_json()['error']
+
+
 def test_a_type_met_is_remembered_after_contact_is_lost(app):
     """What you have met outlives the sighting; where it is does not.
 

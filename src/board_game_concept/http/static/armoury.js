@@ -27,6 +27,15 @@ export function renderArmoury() {
     return wrap;
   }
 
+  // this seat has committed its setup: its army is published and nothing
+  // here can be changed. The screen used to draw the designer and the deploy
+  // board anyway, over a board with nothing of theirs on it, and refuse
+  // every command they gave it
+  if (game.unprocessed_moves) {
+    wrap.append(renderCommittedSetup(game));
+    return wrap;
+  }
+
   if (!game.board) {
     wrap.append(element('p', { class: 'card notice' },
       'The administrator has not sized the board yet. ' +
@@ -39,6 +48,43 @@ export function renderArmoury() {
   if (game.board) wrap.append(renderDeploy(game));
   wrap.append(renderCommit(game));
   return wrap;
+}
+
+/**
+ * What a seat sees when it comes back to setup having already committed.
+ *
+ * Its army is published and waiting for the first turn to resolve, so there
+ * is nothing to design and nothing to deploy. This says so, and sends it to
+ * the board, rather than offering forms whose every answer is a refusal.
+ */
+function renderCommittedSetup(game) {
+  const card = element('div', { class: 'card' });
+  card.append(element('h2', {}, 'Your setup is committed'));
+  const deployed = (game.pending || []).filter(
+    (entry) => entry.player === game.number);
+  card.append(element('p', {},
+    deployed.length
+      ? `${deployed.length} ${deployed.length === 1 ? 'unit is' : 'units are'}`
+        + ' waiting to take the field.'
+      : 'You committed without deploying anything.'));
+  if (deployed.length) {
+    const list = element('ul', {});
+    for (const entry of deployed) {
+      list.append(element('li', {},
+        `${entry.unit}${entry.type ? ` (${entry.type})` : ''} at `
+        + `(${entry.x}, ${entry.y})`));
+    }
+    card.append(list);
+  }
+  card.append(element('p', { class: 'small muted' },
+    'A committed setup cannot be withdrawn or amended. The first turn '
+    + 'resolves when every player has committed one, and your units appear '
+    + 'on the board then.'));
+  card.append(element('p', {},
+    link('Go to the board',
+         `#/play/${encodeURIComponent(game.gameno)}/${game.number}`,
+         { class: 'primary-link' })));
+  return card;
 }
 
 // --- the administrator's half

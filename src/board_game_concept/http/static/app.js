@@ -138,13 +138,17 @@ export async function loadSeat(gameno, number) {
   // than "no such thing". `types` and `players` answer either way, which is
   // what the armoury needs before a board exists.
   const absent = (error) => (error.status === 404 ? null : Promise.reject(error));
-  const [seatState, board, units, types, players, seen, events,
+  const [seatState, board, units, types, players, pending, seen, events,
          barrier] = await Promise.all([
     api.readState(gameno, number),
     api.readView(gameno, number, 'board').catch(absent),
     api.readView(gameno, number, 'units').catch(absent),
     api.readView(gameno, number, 'types'),
     api.readView(gameno, number, 'players'),
+    // the orders that have been published and not yet resolved. Between
+    // committing a setup and the first turn an army is on no board at all,
+    // and this is the only place it can be read from
+    api.readView(gameno, number, 'pending').catch(absent),
     // what this seat has met, which outlives contact with it. The types
     // view is what is in contact now; this is what is known
     api.readView(gameno, number, 'types_seen').catch(absent),
@@ -170,6 +174,7 @@ export async function loadSeat(gameno, number) {
     units: units ? units.units : [],
     types: types.types,
     players: players.players,
+    pending: (pending && pending.pending) || [],
     seen: (seen && seen.types_seen) || [],
   };
 }

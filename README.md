@@ -166,6 +166,13 @@ did only where you could see them. A fight between two players you cannot see
 is not in your feed at all — being told it happened would give away that they
 are near each other, which is the thing visibility withholds.
 
+Committing a setup takes you to the board, where the army you committed is
+drawn faintly where you put it: it is published orders until the first turn
+resolves, and stands on no board until then. The lobby sends a seat that has
+committed to the board rather than back to its armoury, and the armoury says
+the setup is committed rather than offering forms whose every answer would be
+refused.
+
 Beside the board is a roster: your own units with what each has left against
 what it was built with, and every enemy design you have met with the
 statistics its owner built it with. That memory outlives the contact that
