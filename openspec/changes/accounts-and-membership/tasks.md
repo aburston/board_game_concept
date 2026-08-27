@@ -1,20 +1,20 @@
 ## 1. What an account is
 
-- [ ] 1.1 Add `domain/account.py`: an `Account` carrying a username, a password
+- [x] 1.1 Add `domain/account.py`: an `Account` carrying a username, a password
       hash, a kind and whether it must change its password. `Kind` is
       `ADMINISTRATOR`, `OBSERVER` and `PLAYER`, and an account is exactly one
       of them. Pure — it neither stores nor hashes, so it can be tested with no
       database at all, the way `Player` and `UnitType` are.
-- [ ] 1.2 State the username rules there: `RESERVED = ('admin', 'observer')`,
+- [x] 1.2 State the username rules there: `RESERVED = ('admin', 'observer')`,
       a `normalise(name)` that lower-cases for comparison, and a
       `refusal(name)` returning the one sentence a caller reports or `None`.
       The stored form keeps the case that was typed (design.md — "Reserved
       names are compared without regard to case").
-- [ ] 1.3 State the password rule there too: `MIN_PASSWORD = 8`, and a refusal
+- [x] 1.3 State the password rule there too: `MIN_PASSWORD = 8`, and a refusal
       naming the minimum. No composition rule.
-- [ ] 1.4 Export what the layer above needs from `domain/__init__.py`, matching
+- [x] 1.4 Export what the layer above needs from `domain/__init__.py`, matching
       how `Board`, `Player` and `UnitType` are exported today.
-- [ ] 1.5 Add `tests/test_account_domain.py`: the three kinds are distinct,
+- [x] 1.5 Add `tests/test_account_domain.py`: the three kinds are distinct,
       `admin`/`Admin`/`ADMIN` are all reserved, a name differing only in case
       collides, a 7-character password is refused and an 8-character one is
       not.
@@ -28,28 +28,28 @@
       comment that `memberships` has **no** unique constraint on (gameno,
       account_id), and why (design.md — "One account may hold several seats").
       Verify: `sqlite3 :memory: < accounts.sql` reports no error.
-- [ ] 2.2 Add `storage/account_store.py` — the port, in the shape of
+- [x] 2.2 Add `storage/account_store.py` — the port, in the shape of
       `storage/repository.py`: `ensure`, `held`, `create_account`,
       `read_account`, `read_account_by_name`, `set_password`,
       `create_session`, `read_session`, `delete_session`, `claim_seat`,
       `release_seat`, `read_membership`, `seats_of_game`, `seats_of_account`.
       Docstrings say what each must guarantee; the abstract class raises.
-- [ ] 2.3 Add `storage/sqlite_account_store.py` implementing it, one file at
+- [x] 2.3 Add `storage/sqlite_account_store.py` implementing it, one file at
       `<base_path>/accounts.sqlite3`. SQLite only — no YAML implementation,
       because a password hash should not be sitting in a readable file
       (design.md — "Accounts live in their own store"). `ensure()` runs the
       schema and creates the two system accounts as task 2.5 describes.
-- [ ] 2.4 Hash with `werkzeug.security.generate_password_hash` /
+- [x] 2.4 Hash with `werkzeug.security.generate_password_hash` /
       `check_password_hash`. Verify: two accounts registered with the same
       password have different stored hashes, and no stored column holds the
       password in a readable form. No change to `pyproject.toml` — Werkzeug
       arrives with Flask, which is already required.
-- [ ] 2.5 `ensure()` creates `admin`/`admin` (administrator kind) and
+- [x] 2.5 `ensure()` creates `admin`/`admin` (administrator kind) and
       `observer`/`observer` (observer kind), both with `must_change` set, only
       when they are absent. Verify: opening an existing store does not reset a
       password that has been changed, and does not clear `must_change` on one
       that has not.
-- [ ] 2.6 `claim_seat` is refused when the seat is held, by the primary key
+- [x] 2.6 `claim_seat` is refused when the seat is held, by the primary key
       rather than by a read-then-write, so two simultaneous claims cannot both
       succeed. Verify against a store held open by two connections.
 - [ ] 2.7 Add `tests/test_account_store.py`: an account round-trips, a seat is
