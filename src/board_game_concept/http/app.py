@@ -91,7 +91,7 @@ def create_app(base_path=None, backend=None, account_store=None):
     # it is a plain file - no build step, no package manager, nothing
     # generated
     app = Flask(__name__, static_folder='static', static_url_path='/static')
-    app.config['BASE_PATH'] = base_path or os.getcwd()
+    app.config['BASE_PATH'] = base_path or session_module.default_base_path()
     app.config['BACKEND'] = backend
     app.config['ACCOUNT_STORE_FACTORY'] = _account_store_factory(
         app.config['BASE_PATH'], backend, account_store)

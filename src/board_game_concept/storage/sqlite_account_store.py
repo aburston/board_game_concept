@@ -19,6 +19,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..domain import account as account_rules
 from ..domain.account import Account, Kind
+from ..cli.session import default_base_path
 from .account_store import AccountStore
 from .lock import GameIsBusy
 
@@ -69,7 +70,7 @@ class SqliteAccountStore(AccountStore):
     """The account store, as one SQLite file."""
 
     def __init__(self, base_path=None):
-        self.base_path = base_path or os.getcwd()
+        self.base_path = base_path or default_base_path()
         self.db_path = os.path.join(self.base_path, STORE_FILENAME)
         self._connection = None
         self._depth = 0

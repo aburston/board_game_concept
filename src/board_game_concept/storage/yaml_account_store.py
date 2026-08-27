@@ -24,6 +24,7 @@ from ..domain import account as account_rules
 from ..domain.account import Account, Kind
 from ..service.errors import UnreadableGame
 from . import lock
+from ..cli.session import default_base_path
 from .account_store import AccountStore
 from .sqlite_account_store import _now, _stamp, hash_password
 
@@ -46,14 +47,15 @@ class YamlAccountStore(AccountStore):
 
     def __init__(self, base_path=None):
         if base_path is None:
-            base_path = os.getcwd()
+            base_path = default_base_path()
         self.base_path = base_path
         self.root = os.path.join(base_path, STORE_DIRNAME)
         self.accounts_path = os.path.join(self.root, ACCOUNTS_FILE)
         self.memberships_path = os.path.join(self.root, MEMBERSHIPS_FILE)
         self.sessions_path = os.path.join(self.root, SESSIONS_FILE)
-        self.lock_path = os.path.join(self.root, '.lock')
-        self._holding = lock.Holding(self.lock_path)
+        # the lock lives on the holding rather than beside it: nothing else
+        # asks where it is, and one fewer thing to keep in step with `root`
+        self._holding = lock.Holding(os.path.join(self.root, '.lock'))
         self._system_accounts_ensured = False
 
     # --- the store itself

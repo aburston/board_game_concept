@@ -64,6 +64,23 @@ def add_backend_argument(parser):
              f"or ${BACKEND_ENV} when set)")
 
 
+# where games and accounts are kept. The directory the caller is in, unless
+# they name one - which is what `bgcapiserver` needs, because an installed
+# command is run from wherever the operator happens to be and would otherwise
+# put a credentials database there, and a different one tomorrow
+HOME_ENV = 'BOARD_GAME_HOME'
+
+
+def default_base_path():
+    """Where games and accounts live when nobody has said.
+
+    `$BOARD_GAME_HOME` if it is set, and the working directory otherwise -
+    so the behaviour every role has always had is unchanged until somebody
+    asks for something else, and one setting moves all of it together.
+    """
+    return os.environ.get(HOME_ENV) or os.getcwd()
+
+
 SERVER_ENV = 'BOARD_GAME_SERVER'
 
 # the token a role proves itself with when it talks to a server. An

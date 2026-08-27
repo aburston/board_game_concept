@@ -45,7 +45,10 @@ class SqliteGameRepository(GameRepository):
 
     def __init__(self, gameno, base_path=None):
         if base_path is None:
-            base_path = os.getcwd()
+            # imported here rather than at the top: `cli.session` imports
+            # this module, so a module-level import would be a cycle
+            from ..cli.session import default_base_path
+            base_path = default_base_path()
         self.gameno = gameno
         self.root = os.path.join(base_path, 'games', f'_{gameno}')
         # `data_path` is what Game reads for the notifier and for error

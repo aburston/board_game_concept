@@ -35,7 +35,8 @@ def game_numbers(base_path=None):
     is here without anything having been told about it, and a game that has
     been removed is not.
     """
-    root = os.path.join(base_path or os.getcwd(), 'games')
+    root = os.path.join(base_path or session_module.default_base_path(),
+                        'games')
     try:
         entries = os.listdir(root)
     except FileNotFoundError:

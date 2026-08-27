@@ -21,7 +21,10 @@ class YamlGameRepository(GameRepository):
         # process working directory made the caller's current directory part
         # of the storage contract
         if base_path is None:
-            base_path = os.getcwd()
+            # imported here rather than at the top: `cli.session` imports
+            # this module, so a module-level import would be a cycle
+            from ..cli.session import default_base_path
+            base_path = default_base_path()
         self.gameno = gameno
         self.root = os.path.join(base_path, 'games', f'_{gameno}')
         self.data_path = os.path.join(self.root, 'data')

@@ -98,12 +98,43 @@ Delete the game directory and start a new one.
 
 # The web interface
 
-With the server running, open it in a browser:
+Install it and start it. That is the whole of the setup:
 
 ```
-$ bgcapiserver &
-$ xdg-open http://127.0.0.1:45678/
+$ pip install .
+$ bgcapiserver
+bgcapiserver: http://127.0.0.1:45678/
+  games and accounts in /home/you/games
+    /home/you/games/games/
+    /home/you/games/accounts.sqlite3
+  set $BOARD_GAME_HOME to keep them somewhere else
+  sign in as admin / admin, or observer / observer - each must change its
+  password before it can do anything
 ```
+
+It says where it is serving, where it put your games and accounts, and how to
+get in, because a person who has just installed something should not have to
+read the source to find any of that out.
+
+## Where it keeps things
+
+**The directory you start it in**, unless you say otherwise — `games/` and
+either `accounts.sqlite3` or `accounts/` beside each other.
+
+That is fine when you run it in a directory you keep games in, and a trap when
+you don't: an installed command is run from wherever you happen to be, so
+starting it somewhere else tomorrow gives you a **different, empty server**,
+handing out the default passwords again. Set `$BOARD_GAME_HOME` and it stops
+mattering where you were:
+
+```
+$ export BOARD_GAME_HOME=~/board-games
+$ bgcapiserver
+```
+
+One setting moves games and accounts together — a deployment with its games in
+one place and its people in another would be worse than either. `--base-path`
+overrides both.
 
 One page, and it is a client of the same JSON API the command-line roles use
 — there is no route that exists only for the browser. Sign in, take a seat
