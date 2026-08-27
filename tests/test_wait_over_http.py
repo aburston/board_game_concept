@@ -134,3 +134,15 @@ def test_wait_for_turn_returns_when_the_turn_is_resolved_during_the_wait(
     elapsed = time.monotonic() - started
     # the wait should return within a poll interval or two of the resolve
     assert elapsed < 3.0, f"waitForTurn took {elapsed:.1f}s"
+
+
+def test_the_wait_endpoints_are_guarded(tmp_path):
+    """The waits above carry a token; this proves they had to."""
+    app = _AppThread(tmp_path)
+    app.start()
+
+    for path in (f'{app.base_url}/games/one/players/1/wait/turn',
+                 f'{app.base_url}/games/one/players/1/wait/commit'):
+        response = requests.get(path, timeout=5)
+        assert response.status_code == 401
+        assert set(response.json()) == {'error'}

@@ -160,3 +160,11 @@ class ClientOverHttp(CliTestCase):
         assert 'x1' in one.output
         self._send_and_wait(two, 'show units', 5)
         assert 'o1' in two.output
+
+
+    def test_the_served_game_is_guarded(self):
+        """The roles above carry a token; this proves they had to."""
+        response = requests.get(
+            f'{self._app.base_url}/games/test-01/players/1/state', timeout=5)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(set(response.json()), {'error'})

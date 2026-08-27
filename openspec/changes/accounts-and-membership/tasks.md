@@ -105,7 +105,7 @@
       cannot leak through an error message about game data.
 - [x] 4.5 `create_app` takes where the account store lives (defaulting beside
       the games tree) and calls `ensure()` once at startup.
-- [ ] 4.6 Add `tests/test_http_auth.py`: no token is 401; a made-up token is
+- [x] 4.6 Add `tests/test_http_auth.py`: no token is 401; a made-up token is
       401; an ended token is 401; a player asking for another seat's view is
       403 and the body carries no board; a player asking for 0 or 1000 is 403;
       the administrator asking for 1000 is allowed; an account holding a seat
@@ -124,7 +124,7 @@
 - [x] 5.4 The response to a failed authentication does not distinguish an
       unknown username from a wrong password, and takes the same time to a
       reasonable approximation — the same scrypt work is done either way.
-- [ ] 5.5 Extend `tests/test_http_auth.py`: registering a reserved name is
+- [x] 5.5 Extend `tests/test_http_auth.py`: registering a reserved name is
       refused; registering a taken name in another case is refused; a changed
       password authenticates and the old one does not; a player cannot reset
       another account; a minted token works on a game route and survives a
@@ -140,11 +140,11 @@
 - [x] 6.3 Verify a claim of an unregistered number is refused and adds no
       player to the game: `add player` stays the administrator's, and claiming
       is not a way around it.
-- [ ] 6.4 Add `tests/test_seats.py`: claim, double-claim refused, two seats in
+- [x] 6.4 Add `tests/test_seats.py`: claim, double-claim refused, two seats in
       one game by one account allowed, release before the game starts, release
       after it refused, release by a non-holder refused, claim after the game
       starts refused.
-- [ ] 6.5 Add `tests/test_two_seats_one_account.py` driving a whole two-seat
+- [x] 6.5 Add `tests/test_two_seats_one_account.py` driving a whole two-seat
       game through HTTP as one account: each seat deploys its own army, each
       commits separately, the barrier waits for both, and each seat's view
       holds only what that number may see.
@@ -165,7 +165,7 @@
       `tests/test_cli_client_surface.py`, `test_cli_server_surface.py`,
       `test_cli_observer_surface.py`, `test_full_game.py` and
       `test_cli_eof.py` unchanged and green.
-- [ ] 7.6 Add `tests/test_token_cli.py`: a role with a good token plays over
+- [x] 7.6 Add `tests/test_token_cli.py`: a role with a good token plays over
       HTTP; a role with none is refused before opening a session; a role with a
       token for the wrong seat reports the server's refusal.
 
@@ -182,51 +182,51 @@
       `test_local_api_guard.py` onto it. Where a suite drives two players, it
       needs two accounts holding one seat each — which is what the two-player
       commit barrier is now testing.
-- [ ] 8.3 Add to each of those suites one case that the request is refused
+- [x] 8.3 Add to each of those suites one case that the request is refused
       without the fixture, so every HTTP surface is shown to be guarded rather
       than only the ones `test_http_auth.py` names.
 
 ## 9. The whole flow
 
-- [ ] 9.1 Add `tests/test_accounts_end_to_end.py`: start with an empty base
+- [x] 9.1 Add `tests/test_accounts_end_to_end.py`: start with an empty base
       path; `ensure()` creates the two system accounts; the administrator
       authenticates with `admin`/`admin`, is refused everything, changes its
       password, then sizes a board and registers two players; two people
       register accounts and claim a seat each; both play a turn to resolution
       over HTTP; the observer authenticates, is refused until it changes its
       password, then sees both armies.
-- [ ] 9.2 Verify in that test that each player's board holds only what
+- [x] 9.2 Verify in that test that each player's board holds only what
       `visibility` entitles them to — which is the guarantee this change exists
       to make true of the HTTP tier.
-- [ ] 9.3 Run `tests/test_determinism.py` and confirm it is untouched: nothing
+- [x] 9.3 Run `tests/test_determinism.py` and confirm it is untouched: nothing
       added here is consulted while a turn resolves.
-- [ ] 9.4 Run the whole suite against both storage backends
+- [x] 9.4 Run the whole suite against both storage backends
       (`BOARD_GAME_BACKEND=yaml` and `sqlite`), since the account store is the
       same either way and the games are not.
-- [ ] 9.5 `pylint` clean, to the settings in `.pylintrc`.
+- [x] 9.5 `pylint` clean, to the settings in `.pylintrc`.
 
 ## 10. Documentation
 
-- [ ] 10.1 `README.md`: the account model in a section of its own — the two
+- [x] 10.1 `README.md`: the account model in a section of its own — the two
       default passwords, that both must be changed before anything else works,
       how a player registers and claims a seat, that one account may hold
       several seats, and `BOARD_GAME_TOKEN`.
-- [ ] 10.2 `README.md`: the first-run sequence, and a line that
+- [x] 10.2 `README.md`: the first-run sequence, and a line that
       `accounts.sqlite3` sits beside `games/` and is worth backing up with it —
       losing it makes every game unreachable over HTTP while leaving the games
       themselves intact.
-- [ ] 10.3 `README.md`: state plainly that the observer account is shared and
+- [x] 10.3 `README.md`: state plainly that the observer account is shared and
       sees every unit of every player, that nothing enforces the distinction,
       and that this is deliberate. Move "Authentication and TLS" out of "what's
       next" and leave TLS there, naming it as still needed for a deployment
       beyond a trusted network.
-- [ ] 10.4 `MODULE_DESCRIPTION.md`: `domain/account.py`, `service/accounts.py`,
+- [x] 10.4 `MODULE_DESCRIPTION.md`: `domain/account.py`, `service/accounts.py`,
       `storage/account_store.py`, `storage/sqlite_account_store.py`,
       `http/auth.py`, and the account store beside the games tree. Correct the
       "Not built yet" line, which still says an HTTP API is not built.
-- [ ] 10.5 `GAME_RULES.md` is **not** touched. Verify by diff: no rule of the
+- [x] 10.5 `GAME_RULES.md` is **not** touched. Verify by diff: no rule of the
       game changes, and R8's table of what each role may type is unaffected.
-- [ ] 10.6 `ARCHITECTURE_OPTIONS.md`: mark step 4 done in the status table —
+- [x] 10.6 `ARCHITECTURE_OPTIONS.md`: mark step 4 done in the status table —
       it landed before this change and the table still says "Not started" —
       and note that §5's identity sketch is what this change implements, with
       the seat kept in the path rather than removed from it.

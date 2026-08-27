@@ -371,3 +371,24 @@ def test_a_type_carries_its_cost_over_the_wire(tmp_path):
     client = _client(tmp_path)
     types = client.get('/games/one/players/1/views/types').get_json()['types']
     assert types[0]['cost'] == 16
+
+
+def test_this_surface_is_guarded(tmp_path):
+    """The suite above authorises itself; this proves it had to.
+
+    `_client` hands back a client that presents a credential for whatever
+    number a path names. Without one, every route it drives is refused.
+    """
+    _set_up(tmp_path)
+    raw = _client(tmp_path).raw
+
+    for method, path in (
+            ('get', '/games/one/players/1/state'),
+            ('get', '/games/one/players/1/views/board'),
+            ('post', '/games/one/players/1/commands'),
+            ('post', '/games/one/players/1/commit'),
+            ('get', '/games/one/players'),
+    ):
+        response = getattr(raw, method)(path)
+        assert response.status_code == 401, path
+        assert set(response.get_json()) == {'error'}

@@ -14,7 +14,8 @@ from flask import jsonify, request
 
 from ..service import accounts
 from ..service.errors import AccountError
-from .auth import (SESSION_COOKIE, error_response, require_account, store)
+from .auth import (SESSION_COOKIE, error_response, presented_token,
+                   require_account, store)
 
 
 def register_routes(app):
@@ -54,7 +55,6 @@ def register_routes(app):
 
     @app.delete('/sessions/current')
     def sign_out():
-        from .auth import presented_token
         accounts.end_token(store(), presented_token())
         response = jsonify({'signed_out': True})
         response.delete_cookie(SESSION_COOKIE)

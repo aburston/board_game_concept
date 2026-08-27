@@ -178,3 +178,15 @@ def test_the_same_game_played_locally_is_undecided(tmp_path):
     assert server.getOutcome() is None
     assert server.getEliminated() == []
     assert standing(server) == {('x1', 1), ('o1', 2)}
+
+
+    def test_this_surface_is_guarded(self):
+        """The requests above authorise themselves; this proves they had to."""
+        raw = self.client.raw
+        for method, path in (
+                ('post', f'/games/{GAME}/players/1/commands'),
+                ('post', f'/games/{GAME}/players/1/commit'),
+                ('get', f'/games/{GAME}/players/1/state'),
+        ):
+            response = getattr(raw, method)(path)
+            self.assertEqual(response.status_code, 401, path)

@@ -96,8 +96,118 @@ player record with no budget is refused rather than defaulted, because
 defaulting one would play the game by rules it was not set up under.
 Delete the game directory and start a new one.
 
+# Accounts
+
+The three CLI roles talk to a game by naming a number. A **server** does not
+take anybody's word for it: over HTTP an account signs in, and what it may do
+is decided by which seats it holds.
+
+An account is who somebody is; a seat is which player number they hold in
+which game. The numbers themselves are unchanged — 0 is still the
+administrator, 1 to 999 the players, 1000 the observer — and what each is
+entitled to is unchanged too. What changed is that a number now has to be
+proved rather than asserted.
+
+Accounts live in `accounts.sqlite3`, beside the `games/` tree rather than
+inside any game, because a person outlives every game they play in.
+
+## First run
+
+```
+$ bgcapiserver &                  # creates accounts.sqlite3 if it is absent
+```
+
+The store is created with two accounts: **`admin`** with the password
+`admin`, and **`observer`** with the password `observer`. **Both must change
+their password before they can do anything else** — until they do, every
+request is refused except the one that changes it. That is the whole point of
+shipping with a known password: it is a way in, once.
+
+```
+# sign in, and change the password the account was created with
+$ curl -s -X POST localhost:8080/sessions     -H 'Content-Type: application/json'     -d '{"username":"admin","password":"admin"}'
+{"kind":"admin","must_change_password":true,"token":"...","username":"admin"}
+
+$ curl -s -X POST localhost:8080/accounts/current/password     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json'     -d '{"current":"admin","new":"something-better"}'
+```
+
+A password is at least 8 characters and nothing else is required of it. The
+administrator can set anybody's password without knowing it
+(`POST /accounts/<name>/password`); an account changes its own by giving the
+one it has now.
+
+## Joining a game
+
+The administrator sets a game up as it always did — `set board`, then
+`add player <number> [budget]` for each seat. Anyone else registers an
+account and takes an open seat:
+
+```
+$ curl -s -X POST localhost:8080/accounts     -d '{"username":"ada","password":"secret12"}' -H 'Content-Type: application/json'
+$ curl -s localhost:8080/games/1/seats -H "Authorization: Bearer $TOKEN"
+$ curl -s -X POST localhost:8080/games/1/seats/2 -H "Authorization: Bearer $TOKEN"
+```
+
+`admin` and `observer` are reserved and cannot be registered, in any case.
+
+A seat can be taken until a turn of that game has resolved — so a game that
+has been set up but not yet played is still joinable, which is when somebody
+looking for a game to join would arrive. It can be given up in that same
+window and not after.
+
+**One account may hold several seats in one game.** That is deliberate: it is
+how one person plays both sides to try the game out without needing a second
+person. Each seat stays a separate identity — its own army, its own orders,
+its own view, and its own place at the commit barrier — so holding both is no
+way round the fog of war. Because a seat is not implied by the account, it
+stays in the address: `/games/1/players/2/...` is seat 2, and two browser tabs
+can be two seats.
+
+## Playing over HTTP from the command line
+
+A role talking to a server carries a token. Mint one with `POST /tokens` and
+give it to the role:
+
+```
+$ export BOARD_GAME_SERVER=http://127.0.0.1:8080
+$ export BOARD_GAME_TOKEN=...        # or bgcclient --token ...
+$ bgcclient 1 2
+```
+
+A role started against a server with no token says so and exits rather than
+opening a session it cannot act through. A token is also what a script or a
+bot uses, since it keeps a password out of a shell history.
+
+**Playing locally needs no account at all.** Without `BOARD_GAME_SERVER` the
+roles open the game directory themselves, and there is no server to prove
+anything to.
+
+## What the observer sees
+
+The observer account sees **every unit of every player**, on every game —
+that is what the rules grant the observer, and it is what makes watching a
+game worth doing.
+
+It is one shared account, and **nothing stops somebody who holds a seat in a
+game from also signing in as the observer to see the whole board**. That is
+deliberate rather than an oversight: the enforcement that would work costs
+live spectating, and this is a game played among people who would rather play
+it than win it. Change the observer password to whatever your group is
+comfortable sharing, and tell people what it shows.
+
+## Keeping it
+
+`accounts.sqlite3` sits beside `games/` and is worth backing up with it.
+Losing it makes every game unreachable over HTTP while leaving the games
+themselves perfectly intact — a membership names a seat rather than being
+part of one — so the recovery is to recreate the accounts and claim the seats
+again.
+
 ## Web service - what's next
- * Authentication and TLS
+ * TLS. Tokens and passwords cross the wire in clear, and `bgcapiserver`
+   binds `127.0.0.1` by default. Anything reachable beyond a trusted network
+   wants TLS in front of it, and a real WSGI server rather than Flask's
+   development one.
 
 # Working on the code
 

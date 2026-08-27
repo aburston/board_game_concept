@@ -124,3 +124,11 @@ class ObserverOverHttp(CliTestCase):
         observer = self._start_observer_over_http()
         self._send_and_wait(observer, 'reload', 2)
         assert 'reloading' in observer.output
+
+
+    def test_the_served_game_is_guarded(self):
+        """The roles above carry a token; this proves they had to."""
+        response = requests.get(
+            f'{self._app.base_url}/games/test-01/players/1/state', timeout=5)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(set(response.json()), {'error'})

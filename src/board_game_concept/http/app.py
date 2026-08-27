@@ -52,6 +52,22 @@ VIEW_BUILDERS = {
 VIEWS_THAT_NEED_A_BOARD = ('board', 'units', 'pending')
 
 
+def _account_store_factory(base_path, account_store=None):
+    """How this app opens the account store, and the store made once now.
+
+    A factory rather than a store, for the reason `create_app` builds a
+    repository per request: a SQLite connection belongs to the thread that
+    opened it, and the app is served threaded. `ensure()` is called once
+    here so the two system accounts exist before the first request; each
+    request then opens its own connection to the same file.
+    """
+    if account_store is not None:
+        account_store.ensure()
+        return lambda: account_store
+    SqliteAccountStore(base_path).ensure()
+    return lambda: SqliteAccountStore(base_path)
+
+
 def create_app(base_path=None, backend=None, account_store=None):
     """A Flask app configured for a games directory.
 
@@ -68,19 +84,8 @@ def create_app(base_path=None, backend=None, account_store=None):
     app = Flask(__name__)
     app.config['BASE_PATH'] = base_path or os.getcwd()
     app.config['BACKEND'] = backend
-    # a factory rather than a store, for the reason `_repository` below is
-    # built per request: a SQLite connection belongs to the thread that
-    # opened it, and this app is served threaded. `ensure()` runs once here
-    # so the two system accounts exist before the first request; each
-    # request then opens its own connection to the same file.
-    if account_store is not None:
-        app.config['ACCOUNT_STORE_FACTORY'] = lambda: account_store
-        account_store.ensure()
-    else:
-        store_path = app.config['BASE_PATH']
-        app.config['ACCOUNT_STORE_FACTORY'] = (
-            lambda: SqliteAccountStore(store_path))
-        SqliteAccountStore(store_path).ensure()
+    app.config['ACCOUNT_STORE_FACTORY'] = _account_store_factory(
+        app.config['BASE_PATH'], account_store)
 
     def _repository(gameno):
         # each request builds its own repository - opening one is cheap and
@@ -251,6 +256,18 @@ def create_app(base_path=None, backend=None, account_store=None):
 
     sessions_module.register_routes(app)
     seats_module.register_routes(app)
+    _register_error_handlers(app)
+
+    return app
+
+
+def _register_error_handlers(app):
+    """What each kind of refusal becomes on the wire.
+
+    An `AccountError` is answered by `auth.error_response`, which knows the
+    difference between not having said who you are and having said and been
+    refused. Everything else is as it was.
+    """
 
     @app.errorhandler(AccountError)
     def _account_error(error):
@@ -263,8 +280,6 @@ def create_app(base_path=None, backend=None, account_store=None):
     @app.errorhandler(GameError)
     def _game_error(error):
         return _game_error_response(error)
-
-    return app
 
 
 def _commit_payload(data, resolved):

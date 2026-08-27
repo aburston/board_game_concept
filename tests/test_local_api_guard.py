@@ -205,3 +205,16 @@ def test_no_redirect_env_var_suppresses_the_guard(monkeypatch, tmp_path,
     assert isinstance(session, LocalSession)
     captured = capsys.readouterr()
     assert captured.err == ''
+
+
+def test_the_health_probe_is_open_but_the_game_is_not(monkeypatch, tmp_path):
+    """`/_/health` has to answer without a credential - it is what the guard
+    probes for - and nothing else does."""
+    _clean_env(monkeypatch)
+    app = _AppThread(tmp_path)
+    app.start()
+
+    assert requests.get(f'{app.base_url}/_/health',
+                        timeout=5).status_code == 200
+    assert requests.get(f'{app.base_url}/games/one/players/1/state',
+                        timeout=5).status_code == 401

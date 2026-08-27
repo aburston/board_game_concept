@@ -261,7 +261,38 @@ pytest
 
 Python 3.10 or later and PyYAML. Nothing else.
 
+## Accounts
+
+Who is asking, as opposed to what they are entitled to. The player numbers and
+what each may do are unchanged; these modules decide which numbers an account
+may act as, over HTTP.
+
+  * `domain/account.py` - what an account is: its three kinds, the reserved
+    names, and the rules a username and a password must satisfy. Hashes
+    nothing and stores nothing.
+  * `service/accounts.py` - one function per use case (register, authenticate,
+    change and reset a password, mint and end a token, claim and release a
+    seat), and `may_act_as`, which is the one rule about which numbers an
+    account may be. `service/identity.py` still answers what a *number* is
+    entitled to and is untouched.
+  * `storage/account_store.py` - the port, in the shape of
+    `storage/repository.py`.
+  * `storage/sqlite_account_store.py`, `storage/accounts.sql` - the one
+    implementation. SQLite only, deliberately: the YAML backend exists so an
+    operator can `cat` a game, and a password hash should not be sitting in a
+    readable file.
+  * `http/auth.py` - the guard in front of every route that names a number,
+    and where a token is read from.
+  * `http/sessions.py` - registering, signing in and out, passwords, tokens.
+  * `http/seats.py` - which seats a game holds, and taking or giving up one.
+
+The store is one file for the whole server, `accounts.sqlite3`, beside the
+`games/` tree rather than inside any game — the only state in this project
+that is not scoped to one game, because a person outlives every game they
+play in. It is opened per request, for the same reason a game repository is:
+a SQLite connection belongs to the thread that opened it.
+
 ## Not built yet
 
-An HTTP API, a web interface, accounts, and the unit programming the concept is
-named for. See `SPEC_COVERAGE.md` for what is documented but absent.
+A web interface, and the unit programming the concept is named for. See
+`SPEC_COVERAGE.md` for what is documented but absent.
