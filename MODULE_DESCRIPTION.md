@@ -296,7 +296,27 @@ SQLite store beside YAML games. It is opened per request, for the same reason
 a game repository is: a SQLite connection belongs to the thread that opened
 it.
 
+## The web interface
+
+  * `service/registry.py` - which games exist and what state each is in,
+    derived by reading the games tree rather than kept in a record, so it
+    cannot drift out of step with what is on disk. Also making a game.
+  * `http/registry.py` - `GET /games` and `POST /games`, the two things a
+    lobby needs that the per-game API could not answer.
+  * `http/static/` - the interface, as plain files with no build step:
+    `index.html` (one page), `app.js` (one state object, one `render`, and
+    the routing), `api.js` (every call the page makes, in one file),
+    `board.js` (the SVG board), `lobby.js`, `armoury.js`, `play.js`,
+    `style.css`.
+
+The interface reaches the game only through the contract every other client
+uses. That is the cheapest test that the contract is complete: anything the
+page cannot do is a gap in the API rather than a reason for a private route,
+and `tests/test_web_flow.py` drives exactly the calls `api.js` makes.
+
 ## Not built yet
 
-A web interface, and the unit programming the concept is named for. See
-`SPEC_COVERAGE.md` for what is documented but absent.
+An event-by-event replay of a resolution, and the unit programming the concept
+is named for. `turn_events` is written on every resolution and read by
+nothing: it is unfiltered, so serving it to a player would disclose the whole
+board. See `SPEC_COVERAGE.md` for what is documented but absent.

@@ -38,7 +38,7 @@ ENV = dict(os.environ)
 ENV.update({
     'BOARD_GAME_BACKEND': 'sqlite',
     # this harness runs the game out of a local directory; without this the
-    # roles probe 127.0.0.1:8080 for an API server first
+    # roles probe 127.0.0.1:45678 for an API server first
     'BOARD_GAME_NO_REDIRECT': '1',
     'PYTHONUNBUFFERED': '1',
 })

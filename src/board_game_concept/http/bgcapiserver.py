@@ -19,6 +19,12 @@ from board_game_concept.http.app import create_app
 
 PROGRAM = 'bgcapiserver'
 
+# where the server binds when its operator does not say. The same
+# number `cli/session.py` probes for a running server on: a role that
+# looked somewhere else would open the game files a server is already
+# serving, which is the collision the probe exists to prevent
+DEFAULT_PORT = 45678
+
 
 def main(argv=None):
     if argv is None:
@@ -27,8 +33,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog=PROGRAM, exit_on_error=True)
     parser.add_argument('--host', default='127.0.0.1',
                         help='host to bind (default: 127.0.0.1)')
-    parser.add_argument('--port', type=int, default=8080,
-                        help='port to bind (default: 8080)')
+    parser.add_argument('--port', type=int, default=DEFAULT_PORT,
+                        help=f'port to bind '
+                             f'(default: {DEFAULT_PORT})')
     parser.add_argument('--base-path', default=os.getcwd(),
                         help='where the `games/` tree lives '
                              '(default: current directory)')

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Board Game Concept</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<!--
+  One page. Everything below is rendered by `app.js` from one state object;
+  the markup here is only what the page needs before it has spoken to the
+  server. See `app.js` for the rule this holds to.
+-->
+<header id="chrome" hidden>
+  <a class="brand" href="#/">Board Game Concept</a>
+  <nav id="whoami"></nav>
+</header>
+
+<main id="screen" aria-live="polite">
+  <p class="waiting">Loading&hellip;</p>
+</main>
+
+<div id="say" class="say" role="status" aria-live="assertive" hidden></div>
+
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>

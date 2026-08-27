@@ -77,7 +77,7 @@ TOKEN_ENV = 'BOARD_GAME_TOKEN'
 # live `bgcapiserver` before falling back to local storage; if a caller
 # genuinely wants local mode while an API server is up they set
 # `BOARD_GAME_NO_REDIRECT` to skip the probe
-LOCAL_API_URL = 'http://127.0.0.1:8080'
+LOCAL_API_URL = 'http://127.0.0.1:45678'
 LOCAL_API_ENV = 'BOARD_GAME_LOCAL_API'
 NO_REDIRECT_ENV = 'BOARD_GAME_NO_REDIRECT'
 _PROBE_TIMEOUT = 0.5
@@ -132,7 +132,7 @@ def add_server_argument(parser):
     """
     parser.add_argument(
         '--server', default=None,
-        help=f"URL of the game server, e.g. http://127.0.0.1:8080 "
+        help=f"URL of the game server, e.g. http://127.0.0.1:45678 "
              f"(overrides ${SERVER_ENV}); when unset the role uses local "
              f"storage")
     parser.add_argument(

@@ -33,12 +33,12 @@ installs in place, `[dev]` pulls in the linter.
 
 The three CLI roles talk to a REST server (`bgcapiserver`); with no
 `--server` and no `BOARD_GAME_SERVER` set, the roles probe for one on
-`http://127.0.0.1:8080`. Naming a `--backend` or `--server` explicitly
+`http://127.0.0.1:45678`. Naming a `--backend` or `--server` explicitly
 skips the probe.
 
 ```
 $ bgcapiserver &
-$ export BOARD_GAME_SERVER=http://127.0.0.1:8080
+$ export BOARD_GAME_SERVER=http://127.0.0.1:45678
 $ bgcserver -g 1               # admin: sets the board, registers players
                                # commits and exits
 $ bgcclient 1 1                # player 1
@@ -96,6 +96,42 @@ player record with no budget is refused rather than defaulted, because
 defaulting one would play the game by rules it was not set up under.
 Delete the game directory and start a new one.
 
+# The web interface
+
+With the server running, open it in a browser:
+
+```
+$ bgcapiserver &
+$ xdg-open http://127.0.0.1:45678/
+```
+
+One page, and it is a client of the same JSON API the command-line roles use
+— there is no route that exists only for the browser. Sign in, take a seat
+from the lobby, design your units, and play.
+
+**No build step and no package manager.** Everything under
+`src/board_game_concept/http/static/` is a plain file served as it was
+written: the board is one `<svg>` and a unit moves by a change of `transform`,
+so the animation is a CSS transition rather than a library. The repository
+stays one language with one toolchain.
+
+The interface shows three things the command line leaves you to find out the
+hard way: what a move will cost before you commit it, that a unit given no
+order recovers a point (so holding is a choice, not an empty row), and that an
+enemy vanishing from your board is contact lost rather than a defect.
+
+It is playable from the keyboard: arrow keys move about the board, `Enter`
+selects the unit under the cursor, an arrow key then orders it that way, and
+`c` commits.
+
+## Serving it properly
+
+`bgcapiserver` runs Flask's development server, which is fine for a laptop or
+a club and not for anything else. Each player waiting for a turn holds a
+server thread for the length of the long-poll budget, so a host serving more
+than a few people wants `gunicorn` or `uwsgi` in front of the same app — and
+TLS, as below.
+
 # Accounts
 
 The three CLI roles talk to a game by naming a number. A **server** does not
@@ -133,10 +169,10 @@ shipping with a known password: it is a way in, once.
 
 ```
 # sign in, and change the password the account was created with
-$ curl -s -X POST localhost:8080/sessions     -H 'Content-Type: application/json'     -d '{"username":"admin","password":"admin"}'
+$ curl -s -X POST localhost:45678/sessions     -H 'Content-Type: application/json'     -d '{"username":"admin","password":"admin"}'
 {"kind":"admin","must_change_password":true,"token":"...","username":"admin"}
 
-$ curl -s -X POST localhost:8080/accounts/current/password     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json'     -d '{"current":"admin","new":"something-better"}'
+$ curl -s -X POST localhost:45678/accounts/current/password     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json'     -d '{"current":"admin","new":"something-better"}'
 ```
 
 A password is at least 8 characters and nothing else is required of it. The
@@ -151,9 +187,9 @@ The administrator sets a game up as it always did — `set board`, then
 account and takes an open seat:
 
 ```
-$ curl -s -X POST localhost:8080/accounts     -d '{"username":"ada","password":"secret12"}' -H 'Content-Type: application/json'
-$ curl -s localhost:8080/games/1/seats -H "Authorization: Bearer $TOKEN"
-$ curl -s -X POST localhost:8080/games/1/seats/2 -H "Authorization: Bearer $TOKEN"
+$ curl -s -X POST localhost:45678/accounts     -d '{"username":"ada","password":"secret12"}' -H 'Content-Type: application/json'
+$ curl -s localhost:45678/games/1/seats -H "Authorization: Bearer $TOKEN"
+$ curl -s -X POST localhost:45678/games/1/seats/2 -H "Authorization: Bearer $TOKEN"
 ```
 
 `admin` and `observer` are reserved and cannot be registered, in any case.
@@ -177,7 +213,7 @@ A role talking to a server carries a token. Mint one with `POST /tokens` and
 give it to the role:
 
 ```
-$ export BOARD_GAME_SERVER=http://127.0.0.1:8080
+$ export BOARD_GAME_SERVER=http://127.0.0.1:45678
 $ export BOARD_GAME_TOKEN=...        # or bgcclient --token ...
 $ bgcclient 1 2
 ```

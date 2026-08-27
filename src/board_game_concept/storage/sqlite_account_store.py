@@ -26,6 +26,9 @@ from .lock import GameIsBusy
 # the file the store is kept in, beside `games/` rather than inside it
 STORE_FILENAME = 'accounts.sqlite3'
 
+# how long a writer waits for another writer before giving up
+BUSY_WAIT = 5.0
+
 # how long a token from a login is accepted for, and how long one minted for a
 # program is. The second is not forever: a token that never expires is one
 # that cannot be forgotten about
@@ -90,8 +93,12 @@ class SqliteAccountStore(AccountStore):
     def _connect(self):
         if self._connection is not None:
             return
+        # a short wait rather than `timeout=0`: two genuine writers - two
+        # people claiming a seat at the same moment - should queue for a
+        # moment rather than one of them failing outright. `held()` is still
+        # what a caller uses when it wants the refusal
         self._connection = sqlite3.connect(self.db_path, isolation_level=None,
-                                           timeout=0)
+                                           timeout=BUSY_WAIT)
         self._connection.row_factory = sqlite3.Row
         self._connection.execute('PRAGMA journal_mode=WAL')
         self._connection.execute('PRAGMA foreign_keys=ON')
@@ -109,14 +116,30 @@ class SqliteAccountStore(AccountStore):
     def _ensure_system_accounts(self):
         """`admin` and `observer`, created once and never reset.
 
-        `INSERT OR IGNORE` against the unique `username_key` is what makes
-        this idempotent: a store that already holds them is left exactly as it
-        is, so a restart never resets a password somebody has changed nor
-        clears `must_change` on one they have not.
+        Read before write. `INSERT OR IGNORE` alone is idempotent in its
+        effect but not in its cost: it takes a write lock every time, and this
+        runs on the first use of every per-request store, so a page that
+        fetches several views at once had every one of those requests
+        contending for the same lock and one of them losing with "database is
+        locked". Under WAL a read blocks nothing, so asking first is what
+        makes the common case - they are already there - cost nothing.
+
+        The insert stays `INSERT OR IGNORE` for the case two processes find
+        them missing together: the unique `username_key` decides, and neither
+        resets a password somebody has changed.
         """
-        for name, kind in ((account_rules.ADMINISTRATOR_NAME,
-                            Kind.ADMINISTRATOR),
-                           (account_rules.OBSERVER_NAME, Kind.OBSERVER)):
+        wanted = ((account_rules.ADMINISTRATOR_NAME, Kind.ADMINISTRATOR),
+                  (account_rules.OBSERVER_NAME, Kind.OBSERVER))
+        keys = [account_rules.normalise(name) for name, _kind in wanted]
+        held = {
+            row['username_key'] for row in self._connection.execute(
+                'SELECT username_key FROM accounts WHERE username_key IN '
+                f'({", ".join("?" * len(keys))})', keys)}
+        missing = [(name, kind) for name, kind in wanted
+                   if account_rules.normalise(name) not in held]
+        if not missing:
+            return
+        for name, kind in missing:
             self._connection.execute(
                 'INSERT OR IGNORE INTO accounts '
                 '(username, username_key, password_hash, kind, must_change, '

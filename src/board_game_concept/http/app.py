@@ -25,6 +25,7 @@ from ..storage.lock import GameIsBusy
 from ..storage.account_store import make_account_store
 from .. import Game
 from . import auth as auth_module
+from . import registry as registry_module
 from . import sessions as sessions_module
 from . import seats as seats_module
 from . import views as views_module
@@ -85,7 +86,11 @@ def create_app(base_path=None, backend=None, account_store=None):
     once at startup - which is what creates `admin` and `observer` the first
     time a server is run.
     """
-    app = Flask(__name__)
+    # `static_folder` is the directory beside this module; Flask serves it
+    # at `/static` and refuses a path that climbs out of it. Everything under
+    # it is a plain file - no build step, no package manager, nothing
+    # generated
+    app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.config['BASE_PATH'] = base_path or os.getcwd()
     app.config['BACKEND'] = backend
     app.config['ACCOUNT_STORE_FACTORY'] = _account_store_factory(
@@ -107,6 +112,17 @@ def create_app(base_path=None, backend=None, account_store=None):
     @app.get('/_/health')
     def health():
         return jsonify({'ok': True})
+
+    @app.get('/')
+    def page():
+        """The one page. Every screen is a route inside it.
+
+        Served without a credential, because it is what a person signs in
+        through. It holds no game state: everything it draws it fetches
+        through the same contract every other client uses, and every one of
+        those requests is guarded.
+        """
+        return app.send_static_file('index.html')
 
     @app.get('/games/<gameno>/players')
     @authenticated
@@ -260,6 +276,7 @@ def create_app(base_path=None, backend=None, account_store=None):
 
     sessions_module.register_routes(app)
     seats_module.register_routes(app)
+    registry_module.register_routes(app)
     _register_error_handlers(app)
 
     return app

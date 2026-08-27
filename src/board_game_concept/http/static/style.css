@@ -1,0 +1,194 @@
+/* Layout and theme, in custom properties so a colour is named once.
+   No colour carries meaning on its own: a seat that is yours is marked by
+   an outline and a word as well as a hue, and the board's selection is an
+   outline first. */
+
+:root {
+  color-scheme: light dark;
+
+  --ink: #16181d;
+  --ink-soft: #5a6472;
+  --page: #f6f7f9;
+  --card: #ffffff;
+  --line: #d8dde5;
+  --edge: #b9c2ce;
+
+  --mine: #2f6f4f;
+  --mine-soft: #e6f2ec;
+  --theirs: #8a3324;
+  --theirs-soft: #f7e9e6;
+  --warn: #8a6d1f;
+  --warn-soft: #fbf3dd;
+
+  --focus: #1b62c9;
+
+  --square: 3.25rem;
+  --radius: 0.5rem;
+  --gap: 1rem;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8ebf0;
+    --ink-soft: #9aa5b4;
+    --page: #14161a;
+    --card: #1c1f25;
+    --line: #2c313a;
+    --edge: #3a414c;
+    --mine: #7fd0a4;
+    --mine-soft: #1b2b23;
+    --theirs: #e79a8c;
+    --theirs-soft: #2c1f1c;
+    --warn: #e2c069;
+    --warn-soft: #2a2417;
+    --focus: #7fb2ff;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--page);
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+  flex-wrap: wrap;
+}
+
+.brand { font-weight: 600; color: inherit; text-decoration: none; }
+nav { color: var(--ink-soft); font-size: 0.9rem; }
+nav a { color: inherit; }
+
+main { padding: 1.25rem; max-width: 62rem; margin: 0 auto; }
+
+h1 { font-size: 1.35rem; margin: 0 0 1rem; }
+h2 { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: var(--gap);
+}
+
+.row { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: flex-start; }
+.grow { flex: 1 1 20rem; min-width: 0; }
+
+label { display: block; font-size: 0.85rem; color: var(--ink-soft); }
+
+input, select, button {
+  font: inherit;
+  color: inherit;
+  border-radius: 0.35rem;
+  border: 1px solid var(--edge);
+  padding: 0.4rem 0.6rem;
+  background: var(--card);
+}
+
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+button.primary { background: var(--mine); border-color: var(--mine); color: var(--card); font-weight: 600; }
+button.danger { border-color: var(--theirs); color: var(--theirs); }
+
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--line); }
+th { color: var(--ink-soft); font-weight: 600; }
+td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
+
+.muted { color: var(--ink-soft); }
+.small { font-size: 0.85rem; }
+
+.tag {
+  display: inline-block;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  padding: 0 0.55rem;
+  font-size: 0.78rem;
+}
+.tag.mine { border-color: var(--mine); color: var(--mine); background: var(--mine-soft); }
+.tag.open { border-color: var(--edge); }
+.tag.warn { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+
+/* the budget meter: a number as well as a bar, because a bar alone is not
+   a number and a player is spending points rather than a proportion */
+.meter { height: 0.5rem; background: var(--line); border-radius: 999px; overflow: hidden; }
+.meter > span { display: block; height: 100%; background: var(--mine); }
+
+.board { touch-action: manipulation; max-width: 100%; height: auto; }
+.board .square { fill: var(--card); stroke: var(--line); stroke-width: 1; }
+.board .square.reachable { fill: var(--mine-soft); }
+.board .square:focus-visible { outline: none; }
+.board .cursor { fill: none; stroke: var(--focus); stroke-width: 3; }
+.board .selected { fill: none; stroke: var(--mine); stroke-width: 3; stroke-dasharray: 4 3; }
+
+/* a unit moves by a change of transform; the transition is the animation */
+.board .unit { transition: transform 320ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .board .unit { transition: none; }
+}
+.board .unit text { font-family: var(--mono); font-weight: 700; text-anchor: middle; }
+.board .unit.mine text { fill: var(--mine); }
+.board .unit.theirs text { fill: var(--theirs); }
+.board .unit .ring { fill: none; stroke-width: 2; }
+.board .unit.mine .ring { stroke: var(--mine); }
+.board .unit.theirs .ring { stroke: var(--theirs); stroke-dasharray: 3 2; }
+
+.orders td.fare { font-variant-numeric: tabular-nums; }
+.orders tr.rest td { color: var(--ink-soft); }
+.orders tr.unaffordable td.fare { color: var(--warn); font-weight: 600; }
+
+.notice { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 0.5rem 0.75rem; border-radius: 0.25rem; }
+.lost { border-left: 3px solid var(--theirs); background: var(--theirs-soft); padding: 0.5rem 0.75rem; border-radius: 0.25rem; }
+
+.say {
+  position: fixed;
+  inset-block-end: 1rem;
+  inset-inline: 1rem;
+  margin-inline: auto;
+  max-width: 34rem;
+  background: var(--card);
+  border: 1px solid var(--edge);
+  border-left: 3px solid var(--theirs);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.12);
+}
+
+.waiting::after {
+  content: "";
+  display: inline-block;
+  width: 0.6em;
+  animation: dots 1.2s steps(4, end) infinite;
+}
+@keyframes dots { to { content: "\2026"; } }
+
+.keys { font-size: 0.85rem; color: var(--ink-soft); }
+kbd {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  border: 1px solid var(--edge);
+  border-bottom-width: 2px;
+  border-radius: 0.25rem;
+  padding: 0 0.3em;
+}
