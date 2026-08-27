@@ -59,27 +59,27 @@
 
 ## 3. What a caller may ask about an account
 
-- [ ] 3.1 Add `service/accounts.py` with one function per use case —
+- [x] 3.1 Add `service/accounts.py` with one function per use case —
       `register`, `authenticate`, `change_password`, `reset_password`,
       `mint_token`, `end_token`, `claim_seat`, `release_seat`, `may_act_as` —
       each carrying it out or refusing by raising, and none of them printing or
       reading input. The shape `service/games.py` already has.
-- [ ] 3.2 `may_act_as(account, gameno, number)` is the one rule: 0 needs the
+- [x] 3.2 `may_act_as(account, gameno, number)` is the one rule: 0 needs the
       administrator kind, 1000 needs the observer or the administrator, 1 to
       999 needs a membership for that game and that number (design.md — "The
       seat stays in the path; authorisation is a guard"). It asks
       `service/identity.py` what a number *is* and never restates it.
-- [ ] 3.3 `service/identity.py` is **not** changed. Verify by diff: this change
+- [x] 3.3 `service/identity.py` is **not** changed. Verify by diff: this change
       adds no line to it.
-- [ ] 3.4 `register` refuses a reserved or taken username and a short password,
+- [x] 3.4 `register` refuses a reserved or taken username and a short password,
       by asking `domain/account.py` rather than by testing strings itself, and
       always creates the player kind.
-- [ ] 3.5 `authenticate` returns a token, and its refusal does not say whether
+- [x] 3.5 `authenticate` returns a token, and its refusal does not say whether
       the username or the password was wrong.
-- [ ] 3.6 `change_password` requires the account's current password;
+- [x] 3.6 `change_password` requires the account's current password;
       `reset_password` requires the caller to be the administrator and does
       not. Both clear `must_change`.
-- [ ] 3.7 `claim_seat` refuses a number the game has not registered as a
+- [x] 3.7 `claim_seat` refuses a number the game has not registered as a
       player, a seat already held, and a game that has started — reading the
       game's own repository to answer the first and the third, and never
       writing to it. `release_seat` refuses once the game has started and

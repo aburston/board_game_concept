@@ -148,6 +148,29 @@ The cost is that "which seat am I" is no longer answerable from the session,
 which is a question the web interface has to answer in its URL. It already
 has to, because the seat is in the path.
 
+### "Started" is a turn having resolved, not setup having ended
+
+A seat may be claimed until one of the game's turns has resolved. Not until
+setup is committed, which is what the wording first suggested and what the
+game cannot answer.
+
+`Game.new_game` looks like the flag for this and is not. It is set to `not
+sees_everything` at load and cleared once that player has committed, so it is
+`False` for the administrator before anything has been set up at all and
+`True` for a player after setup is over. It answers "does this session still
+have setup to do" - a per-session question, and not a durable one; nothing
+writes it down.
+
+What is durable is the turn number in the game's progress, and `R3.8` keeps it
+at 0 through the administrator's setup commit, because that commit is not a
+turn. Reading it gives a definition that cannot disagree with the game, needs
+no new column, and holds to this change's rule that no game storage changes.
+
+It also turns out to be the better rule rather than merely the available one.
+Between the setup commit and the first resolved turn, the board is set and
+nobody has moved - which is exactly when somebody browsing a lobby would want
+to join. Refusing them there would close the window the lobby exists for.
+
 ### The observer is honour-based, and the login page says so
 
 One shared `observer` account, whose password the administrator can change.

@@ -40,3 +40,24 @@ class UnreadableGame(GameDataError):
 
 class NoSuchPlayer(GameDataError):
     """The session is for a player this game does not have."""
+
+
+class AccountError(GameError):
+    """Something about an account cannot be done.
+
+    A `GameError` because every caller that already reports one reports this
+    the same way, and because the boundary a refusal crosses is the same. What
+    it is not is a `GameDataError`: nothing here says a game is unreadable.
+    """
+
+
+class NotAuthenticated(AccountError):
+    """The caller has not shown who it is."""
+
+
+class NotAuthorised(AccountError):
+    """The caller is not entitled to what it asked for."""
+
+
+class PasswordMustChange(AccountError):
+    """The account may do nothing else until its password is changed."""

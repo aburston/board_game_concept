@@ -306,6 +306,13 @@ SHALL have at most one holder.
 A claim SHALL be refused when the seat is already held, when the game has no
 such registered player, and when the game has started.
 
+A game SHALL be taken to have started once one of its turns has been resolved,
+rather than once its setup has been committed. The administrator's commit that
+ends setup is not a turn and does not number one, so between that commit and
+the first resolved turn the board is set and nobody has moved - which is the
+window a person joining a game arrives in, and a seat SHALL still be claimable
+then.
+
 #### Scenario: Claiming an unclaimed seat
 
 - **WHEN** an account claims a seat no account holds, in a game that has not started
@@ -327,8 +334,14 @@ such registered player, and when the game has started.
 
 #### Scenario: Claiming after the game has started
 
-- **WHEN** an account claims a seat in a game that has started
+- **WHEN** an account claims a seat in a game one of whose turns has resolved
 - **THEN** it is refused
+
+#### Scenario: Claiming after setup is committed but before the first turn
+
+- **WHEN** an account claims an unclaimed seat in a game whose setup has been
+  committed and none of whose turns has resolved
+- **THEN** it holds that seat
 
 #### Scenario: Claiming does not register a player
 
@@ -377,7 +390,8 @@ SHALL refuse to give up a seat once the game has started.
 
 #### Scenario: Giving up after the game has started
 
-- **WHEN** the holder of a seat gives it up and the game has started
+- **WHEN** the holder of a seat gives it up and one of the game's turns has
+  resolved
 - **THEN** it is refused
 - **AND** they still hold the seat
 
