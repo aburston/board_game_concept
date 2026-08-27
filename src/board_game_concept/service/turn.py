@@ -374,6 +374,7 @@ def resolve(game):
             visible = [unit['name'] for unit in views[number]['units'] or []]
             repository.write_events(number, turn_number,
                                     turn_feed.for_seat(feed, owned, visible))
+            _remember_types(repository, number, views[number], turn_number)
 
         # --- and only now, the turn is over
 
@@ -407,6 +408,47 @@ def resolve(game):
             game.notifier.wake(number)
 
     return True
+
+
+def _remember_types(repository, number, view, turn_number):
+    """Add the enemy designs this seat met this turn to what it has met.
+
+    A sighting lasts one turn: an enemy nobody touched is off your board and
+    out of your list of types by the next resolution, which is `visibility`
+    working. What that enemy was built with is a different thing from where
+    it is - it is what you learned by fighting it, and a player who has met a
+    unit and cannot say what it was built with is being asked to keep notes
+    on paper.
+
+    Only the design is kept. No square, no unit name, no count: nothing here
+    says where anybody is, then or now.
+    """
+    known = {(entry['owner'], entry['name']): dict(entry)
+             for entry in repository.read_known_types(number)}
+    for unit in view.get('units') or []:
+        owner = unit['player']
+        if owner == number:
+            continue
+        seen = known.get((owner, unit['type']))
+        if seen is None:
+            known[(owner, unit['type'])] = {
+                'owner': owner,
+                'name': unit['type'],
+                'symbol': unit['symbol'],
+                # the design, not the state the unit was in when it was met:
+                # a wounded enemy is not a weaker type
+                'attack': unit['type_attack'],
+                'health': unit['type_health'],
+                'energy': unit['type_energy'],
+                'first_seen': turn_number,
+                'last_seen': turn_number,
+            }
+        else:
+            seen['last_seen'] = turn_number
+    repository.write_known_types(
+        number, sorted(known.values(),
+                       key=lambda entry: (entry.get('first_seen') or 0,
+                                          entry['owner'], entry['name'])))
 
 
 def _report_turn(game, events, reject):

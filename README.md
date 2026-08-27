@@ -166,6 +166,20 @@ did only where you could see them. A fight between two players you cannot see
 is not in your feed at all — being told it happened would give away that they
 are near each other, which is the thing visibility withholds.
 
+Beside the board is a roster: your own units with what each has left against
+what it was built with, and every enemy design you have met with the
+statistics its owner built it with. That memory outlives the contact that
+taught it — an enemy you touched last turn is off your board this turn, and
+the design you learned from it stays. Only the design: no square, no unit
+name, no count, because a memory of a design is not a memory of a position.
+The watching observer gets the same roster for every player, which is where
+its statistics come from now that it has no orders tray.
+
+A unit under orders is drawn with a red arrow out of it and into the square it
+is headed for, so what a turn is about to do can be checked at a glance before
+it is committed. Hovering a unit gives its statistics — yours or an enemy's —
+and, for your own, how to order it from the keyboard.
+
 It is playable from the keyboard: arrow keys move about the board, `Enter`
 selects the unit under the cursor, an arrow key then orders it that way, and
 `c` commits.

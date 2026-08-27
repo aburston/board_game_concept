@@ -519,6 +519,32 @@ class SqliteGameRepository(GameRepository):
                 (int(number), int(turn), seq, _kind_of(entry),
                  json.dumps(_detail_of(entry))))
 
+    # --- what a seat has met
+
+    def read_known_types(self, number):
+        if not self._db_ready():
+            return []
+        rows = self._get(
+            'SELECT owner, name, symbol, attack, health, energy, '
+            'first_seen, last_seen FROM known_types WHERE player_number=? '
+            'ORDER BY first_seen, owner, name', (int(number),)).fetchall()
+        return [dict(row) for row in rows]
+
+    def write_known_types(self, number, entries):
+        self.ensure()
+        connection = self._get()
+        connection.execute('DELETE FROM known_types WHERE player_number=?',
+                           (int(number),))
+        for entry in entries or []:
+            connection.execute(
+                'INSERT INTO known_types (player_number, owner, name, '
+                'symbol, attack, health, energy, first_seen, last_seen) '
+                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (int(number), int(entry['owner']), entry['name'],
+                 entry['symbol'], int(entry['attack']), int(entry['health']),
+                 int(entry['energy']), entry.get('first_seen'),
+                 entry.get('last_seen')))
+
     # --- private helpers
 
     def _db_ready(self):

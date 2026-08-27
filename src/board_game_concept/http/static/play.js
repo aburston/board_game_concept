@@ -64,9 +64,12 @@ export function renderPlay() {
 
   const layout = element('div', { class: 'row' });
   layout.append(element('div', { class: 'grow' }, renderBoardCard(game)));
-  if (!watching && !game.outcome) {
-    layout.append(element('div', { class: 'grow' }, renderOrders(game)));
-  }
+  const side = element('div', { class: 'grow' });
+  if (!watching && !game.outcome) side.append(renderOrders(game));
+  // the roster is drawn for everybody, watching included: an observer with
+  // no orders tray had nowhere at all to read a unit's statistics
+  side.append(renderForces(game));
+  layout.append(side);
   wrap.append(layout);
 
   if (game.unprocessed_moves && !game.outcome) {
@@ -75,6 +78,111 @@ export function renderPlay() {
   wrap.append(renderLastTurn(game));
   if (!watching) wrap.append(renderKeys());
   return wrap;
+}
+
+// --- the forces: what you have, and what you have met
+//
+// A player deciding whether to attack is comparing two designs, and until
+// this card there was nowhere to compare them: your own statistics were in a
+// tooltip, and an enemy's vanished from the types list the moment contact was
+// lost. What you have met is kept by the server and outlives the contact -
+// where an enemy is remains something you are not told.
+
+function renderForces(game) {
+  const card = element('div', { class: 'card' });
+  card.append(element('h2', {}, 'Forces'));
+
+  const watching = game.number === 1000;
+  const units = game.units || [];
+  const mine = units.filter((unit) => unit.player === game.number);
+
+  if (watching) {
+    const players = [...new Set(units.map((unit) => unit.player))].sort(
+      (a, b) => a - b);
+    for (const player of players) {
+      card.append(element('h3', {}, `Player ${player}`));
+      card.append(rosterTable(game, units.filter(
+        (unit) => unit.player === player)));
+    }
+  } else {
+    card.append(element('h3', {}, 'Yours'));
+    card.append(mine.length
+      ? rosterTable(game, mine)
+      : element('p', { class: 'muted small' }, 'Nothing deployed.'));
+  }
+
+  const seen = (game.seen || []).filter(
+    (type) => watching || type.player !== game.number);
+  card.append(element('h3', {}, watching ? 'Every type' : 'Enemy types met'));
+  if (!seen.length) {
+    card.append(element('p', { class: 'muted small' },
+      'None yet. A type is learned by meeting a unit built from it.'));
+  } else {
+    card.append(typesTable(seen, watching));
+  }
+  return card;
+}
+
+/**
+ * Units, with what each has left against what it was built with.
+ *
+ * Destroyed units are listed and marked rather than dropped: what you have
+ * lost is half of what you are assessing.
+ */
+function rosterTable(game, units) {
+  const table = element('table', { class: 'roster' });
+  table.append(element('thead', {}, element('tr', {},
+    element('th', {}, 'Unit'),
+    element('th', {}, 'Type'),
+    element('th', { class: 'number' }, 'Atk'),
+    element('th', { class: 'number' }, 'Health'),
+    element('th', { class: 'number' }, 'Energy'),
+    element('th', {}, 'Where'))));
+  const body = element('tbody', {});
+  for (const unit of units) {
+    const gone = unit.state === 'destroyed';
+    body.append(element('tr', { class: gone ? 'gone' : '' },
+      element('td', {}, unit.name),
+      element('td', {}, unit.type),
+      element('td', { class: 'number' }, String(unit.attack)),
+      element('td', { class: 'number' }, health(game, unit)),
+      element('td', { class: 'number' }, String(unit.energy)),
+      element('td', { class: 'small' }, gone
+        ? element('span', { class: 'tag warn' }, 'destroyed')
+        : (unit.x === null || unit.y === null
+          ? element('span', { class: 'muted' }, 'not deployed')
+          : `(${unit.x}, ${unit.y})`))));
+  }
+  table.append(body);
+  return table;
+}
+
+/** Type designs, as they were built rather than as they were met. */
+function typesTable(types, watching) {
+  const table = element('table', { class: 'roster' });
+  table.append(element('thead', {}, element('tr', {},
+    element('th', {}, 'Type'),
+    element('th', { class: 'number' }, 'Player'),
+    element('th', { class: 'number' }, 'Atk'),
+    element('th', { class: 'number' }, 'Health'),
+    element('th', { class: 'number' }, 'Energy'),
+    element('th', { class: 'number' }, 'Cost'),
+    element('th', { class: 'small' }, watching ? '' : 'Met'))));
+  const body = element('tbody', {});
+  for (const type of types) {
+    body.append(element('tr', {},
+      element('td', {}, `${type.symbol} ${type.name}`),
+      element('td', { class: 'number' }, String(type.player)),
+      element('td', { class: 'number' }, String(type.attack)),
+      element('td', { class: 'number' }, String(type.health)),
+      element('td', { class: 'number' }, String(type.energy)),
+      element('td', { class: 'number' }, String(type.cost)),
+      element('td', { class: 'small muted' },
+        type.first_seen === null || type.first_seen === undefined
+          ? '' : `turn ${type.first_seen}`)));
+  }
+  table.append(body);
+  return table;
 }
 
 // --- what the turns did, as this seat was told it
@@ -181,6 +289,10 @@ function renderBoardCard(game) {
     cursor: watching ? null : state.cursor,
     reachable: selected ? reachableFrom(game, selected) : null,
     marks: fought,
+    watching,
+    // the keyboard hint belongs where a hand already is, which is over the
+    // board rather than in a card below it
+    hint: !watching && !game.outcome,
     // a unit is drawn with what it has left, which is the whole point of
     // being told the turn wore it down
     healthOf: (unit) => {
@@ -354,7 +466,9 @@ function renderBarrier(game) {
  */
 function health(game, unit) {
   const type = typeOf(game, unit);
-  const now = Number(unit.health);
+  // a destroyed unit is at or below nothing, and "-2 health" is not a thing
+  // a person has: it is the overkill of the blow that finished it
+  const now = Math.max(0, Number(unit.health));
   if (!type) return element('span', {}, String(now));
   const full = Number(type.health);
   const share = full > 0 ? now / full : 1;

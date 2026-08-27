@@ -21,6 +21,9 @@
   --warn-soft: #fbf3dd;
 
   --focus: #1b62c9;
+  /* an order in flight. Not `--theirs`: an order is yours, and the two are
+     never drawn on the same square anyway */
+  --order: #c1272d;
 
   --square: 3.25rem;
   --radius: 0.5rem;
@@ -45,6 +48,7 @@
     --theirs-soft: #2c1f1c;
     --warn: #e2c069;
     --warn-soft: #2a2417;
+    --order: #ff6b6b;
     --focus: #7fb2ff;
   }
 }
@@ -299,3 +303,43 @@ ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: va
    cost them are different questions and used to be one number */
 .board .clash .damage { fill: var(--ink-soft); }
 .board .clash .damage.mine { fill: var(--theirs); font-weight: 600; }
+
+/* an order in flight, drawn out of the unit and into the square it is headed
+   for. Red and heavy on purpose: what a turn is about to do is the thing a
+   player checks last before committing, and it used to be a 12px glyph */
+.board .order .shaft {
+  stroke: var(--order);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.board .order .head { fill: var(--order); }
+
+/* the roster: what you have and what you have met, side by side with the
+   board so an attack can be weighed without leaving the screen */
+.roster { font-size: 0.92rem; }
+.roster tbody tr.gone td { color: var(--ink-soft); text-decoration: line-through; }
+.roster tbody tr.gone td:last-child { text-decoration: none; }
+.card h3 { font-size: 0.95rem; margin: 0.7rem 0 0.3rem; }
+
+/* a watched board belongs to nobody, so it is coloured by player rather
+   than by whose it is. Four are named; a fifth falls back to the ink */
+.board.watching .unit .ring { stroke: var(--ink-soft); stroke-dasharray: none; }
+.board.watching .unit text { fill: var(--ink-soft); }
+.board.watching .unit .health-left { fill: var(--ink-soft); }
+.board.watching .unit.player-1 .ring,
+.board.watching .unit.player-1 .health-left { stroke: var(--mine); fill: var(--mine); }
+.board.watching .unit.player-1 text { fill: var(--mine); }
+.board.watching .unit.player-1 .ring { fill: none; }
+.board.watching .unit.player-2 .ring,
+.board.watching .unit.player-2 .health-left { stroke: var(--theirs); fill: var(--theirs); }
+.board.watching .unit.player-2 text { fill: var(--theirs); }
+.board.watching .unit.player-2 .ring { fill: none; }
+.board.watching .unit.player-3 .ring,
+.board.watching .unit.player-3 .health-left { stroke: var(--focus); fill: var(--focus); }
+.board.watching .unit.player-3 text { fill: var(--focus); }
+.board.watching .unit.player-3 .ring { fill: none; }
+.board.watching .unit.player-4 .ring,
+.board.watching .unit.player-4 .health-left { stroke: var(--warn); fill: var(--warn); }
+.board.watching .unit.player-4 text { fill: var(--warn); }
+.board.watching .unit.player-4 .ring { fill: none; }
+.board.watching .unit .health-left.critical { fill: var(--warn); }

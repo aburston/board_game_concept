@@ -111,13 +111,14 @@ not know how it is drawn.
   `BEGIN DEFERRED` for a reader, WAL on); `read_view` runs a visibility
   join against `sightings` rather than reading a materialised file; every
   turn's events are recorded to `turn_events` and each seat's share of them to
-  `player_events`. The schema is re-applied whenever a table it describes is
+  `player_events`; `known_types` holds the designs each seat has met, which
+  outlive the sighting that taught them. The schema is re-applied whenever a table it describes is
   missing, so a game made by an older build gains the tables added since.
   SQLite is the default backend.
 - **`schema.sql`** - the DDL loaded when a SQLite backend finds a table it
   describes missing. Each table maps nearly one-to-one to what a YAML file
-  held; `sightings`, `turn_events` and `player_events` are the three the
-  schema adds. Every statement is `IF NOT EXISTS`, which is what makes
+  held; `sightings`, `turn_events`, `player_events` and `known_types` are the
+  four the schema adds. Every statement is `IF NOT EXISTS`, which is what makes
   re-applying it to an existing game safe.
 - **`serialise.py`** - the plain-data documents storage takes: `units_document`
   for the units file shape, `serialise_draft` and `restore_draft` for the

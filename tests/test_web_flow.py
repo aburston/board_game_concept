@@ -137,10 +137,10 @@ def _set_up(admin, gameno=GAME, seats=(1, 2), size=(4, 4)):
     assert admin.commit(gameno, 0).status_code == 200
 
 
-def _deploy(page, gameno, number, symbol, square, health=8):
+def _deploy(page, gameno, number, symbol, square, health=8, energy=10):
     assert page.perform(gameno, number, {
         'kind': 'add_type', 'name': f'T{number}', 'symbol': symbol,
-        'attack': 1, 'health': health, 'energy': 10}).status_code == 204
+        'attack': 1, 'health': health, 'energy': energy}).status_code == 204
     assert page.perform(gameno, number, {
         'kind': 'add_unit', 'type_name': f'T{number}', 'name': f'u{number}',
         'x': square[0], 'y': square[1]}).status_code == 204
@@ -396,6 +396,110 @@ def test_the_observer_reads_the_whole_log(app):
     deployed = {entry['detail']['unit'] for entry in events
                 if entry['kind'] == 'deployed'}
     assert deployed == {'u1', 'u2'}
+
+
+def test_a_type_met_is_remembered_after_contact_is_lost(app):
+    """What you have met outlives the sighting; where it is does not.
+
+    `types` is what is in contact now, and drops an enemy the moment contact
+    is lost - that is `visibility` working. A player who has fought a design
+    and cannot say what it was built with is being asked to keep notes on
+    paper, so what has been met is kept separately.
+    """
+    admin = _administrator(app)
+    _set_up(admin, size=(4, 4))
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    # little energy each, so the contest ends undecided and both survive it -
+    # a fight to the death would end the game and there would be no turn
+    # afterwards in which contact could be lost
+    _deploy(ada, GAME, 1, 'X', (0, 0), energy=3)
+    _deploy(bob, GAME, 2, 'O', (1, 0), energy=3)
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    # nothing met yet: they were deployed out of contact
+    assert ada.read_view(GAME, 1, 'types_seen').get_json()['types_seen'] == []
+
+    # ada walks into bob, which is contact
+    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': EAST})
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    met = ada.read_view(GAME, 1, 'types_seen').get_json()['types_seen']
+    assert [entry['name'] for entry in met] == ['T2']
+    assert met[0]['player'] == 2
+    assert met[0]['attack'] == 1 and met[0]['health'] == 8
+    assert met[0]['first_seen'] == 2
+
+    # a turn with no contact: the types view forgets, and this does not
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    types = ada.read_view(GAME, 1, 'types').get_json()['types']
+    assert [entry['name'] for entry in types] == ['T1'], (
+        'the types view is what is in contact now')
+    still = ada.read_view(GAME, 1, 'types_seen').get_json()['types_seen']
+    assert [entry['name'] for entry in still] == ['T2']
+
+
+def test_a_type_never_met_is_not_remembered(app):
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    assert ada.read_view(GAME, 1, 'types_seen').get_json()['types_seen'] == []
+
+
+def test_the_observer_is_given_every_type_as_met(app):
+    """It has met everything by definition, and reads one shape for both."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    observer = Page(app)
+    observer.sign_in('observer', 'observer')
+    observer.change_password('observer', 'observer-secret')
+
+    met = observer.read_view(GAME, 1000, 'types_seen').get_json()['types_seen']
+    assert {entry['name'] for entry in met} == {'T1', 'T2'}
+    assert all({'attack', 'health', 'energy', 'cost'} <= set(entry)
+               for entry in met)
+
+
+def test_the_observer_can_read_every_units_statistics(app):
+    """The watching screen has no orders tray, so this is where they are."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    observer = Page(app)
+    observer.sign_in('observer', 'observer')
+    observer.change_password('observer', 'observer-secret')
+
+    units = observer.read_view(GAME, 1000, 'units').get_json()['units']
+    assert {unit['name'] for unit in units} == {'u1', 'u2'}
+    for unit in units:
+        assert {'attack', 'health', 'energy'} <= set(unit)
 
 
 def test_the_observer_watches_through_the_same_calls(app):

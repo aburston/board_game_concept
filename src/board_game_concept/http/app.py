@@ -47,6 +47,15 @@ VIEW_BUILDERS = {
         data.getPlayers(), data.getEliminated(), data.getBoard()),
     'pending': lambda data: views_module.pending_view(
         data.getPlayers(), data.getBoard()),
+    # what this session has met, rather than what it is in contact with now.
+    # A session entitled to the whole game has met everything, so it is given
+    # the types it can already see rather than a second record of its own
+    'types_seen': lambda data: (
+        views_module.types_seen_view(
+            views_module.types_view(data.getPlayers()), met=False)
+        if identity.sees_everything(data.player_number)
+        else views_module.types_seen_view(
+            data.repository.read_known_types(data.player_number))),
 }
 
 VIEWS_THAT_NEED_A_BOARD = ('board', 'units', 'pending')

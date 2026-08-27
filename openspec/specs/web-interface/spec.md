@@ -348,6 +348,67 @@ drawn alike.
 - **WHEN** the interface is used on a touchscreen
 - **THEN** health is readable without hovering anything
 
+### Requirement: The Forces Are Listed Where They Can Be Compared
+
+The system SHALL list, beside the board, the player's own units with what each
+has left and what it was built with, and every enemy type that player has met
+with the statistics it was designed with.
+
+A player deciding whether to attack is comparing two designs. Statistics kept
+only in a tooltip cannot be compared, and cannot be read at all on a
+touchscreen.
+
+The list SHALL be shown to a watching session as well, which has no orders
+tray to read statistics from.
+
+#### Scenario: Weighing an attack
+
+- **WHEN** a player has met an enemy type
+- **THEN** its attack, health and energy are listed beside their own units'
+
+#### Scenario: A unit that has been lost
+
+- **WHEN** one of the player's units has been destroyed
+- **THEN** it is listed and marked as destroyed rather than dropped
+
+#### Scenario: Watching
+
+- **WHEN** a session is watching rather than holding a seat
+- **THEN** it can read the statistics of every unit it can see
+
+### Requirement: An Order In Flight Is Drawn On The Board
+
+The system SHALL draw, for each of the player's units under orders, the
+direction it has been ordered in, out of the unit and towards the square it
+would move to, and SHALL draw it distinctly enough to be read at a glance.
+
+#### Scenario: A unit under orders
+
+- **WHEN** a unit has been ordered to move
+- **THEN** an arrow from that unit towards the square it is headed for is
+  drawn on the board
+
+#### Scenario: A unit holding
+
+- **WHEN** a unit has no order
+- **THEN** no arrow is drawn for it
+
+### Requirement: The Board Says How To Order From The Keyboard
+
+The system SHALL say, where a person's pointer already is, that a unit is
+ordered by choosing it and pressing an arrow key.
+
+#### Scenario: Hovering a unit
+
+- **WHEN** the pointer rests on one of the player's units
+- **THEN** the unit's statistics are given
+- **AND** so is how to order it from the keyboard
+
+#### Scenario: Hovering an enemy unit
+
+- **WHEN** the pointer rests on an enemy unit the player can see
+- **THEN** that unit's statistics are given
+
 ### Requirement: What The Turn Did Is Told As A Feed
 
 The system SHALL show, when a turn has resolved, an account of what the turn

@@ -144,6 +144,22 @@ CREATE TABLE IF NOT EXISTS turn_events (
     PRIMARY KEY (turn_no, seq)
 );
 
+-- the designs a seat has met. `sightings` lasts one turn, because where a
+-- unit is now is not something a player may remember; what a type was built
+-- with is, and this is where that is kept. No coordinates here, deliberately.
+CREATE TABLE IF NOT EXISTS known_types (
+    player_number INTEGER NOT NULL,
+    owner         INTEGER NOT NULL,
+    name          TEXT NOT NULL,
+    symbol        TEXT NOT NULL,
+    attack        INTEGER NOT NULL,
+    health        INTEGER NOT NULL,
+    energy        INTEGER NOT NULL,
+    first_seen    INTEGER,
+    last_seen     INTEGER,
+    PRIMARY KEY (player_number, owner, name)
+);
+
 -- what each seat was told about each turn: the part of the log above that
 -- seat could see while it was happening. Decided at resolution because a
 -- sighting lasts one turn - filtering the log at read time would answer with

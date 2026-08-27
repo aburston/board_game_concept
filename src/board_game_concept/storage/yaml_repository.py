@@ -306,6 +306,20 @@ class YamlGameRepository(GameRepository):
     def write_events(self, number, turn, entries):
         self._write_events(self._events_file(number), turn, entries)
 
+    # --- what a seat has met
+
+    def _known_types_file(self, number):
+        return os.path.join(self.player_path, f'{number}_types_seen.yaml')
+
+    def read_known_types(self, number):
+        stored = self._read_yaml(self._known_types_file(number),
+                                 f'the types player {number} has met')
+        return (stored or {}).get('types') or []
+
+    def write_known_types(self, number, entries):
+        with self._replace(self._known_types_file(number)) as file:
+            yaml.safe_dump({'types': list(entries or [])}, file)
+
     def _read_events(self, path, since, what):
         stored = self._read_yaml(path, what)
         turns = (stored or {}).get('turns') or []

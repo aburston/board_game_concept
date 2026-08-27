@@ -15,6 +15,16 @@ const NS = 'http://www.w3.org/2000/svg';
 const SQUARE = 44;
 const PAD = 6;
 
+// the ring is smaller than the square it stands in, so that an order drawn
+// out of it has somewhere to be drawn: a unit that filled its square left
+// the arrow saying where it was going crammed against the edge
+const RING = SQUARE / 2 - 11;
+
+// how far an order's arrow reaches out of the square, as a share of one
+// square. Past the edge on purpose - what it points at is the square it is
+// going to, which is the whole of what the arrow is for
+const REACH = 0.78;
+
 function svg(tag, attributes) {
   const node = document.createElementNS(NS, tag);
   for (const [name, value] of Object.entries(attributes || {})) {
@@ -47,7 +57,10 @@ export function renderBoard(board, units, options) {
   const height = board.size_y * SQUARE + PAD * 2;
 
   const root = svg('svg', {
-    class: 'board',
+    // a watching session owns none of the units, so "yours and theirs" says
+    // nothing to it and every unit was drawn as an enemy. It is told to
+    // colour by player instead
+    class: 'board' + (settings.watching ? ' watching' : ''),
     viewBox: `0 0 ${width} ${height}`,
     width,
     height,
@@ -78,7 +91,8 @@ export function renderBoard(board, units, options) {
       squares.append(rect);
       const title = svg('title', {});
       title.textContent = describeSquare(board, units, x, y, empty)
-        + describeFight(marks.get(`${x},${y}`));
+        + describeFight(marks.get(`${x},${y}`))
+        + (settings.hint ? '. Arrow keys move about the board' : '');
       rect.append(title);
     }
   }
@@ -137,7 +151,7 @@ export function renderBoard(board, units, options) {
     if (unit.x === null || unit.y === null) continue;
     const own = unit.player === mine;
     const group = svg('g', {
-      class: `unit ${own ? 'mine' : 'theirs'}`,
+      class: `unit ${own ? 'mine' : 'theirs'} player-${unit.player}`,
       transform: `translate(${PAD + unit.x * SQUARE}, ${PAD + unit.y * SQUARE})`,
     });
     // an invisible target covering the square. The ring is 23px across on a
@@ -151,12 +165,12 @@ export function renderBoard(board, units, options) {
       class: 'ring',
       cx: SQUARE / 2,
       cy: SQUARE / 2,
-      r: SQUARE / 2 - 7,
+      r: RING,
     }));
     const text = svg('text', {
       x: SQUARE / 2,
-      y: SQUARE / 2 + 6,
-      'font-size': 18,
+      y: SQUARE / 2 + 5,
+      'font-size': 14,
     });
     text.textContent = unit.symbol;
     group.append(text);
@@ -192,36 +206,87 @@ export function renderBoard(board, units, options) {
         settings.onUnit(unit);
       });
     }
+    // what a person gets for hovering: everything the unit is, and - for
+    // one of theirs - how to order it. The keyboard is faster than the
+    // mouse here and nothing said so anywhere near the board
     const title = svg('title', {});
-    title.textContent =
-      `${unit.name} (${unit.type}) — ${own ? 'yours' : 'theirs'}, ` +
-      `attack ${unit.attack}, health ${unit.health}` +
-      (left && left.full ? ` of ${left.full}` : '') +
-      `, energy ${unit.energy}`;
+    title.textContent = describeUnit(unit, own, left, settings.hint);
     group.append(title);
 
-    // an order in flight is drawn as an arrow out of the square, so what a
-    // unit has been told to do is visible on the board and not only in a list
+    // an order in flight is drawn as an arrow out of the square and into the
+    // one it is headed for, so what a unit has been told to do is legible
+    // from across a table rather than being a glyph the size of a full stop
     if (own && unit.direction) {
-      const arrow = svg('text', {
-        class: 'arrow',
-        x: SQUARE / 2,
-        y: SQUARE - 3,
-        'font-size': 12,
-        'text-anchor': 'middle',
-      });
-      arrow.textContent = { north: '↑', east: '→', south: '↓',
-                            west: '←' }[unit.direction] || '';
-      group.append(arrow);
+      const heading = HEADINGS[unit.direction];
+      if (heading) group.append(orderArrow(heading));
     }
     root.append(group);
   }
   return root;
 }
 
+// which way each order points, in board coordinates
+const HEADINGS = {
+  north: { dx: 0, dy: -1 }, east: { dx: 1, dy: 0 },
+  south: { dx: 0, dy: 1 }, west: { dx: -1, dy: 0 },
+};
+
+/**
+ * The arrow drawn for a unit under orders.
+ *
+ * A line out of the ring with a head on it, in the square's own coordinates
+ * - the unit's group is already translated, so this is drawn as though the
+ * unit were at the origin.
+ */
+function orderArrow({ dx, dy }) {
+  const middle = SQUARE / 2;
+  const from = { x: middle + dx * (RING + 2), y: middle + dy * (RING + 2) };
+  const to = { x: middle + dx * SQUARE * REACH,
+               y: middle + dy * SQUARE * REACH };
+  const group = svg('g', { class: 'order' });
+  group.append(svg('line', {
+    class: 'shaft',
+    x1: from.x, y1: from.y,
+    // stops short of the point, so the head is a head rather than a blob
+    x2: to.x - dx * 7, y2: to.y - dy * 7,
+  }));
+  // the head, as a triangle across the direction of travel
+  const across = { x: -dy, y: dx };
+  const head = [
+    `${to.x},${to.y}`,
+    `${to.x - dx * 9 + across.x * 5},${to.y - dy * 9 + across.y * 5}`,
+    `${to.x - dx * 9 - across.x * 5},${to.y - dy * 9 - across.y * 5}`,
+  ].join(' ');
+  group.append(svg('polygon', { class: 'head', points: head }));
+  return group;
+}
+
 function isReachable(settings, x, y) {
   if (!settings.reachable) return false;
   return settings.reachable.some((square) => square.x === x && square.y === y);
+}
+
+/**
+ * One unit, said in full: whose it is, what it was built with, what it has
+ * left, and what it has been told to do.
+ *
+ * The same sentence for an enemy as for your own, because what you may know
+ * about an enemy is decided before the view reaches here - if it is on this
+ * board you have met it, and its statistics are yours to read.
+ */
+export function describeUnit(unit, own, left, hint) {
+  const full = left && left.full ? ` of ${left.full}` : '';
+  const said = [
+    `${unit.name} (${unit.type}) — ${own ? 'yours' : 'theirs'}`,
+    `attack ${unit.attack}`,
+    `health ${unit.health}${full}`,
+    `energy ${unit.energy}`,
+  ];
+  if (unit.direction) said.push(`ordered ${unit.direction}`);
+  const sentence = said.join(', ');
+  if (!own || !hint) return sentence;
+  return `${sentence}. Click it or press Enter over it, then an arrow key `
+    + 'to order it that way.';
 }
 
 function describeFight(mark) {
