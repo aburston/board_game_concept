@@ -101,6 +101,13 @@ export function renderBoard(board, units, options) {
       class: `unit ${own ? 'mine' : 'theirs'}`,
       transform: `translate(${PAD + unit.x * SQUARE}, ${PAD + unit.y * SQUARE})`,
     });
+    // an invisible target covering the square. The ring is 23px across on a
+    // phone and a finger is about 44: what somebody aims at is the square
+    group.append(svg('rect', {
+      class: 'hit',
+      x: 0, y: 0, width: SQUARE, height: SQUARE,
+      fill: 'transparent',
+    }));
     group.append(svg('circle', {
       class: 'ring',
       cx: SQUARE / 2,

@@ -192,3 +192,62 @@ kbd {
   border-radius: 0.25rem;
   padding: 0 0.3em;
 }
+
+/* --- small screens and fingers -------------------------------------------
+   Measured on a 375px phone and on a 280px folded one, against a 10x10
+   board, which is the largest the rules allow. */
+
+/* Wide content scrolls inside its card rather than pushing the page sideways.
+   The orders table is five columns and does not fit a narrow phone; a page
+   that scrolls horizontally to read one table is worse than a table that
+   scrolls on its own. */
+.card { overflow-x: auto; }
+
+@media (max-width: 30rem) {
+  /* the board is the thing worth the width: at 1.25rem of page padding plus
+     1.1rem of card padding, a 10x10 board had only 298 of 375 pixels */
+  main { padding: 0.75rem; }
+  .card { padding: 0.75rem; }
+  h1 { font-size: 1.2rem; }
+  table { font-size: 0.86rem; }
+  th, td { padding: 0.3rem 0.35rem; }
+}
+
+/* A finger is about 44px across, and every control here was 17 to 39px tall.
+   `pointer: coarse` is the touch case rather than the narrow one - a phone
+   in landscape is still a phone, and a small window on a laptop is not. */
+@media (pointer: coarse) {
+  button, input, select {
+    min-height: 44px;
+    padding: 0.55rem 0.8rem;
+  }
+  /* a link in a sentence cannot be 44px tall without breaking the sentence,
+     so it is given room around it instead */
+  td a, p a, nav a { display: inline-block; padding: 0.5rem 0.25rem; }
+  .brand { padding: 0.25rem 0; }
+  .board .square { cursor: default; }
+}
+
+/* Nothing here has a keyboard, and telling somebody which keys to press is
+   noise at best. The board is played by tapping a unit and then a direction,
+   which the orders tray offers as buttons.
+
+   `pointer: coarse` alone, not `and (hover: none)`: the pair is the usual
+   incantation and it did not match under test, leaving the card on screen.
+   Coarse already means the primary pointer is a finger - a laptop with a
+   touchscreen still reports a fine primary pointer. */
+@media (pointer: coarse) {
+  .keys { display: none; }
+}
+
+/* a unit's row in the tray chooses it, which on a phone is the target a
+   finger can actually hit */
+.orders tbody tr { cursor: pointer; }
+.orders tbody tr.chosen td { background: var(--mine-soft); }
+.orders tbody tr.chosen td:first-child { box-shadow: inset 3px 0 0 var(--mine); }
+.orders tbody tr:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+
+@media (pointer: coarse) {
+  .orders tbody td { padding-block: 0.7rem; }
+  td a, p a { padding: 0.6rem 0.3rem; }
+}

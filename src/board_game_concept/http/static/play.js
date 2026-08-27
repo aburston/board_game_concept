@@ -178,7 +178,26 @@ function renderOrders(game) {
 
     const row = element('tr', {
       class: [ordered ? '' : 'rest',
-              ordered && !affordable ? 'unaffordable' : ''].join(' ').trim(),
+              ordered && !affordable ? 'unaffordable' : '',
+              unit.name === state.selected ? 'chosen' : ''].join(' ').trim(),
+      tabindex: '0',
+      role: 'button',
+      'aria-pressed': unit.name === state.selected ? 'true' : 'false',
+      title: `choose ${unit.name}`,
+    });
+    // the row selects the unit as well as the board does. On a phone a
+    // square is about 32px and a finger is 44, so the tray is the reliable
+    // way to choose - and it is where somebody is already reading
+    const choose = () => set({
+      selected: state.selected === unit.name ? null : unit.name,
+      cursor: { x: unit.x, y: unit.y },
+    });
+    row.addEventListener('click', choose);
+    row.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        choose();
+      }
     });
     row.append(element('td', {}, unit.name));
     row.append(element('td', {},

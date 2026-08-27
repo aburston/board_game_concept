@@ -138,3 +138,56 @@ def test_the_page_carries_its_own_icon(client):
     body = client.get('/').data.decode()
     assert 'rel="icon"' in body
     assert 'data:image/svg+xml' in body
+
+
+# --- the phone
+#
+# The layout itself is not testable here; what is, is that the rules a phone
+# depends on are still in the stylesheet. Each of these was added against a
+# measurement on a real emulated device, and losing one silently would put a
+# 10x10 board back to 29px squares or push the page sideways.
+
+def _stylesheet():
+    with open(os.path.join(STATIC, 'style.css'), encoding='utf-8') as file:
+        return file.read()
+
+
+def test_wide_content_scrolls_inside_its_card():
+    """The orders table is five columns and does not fit a narrow phone."""
+    assert re.search(r'\.card\s*\{[^}]*overflow-x:\s*auto', _stylesheet())
+
+
+def test_a_narrow_screen_gives_the_board_its_width():
+    assert '@media (max-width: 30rem)' in _stylesheet()
+
+
+def test_touch_gets_targets_a_finger_can_hit():
+    sheet = _stylesheet()
+    assert '@media (pointer: coarse)' in sheet
+    assert re.search(r'min-height:\s*44px', sheet)
+
+
+def test_the_keyboard_help_is_hidden_where_there_is_no_keyboard():
+    """And on `pointer: coarse` alone - the pair with `hover: none` did not
+    match under test and left the card on screen."""
+    sheet = _stylesheet()
+    hidden = re.search(
+        r'@media \(pointer: coarse\)\s*\{\s*\.keys\s*\{\s*display:\s*none',
+        sheet)
+    assert hidden, 'the keyboard help must be hidden on a touch screen'
+
+
+def test_a_unit_carries_a_tap_target_the_size_of_its_square():
+    """The ring is 23px across on a phone; a finger is about 44."""
+    with open(os.path.join(STATIC, 'board.js'), encoding='utf-8') as file:
+        source = file.read()
+    assert re.search(r"class:\s*'hit'", source)
+    assert re.search(r"width:\s*SQUARE,\s*height:\s*SQUARE", source)
+
+
+def test_an_orders_row_chooses_its_unit():
+    """The reliable target on a phone, and where somebody is already reading."""
+    with open(os.path.join(STATIC, 'play.js'), encoding='utf-8') as file:
+        source = file.read()
+    assert "role: 'button'" in source
+    assert "row.addEventListener('click', choose)" in source
