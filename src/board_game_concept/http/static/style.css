@@ -251,3 +251,51 @@ kbd {
   .orders tbody td { padding-block: 0.7rem; }
   td a, p a { padding: 0.6rem 0.3rem; }
 }
+
+/* --- what the last turn did -------------------------------------------- */
+
+/* a square that was fought on. Tinted rather than outlined: the outline is
+   the cursor's and the dashes are the enemy's, and a third stroke on a 32px
+   square is a square nobody can read */
+.board .square.fought { fill: var(--warn-soft); stroke: var(--warn); }
+.board .clash .blades { fill: var(--warn); }
+/* the marks sit on a square a unit may be standing on, so they are drawn
+   with the page behind them rather than trusting the tint to be enough */
+.board .clash text {
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+/* health, under a unit's ring. The track is what it was built with and the
+   bar what play has left it, so a shrinking bar is a unit in trouble */
+.board .health-track { fill: var(--line); }
+.board .unit.mine .health-left { fill: var(--mine); }
+.board .unit.theirs .health-left { fill: var(--theirs); }
+.board .health-left.critical { fill: var(--warn); }
+
+/* the same number in the tray, for anybody reading rows rather than squares */
+.health.hurt { color: var(--warn); }
+.health.critical { color: var(--theirs); font-weight: 600; }
+
+/* the feed. One line per thing that happened, fighting picked out from
+   manoeuvring, because a player scans this for the blows first */
+ul.feed { list-style: none; margin: 0.4rem 0; padding: 0; }
+ul.feed li {
+  padding: 0.25rem 0.5rem;
+  border-left: 3px solid var(--line);
+  margin-bottom: 0.15rem;
+}
+ul.feed li.fought { border-left-color: var(--theirs); background: var(--theirs-soft); }
+ul.feed li.destroyed { font-weight: 600; }
+ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: var(--mine); }
+.clash-key { color: var(--warn); font-weight: 600; }
+
+/* turns before the last one, once somebody asks for them */
+.past-turn { margin-top: 0.8rem; border-top: 1px solid var(--line); padding-top: 0.4rem; }
+.past-turn h3 { font-size: 0.95rem; margin: 0.2rem 0; }
+/* damage this seat took is its own colour: what it cost you and what you
+   cost them are different questions and used to be one number */
+.board .clash .damage { fill: var(--ink-soft); }
+.board .clash .damage.mine { fill: var(--theirs); font-weight: 600; }

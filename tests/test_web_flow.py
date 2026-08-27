@@ -98,6 +98,11 @@ class Page:
     def commit(self, gameno, number):
         return self.client.post(f'/games/{gameno}/players/{number}/commit')
 
+    def read_events(self, gameno, number, since=None):
+        query = '' if since is None else f'?since={since}'
+        return self.client.get(
+            f'/games/{gameno}/players/{number}/events{query}')
+
     def wait_for_turn(self, gameno, number, budget=0.2):
         return self.client.get(
             f'/games/{gameno}/players/{number}/wait/turn?budget={budget}')
@@ -307,6 +312,92 @@ def test_what_the_last_turn_refused_is_readable(app):
                for entry in state['rejected'])
 
 
+def test_what_the_last_turn_did_is_readable(app):
+    """The feed is where the page's account of the turn comes from.
+
+    Two units on a 2x2 board, one ordered into the other: the page has to be
+    able to say who struck whom, for how much, and on which square - none of
+    which it could say before, so a player watched their units lose health
+    for reasons the server knew and never mentioned.
+    """
+    admin = _administrator(app)
+    _set_up(admin, size=(2, 2))
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (1, 0))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': EAST})
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    answer = ada.read_events(GAME, 1)
+    assert answer.status_code == 200
+    events = answer.get_json()['events']
+
+    attacks = [entry for entry in events if entry['kind'] == 'attacked']
+    assert attacks, 'the page was told nothing about the fight'
+    for attack in attacks:
+        assert {'unit', 'target', 'damage'} <= set(attack['detail'])
+        assert (attack['detail']['x'], attack['detail']['y']) == (1, 0)
+        assert attack['text']
+        assert attack['fighting'] is True
+    assert {entry['turn'] for entry in events} <= {1, 2}
+
+
+def test_a_seat_is_told_only_what_it_could_see(app):
+    """Two players out of contact are told about their own deployment only."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    events = ada.read_events(GAME, 1).get_json()['events']
+    named = {entry['detail'].get('unit') for entry in events}
+    assert 'u1' in named
+    assert 'u2' not in named
+
+
+def test_a_seat_cannot_read_another_seats_feed(app):
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+
+    assert ada.read_events(GAME, 2).status_code == 403
+
+
+def test_the_observer_reads_the_whole_log(app):
+    """It sees every unit of every player, so it is told about every one."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    observer = Page(app)
+    observer.sign_in('observer', 'observer')
+    observer.change_password('observer', 'observer-secret')
+
+    events = observer.read_events(GAME, 1000).get_json()['events']
+    deployed = {entry['detail']['unit'] for entry in events
+                if entry['kind'] == 'deployed'}
+    assert deployed == {'u1', 'u2'}
+
+
 def test_the_observer_watches_through_the_same_calls(app):
     admin = _administrator(app)
     _set_up(admin)
@@ -350,6 +441,29 @@ def test_the_pages_command_records_are_the_ones_the_service_reads():
 
     for kind in re.findall(r"kind: '(\w+)'", _static('api.js')):
         assert command_type(kind) is not None, kind
+
+
+def test_every_seat_endpoint_the_page_calls_exists(app):
+    """`api.js` names paths; the app has to have them.
+
+    The page can only reach the game through the served contract, so a path
+    it builds and the server does not offer is a screen that half-loads -
+    which is what a feed added to one side and not the other would be.
+    """
+    source = _static('api.js')
+    called = set(re.findall(r'\$\{seatPath\(gameno, number\)\}/([\w/]+)',
+                            source))
+    offered = {str(rule) for rule in app.url_map.iter_rules()}
+    seat = '/games/<gameno>/players/<int:number>/'
+    for path in called:
+        # what the page fills in - a view's subject, a wait's budget - stops
+        # the comparison being a string match, so it is the literal part of
+        # the path that has to name a route
+        literal = path.rstrip('/')
+        assert any(route == seat + literal
+                   or route.startswith(seat + literal + '/')
+                   for route in offered), (
+            f'api.js calls {path} and no route serves it')
 
 
 def test_the_page_asks_only_for_views_that_exist():

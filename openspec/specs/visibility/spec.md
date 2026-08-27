@@ -135,6 +135,42 @@ point it is displayed is not sufficient.
 - **WHEN** the observer loads a game
 - **THEN** it reads the authoritative record and sees every unit
 
+### Requirement: An Account Of A Turn Is Bounded By What Was Seen
+
+The system SHALL tell a seat what a turn did to and by its own units, and SHALL
+tell it about other players' units only where that seat could see every unit
+involved.
+
+An account of a turn is a way of learning where somebody is. A seat told that
+two other players fought has been told they are near enough to have met, which
+is the fact `Enemy Units Are Hidden Until Contact` withholds.
+
+#### Scenario: My own unit
+
+- **WHEN** a seat's unit strikes, is struck, moves or is destroyed
+- **THEN** that seat is told, and told which unit did it
+
+#### Scenario: Two enemies fighting in sight
+
+- **WHEN** two other players' units fight and this seat can see both
+- **THEN** this seat is told what they did
+
+#### Scenario: Two enemies fighting out of sight
+
+- **WHEN** two other players' units fight and this seat can see neither
+- **THEN** this seat is told nothing of it, including that a square was
+  contested
+
+#### Scenario: Half a fight
+
+- **WHEN** two other players' units fight and this seat can see only one of them
+- **THEN** this seat is told nothing of it
+
+#### Scenario: The observer
+
+- **WHEN** the observer reads what a turn did
+- **THEN** it is told all of it
+
 ### Requirement: Enemy Unit Types Are Disclosed By Contact
 
 The system SHALL disclose an enemy unit type to a player only through contact

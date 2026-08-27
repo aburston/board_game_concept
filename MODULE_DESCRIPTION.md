@@ -78,6 +78,13 @@ not know how it is drawn.
 - **`turn.py`** - publishing orders, resolving a turn, and the commit barrier.
   The barrier lives here because "every player has committed" is a rule about
   the game, not a fact about files.
+- **`turn_feed.py`** - what each seat is told the turn did. The engine's
+  events, turned into records and filtered per seat: a seat reads anything one
+  of its own units did or had done to it, and other people's units only where
+  it could see every unit involved. The filtering happens at resolution
+  because a sighting lasts one turn, so there is nothing left later to decide
+  it with. It also puts the square of a contest onto the attacks thrown inside
+  it, which is what lets a board draw where a fight was.
 - **`identity.py`** - who a session is: the administrator, a player, or the
   observer, and what each is entitled to. The reserved numbers live here rather
   than in the domain because the engine resolves turns for players and has
@@ -103,11 +110,15 @@ not know how it is drawn.
   `schema.sql`. `held()` is a transaction (`BEGIN IMMEDIATE` for a writer,
   `BEGIN DEFERRED` for a reader, WAL on); `read_view` runs a visibility
   join against `sightings` rather than reading a materialised file; every
-  turn's events are recorded to `turn_events`, ready for a caller to read.
+  turn's events are recorded to `turn_events` and each seat's share of them to
+  `player_events`. The schema is re-applied whenever a table it describes is
+  missing, so a game made by an older build gains the tables added since.
   SQLite is the default backend.
-- **`schema.sql`** - the DDL loaded on first `ensure()` of a SQLite backend.
-  Each table maps nearly one-to-one to what a YAML file held; `sightings`
-  and `turn_events` are the two the schema adds.
+- **`schema.sql`** - the DDL loaded when a SQLite backend finds a table it
+  describes missing. Each table maps nearly one-to-one to what a YAML file
+  held; `sightings`, `turn_events` and `player_events` are the three the
+  schema adds. Every statement is `IF NOT EXISTS`, which is what makes
+  re-applying it to an existing game safe.
 - **`serialise.py`** - the plain-data documents storage takes: `units_document`
   for the units file shape, `serialise_draft` and `restore_draft` for the
   commands a session has not committed yet.
@@ -316,7 +327,10 @@ and `tests/test_web_flow.py` drives exactly the calls `api.js` makes.
 
 ## Not built yet
 
-An event-by-event replay of a resolution, and the unit programming the concept
-is named for. `turn_events` is written on every resolution and read by
-nothing: it is unfiltered, so serving it to a player would disclose the whole
-board. See `SPEC_COVERAGE.md` for what is documented but absent.
+The unit programming the concept is named for. See `SPEC_COVERAGE.md` for what
+is documented but absent.
+
+What a turn did is no longer among them: `turn_events` holds the whole log for
+a session entitled to the whole game, and `player_events` holds each seat's
+share of it, decided by `service/turn_feed.py` while the turn was being fought
+rather than by filtering the log afterwards.

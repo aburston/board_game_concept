@@ -10,6 +10,7 @@ import sys
 from ..domain import UnitType, budget
 from ..storage.serialise import units_document
 from . import identity
+from . import turn_feed
 from .errors import GameError
 
 
@@ -355,10 +356,24 @@ def resolve(game):
 
         # the authoritative record, and then what each player is entitled to see
         repository.write_units(units_document(game.board, turn=turn_number))
+        views = {}
         for number, player in game.players.items():
-            repository.write_view(
-                number,
-                units_document(game.board, player['obj'], turn=turn_number))
+            views[number] = units_document(game.board, player['obj'],
+                                           turn=turn_number)
+            repository.write_view(number, views[number])
+
+        # what the turn did, and what each seat may be told it did. Written
+        # here because this is where what each seat could see is still known:
+        # a sighting lasts one turn, so deciding it later would be deciding it
+        # from somebody else's visibility
+        feed = turn_feed.entries(events)
+        repository.write_turn_events(turn_number, feed)
+        for number, player in game.players.items():
+            owned = [unit.name for unit in game.board.units
+                     if unit.player.number == number]
+            visible = [unit['name'] for unit in views[number]['units'] or []]
+            repository.write_events(number, turn_number,
+                                    turn_feed.for_seat(feed, owned, visible))
 
         # --- and only now, the turn is over
 

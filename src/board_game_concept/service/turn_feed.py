@@ -1,0 +1,129 @@
+"""What each seat is told the turn did.
+
+`Board.commit` has always reported what it did - a move, an engagement, every
+attack with its damage, a destruction - and every one of those reports was
+thrown away as soon as the refusals had been picked out of it. A player was
+left to work out from the board what had happened to them, and could not: a
+unit that lost eight health looks exactly like a unit that lost none, and a
+square that was fought over looks exactly like a square that was not.
+
+This turns those events into a feed, one entry per thing that happened, and
+decides which of them each seat is entitled to read. Two rules do that
+deciding, and they are the whole of the visibility policy here:
+
+  - a seat is told about anything one of its own units did or had done to it;
+  - a seat is told about other people's units only where it could see every
+    unit involved, which is what `visibility` already grants it.
+
+An entry that names no unit - a square being contested, emptied or shared - is
+told to a seat only where that seat was already told about something else at
+the same square, so it reads as context for a fight the seat can see rather
+than as news of one it cannot.
+
+The engine does not put coordinates on an attack or a destruction, because it
+reports them from inside the contest that already said where it was. The feed
+does, by carrying the square of the contest onto the entries that follow it:
+what a player wants to know is where they were hit, and "somewhere" is not an
+answer a board can draw.
+"""
+
+from ..domain.events import Event, record
+
+# the kinds that open a fight at a square. Everything reported until the next
+# one of these belongs to that square
+CONTESTS = ('contested', 'collided')
+
+# the kinds that carry their own square
+PLACED = ('deployed', 'moved', 'joined', 'engaged', 'refused', 'retreated',
+          'held', 'undecided', 'emptied', 'shared')
+
+# the kinds reported from inside a contest, which is where they happened.
+# `removed` is not one of them: every destroyed unit is taken off the board
+# together at the end of the turn, by which time the contest being spoken of
+# is whichever was fought last, and that is somebody else's square
+INSIDE = ('attacked', 'destroyed')
+
+
+def entries(events):
+    """Every event as a plain record, with the square it happened on.
+
+    The order is the order it happened in, which is the order a person reads
+    it back in. `text` is the domain's own wording, so the browser, the CLI
+    and a log all say the same thing about the same event.
+    """
+    made = []
+    at_x = at_y = None
+    for event in events:
+        detail = dict(event.detail)
+        if event.kind in CONTESTS or event.kind in PLACED:
+            if detail.get('x') is not None:
+                at_x, at_y = detail['x'], detail['y']
+        elif event.kind in INSIDE and at_x is not None and 'x' not in detail:
+            # an attack or a destruction inside the contest just announced
+            detail['x'] = at_x
+            detail['y'] = at_y
+        made.append(record(event.kind, detail))
+    return made
+
+
+def names_in(entry):
+    """Every unit this entry names.
+
+    `units` is a count in some kinds and a list of names in others, which is
+    the engine's shape rather than a choice made here: a value that is not a
+    string is a number of contestants and names nobody.
+    """
+    detail = entry.get('detail') or {}
+    found = set()
+    for key in ('unit', 'target'):
+        if detail.get(key):
+            found.add(str(detail[key]))
+    listed = detail.get('units')
+    if isinstance(listed, str):
+        found.update(name for name in listed.split(',') if name)
+    return found
+
+
+def for_seat(made, owned, visible):
+    """The entries one seat may read, in the order they happened.
+
+    `owned` is the names of that seat's own units and `visible` the names of
+    every unit its published view holds - which is what it may be told about,
+    decided where `visibility` decides it rather than again here.
+    """
+    owned = set(owned or ())
+    visible = set(visible or ()) | owned
+    kept = []
+    squares = set()
+    for index, entry in enumerate(made):
+        named = names_in(entry)
+        if not named:
+            continue                       # square-only, decided below
+        if not (named & owned or named <= visible):
+            continue
+        kept.append(index)
+        square = _square(entry)
+        if square is not None:
+            squares.add(square)
+
+    # the square-only entries, kept where the seat can already see the fight
+    for index, entry in enumerate(made):
+        if names_in(entry):
+            continue
+        square = _square(entry)
+        if square is not None and square in squares:
+            kept.append(index)
+
+    return [made[index] for index in sorted(kept)]
+
+
+def _square(entry):
+    detail = entry.get('detail') or {}
+    if detail.get('x') is None or detail.get('y') is None:
+        return None
+    return (detail['x'], detail['y'])
+
+
+def as_events(made):
+    """The records back as `Event`s, for a caller that wants the domain type."""
+    return [Event(entry['kind'], **entry['detail']) for entry in made]

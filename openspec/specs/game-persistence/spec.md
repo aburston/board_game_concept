@@ -450,6 +450,49 @@ resolved.
 - **AND** the board holds no trace of the refused unit
 - **AND** the player is free to deploy it elsewhere on a later turn
 
+### Requirement: Turn Event Publication
+
+The system SHALL record what each resolution did - units placed and moved,
+engagements, every attack with its damage, every destruction, and how each
+contested square was decided - as a log of the whole turn, and SHALL record
+for each seat the part of that log the seat was entitled to be told.
+
+A seat's record SHALL be decided at resolution, from what that seat could see
+while the turn was being fought. It SHALL NOT be produced by filtering the
+whole log when it is read, because a sighting lasts one turn and by then there
+is nothing left to say who could see what.
+
+Both records SHALL keep the turns that came before, so that what a game did
+can be read back rather than inferred from the position it left.
+
+#### Scenario: A resolution is recorded
+
+- **WHEN** the server resolves a turn
+- **THEN** the whole of what that turn did is recorded against the turn number
+- **AND** each seat's share of it is recorded against that seat and that turn
+
+#### Scenario: A fight a seat was in
+
+- **WHEN** one of a seat's units fights
+- **THEN** that seat's record holds every attack of that fight, the damage each
+  dealt, and the square it was fought on
+
+#### Scenario: A fight a seat could not see
+
+- **WHEN** two other players fight where this seat can see neither of them
+- **THEN** nothing of that fight is in this seat's record
+
+#### Scenario: The turns before this one
+
+- **WHEN** several turns have been resolved
+- **THEN** each turn's record is still readable, named by its turn number
+
+#### Scenario: An added record does not need the game to be remade
+
+- **WHEN** a game made before turn events were recorded is opened
+- **THEN** the store gains the tables or files they are kept in
+- **AND** nothing already stored is changed
+
 ### Requirement: Turn Number And Outcome Persistence
 
 The system SHALL persist the number of the last turn resolved and, once the game

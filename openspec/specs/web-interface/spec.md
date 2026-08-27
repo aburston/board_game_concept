@@ -268,6 +268,12 @@ give, change or withdraw an order for that turn.
 - **THEN** no order can be given, changed or withdrawn for that turn
 - **AND** the board can still be seen
 
+#### Scenario: The commit that has just landed
+
+- **WHEN** a commit has been accepted
+- **THEN** the interface says so without being reloaded
+- **AND** it stops offering to commit that turn again
+
 ### Requirement: Waiting Says Who Is Being Waited For
 
 The system SHALL show, while a turn is held open, that it is waiting and which
@@ -322,6 +328,76 @@ where they are, so that what happened is visible rather than only its result.
 - **THEN** what is shown describes that turn
 - **AND** the previous turn's refusals are not shown again
 
+### Requirement: Every Unit's Health Is Shown Against What It Was Built With
+
+The system SHALL show, for every unit it draws, the health that unit has left
+and the health its type was designed with, and SHALL do so on the board and in
+the orders tray rather than only where a pointer is held still.
+
+A unit a blow from destruction and a unit nobody has touched SHALL NOT be
+drawn alike.
+
+#### Scenario: A unit that has been fought
+
+- **WHEN** a unit has lost health
+- **THEN** what it has left and what it was built with are both shown
+- **AND** it is drawn differently from a unit at full health
+
+#### Scenario: On a device with no pointer
+
+- **WHEN** the interface is used on a touchscreen
+- **THEN** health is readable without hovering anything
+
+### Requirement: What The Turn Did Is Told As A Feed
+
+The system SHALL show, when a turn has resolved, an account of what the turn
+did in the order it happened - units placed and moved, engagements, every
+attack with the damage it dealt, and every unit destroyed - and SHALL keep the
+turns before it, so a player can read back how the position was arrived at.
+
+The account SHALL be the one the server wrote for that seat. The interface
+SHALL NOT decide for itself what may be told.
+
+#### Scenario: A fight the seat was in
+
+- **WHEN** a turn resolves in which one of the player's units fought
+- **THEN** the account names who struck whom, for how much, and where
+- **AND** says which units were destroyed
+
+#### Scenario: A turn that is over
+
+- **WHEN** later turns have resolved
+- **THEN** the earlier turns can still be read
+
+#### Scenario: Nothing the seat could see
+
+- **WHEN** a turn resolves in which nothing the seat could see happened
+- **THEN** the account says so rather than showing another seat's turn
+
+### Requirement: Where The Fighting Was Is Marked On The Board
+
+The system SHALL mark, on the squares themselves, where the last turn was
+fought, what it cost this seat there, and where a unit fell.
+
+A coordinate in a list is not a picture of a battle, and the board is what a
+player is looking at.
+
+#### Scenario: A square that was fought over
+
+- **WHEN** a turn resolves having fought over a square the seat can see
+- **THEN** that square is marked as fought over
+- **AND** the damage the seat's own units took there is shown on it
+
+#### Scenario: A unit destroyed
+
+- **WHEN** a unit is destroyed on a square
+- **THEN** the square is marked as one where a unit fell
+
+#### Scenario: A quiet turn
+
+- **WHEN** a turn resolves with no fighting the seat can see
+- **THEN** no square is marked
+
 ### Requirement: A Decided Game Is Shown As Decided
 
 The system SHALL show the outcome when a game has been decided, saying who won
@@ -331,7 +407,8 @@ showing the final board.
 #### Scenario: A game that is won
 
 - **WHEN** a game is decided with a winner
-- **THEN** the outcome names the winner
+- **THEN** the outcome names the winner in words a player reads
+- **AND** it says whether that winner is this seat
 - **AND** no order or commit is offered
 
 #### Scenario: A draw

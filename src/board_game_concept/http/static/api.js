@@ -90,6 +90,13 @@ export const perform = (gameno, number, command) =>
 export const commit = (gameno, number) =>
   post(`${seatPath(gameno, number)}/commit`);
 
+// what the turns did, as this seat was told it. `since` is a turn number:
+// the feed is a history, and a screen that only ever wants the last turn asks
+// for the last turn rather than being handed one
+export const readEvents = (gameno, number, since) =>
+  get(`${seatPath(gameno, number)}/events`
+      + (since === undefined || since === null ? '' : `?since=${since}`));
+
 export const waitForTurn = (gameno, number, budget) =>
   get(`${seatPath(gameno, number)}/wait/turn?budget=${budget}`);
 

@@ -10,6 +10,17 @@
 //     not an empty row;
 //   - that an enemy dropping off the board is contact lost, not a defect.
 //
+// And three things about the turn that just happened, because a player who
+// cannot see them is playing blind:
+//
+//   - what every unit has left, health as well as energy, on the board and in
+//     the tray - a unit one blow from destruction looked exactly like a fresh
+//     one;
+//   - what the turn did, in the order it did it, from the feed the server
+//     wrote for this seat - who struck whom, for how much, and who fell;
+//   - where it happened, marked on the squares it happened on, because a list
+//     of coordinates is not a picture of a battle.
+//
 // The last one is the one to be careful with. A player is not entitled to
 // remember where an enemy was, so this says contact was lost and draws
 // nothing on the square: a remembered position would hand them what the rules
@@ -66,6 +77,61 @@ export function renderPlay() {
   return wrap;
 }
 
+// --- what the turns did, as this seat was told it
+//
+// `state.events` is the feed the server wrote for this seat when each turn
+// resolved. Nothing is filtered here: what a seat may be told was decided
+// while the turn was being fought, by what it could see at the time.
+
+function turnsInFeed() {
+  const turns = new Set();
+  for (const entry of state.events || []) turns.add(entry.turn);
+  return [...turns].sort((a, b) => a - b);
+}
+
+function feedFor(turn) {
+  return (state.events || []).filter((entry) => entry.turn === turn);
+}
+
+function lastTurnInFeed() {
+  const turns = turnsInFeed();
+  return turns.length ? turns[turns.length - 1] : null;
+}
+
+/**
+ * Where the last turn was fought, by square.
+ *
+ * Keyed `x,y`, each holding what to say about that square: how much damage
+ * was dealt on it, and which units fell there. A square nobody fought on is
+ * not in the map, so the board draws nothing on it.
+ */
+export function marksFrom(entries, isMine) {
+  const mine = isMine || (() => false);
+  const marks = new Map();
+  for (const entry of entries || []) {
+    if (!entry.fighting) continue;
+    const { x, y } = entry.detail || {};
+    if (x === null || x === undefined || y === null || y === undefined) continue;
+    const key = `${x},${y}`;
+    const mark = marks.get(key)
+      || { x, y, taken: 0, dealt: 0, fallen: [], lost: [] };
+    if (entry.kind === 'attacked') {
+      const damage = Number(entry.detail.damage) || 0;
+      // whose blow it was decides which number it belongs to: what a player
+      // wants off a board is what it cost *them*, not a total they then have
+      // to work out their share of
+      if (mine(entry.detail.target)) mark.taken += damage;
+      else mark.dealt += damage;
+    }
+    if (entry.kind === 'destroyed') {
+      mark.fallen.push(entry.detail.unit);
+      if (mine(entry.detail.unit)) mark.lost.push(entry.detail.unit);
+    }
+    marks.set(key, mark);
+  }
+  return marks;
+}
+
 // --- what a move costs, and what a unit has to spend
 
 function typeOf(game, unit) {
@@ -103,11 +169,25 @@ function renderBoardCard(game) {
   const selected = state.selected
     && standing(game).find((unit) => unit.name === state.selected);
 
+  // who is mine is read off the feed's own names against this seat's units,
+  // including units that were destroyed and are no longer on the board
+  const ours = new Set(myUnits(game).map((unit) => unit.name));
+  const fought = marksFrom(feedFor(lastTurnInFeed()),
+                           (name) => ours.has(name));
+
   card.append(renderBoard(game.board, game.units, {
     mine: game.number,
     selected: state.selected,
     cursor: watching ? null : state.cursor,
     reachable: selected ? reachableFrom(game, selected) : null,
+    marks: fought,
+    // a unit is drawn with what it has left, which is the whole point of
+    // being told the turn wore it down
+    healthOf: (unit) => {
+      const type = typeOf(game, unit);
+      return type ? { now: Number(unit.health), full: Number(type.health) }
+                  : { now: Number(unit.health), full: null };
+    },
     onUnit: watching ? null : (unit) => {
       set({ selected: unit.name, cursor: { x: unit.x, y: unit.y } });
     },
@@ -126,6 +206,14 @@ function renderBoardCard(game) {
       `${entry.symbol} = ${entry.type} (player ${entry.player})`), '  ');
   }
   if ((game.board.legend || []).length) card.append(legend);
+  if (fought.size) {
+    card.append(element('p', { class: 'small muted' },
+      element('span', { class: 'clash-key' }, '⚔'),
+      ` ${fought.size === 1 ? 'the square' : 'the squares'} last turn was `
+      + 'fought on. The number is what it cost you, and ',
+      element('span', { class: 'clash-key' }, '☠'),
+      ' is where a unit fell.'));
+  }
   return card;
 }
 
@@ -165,6 +253,7 @@ function renderOrders(game) {
     element('th', {}, 'Unit'),
     element('th', {}, 'Order'),
     element('th', { class: 'number' }, 'Costs'),
+    element('th', { class: 'number' }, 'Health'),
     element('th', { class: 'number' }, 'Energy'),
     element('th', {}, ''))));
 
@@ -206,6 +295,7 @@ function renderOrders(game) {
         : element('span', {}, 'hold')));
     row.append(element('td', { class: 'number fare' },
       ordered ? String(fare) : '+1 rest'));
+    row.append(element('td', { class: 'number' }, health(game, unit)));
     row.append(element('td', { class: 'number' }, String(unit.energy)));
     row.append(element('td', {}, ordered && !affordable
       ? element('span', { class: 'tag warn' }, 'cannot pay')
@@ -226,8 +316,54 @@ function renderOrders(game) {
       'Choose one of your units to order it.'));
   }
 
+  card.append(renderBarrier(game));
   card.append(renderCommit(game));
   return card;
+}
+
+/**
+ * Who else has committed, before this seat has.
+ *
+ * A turn resolves when everybody has committed, and until this said so the
+ * only way to find out whether the others were waiting on you was to commit
+ * and see.
+ */
+function renderBarrier(game) {
+  const barrier = state.barrier;
+  if (!barrier || game.unprocessed_moves) return element('span', {});
+  const missing = (barrier.waiting_on || []).filter(
+    (number) => number !== game.number);
+  if (barrier.met) {
+    return element('p', { class: 'small muted' },
+      'Every other seat has committed.');
+  }
+  if (!missing.length) {
+    return element('p', { class: 'small muted' },
+      'Every other seat has committed. The turn resolves when you do.');
+  }
+  return element('p', { class: 'small muted' },
+    `Still to commit: ${missing.map((number) => `seat ${number}`).join(', ')}.`);
+}
+
+/**
+ * What a unit has left, against what its type was built with.
+ *
+ * `8/8` for a unit nobody has touched and `2/10` for one a step from being
+ * destroyed - the number that decides whether to fight or fall back, and the
+ * one this screen used to keep in a tooltip nobody hovers on a phone.
+ */
+function health(game, unit) {
+  const type = typeOf(game, unit);
+  const now = Number(unit.health);
+  if (!type) return element('span', {}, String(now));
+  const full = Number(type.health);
+  const share = full > 0 ? now / full : 1;
+  const cell = element('span', {
+    class: ['health', share <= 0.25 ? 'critical' : '',
+            share < 1 ? 'hurt' : ''].join(' ').trim(),
+    title: share < 1 ? `${full - now} lost of ${full}` : 'unhurt',
+  }, `${now}/${full}`);
+  return cell;
 }
 
 function renderDirections(game, units) {
@@ -253,6 +389,11 @@ function renderCommit(game) {
         'Commit this turn? It cannot be withdrawn or amended.')) return;
       try {
         const answer = await api.commit(game.gameno, game.number);
+        // the seat is re-read before anything is drawn. Without it the screen
+        // still held the state from before the commit, so it drew the commit
+        // button again and said nothing about waiting: the commit had landed
+        // and the only way to find that out was to reload the page
+        await loadSeat(game.gameno, game.number);
         set({ waiting: answer, selected: null });
         await watch(game);
       } catch (error) {
@@ -266,13 +407,18 @@ function renderCommit(game) {
 function renderWaiting(game) {
   const card = element('div', { class: 'card' });
   const missing = (state.waiting && state.waiting.waiting_on) || [];
-  card.append(element('h2', { class: 'waiting' }, 'Waiting'));
-  card.append(element('p', {}, missing.length
-    ? `Waiting for ${missing.length === 1 ? 'seat' : 'seats'} ` +
-      `${missing.join(', ')} to commit.`
-    : 'Waiting for the turn to resolve.'));
+  card.append(element('h2', { class: 'waiting' },
+                      `Turn ${game.turn_number + 1} is committed`));
+  card.append(element('p', {},
+    element('strong', {}, 'Your orders are in. '),
+    missing.length
+      ? `Waiting for ${missing.length === 1 ? 'seat' : 'seats'} ` +
+        `${missing.join(', ')} to commit.`
+      : 'Waiting for the turn to resolve.'));
   card.append(element('p', { class: 'small muted' },
-    'An eliminated player is not waited for.'));
+    'The board moves on by itself when everybody has committed - there is '
+    + 'nothing to reload and nothing else to press. An eliminated player is '
+    + 'not waited for.'));
   return card;
 }
 
@@ -312,19 +458,22 @@ async function watch(game) {
   }
 }
 
-// --- what the last turn did
+// --- what the turns did
 
 function renderLastTurn(game) {
   const card = element('div', { class: 'card' });
-  card.append(element('h2', {}, 'Last turn'));
+  const turns = turnsInFeed();
+  const latest = lastTurnInFeed();
+
+  card.append(element('h2', {}, latest === null
+    ? 'What happened'
+    : `What happened on turn ${latest}`));
 
   const refused = game.rejected || [];
   const dropped = game.dropped || [];
   const lost = lostContact(game);
-  let said = false;
 
   if (refused.length) {
-    said = true;
     const list = element('ul', {});
     for (const entry of refused) {
       list.append(element('li', {},
@@ -335,15 +484,22 @@ function renderLastTurn(game) {
   }
 
   if (dropped.length) {
-    said = true;
     const list = element('ul', {});
     for (const entry of dropped) list.append(element('li', {}, entry.message));
     card.append(element('div', { class: 'notice' },
       element('strong', {}, 'Work that could not be replayed'), list));
   }
 
+  if (latest === null) {
+    card.append(element('p', { class: 'muted' },
+      game.turn_number
+        ? 'Nothing was reported for the last turn.'
+        : 'The game has not started yet.'));
+  } else {
+    card.append(renderTurn(game, latest));
+  }
+
   if (lost.length) {
-    said = true;
     card.append(element('div', { class: 'lost' },
       element('strong', {}, 'Contact lost'),
       element('p', { class: 'small' },
@@ -352,13 +508,74 @@ function renderLastTurn(game) {
         'off your board. You are not told where they went.')));
   }
 
-  if (!said) {
-    card.append(element('p', { class: 'muted' },
-      game.turn_number
-        ? 'Nothing of yours was refused, and nothing dropped out of view.'
-        : 'The game has not started yet.'));
+  // the turns before the last one. Folded away rather than dropped: what a
+  // player wants nine times in ten is the turn that just happened, and the
+  // tenth time is the one where they are trying to work out how they got
+  // here - and that is exactly when a history that was never kept hurts
+  const earlier = turns.slice(0, -1).reverse();
+  if (earlier.length) {
+    card.append(element('p', {},
+      button(state.showHistory
+        ? 'hide earlier turns'
+        : `earlier turns (${earlier.length})`,
+        () => set({ showHistory: !state.showHistory }),
+        { class: 'link' })));
+    if (state.showHistory) {
+      for (const turn of earlier) {
+        const past = element('div', { class: 'past-turn' });
+        past.append(element('h3', {}, `Turn ${turn}`));
+        past.append(renderTurn(game, turn));
+        card.append(past);
+      }
+    }
   }
   return card;
+}
+
+/**
+ * One turn of the feed, in the order it happened.
+ *
+ * A blow is drawn as a blow and a move as a move, because a player scanning
+ * this wants the fighting first and the manoeuvring as context. Resting is
+ * counted rather than listed: ten units recovering a point each is ten lines
+ * saying nothing, and the one line saying it is the one worth reading.
+ */
+function renderTurn(game, turn) {
+  const entries = feedFor(turn);
+  const wrap = element('div', {});
+  if (entries.length === 0) {
+    wrap.append(element('p', { class: 'muted' },
+      'Nothing you could see happened on this turn.'));
+    return wrap;
+  }
+
+  const rested = entries.filter((entry) => entry.kind === 'rested');
+  const told = entries.filter((entry) => entry.kind !== 'rested');
+
+  const list = element('ul', { class: 'feed' });
+  for (const entry of told) {
+    const where = entry.detail || {};
+    const line = element('li', {
+      class: ['event', entry.kind,
+              entry.fighting ? 'fought' : ''].join(' ').trim(),
+    });
+    line.append(element('span', { class: 'what' }, entry.text));
+    if (where.x !== undefined && where.x !== null
+        && where.y !== undefined && where.y !== null
+        && !/\(\d+, \d+\)/.test(entry.text)) {
+      line.append(element('span', { class: 'small muted' },
+                          ` at (${where.x}, ${where.y})`));
+    }
+    list.append(line);
+  }
+  if (told.length) wrap.append(list);
+
+  if (rested.length) {
+    wrap.append(element('p', { class: 'small muted' },
+      `${rested.length} ${rested.length === 1 ? 'unit' : 'units'} rested and `
+      + 'recovered a point of energy.'));
+  }
+  return wrap;
 }
 
 /**
@@ -379,10 +596,32 @@ function lostContact(game) {
     .map((unit) => unit.name);
 }
 
+/**
+ * How the game ended, in the words a player would use.
+ *
+ * `outcome` is `{decided, winner, turn}` - a record, not a sentence. Putting
+ * it on the page as it stood printed `[object Object]`, which is the one
+ * thing a player who has just won or lost should not be told.
+ */
+export function outcomeText(outcome, seat) {
+  if (!outcome) return '';
+  if (typeof outcome === 'string') return outcome;
+  const turn = outcome.turn ? ` on turn ${outcome.turn}` : '';
+  if (outcome.winner === null || outcome.winner === undefined) {
+    return `Nobody is left standing${turn}. The game is a draw.`;
+  }
+  if (outcome.winner === seat) {
+    return `You won${turn}: yours are the last units standing.`;
+  }
+  return `Seat ${outcome.winner} won${turn}. Nothing of yours is left `
+    + 'standing.';
+}
+
 function renderOutcome(game) {
   const card = element('div', { class: 'card' });
   card.append(element('h2', {}, 'The game is decided'));
-  card.append(element('p', { class: 'notice' }, game.outcome));
+  card.append(element('p', { class: 'notice' },
+                      outcomeText(game.outcome, game.number)));
   card.append(element('p', { class: 'small muted' },
     'No further order or commit is accepted. The final board is below.'));
   return card;

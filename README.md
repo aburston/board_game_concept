@@ -151,6 +151,21 @@ hard way: what a move will cost before you commit it, that a unit given no
 order recovers a point (so holding is a choice, not an empty row), and that an
 enemy vanishing from your board is contact lost rather than a defect.
 
+It also tells you what the turn did. Every unit is drawn with the health it
+has left against the health its type was built with, so a unit a blow from
+destruction does not look like a fresh one. Under the board is an account of
+the turn in the order it happened — who engaged whom, every attack and the
+damage it dealt, and every unit destroyed — with the turns before it a click
+away. The squares that were fought on are marked on the board itself, with
+what the fighting cost you there and where a unit fell.
+
+That account is the server's, not the browser's. It is written for each seat
+when the turn resolves, out of what that seat could see while it was being
+fought: you are told what happened to your own units and what other people's
+did only where you could see them. A fight between two players you cannot see
+is not in your feed at all — being told it happened would give away that they
+are near each other, which is the thing visibility withholds.
+
 It is playable from the keyboard: arrow keys move about the board, `Enter`
 selects the unit under the cursor, an arrow key then orders it that way, and
 `c` commits.

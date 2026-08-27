@@ -151,6 +151,32 @@ def create_app(base_path=None, backend=None, account_store=None):
             return jsonify({'error': 'no board yet'}), 404
         return jsonify({subject: builder(data)})
 
+    @app.get('/games/<gameno>/players/<int:number>/events')
+    @acts_as_number
+    def read_events(gameno, number):
+        """What the turns did, as this seat was told it.
+
+        A seat reads the feed that was written for it when each turn
+        resolved; a session entitled to the whole game reads the whole log.
+        Neither is filtered here: what a seat may be told was decided by what
+        it could see while the turn was being fought, and there is nothing
+        left at this end of the wire to decide it with.
+        """
+        since = request.args.get('since')
+        try:
+            since = None if since is None else int(since)
+        except ValueError:
+            return jsonify({'error': 'since is a turn number'}), 400
+        repository = _repository(gameno)
+        try:
+            if identity.sees_everything(number):
+                events = repository.read_turn_events(since=since)
+            else:
+                events = repository.read_events(number, since=since)
+        except GameDataError as error:
+            return _game_error_response(error)
+        return jsonify({'events': events})
+
     @app.post('/games/<gameno>/players/<int:number>/commands')
     @acts_as_number
     def perform_command(gameno, number):
