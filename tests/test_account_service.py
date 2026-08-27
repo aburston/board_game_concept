@@ -17,13 +17,17 @@ from board_game_concept.domain import Kind                # noqa: E402
 from board_game_concept.service import accounts, identity  # noqa: E402
 from board_game_concept.service.errors import (            # noqa: E402
     AccountError, NotAuthenticated, NotAuthorised, PasswordMustChange)
+from board_game_concept.storage.account_store import (  # noqa: E402
+    make_account_store)
 from board_game_concept.storage.sqlite_account_store import (  # noqa: E402
-    SqliteAccountStore, password_matches)
+    password_matches)
+from game_harness import DEFAULT_BACKEND                    # noqa: E402
 
 
 @pytest.fixture(name='store')
 def _store(tmp_path):
-    store = SqliteAccountStore(str(tmp_path / 'server'))
+    # the same backend the games in this run use: one choice drives both
+    store = make_account_store(DEFAULT_BACKEND, str(tmp_path / 'server'))
     store.ensure()
     return store
 

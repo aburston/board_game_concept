@@ -73,18 +73,38 @@ rather than by care.
 
 ### Accounts live in their own store, beside the games tree
 
-`<base_path>/accounts.sqlite3`, holding `accounts`, `memberships` and
-`sessions`. Not inside any `games/_<gameno>/`, because an account outlives
-every game it plays in and belongs to none of them.
+Not inside any `games/_<gameno>/`, because an account outlives every game it
+plays in and belongs to none of them. `accounts.sqlite3` under the SQLite
+backend; `accounts/` holding three YAML files under the YAML one.
 
 It gets its own port — `storage/account_store.py`, in the shape of
-`storage/repository.py` — rather than new methods on `GameRepository`. Three
+`storage/repository.py` — rather than new methods on `GameRepository`. Two
 reasons. A game repository is chosen per game and built per request; an
-account store is one per server. `GameRepository` has two implementations that
-must stay byte-comparable for the persistence tests, and a person is not part
-of what those tests compare. And the YAML backend exists so an operator can
-`cat` a game; password hashes are the one thing in this system that should not
-be sitting in a readable file. **SQLite only, no YAML implementation.**
+account store is one per server. And `GameRepository` has two implementations
+that must stay byte-comparable for the persistence tests, which a person is
+not part of.
+
+**Both backends implement it, and one choice drives both.** This reverses an
+earlier decision here that the store should be SQLite only, on the grounds
+that the YAML backend exists so an operator can `cat` a game and a password
+hash is the one thing that should not be sitting in a readable file.
+
+That reasoning was about the hashes, and it missed a larger property: a
+deployment is one thing. A SQLite account store beside a YAML game store makes
+"which backend is this?" a question with two answers — one for the games and
+one for the people — which nothing else in this project does and nothing
+should have to reason about. So `make_account_store(backend, base_path)`
+returns the store for the backend the games use, taking the name
+`cli/session.py` already resolves from `--backend` and `BOARD_GAME_BACKEND`.
+There is deliberately no way to ask for one of each.
+
+What the earlier reasoning was right about is the cost, and it is paid rather
+than argued away: under YAML the scrypt hashes sit in a file. They are not
+reversible, but a file walks off more easily than a table does, so the store
+directory and its files are created `0700`/`0600`, with the mode set as the
+file is created rather than after it — otherwise there is a window in which
+the hashes are readable by anyone. An operator who would rather not make that
+trade runs SQLite, which is the default.
 
 ### The seat stays in the path; authorisation is a guard
 

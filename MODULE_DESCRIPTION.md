@@ -276,21 +276,25 @@ may act as, over HTTP.
     account may be. `service/identity.py` still answers what a *number* is
     entitled to and is untouched.
   * `storage/account_store.py` - the port, in the shape of
-    `storage/repository.py`.
-  * `storage/sqlite_account_store.py`, `storage/accounts.sql` - the one
-    implementation. SQLite only, deliberately: the YAML backend exists so an
-    operator can `cat` a game, and a password hash should not be sitting in a
-    readable file.
+    `storage/repository.py`, and `make_account_store`, which is the only way
+    one is built.
+  * `storage/sqlite_account_store.py`, `storage/accounts.sql` - the SQLite
+    implementation, one file at `accounts.sqlite3`.
+  * `storage/yaml_account_store.py` - the YAML implementation, three files
+    under `accounts/`, created private to the user running the server because
+    they carry password hashes.
   * `http/auth.py` - the guard in front of every route that names a number,
     and where a token is read from.
   * `http/sessions.py` - registering, signing in and out, passwords, tokens.
   * `http/seats.py` - which seats a game holds, and taking or giving up one.
 
-The store is one file for the whole server, `accounts.sqlite3`, beside the
-`games/` tree rather than inside any game — the only state in this project
-that is not scoped to one game, because a person outlives every game they
-play in. It is opened per request, for the same reason a game repository is:
-a SQLite connection belongs to the thread that opened it.
+The store is one per server, beside the `games/` tree rather than inside any
+game — the only state in this project that is not scoped to one game, because
+a person outlives every game they play in. Which backend keeps it is the
+backend the games use: one choice drives both, and a deployment is never a
+SQLite store beside YAML games. It is opened per request, for the same reason
+a game repository is: a SQLite connection belongs to the thread that opened
+it.
 
 ## Not built yet
 

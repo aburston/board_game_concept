@@ -5,20 +5,31 @@ game: the point of this store is that it belongs to the server rather than to
 any one game.
 """
 
+import os
 from datetime import timedelta
 
 import pytest
 
 from board_game_concept.domain import Kind
 from board_game_concept.domain import account as account_rules
+from board_game_concept.storage.account_store import make_account_store
 from board_game_concept.storage.sqlite_account_store import (
     STORE_FILENAME, SqliteAccountStore, hash_password, new_token,
     password_matches, session_expiry, _now)
+from board_game_concept.storage.yaml_account_store import STORE_DIRNAME
+
+
+# both implementations of the port, held to the same behaviour. What a
+# deployment may not do is mix them - that is `make_account_store`'s to
+# refuse, and `test_accounts_end_to_end.py` is where it is held to.
+@pytest.fixture(name='backend', params=['sqlite', 'yaml'])
+def _backend(request):
+    return request.param
 
 
 @pytest.fixture(name='store')
-def _store(tmp_path):
-    store = SqliteAccountStore(str(tmp_path))
+def _store(tmp_path, backend):
+    store = make_account_store(backend, str(tmp_path))
     store.ensure()
     return store
 
@@ -42,16 +53,19 @@ def test_first_start_creates_the_two_system_accounts(store):
     assert password_matches(observer.password_hash, 'observer')
 
 
-def test_the_store_lives_beside_the_games_rather_than_in_one(store, tmp_path):
-    assert (tmp_path / STORE_FILENAME).exists()
+def test_the_store_lives_beside_the_games_rather_than_in_one(store, tmp_path,
+                                                             backend):
+    kept = STORE_FILENAME if backend == 'sqlite' else STORE_DIRNAME
+    assert (tmp_path / kept).exists()
     assert not (tmp_path / 'games').exists()
 
 
-def test_a_later_start_does_not_reset_a_changed_password(store, tmp_path):
+def test_a_later_start_does_not_reset_a_changed_password(store, tmp_path,
+                                                         backend):
     administrator = store.read_account_by_name('admin')
     store.set_password(administrator.account_id, hash_password('new-secret'))
 
-    reopened = SqliteAccountStore(str(tmp_path))
+    reopened = make_account_store(backend, str(tmp_path))
     reopened.ensure()
     again = reopened.read_account_by_name('admin')
 
@@ -61,8 +75,8 @@ def test_a_later_start_does_not_reset_a_changed_password(store, tmp_path):
 
 
 def test_a_later_start_does_not_clear_must_change_on_an_unchanged_one(
-        store, tmp_path):
-    reopened = SqliteAccountStore(str(tmp_path))
+        store, tmp_path, backend):
+    reopened = make_account_store(backend, str(tmp_path))
     reopened.ensure()
     assert reopened.read_account_by_name('observer').must_change
 
@@ -112,13 +126,21 @@ def test_two_accounts_with_one_password_have_different_hashes(store):
     assert password_matches(two.password_hash, 'the-same-one')
 
 
-def test_the_password_is_not_stored_readably(store):
+def test_the_password_is_not_stored_readably(store, tmp_path):
+    """Whatever the backend keeps, the password is not in it.
+
+    Read off the disk rather than through the store, so this cannot pass by
+    the store politely declining to hand it back.
+    """
     _player(store, 'ada', 'secret12')
-    row = store._get(
-        'SELECT * FROM accounts WHERE username_key=?', ('ada',)).fetchone()
-    for value in tuple(row):
-        assert 'secret12' != value
-        assert 'secret12' not in str(value)
+
+    found = []
+    for root, _dirs, files in os.walk(str(tmp_path)):
+        for name in files:
+            with open(os.path.join(root, name), 'rb') as file:
+                found.append(file.read())
+    assert found
+    assert not any(b'secret12' in blob for blob in found)
 
 
 def test_setting_a_password_clears_must_change(store):
@@ -247,7 +269,8 @@ def test_an_unclaimed_seat_holds_nobody(store):
     assert store.seats_of_game('1') == {}
 
 
-def test_two_claims_arriving_together_cannot_both_succeed(store, tmp_path):
+def test_two_claims_arriving_together_cannot_both_succeed(store, tmp_path,
+                                                          backend):
     """The refusal comes from the primary key, not a read-then-write.
 
     Two stores over one file, each claiming the same seat inside its own
@@ -256,7 +279,7 @@ def test_two_claims_arriving_together_cannot_both_succeed(store, tmp_path):
     ada = _player(store, 'ada')
     bob = _player(store, 'bob')
 
-    other = SqliteAccountStore(str(tmp_path))
+    other = make_account_store(backend, str(tmp_path))
     other.ensure()
 
     with store.held():
@@ -269,7 +292,16 @@ def test_two_claims_arriving_together_cannot_both_succeed(store, tmp_path):
     assert other.read_membership('1', 2) == ada.account_id
 
 
-def test_deleting_an_account_takes_its_seats_and_tokens(store):
+def test_deleting_an_account_takes_its_seats_and_tokens(store, backend):
+    """SQLite cascades; the YAML store has no rows to cascade from.
+
+    Deleting an account is not something either store offers through the port
+    - there is no `delete_account` - so this is about the SQLite schema being
+    trustworthy rather than about a use case.
+    """
+    if backend != 'sqlite':
+        pytest.skip('no cascade to test without foreign keys')
+
     ada = _player(store)
     token = new_token()
     store.create_session(ada.account_id, token, session_expiry())

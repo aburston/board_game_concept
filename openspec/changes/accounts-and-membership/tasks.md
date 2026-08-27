@@ -57,6 +57,38 @@
       one game, a released seat is claimable again, a session is created, read
       and deleted, and an expired session does not read back.
 
+## 2b. One backend, both stores
+
+- [x] 2b.1 Add `make_account_store(backend, base_path)` to
+      `storage/account_store.py` - the only way a store is built, returning
+      the implementation for that backend and refusing a name that is neither
+      (design.md - "Both backends implement it, and one choice drives both").
+- [x] 2b.2 Add `storage/yaml_account_store.py`: three files under
+      `accounts/` - `accounts.yaml`, `memberships.yaml`, `sessions.yaml` -
+      behind the same port, written by replacement so a reader sees the
+      previous contents or the new ones and never half of either.
+- [x] 2b.3 `claim_seat` reads and writes inside one exclusive hold, so two
+      claims arriving together cannot both succeed - the guarantee the SQLite
+      backend gets from its primary key.
+- [x] 2b.4 Create the directory `0700` and each file `0600`, with the mode set
+      as the file is created rather than after it: setting it afterwards
+      leaves a window in which the hashes are readable by anybody. Best
+      effort, so a filesystem without modes is not a reason to refuse to
+      serve.
+- [x] 2b.5 `http/app.py` builds the store from the backend it was given,
+      falling back to `session_module.default_backend()`. Verify: an app made
+      with `backend='yaml'` creates `accounts/` and no `accounts.sqlite3`, and
+      one made with `backend='sqlite'` the reverse.
+- [x] 2b.6 Parametrise `tests/test_account_store.py` over both
+      implementations, so the port is held to one behaviour. The
+      password-not-readable case walks the whole directory on disk rather than
+      asking the store, so it cannot pass by the store politely declining to
+      hand a hash back.
+- [x] 2b.7 Unpin `tests/test_accounts_end_to_end.py` from SQLite and run it
+      against both backends - everything it does happens over HTTP, so it is
+      where "one choice drives both" is actually held. It asserts the other
+      backend's store was **not** created.
+
 ## 3. What a caller may ask about an account
 
 - [x] 3.1 Add `service/accounts.py` with one function per use case —

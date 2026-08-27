@@ -30,10 +30,17 @@ what changes is that a number now has to be **proven** rather than asserted.
 
 ## What Changes
 
-- **Accounts exist, and live outside any game.** A new server-wide store at
-  `<base_path>/accounts.sqlite3` holds accounts, memberships and sessions.
-  This is the first state this project has that is not scoped to one game, and
-  it needs to be, because a person outlives a game.
+- **Accounts exist, and live outside any game.** A new server-wide store
+  beside the games tree holds accounts, memberships and sessions. This is the
+  first state this project has that is not scoped to one game, and it needs to
+  be, because a person outlives every game they play in.
+
+- **One backend drives the whole deployment.** The store has an implementation
+  per backend, and the backend named for the games is the one the accounts are
+  kept in — `accounts.sqlite3` under SQLite, `accounts/` under YAML. There is
+  no arrangement where a deployment is one thing for its games and another for
+  its people. Where the store is files, they are created private to the user
+  running the server, because they carry password hashes.
 
 - **Two system accounts are created on first start.** `admin` with password
   `admin`, and `observer` with password `observer`. `admin` is player 0 of
@@ -127,10 +134,13 @@ does not itself do.
   **unchanged**: it still answers what a number is entitled to, and the new
   layer answers only which number an account may be.
 - **Storage**: `storage/account_store.py` — new port, in the shape of
-  `storage/repository.py`. `storage/sqlite_account_store.py` — new
-  implementation. `storage/accounts.sql` — new schema: `accounts`,
-  `memberships`, `sessions`. No change to `GameRepository` or to either game
-  backend; a game's own store is not where a person lives.
+  `storage/repository.py`, plus `make_account_store(backend, base_path)`,
+  which is the only way one is built. `storage/sqlite_account_store.py` and
+  `storage/accounts.sql` — the SQLite implementation.
+  `storage/yaml_account_store.py` — the YAML one: three files under
+  `accounts/`, written by replacement and created `0700`/`0600`. No change to
+  `GameRepository` or to either game backend; a game's own store is not where
+  a person lives.
 - **HTTP**: `http/auth.py` — new; the guard, and the routes for registering,
   logging in and out, changing a password, minting a token, and claiming or
   releasing a seat. `http/app.py` — the existing routes gain the guard and

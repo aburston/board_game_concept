@@ -134,3 +134,26 @@ class AccountStore:
     def seats_of_account(self, account_id):
         """Every seat one account holds, as a list of (gameno, number)."""
         raise NotImplementedError
+
+
+def make_account_store(backend=None, base_path=None):
+    """The account store for this backend.
+
+    One choice drives the whole deployment: a YAML game is served by a YAML
+    account store and a SQLite game by a SQLite one. There is deliberately no
+    way to ask for one of each - a deployment is one thing or the other, and a
+    mixed one would be two answers to the question of where its state lives.
+
+    The backend name is the one `cli/session.py` resolves for games, so
+    `--backend` and `BOARD_GAME_BACKEND` steer both without being asked twice.
+    """
+    # imported here because each implementation imports this module for the
+    # port, and a module-level import either way round would be a cycle
+    from .sqlite_account_store import SqliteAccountStore
+    from .yaml_account_store import YamlAccountStore
+
+    if backend == 'yaml':
+        return YamlAccountStore(base_path)
+    if backend in ('sqlite', None):
+        return SqliteAccountStore(base_path)
+    raise ValueError(f'unknown backend: {backend}')

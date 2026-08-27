@@ -43,6 +43,42 @@ one.
 - **WHEN** a game's own storage is read
 - **THEN** it holds no username, no password and no account of any kind
 
+### Requirement: One Backend Drives The Whole Deployment
+
+The system SHALL keep accounts in the same storage backend the games are kept
+in, and SHALL offer no arrangement in which one is kept in one backend and the
+other in another. The backend named for a deployment SHALL decide both.
+
+Each backend SHALL hold accounts, memberships and tokens to the same
+behaviour, so that what a deployment may do does not depend on which it
+chose.
+
+Where a backend keeps accounts in files a person could read, the system SHALL
+create those files private to the user running the server.
+
+#### Scenario: A YAML deployment keeps its accounts in YAML
+
+- **WHEN** a server is run with the YAML backend
+- **THEN** its accounts are kept in that backend
+- **AND** no store of the other backend is created
+
+#### Scenario: A SQLite deployment keeps its accounts in SQLite
+
+- **WHEN** a server is run with the SQLite backend
+- **THEN** its accounts are kept in that backend
+- **AND** no store of the other backend is created
+
+#### Scenario: The two backends behave alike
+
+- **WHEN** an account is registered, a seat claimed and a token issued
+- **THEN** each backend answers as the other does
+- **AND** a refusal by one is a refusal by the other
+
+#### Scenario: A readable store is private to its owner
+
+- **WHEN** a backend keeps accounts in files
+- **THEN** those files are created readable only by the user running the server
+
 ### Requirement: The Two System Accounts Exist From First Start
 
 The system SHALL create two accounts the first time the account store is

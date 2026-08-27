@@ -15,9 +15,16 @@ import pytest
 from board_game_concept.domain import Empty
 from board_game_concept.http.app import create_app
 
-pytestmark = pytest.mark.backend('sqlite')
-
+# deliberately not pinned to a backend. Everything below happens over HTTP,
+# so there is nothing here that knows how a game is stored - and one backend
+# choice drives both the game and the account store, so this is where that is
+# held to.
 GAME = 'one'
+
+
+@pytest.fixture(name='backend', params=['sqlite', 'yaml'])
+def _backend(request):
+    return request.param
 
 
 def _bearer(token):
@@ -44,14 +51,23 @@ def _base_path(tmp_path):
 
 
 @pytest.fixture(name='client')
-def _client(base_path):
+def _client(base_path, backend):
     return create_app(base_path=str(base_path),
-                      backend='sqlite').test_client()
+                      backend=backend).test_client()
 
 
-def test_a_whole_game_from_an_empty_directory(client, base_path):
-    # --- the store is made, with the two system accounts in it
-    assert os.path.exists(os.path.join(str(base_path), 'accounts.sqlite3'))
+def _store_exists(base_path, backend):
+    kept = {'sqlite': 'accounts.sqlite3', 'yaml': 'accounts'}[backend]
+    other = {'sqlite': 'accounts', 'yaml': 'accounts.sqlite3'}[backend]
+    assert not os.path.exists(os.path.join(str(base_path), other)), (
+        'a deployment is one backend or the other, never a mixture')
+    return os.path.exists(os.path.join(str(base_path), kept))
+
+
+def test_a_whole_game_from_an_empty_directory(client, base_path, backend):
+    # --- the store is made, with the two system accounts in it, and it is
+    #     the one this backend keeps - never the other backend's
+    assert _store_exists(base_path, backend)
 
     # --- the administrator signs in with what it was created with, and is
     #     refused everything until it changes that
@@ -218,12 +234,13 @@ def test_the_administrator_sees_the_whole_game_too(client):
     assert {unit['name'] for unit in units} == {'u1', 'u2'}
 
 
-def test_the_store_survives_a_restart_of_the_server(client, base_path):
+def test_the_store_survives_a_restart_of_the_server(client, base_path,
+                                                    backend):
     """A second app over the same directory finds the accounts it left."""
     _admin, seats = _play_a_turn(client)
 
     restarted = create_app(base_path=str(base_path),
-                           backend='sqlite').test_client()
+                           backend=backend).test_client()
 
     # the changed password is the one that works, and `admin` is not
     assert restarted.post('/sessions', json={'username': 'admin',

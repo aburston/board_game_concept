@@ -22,7 +22,7 @@ from ..service.errors import (AccountError, GameDataError, GameError,
                               NoSuchGame, NoSuchPlayer, UnreadableGame)
 from ..service.turn import _awaited_players
 from ..storage.lock import GameIsBusy
-from ..storage.sqlite_account_store import SqliteAccountStore
+from ..storage.account_store import make_account_store
 from .. import Game
 from . import auth as auth_module
 from . import sessions as sessions_module
@@ -52,20 +52,24 @@ VIEW_BUILDERS = {
 VIEWS_THAT_NEED_A_BOARD = ('board', 'units', 'pending')
 
 
-def _account_store_factory(base_path, account_store=None):
+def _account_store_factory(base_path, backend=None, account_store=None):
     """How this app opens the account store, and the store made once now.
 
     A factory rather than a store, for the reason `create_app` builds a
     repository per request: a SQLite connection belongs to the thread that
     opened it, and the app is served threaded. `ensure()` is called once
     here so the two system accounts exist before the first request; each
-    request then opens its own connection to the same file.
+    request then opens its own store against the same files.
+
+    The backend is the game's backend. One choice drives both, so a
+    deployment is YAML or SQLite and never a mixture of the two.
     """
     if account_store is not None:
         account_store.ensure()
         return lambda: account_store
-    SqliteAccountStore(base_path).ensure()
-    return lambda: SqliteAccountStore(base_path)
+    resolved = backend or session_module.default_backend()
+    make_account_store(resolved, base_path).ensure()
+    return lambda: make_account_store(resolved, base_path)
 
 
 def create_app(base_path=None, backend=None, account_store=None):
@@ -85,7 +89,7 @@ def create_app(base_path=None, backend=None, account_store=None):
     app.config['BASE_PATH'] = base_path or os.getcwd()
     app.config['BACKEND'] = backend
     app.config['ACCOUNT_STORE_FACTORY'] = _account_store_factory(
-        app.config['BASE_PATH'], account_store)
+        app.config['BASE_PATH'], backend, account_store)
 
     def _repository(gameno):
         # each request builds its own repository - opening one is cheap and

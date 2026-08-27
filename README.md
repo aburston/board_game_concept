@@ -108,8 +108,16 @@ administrator, 1 to 999 the players, 1000 the observer — and what each is
 entitled to is unchanged too. What changed is that a number now has to be
 proved rather than asserted.
 
-Accounts live in `accounts.sqlite3`, beside the `games/` tree rather than
-inside any game, because a person outlives every game they play in.
+Accounts live beside the `games/` tree rather than inside any game, because a
+person outlives every game they play in. **They are kept in the same backend
+the games are**, chosen by the same `--backend` or `BOARD_GAME_BACKEND`: a
+SQLite deployment keeps them in `accounts.sqlite3`, a YAML one in three files
+under `accounts/`. A deployment is one thing or the other; there is no mixture.
+
+Under the YAML backend the password hashes are in a readable file. They are
+scrypt and are not reversible, but a file walks off more easily than a table
+does, so `accounts/` is created `0700` and its files `0600` — keep them that
+way, or run the SQLite backend, which is the default.
 
 ## First run
 
@@ -197,11 +205,11 @@ comfortable sharing, and tell people what it shows.
 
 ## Keeping it
 
-`accounts.sqlite3` sits beside `games/` and is worth backing up with it.
-Losing it makes every game unreachable over HTTP while leaving the games
-themselves perfectly intact — a membership names a seat rather than being
-part of one — so the recovery is to recreate the accounts and claim the seats
-again.
+The account store — `accounts.sqlite3` or `accounts/`, depending on the
+backend — sits beside `games/` and is worth backing up with it. Losing it
+makes every game unreachable over HTTP while leaving the games themselves
+perfectly intact — a membership names a seat rather than being part of one —
+so the recovery is to recreate the accounts and claim the seats again.
 
 ## Web service - what's next
  * TLS. Tokens and passwords cross the wire in clear, and `bgcapiserver`
