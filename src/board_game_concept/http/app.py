@@ -9,7 +9,6 @@ repository, number)` takes today. When authentication lands, the identity
 moves to a token and the path stops carrying it.
 """
 
-import os
 import time
 
 from flask import Flask, jsonify, request
@@ -282,6 +281,33 @@ def create_app(base_path=None, backend=None, account_store=None):
     return app
 
 
+# the prefixes that belong to the contract rather than to the page. A request
+# under one of these that matches no route is a mistake by a client, and gets
+# an answer a client can read; anything else is somebody's address bar
+API_PREFIXES = ('/_/', '/games', '/accounts', '/sessions', '/tokens', '/static')
+
+
+def _wants_the_page(asked):
+    """Whether an unmatched request should be answered with the interface.
+
+    Somebody who types the host and port, or follows a link to a game, or
+    reloads on a screen, should land in the application - which then asks them
+    to sign in. Answering that with a bare 404 makes a working server look
+    broken, and it is the first thing a new player sees.
+
+    A request under an API prefix is not that: a client asking for an endpoint
+    that does not exist wants to be told so in JSON, not handed a page it
+    cannot parse. Nor is anything but a GET, and nor is a caller that asked
+    for JSON.
+    """
+    if asked.method != 'GET':
+        return False
+    if asked.path.startswith(API_PREFIXES):
+        return False
+    return not asked.accept_mimetypes.accept_json or \
+        asked.accept_mimetypes.accept_html
+
+
 def _register_error_handlers(app):
     """What each kind of refusal becomes on the wire.
 
@@ -289,6 +315,14 @@ def _register_error_handlers(app):
     difference between not having said who you are and having said and been
     refused. Everything else is as it was.
     """
+
+    @app.errorhandler(404)
+    def _not_found(_error):
+        if _wants_the_page(request):
+            # 200, not a redirect: this *is* the page for that address, and
+            # the application routes on it once it has loaded
+            return app.send_static_file('index.html')
+        return jsonify({'error': 'no such endpoint'}), 404
 
     @app.errorhandler(AccountError)
     def _account_error(error):

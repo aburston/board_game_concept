@@ -26,6 +26,12 @@ export const state = {
   game: null,          // the seat's own view: board, units, types, state
   previous: null,      // the board as it was last turn, for what changed
   selected: null,      // the name of the unit being ordered
+  // what is half-typed in the armoury. In `state` rather than in the DOM
+  // because `render` replaces the whole screen: a refusal redraws, and a
+  // form rebuilt from nothing would throw away the design somebody was in
+  // the middle of - which is the moment they are most likely to give up
+  design: { name: '', symbol: '', attack: '1', health: '1', energy: '1' },
+  unitName: '',
   cursor: { x: 0, y: 0 },
   waiting: null,       // {met, waiting_on} while a commit is outstanding
   watching: false,     // whether a wait loop is already running

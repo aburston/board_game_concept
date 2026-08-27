@@ -87,3 +87,54 @@ def test_the_page_loads_its_entry_module(client):
     body = client.get('/').data.decode()
     assert 'type="module"' in body
     assert '/static/app.js' in body
+
+
+# --- an address that matches no route
+
+PAGE_PATHS = ['/login', '/play/1/2', '/setup/1/0', '/lobby', '/anything']
+
+API_404_PATHS = ['/accounts/nobody', '/_/nothing', '/games']
+
+
+@pytest.mark.parametrize('path', PAGE_PATHS)
+def test_an_unmatched_address_serves_the_page(client, path):
+    """A bare 404 makes a working server look broken.
+
+    Somebody types the host and port, follows a link to a game, or reloads on
+    a screen. All of that should land in the application, which then asks them
+    to sign in - so it is answered with the page rather than with nothing.
+    """
+    response = client.get(path)
+    assert response.status_code == 200
+    assert b'<title>Board Game Concept</title>' in response.data
+
+
+@pytest.mark.parametrize('path', API_404_PATHS)
+def test_an_unmatched_endpoint_is_still_refused_as_json(client, path):
+    """A client asking for an endpoint that is not there wants to be told.
+
+    Handing it the page would give it HTML it cannot parse and a 200 it
+    should not believe.
+    """
+    response = client.get(path)
+    assert response.status_code in (401, 404)
+    assert 'json' in response.headers['Content-Type']
+
+
+def test_a_caller_that_asked_for_json_gets_json(client):
+    response = client.get('/login', headers={'Accept': 'application/json'})
+    assert response.status_code == 404
+    assert 'json' in response.headers['Content-Type']
+
+
+def test_a_post_to_nowhere_is_not_answered_with_the_page(client):
+    response = client.post('/not-a-route')
+    assert response.status_code == 404
+    assert b'<title>' not in response.data
+
+
+def test_the_page_carries_its_own_icon(client):
+    """Inline, so a browser asking for one does not miss on every page."""
+    body = client.get('/').data.decode()
+    assert 'rel="icon"' in body
+    assert 'data:image/svg+xml' in body

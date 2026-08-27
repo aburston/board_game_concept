@@ -147,12 +147,22 @@ function renderDesigner(game) {
   const card = element('div', { class: 'card' });
   card.append(element('h2', {}, 'Design a type'));
 
-  const name = field('Name', 'text');
-  const symbol = field('Symbol (one character)', 'text');
-  const attack = field('Attack', 'number');
-  const health = field('Health', 'number');
-  const energy = field('Energy', 'number');
-  for (const stat of [attack, health, energy]) stat.input.value = '1';
+  // every input reads its value from `state.design` and writes back on the
+  // way through, so a redraw - a refusal, a reload of the views - finds the
+  // design where it left it
+  const bind = (label, type, key) => {
+    const made = field(label, type);
+    made.input.value = state.design[key];
+    made.input.addEventListener('input', () => {
+      state.design[key] = made.input.value;
+    });
+    return made;
+  };
+  const name = bind('Name', 'text', 'name');
+  const symbol = bind('Symbol (one character)', 'text', 'symbol');
+  const attack = bind('Attack', 'number', 'attack');
+  const health = bind('Health', 'number', 'health');
+  const energy = bind('Energy', 'number', 'energy');
 
   const cost = element('strong', {}, '3');
   const price = element('p', { class: 'small' }, 'Costs ', cost, ' points — ',
@@ -189,7 +199,11 @@ function renderDesigner(game) {
   form.addEventListener('submit', send(game, () => api.addType(
     name.input.value.trim(), symbol.input.value.trim(),
     Number(attack.input.value), Number(health.input.value),
-    Number(energy.input.value))));
+    Number(energy.input.value)), () => {
+      // only once it was accepted: a refusal leaves the design to be fixed
+      state.design = { name: '', symbol: '', attack: '1', health: '1',
+                       energy: '1' };
+    }));
   card.append(form);
   recost();
   return card;
@@ -251,6 +265,10 @@ function renderDeploy(game) {
                            `${type.name} — ${costOf(type)} points`));
   }
   const unitName = field('Unit name', 'text');
+  unitName.input.value = state.unitName;
+  unitName.input.addEventListener('input', () => {
+    state.unitName = unitName.input.value;
+  });
   card.append(element('div', { class: 'row' },
     element('div', { class: 'grow' }, element('label', {}, 'Type', chooser)),
     element('div', { class: 'grow' }, unitName.label)));
@@ -265,6 +283,7 @@ function renderDeploy(game) {
       try {
         await api.perform(game.gameno, game.number,
                           api.addUnit(chooser.value, name, x, y));
+        state.unitName = '';
         await loadSeat(game.gameno, game.number);
         say(`${name} deployed at (${x}, ${y}).`);
       } catch (error) {
@@ -297,11 +316,12 @@ function renderCommit(game) {
 
 // --- one shape for every form that sends a command
 
-function send(game, build) {
+function send(game, build, accepted) {
   return async (event) => {
     event.preventDefault();
     try {
       await api.perform(game.gameno, game.number, build());
+      if (accepted) accepted();
       await loadSeat(game.gameno, game.number);
       say(null);
     } catch (error) {
