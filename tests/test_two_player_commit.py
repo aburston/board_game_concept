@@ -44,8 +44,9 @@ class Web:
         self.base_path = str(base_path)
         # whichever backend this run is for: the scenario is not about
         # storage, and pinning it to one would leave the other untested
-        self.client = create_app(base_path=self.base_path,
-                                 backend=DEFAULT_BACKEND).test_client()
+        from conftest import authorising_client
+        self.client = authorising_client(
+            create_app(base_path=self.base_path, backend=DEFAULT_BACKEND))
 
     def perform(self, number, record):
         response = self.client.post(

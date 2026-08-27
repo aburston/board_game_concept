@@ -34,6 +34,8 @@ class _AppThread:
         self.port = _free_port()
         self.base_url = f'http://127.0.0.1:{self.port}'
         self._app = create_app(base_path=str(base_path), backend=backend)
+        # the suites mint a token from this to prove who a role is
+        self.app = self._app
         # Werkzeug's dev server is fine for tests. `threaded=True` so a busy
         # request does not block a health check
         self._thread = threading.Thread(
@@ -71,13 +73,18 @@ class ObserverOverHttp(CliTestCase):
         # `add_server_argument` reads `BOARD_GAME_SERVER` when no `--server`
         # was passed, so a subprocess started by the cli harness picks up
         # the URL that way without every test having to know
+        from conftest import make_token_for
         os.environ['BOARD_GAME_SERVER'] = self._app.base_url
+        # the observer role proves itself as the observer identity, 1000
+        os.environ['BOARD_GAME_TOKEN'] = make_token_for(
+            self._app.app, game_number, 1000)
         try:
             observer = self.start_observer(game_number)
             observer.read_until(OBSERVER_PROMPT)
             return observer
         finally:
             os.environ.pop('BOARD_GAME_SERVER', None)
+            os.environ.pop('BOARD_GAME_TOKEN', None)
 
     def _send_and_wait(self, observer, line, expected_prompts):
         """Send a line and wait for the prompt count to reach `expected`."""

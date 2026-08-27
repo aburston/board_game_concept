@@ -45,6 +45,7 @@ def main(argv=None):
     # than a positional argument so the two-argument form stays what a
     # person types today
     server = None
+    token = None
     filtered = []
     it = iter(argv)
     for arg in it:
@@ -56,6 +57,14 @@ def main(argv=None):
                 sys.exit(1)
         elif arg.startswith('--server='):
             server = arg[len('--server='):]
+        elif arg == '--token':
+            try:
+                token = next(it)
+            except StopIteration:
+                usage()
+                sys.exit(1)
+        elif arg.startswith('--token='):
+            token = arg[len('--token='):]
         else:
             filtered.append(arg)
     argv = filtered
@@ -80,7 +89,12 @@ def main(argv=None):
 
     # a session hides how the game is reached: local when the client opens
     # a game directory itself, HTTP when it reaches the server for it
-    data = make_session(gameno, player_number, server=server)
+    try:
+        data = make_session(gameno, player_number, server=server, token=token)
+    except GameError as error:
+        for line in error.lines():
+            print(line, file=sys.stderr)
+        sys.exit(1)
 
     # let a person at a terminal complete what they are typing. The names come
     # from this game object, which is the same one the loop below reloads into,

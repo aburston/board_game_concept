@@ -57,8 +57,14 @@ def main(argv=None):
     # In HTTP mode option (b) makes the last player's commit resolve the
     # turn during the request, so the unattended resolver loop below runs
     # only in local mode - the `isinstance` check gates it
-    data = make_session(args.game_number, player_number,
-                        server=args.server, backend=args.backend)
+    try:
+        data = make_session(args.game_number, player_number,
+                            server=args.server, backend=args.backend,
+                            token=args.token)
+    except GameError as error:
+        for line in error.lines():
+            print(line, file=sys.stderr)
+        sys.exit(1)
 
     # completion for the setup prompt. The server owns no units and defines no
     # types, so what it gains is the grammar and the paths `load` wants

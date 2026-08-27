@@ -205,8 +205,13 @@ class HttpSession(Session):
     waits raise; step 3 fills them in.
     """
 
-    def __init__(self, base_url, gameno, player_number):
+    def __init__(self, base_url, gameno, player_number, token=None):
         self._session = requests.Session()
+        if token:
+            # one header, set once, on the session every request already
+            # goes through - rather than a change at each of the dozen
+            # call sites that make one
+            self._session.headers['Authorization'] = f'Bearer {token}'
         self.base_url = base_url.rstrip('/')
         self.gameno = gameno
         self.player_number = player_number

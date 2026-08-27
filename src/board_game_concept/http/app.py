@@ -18,12 +18,17 @@ from ..cli import session as session_module
 from ..service import games as game_ops
 from ..service import identity
 from ..service.commands import as_record as _AS_RECORD, from_record
-from ..service.errors import (GameDataError, GameError, NoSuchGame,
-                              NoSuchPlayer, UnreadableGame)
+from ..service.errors import (AccountError, GameDataError, GameError,
+                              NoSuchGame, NoSuchPlayer, UnreadableGame)
 from ..service.turn import _awaited_players
 from ..storage.lock import GameIsBusy
+from ..storage.sqlite_account_store import SqliteAccountStore
 from .. import Game
+from . import auth as auth_module
+from . import sessions as sessions_module
+from . import seats as seats_module
 from . import views as views_module
+from .auth import acts_as_number, authenticated
 
 
 # the long-poll wait budget: short enough to keep a proxy happy, long
@@ -47,17 +52,35 @@ VIEW_BUILDERS = {
 VIEWS_THAT_NEED_A_BOARD = ('board', 'units', 'pending')
 
 
-def create_app(base_path=None, backend=None):
+def create_app(base_path=None, backend=None, account_store=None):
     """A Flask app configured for a games directory.
 
     `base_path` is what `YamlGameRepository`/`SqliteGameRepository` take:
     the directory the `games/` tree lives under. Defaults to the process
     working directory, matching the CLI binaries. `backend` overrides the
     default backend chosen by `session_module.default_backend()`.
+
+    `account_store` is where accounts, seats and tokens are kept. It is one
+    store for the whole server rather than one per game, and it is ensured
+    once at startup - which is what creates `admin` and `observer` the first
+    time a server is run.
     """
     app = Flask(__name__)
     app.config['BASE_PATH'] = base_path or os.getcwd()
     app.config['BACKEND'] = backend
+    # a factory rather than a store, for the reason `_repository` below is
+    # built per request: a SQLite connection belongs to the thread that
+    # opened it, and this app is served threaded. `ensure()` runs once here
+    # so the two system accounts exist before the first request; each
+    # request then opens its own connection to the same file.
+    if account_store is not None:
+        app.config['ACCOUNT_STORE_FACTORY'] = lambda: account_store
+        account_store.ensure()
+    else:
+        store_path = app.config['BASE_PATH']
+        app.config['ACCOUNT_STORE_FACTORY'] = (
+            lambda: SqliteAccountStore(store_path))
+        SqliteAccountStore(store_path).ensure()
 
     def _repository(gameno):
         # each request builds its own repository - opening one is cheap and
@@ -77,10 +100,12 @@ def create_app(base_path=None, backend=None):
         return jsonify({'ok': True})
 
     @app.get('/games/<gameno>/players')
+    @authenticated
     def list_players(gameno):
         return jsonify({'players': _repository(gameno).player_numbers()})
 
     @app.get('/games/<gameno>/players/<int:number>/state')
+    @acts_as_number
     def read_state(gameno, number):
         try:
             data = _load_game(gameno, number)
@@ -89,6 +114,7 @@ def create_app(base_path=None, backend=None):
         return jsonify(_state_payload(data))
 
     @app.get('/games/<gameno>/players/<int:number>/views/<subject>')
+    @acts_as_number
     def read_view(gameno, number, subject):
         builder = VIEW_BUILDERS.get(subject)
         if builder is None:
@@ -102,6 +128,7 @@ def create_app(base_path=None, backend=None):
         return jsonify({subject: builder(data)})
 
     @app.post('/games/<gameno>/players/<int:number>/commands')
+    @acts_as_number
     def perform_command(gameno, number):
         record = request.get_json(silent=True)
         if not isinstance(record, dict):
@@ -127,6 +154,7 @@ def create_app(base_path=None, backend=None):
         return '', 204
 
     @app.post('/games/<gameno>/players/<int:number>/commit')
+    @acts_as_number
     def commit_turn(gameno, number):
         try:
             game = Game(_repository(gameno), int(number))
@@ -169,6 +197,7 @@ def create_app(base_path=None, backend=None):
             return jsonify({'error': str(error)}), 400
 
     @app.get('/games/<gameno>/players/<int:number>/wait/turn')
+    @acts_as_number
     def wait_for_turn(gameno, number):
         # the wait ends when the player's published orders are no longer
         # pending. `has_orders(n)` False means the server consumed them,
@@ -196,6 +225,7 @@ def create_app(base_path=None, backend=None):
             time.sleep(POLL_INTERVAL)
 
     @app.get('/games/<gameno>/players/<int:number>/wait/commit')
+    @acts_as_number
     def wait_for_commit(gameno, number):
         # the wait ends when every awaited player has committed for the
         # current turn - the same condition `wait_for_all_commits` in
@@ -218,6 +248,13 @@ def create_app(base_path=None, backend=None):
             if time.monotonic() >= deadline:
                 return jsonify({'met': False, 'waiting_on': missing})
             time.sleep(POLL_INTERVAL)
+
+    sessions_module.register_routes(app)
+    seats_module.register_routes(app)
+
+    @app.errorhandler(AccountError)
+    def _account_error(error):
+        return auth_module.error_response(error)
 
     @app.errorhandler(GameIsBusy)
     def _busy(error):

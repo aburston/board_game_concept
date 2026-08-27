@@ -29,7 +29,10 @@ class _AppThread:
         from board_game_concept.http.app import create_app
         self.port = _free_port()
         self.base_url = f'http://127.0.0.1:{self.port}'
-        self._app = create_app(base_path=str(base_path), backend='sqlite')
+        self._app = create_app(base_path=str(base_path),
+                               backend='sqlite')
+        # the suites mint a token from this to prove who a role is
+        self.app = self._app
         self._thread = threading.Thread(
             target=self._app.run,
             kwargs={'host': '127.0.0.1', 'port': self.port,
@@ -57,13 +60,18 @@ class ServerOverHttp(CliTestCase):
         self._app.start()
 
     def _start_server_over_http(self, game_number='test-01'):
+        from conftest import make_token_for
         os.environ['BOARD_GAME_SERVER'] = self._app.base_url
+        # the server role is the administrator, and proves it
+        os.environ['BOARD_GAME_TOKEN'] = make_token_for(
+            self._app.app, game_number, 0)
         try:
             server = self.start_server(game_number)
             server.read_until(SERVER_PROMPT)
             return server
         finally:
             os.environ.pop('BOARD_GAME_SERVER', None)
+            os.environ.pop('BOARD_GAME_TOKEN', None)
 
     def test_setup_and_commit_exits_the_server(self):
         """The admin sets the board, registers a player, commits, and the

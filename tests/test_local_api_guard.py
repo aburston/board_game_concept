@@ -35,7 +35,10 @@ class _AppThread:
         from board_game_concept.http.app import create_app
         self.port = _free_port()
         self.base_url = f'http://127.0.0.1:{self.port}'
-        self._app = create_app(base_path=str(base_path), backend='sqlite')
+        self._app = create_app(base_path=str(base_path),
+                               backend='sqlite')
+        # the suites mint a token from this to prove who a role is
+        self.app = self._app
         self._thread = threading.Thread(
             target=self._app.run,
             kwargs={'host': '127.0.0.1', 'port': self.port,
@@ -59,7 +62,8 @@ def _clean_env(monkeypatch):
     """Rip out every env var that would steer `make_session`."""
     for name in (session_module.SERVER_ENV, session_module.BACKEND_ENV,
                  session_module.LOCAL_API_ENV,
-                 session_module.NO_REDIRECT_ENV):
+                 session_module.NO_REDIRECT_ENV,
+                 session_module.TOKEN_ENV):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -119,6 +123,9 @@ def test_make_session_redirects_to_the_running_api_server(monkeypatch,
     app = _AppThread(tmp_path)
     app.start()
     monkeypatch.setenv(session_module.LOCAL_API_ENV, app.base_url)
+    from conftest import make_token_for
+    monkeypatch.setenv(session_module.TOKEN_ENV,
+                       make_token_for(app.app, 'one', 1))
 
     session = session_module.make_session('one', 1)
     assert isinstance(session, HttpSession)
@@ -178,7 +185,7 @@ def test_explicit_server_bypasses_the_guard(monkeypatch, tmp_path, capsys):
     # the explicit `--server` is what wins
     port = _free_port()
     session = session_module.make_session(
-        'one', 1, server=f'http://127.0.0.1:{port}')
+        'one', 1, server=f'http://127.0.0.1:{port}', token='any-token')
     assert isinstance(session, HttpSession)
     captured = capsys.readouterr()
     assert captured.err == ''

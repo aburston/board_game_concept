@@ -34,6 +34,8 @@ class _AppThread:
         self.port = _free_port()
         self.base_url = f'http://127.0.0.1:{self.port}'
         self._app = create_app(base_path=str(base_path), backend=backend)
+        # the suites mint a token from this to prove who a role is
+        self.app = self._app
         self._thread = threading.Thread(
             target=self._app.run,
             kwargs={'host': '127.0.0.1', 'port': self.port,
@@ -62,13 +64,18 @@ class ClientOverHttp(CliTestCase):
         self._app.start()
 
     def _start_client_over_http(self, game_number='test-01', player_number=1):
+        from conftest import make_token_for
         os.environ['BOARD_GAME_SERVER'] = self._app.base_url
+        # the role proves itself as exactly the seat it was started for
+        os.environ['BOARD_GAME_TOKEN'] = make_token_for(
+            self._app.app, game_number, player_number)
         try:
             client = self.start_client(game_number, player_number)
             client.read_until(CLIENT_PROMPT)
             return client
         finally:
             os.environ.pop('BOARD_GAME_SERVER', None)
+            os.environ.pop('BOARD_GAME_TOKEN', None)
 
     def _send_and_wait(self, client, line, expected_prompts):
         client.send_line(line)

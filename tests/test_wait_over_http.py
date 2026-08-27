@@ -34,7 +34,10 @@ class _AppThread:
         from board_game_concept.http.app import create_app
         self.port = _free_port()
         self.base_url = f'http://127.0.0.1:{self.port}'
-        self._app = create_app(base_path=str(base_path), backend='sqlite')
+        self._app = create_app(base_path=str(base_path),
+                               backend='sqlite')
+        # the suites mint a token from this to prove who a role is
+        self.app = self._app
         self._thread = threading.Thread(
             target=self._app.run,
             kwargs={'host': '127.0.0.1', 'port': self.port,
@@ -81,7 +84,9 @@ def test_wait_for_turn_returns_at_once_when_the_turn_is_resolved(tmp_path):
     app = _AppThread(tmp_path)
     app.start()
 
-    session = HttpSession(app.base_url, 'one', 1)
+    from conftest import make_token_for
+    session = HttpSession(app.base_url, 'one', 1,
+                          token=make_token_for(app.app, 'one', 1))
     started = time.monotonic()
     session.waitForTurn()
     elapsed = time.monotonic() - started
@@ -121,7 +126,9 @@ def test_wait_for_turn_returns_when_the_turn_is_resolved_during_the_wait(
 
     threading.Thread(target=resolve_soon, daemon=True).start()
 
-    session = HttpSession(app.base_url, 'two', 1)
+    from conftest import make_token_for
+    session = HttpSession(app.base_url, 'two', 1,
+                          token=make_token_for(app.app, 'two', 1))
     started = time.monotonic()
     session.waitForTurn()
     elapsed = time.monotonic() - started

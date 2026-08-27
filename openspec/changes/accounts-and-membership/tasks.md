@@ -21,7 +21,7 @@
 
 ## 2. The account store
 
-- [ ] 2.1 Add `storage/accounts.sql`: `accounts` (id, username, username_key
+- [x] 2.1 Add `storage/accounts.sql`: `accounts` (id, username, username_key
       UNIQUE, password_hash, kind, must_change, created_at), `memberships`
       (gameno, number, account_id, claimed_at, PRIMARY KEY (gameno, number)),
       `sessions` (token PRIMARY KEY, account_id, label, expires_at). Note in a
@@ -52,7 +52,7 @@
 - [x] 2.6 `claim_seat` is refused when the seat is held, by the primary key
       rather than by a read-then-write, so two simultaneous claims cannot both
       succeed. Verify against a store held open by two connections.
-- [ ] 2.7 Add `tests/test_account_store.py`: an account round-trips, a seat is
+- [x] 2.7 Add `tests/test_account_store.py`: an account round-trips, a seat is
       claimed once and refused the second time, one account claims two seats in
       one game, a released seat is claimable again, a session is created, read
       and deleted, and an expired session does not read back.
@@ -84,26 +84,26 @@
       game's own repository to answer the first and the third, and never
       writing to it. `release_seat` refuses once the game has started and
       refuses a caller that is not the holder.
-- [ ] 3.8 Add `tests/test_account_service.py` covering each refusal above
+- [x] 3.8 Add `tests/test_account_service.py` covering each refusal above
       against a real store and a real game directory.
 
 ## 4. The guard over HTTP
 
-- [ ] 4.1 Add `http/auth.py`: read the token from an `Authorization: Bearer`
+- [x] 4.1 Add `http/auth.py`: read the token from an `Authorization: Bearer`
       header or from the session cookie, resolve it to an account, and refuse
       with 401 when there is none or it is not accepted. One token kind, two
       carriers (design.md — "One kind of credential, carried two ways").
-- [ ] 4.2 Add the `must_change` gate: an account needing a password change is
+- [x] 4.2 Add the `must_change` gate: an account needing a password change is
       refused with 403 on everything except the password-change route, and the
       body says the password must be changed.
-- [ ] 4.3 Add the `may_act_as` guard and put it in front of every existing
+- [x] 4.3 Add the `may_act_as` guard and put it in front of every existing
       route in `http/app.py` that names a player number. **The route paths do
       not change** — `/games/<gameno>/players/<int:number>/…` stays exactly as
       it is, and the guard checks the number the path already carries.
-- [ ] 4.4 Refuse with 403 and return nothing of the game: verify that a refused
+- [x] 4.4 Refuse with 403 and return nothing of the game: verify that a refused
       request neither builds a `Game` nor opens a repository, so a refusal
       cannot leak through an error message about game data.
-- [ ] 4.5 `create_app` takes where the account store lives (defaulting beside
+- [x] 4.5 `create_app` takes where the account store lives (defaulting beside
       the games tree) and calls `ensure()` once at startup.
 - [ ] 4.6 Add `tests/test_http_auth.py`: no token is 401; a made-up token is
       401; an ended token is 401; a player asking for another seat's view is
@@ -113,15 +113,15 @@
 
 ## 5. Registering, logging in, and passwords over HTTP
 
-- [ ] 5.1 `POST /accounts` — register. `POST /sessions` — authenticate, set the
+- [x] 5.1 `POST /accounts` — register. `POST /sessions` — authenticate, set the
       cookie and return the token. `DELETE /sessions/current` — end it.
-- [ ] 5.2 `POST /accounts/current/password` — change your own, giving the
+- [x] 5.2 `POST /accounts/current/password` — change your own, giving the
       current one. `POST /accounts/<name>/password` — the administrator sets
       another's without it.
-- [ ] 5.3 `POST /tokens` — mint a labelled, long-lived token for a program;
+- [x] 5.3 `POST /tokens` — mint a labelled, long-lived token for a program;
       `DELETE /tokens/<id>` — revoke it. Same `sessions` row as a login token,
       with a label and a distant expiry.
-- [ ] 5.4 The response to a failed authentication does not distinguish an
+- [x] 5.4 The response to a failed authentication does not distinguish an
       unknown username from a wrong password, and takes the same time to a
       reasonable approximation — the same scrypt work is done either way.
 - [ ] 5.5 Extend `tests/test_http_auth.py`: registering a reserved name is
@@ -132,12 +132,12 @@
 
 ## 6. Seats
 
-- [ ] 6.1 `GET /games/<gameno>/seats` — the registered player numbers of that
+- [x] 6.1 `GET /games/<gameno>/seats` — the registered player numbers of that
       game, each with its budget and the username holding it or nothing. Any
       authenticated account may read it; it names no account's private state.
-- [ ] 6.2 `POST /games/<gameno>/seats/<int:number>` — claim.
+- [x] 6.2 `POST /games/<gameno>/seats/<int:number>` — claim.
       `DELETE /games/<gameno>/seats/<int:number>` — give up.
-- [ ] 6.3 Verify a claim of an unregistered number is refused and adds no
+- [x] 6.3 Verify a claim of an unregistered number is refused and adds no
       player to the game: `add player` stays the administrator's, and claiming
       is not a way around it.
 - [ ] 6.4 Add `tests/test_seats.py`: claim, double-claim refused, two seats in
@@ -151,17 +151,17 @@
 
 ## 7. The command-line roles carry a token
 
-- [ ] 7.1 `cli/session.py`: `TOKEN_ENV = 'BOARD_GAME_TOKEN'`, read beside
+- [x] 7.1 `cli/session.py`: `TOKEN_ENV = 'BOARD_GAME_TOKEN'`, read beside
       `BOARD_GAME_SERVER`.
-- [ ] 7.2 `cli/backend.py`: `HttpSession.__init__` takes the token and sets
+- [x] 7.2 `cli/backend.py`: `HttpSession.__init__` takes the token and sets
       `Authorization: Bearer` on the `requests.Session` it already holds — one
       header, not a change to each call site.
-- [ ] 7.3 The three role files gain `--token`, overriding the environment. A
+- [x] 7.3 The three role files gain `--token`, overriding the environment. A
       role talking to a server with no token reports that one is needed and
       exits with a failure status rather than opening a session.
-- [ ] 7.4 A refusal from the server is reported as what it is — "that account
+- [x] 7.4 A refusal from the server is reported as what it is — "that account
       may not act as player 2" — rather than as a transport error.
-- [ ] 7.5 **No change to any local path.** Verify by running
+- [x] 7.5 **No change to any local path.** Verify by running
       `tests/test_cli_client_surface.py`, `test_cli_server_surface.py`,
       `test_cli_observer_surface.py`, `test_full_game.py` and
       `test_cli_eof.py` unchanged and green.
@@ -171,12 +171,12 @@
 
 ## 8. The suites that drive the HTTP tier
 
-- [ ] 8.1 Add a `conftest.py` fixture that creates an account store, registers
+- [x] 8.1 Add a `conftest.py` fixture that creates an account store, registers
       an account, claims a seat and returns an authenticated test client — so
       each existing suite changes by the fixture it asks for rather than by a
       rewrite (design.md — "Seven suites drive the HTTP tier and all of them
       break").
-- [ ] 8.2 Move each of `test_http_api.py`, `test_client_over_http.py`,
+- [x] 8.2 Move each of `test_http_api.py`, `test_client_over_http.py`,
       `test_server_over_http.py`, `test_observer_over_http.py`,
       `test_wait_over_http.py`, `test_two_player_commit.py` and
       `test_local_api_guard.py` onto it. Where a suite drives two players, it
