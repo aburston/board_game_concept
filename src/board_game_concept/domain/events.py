@@ -56,6 +56,29 @@ DESCRIPTIONS = {
 }
 
 
+# the kinds that say a blow was struck. A board marks these squares, and
+# what counts as fighting is the domain's to say rather than a browser's
+FIGHTING = frozenset((
+    'contested', 'collided', 'attacked', 'destroyed', 'undecided', 'engaged'))
+
+
+def record(kind, detail):
+    """One event as the plain record every layer above passes around.
+
+    The wording is worked out here rather than stored beside the event, so a
+    log written last week reads the way the game reads today, and the CLI, the
+    browser and a stored feed cannot come to describe the same event
+    differently.
+    """
+    detail = dict(detail or {})
+    return {
+        'kind': kind,
+        'detail': detail,
+        'text': str(Event(kind, **detail)),
+        'fighting': kind in FIGHTING,
+    }
+
+
 def describe(events):
     """The events as lines of text, in the order they happened."""
     return '\n'.join(str(event) for event in events)

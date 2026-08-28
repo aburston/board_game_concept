@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Board Game Concept</title>
+<link rel="stylesheet" href="/static/style.css">
+<!-- inline, so a browser asking for one does not 404 on every page -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%232f6f4f'/%3E%3Ctext x='8' y='12' font-size='11' font-family='monospace' font-weight='bold' text-anchor='middle' fill='white'%3EX%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<!--
+  One page. Everything below is rendered by `app.js` from one state object;
+  the markup here is only what the page needs before it has spoken to the
+  server. See `app.js` for the rule this holds to.
+-->
+<header id="chrome" hidden>
+  <a class="brand" href="#/">Board Game Concept</a>
+  <nav id="whoami"></nav>
+</header>
+
+<main id="screen" aria-live="polite">
+  <p class="waiting">Loading&hellip;</p>
+</main>
+
+<div id="say" class="say" role="status" aria-live="assertive" hidden></div>
+
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>

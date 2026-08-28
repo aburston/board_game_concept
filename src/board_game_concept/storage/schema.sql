@@ -131,12 +131,44 @@ CREATE TABLE IF NOT EXISTS sightings (
     PRIMARY KEY (viewer, seen_unit_id)
 );
 
--- the combat log. Written on every resolution, read by nothing yet. `payload`
--- is JSON of the event detail.
+-- the combat log: the whole of what each resolution did, which is what a
+-- session entitled to the whole game reads. `payload` is JSON of the event
+-- detail; the wording a person reads is the domain's, worked out from the
+-- kind and the detail when it is read back, so it lives in one place and an
+-- old row says whatever the domain says today.
 CREATE TABLE IF NOT EXISTS turn_events (
     turn_no       INTEGER NOT NULL,
     seq           INTEGER NOT NULL,
     kind          TEXT NOT NULL,
     payload       TEXT NOT NULL,
     PRIMARY KEY (turn_no, seq)
+);
+
+-- the designs a seat has met. `sightings` lasts one turn, because where a
+-- unit is now is not something a player may remember; what a type was built
+-- with is, and this is where that is kept. No coordinates here, deliberately.
+CREATE TABLE IF NOT EXISTS known_types (
+    player_number INTEGER NOT NULL,
+    owner         INTEGER NOT NULL,
+    name          TEXT NOT NULL,
+    symbol        TEXT NOT NULL,
+    attack        INTEGER NOT NULL,
+    health        INTEGER NOT NULL,
+    energy        INTEGER NOT NULL,
+    first_seen    INTEGER,
+    last_seen     INTEGER,
+    PRIMARY KEY (player_number, owner, name)
+);
+
+-- what each seat was told about each turn: the part of the log above that
+-- seat could see while it was happening. Decided at resolution because a
+-- sighting lasts one turn - filtering the log at read time would answer with
+-- today's visibility for a fight that happened a week ago.
+CREATE TABLE IF NOT EXISTS player_events (
+    player_number INTEGER NOT NULL,
+    turn_no       INTEGER NOT NULL,
+    seq           INTEGER NOT NULL,
+    kind          TEXT NOT NULL,
+    payload       TEXT NOT NULL,
+    PRIMARY KEY (player_number, turn_no, seq)
 );

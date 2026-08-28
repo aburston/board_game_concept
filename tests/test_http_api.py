@@ -55,8 +55,9 @@ def _set_up_in_setup(base_path, gameno='two'):
 
 
 def _client(base_path):
-    return create_app(base_path=str(base_path),
-                      backend='sqlite').test_client()
+    from conftest import authorising_client
+    return authorising_client(create_app(base_path=str(base_path),
+                                         backend='sqlite'))
 
 
 def test_health_answers(tmp_path):
@@ -148,8 +149,7 @@ def test_wait_for_turn_times_out_when_orders_still_pending(tmp_path):
     game_ops.perform(admin, AddPlayer(number=2))
     admin.serverSave()
 
-    web = create_app(base_path=str(tmp_path),
-                     backend='sqlite').test_client()
+    web = _client(tmp_path)
     # player 1 publishes; player 2 does not - so the barrier is open and
     # player 1's orders are pending
     web.post('/games/pending/players/1/commands',
@@ -175,8 +175,7 @@ def test_wait_for_commit_returns_at_once_when_barrier_is_met(tmp_path):
     game_ops.perform(admin, AddPlayer(number=1))
     admin.serverSave()
 
-    web = create_app(base_path=str(tmp_path),
-                     backend='sqlite').test_client()
+    web = _client(tmp_path)
     web.post('/games/closed/players/1/commands',
              json={'kind': 'add_type', 'name': 'Cross', 'symbol': 'X',
                    'attack': 1, 'health': 5, 'energy': 10})
@@ -283,8 +282,7 @@ def test_commit_that_does_not_close_the_barrier_is_202(tmp_path):
     game_ops.perform(admin, AddPlayer(number=2))
     admin.serverSave()
 
-    web = create_app(base_path=str(tmp_path),
-                     backend='sqlite').test_client()
+    web = _client(tmp_path)
 
     # player 1 sets up and commits; player 2 has not
     web.post('/games/three/players/1/commands',
@@ -373,3 +371,24 @@ def test_a_type_carries_its_cost_over_the_wire(tmp_path):
     client = _client(tmp_path)
     types = client.get('/games/one/players/1/views/types').get_json()['types']
     assert types[0]['cost'] == 16
+
+
+def test_this_surface_is_guarded(tmp_path):
+    """The suite above authorises itself; this proves it had to.
+
+    `_client` hands back a client that presents a credential for whatever
+    number a path names. Without one, every route it drives is refused.
+    """
+    _set_up(tmp_path)
+    raw = _client(tmp_path).raw
+
+    for method, path in (
+            ('get', '/games/one/players/1/state'),
+            ('get', '/games/one/players/1/views/board'),
+            ('post', '/games/one/players/1/commands'),
+            ('post', '/games/one/players/1/commit'),
+            ('get', '/games/one/players'),
+    ):
+        response = getattr(raw, method)(path)
+        assert response.status_code == 401, path
+        assert set(response.get_json()) == {'error'}

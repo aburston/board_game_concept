@@ -44,8 +44,9 @@ class Web:
         self.base_path = str(base_path)
         # whichever backend this run is for: the scenario is not about
         # storage, and pinning it to one would leave the other untested
-        self.client = create_app(base_path=self.base_path,
-                                 backend=DEFAULT_BACKEND).test_client()
+        from conftest import authorising_client
+        self.client = authorising_client(
+            create_app(base_path=self.base_path, backend=DEFAULT_BACKEND))
 
     def perform(self, number, record):
         response = self.client.post(
@@ -177,3 +178,15 @@ def test_the_same_game_played_locally_is_undecided(tmp_path):
     assert server.getOutcome() is None
     assert server.getEliminated() == []
     assert standing(server) == {('x1', 1), ('o1', 2)}
+
+
+    def test_this_surface_is_guarded(self):
+        """The requests above authorise themselves; this proves they had to."""
+        raw = self.client.raw
+        for method, path in (
+                ('post', f'/games/{GAME}/players/1/commands'),
+                ('post', f'/games/{GAME}/players/1/commit'),
+                ('get', f'/games/{GAME}/players/1/state'),
+        ):
+            response = getattr(raw, method)(path)
+            self.assertEqual(response.status_code, 401, path)

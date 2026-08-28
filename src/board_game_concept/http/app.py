@@ -9,7 +9,6 @@ repository, number)` takes today. When authentication lands, the identity
 moves to a token and the path stops carrying it.
 """
 
-import os
 import time
 
 from flask import Flask, jsonify, request
@@ -18,12 +17,18 @@ from ..cli import session as session_module
 from ..service import games as game_ops
 from ..service import identity
 from ..service.commands import as_record as _AS_RECORD, from_record
-from ..service.errors import (GameDataError, GameError, NoSuchGame,
-                              NoSuchPlayer, UnreadableGame)
+from ..service.errors import (AccountError, GameDataError, GameError,
+                              NoSuchGame, NoSuchPlayer, UnreadableGame)
 from ..service.turn import _awaited_players
 from ..storage.lock import GameIsBusy
+from ..storage.account_store import make_account_store
 from .. import Game
+from . import auth as auth_module
+from . import registry as registry_module
+from . import sessions as sessions_module
+from . import seats as seats_module
 from . import views as views_module
+from .auth import acts_as_number, authenticated
 
 
 # the long-poll wait budget: short enough to keep a proxy happy, long
@@ -42,22 +47,69 @@ VIEW_BUILDERS = {
         data.getPlayers(), data.getEliminated(), data.getBoard()),
     'pending': lambda data: views_module.pending_view(
         data.getPlayers(), data.getBoard()),
+    # what this session has met, rather than what it is in contact with now.
+    # A session entitled to the whole game has met everything, so it is given
+    # the types it can already see rather than a second record of its own
+    'designs': lambda data: (
+        views_module.types_seen_view(
+            views_module.types_view(data.getPlayers()), met=False)
+        if identity.sees_everything(data.player_number)
+        else views_module.types_seen_view(
+            data.repository.read_known_types(data.player_number))),
+    # what the turns did, as this session was told it. A view rather than a
+    # route of its own, so that `show events` at a command line and the panel
+    # under the board are one thing asked for in one way
+    'events': lambda data: (
+        data.repository.read_turn_events()
+        if identity.sees_everything(data.player_number)
+        else data.repository.read_events(data.player_number)),
 }
 
 VIEWS_THAT_NEED_A_BOARD = ('board', 'units', 'pending')
 
 
-def create_app(base_path=None, backend=None):
+def _account_store_factory(base_path, backend=None, account_store=None):
+    """How this app opens the account store, and the store made once now.
+
+    A factory rather than a store, for the reason `create_app` builds a
+    repository per request: a SQLite connection belongs to the thread that
+    opened it, and the app is served threaded. `ensure()` is called once
+    here so the two system accounts exist before the first request; each
+    request then opens its own store against the same files.
+
+    The backend is the game's backend. One choice drives both, so a
+    deployment is YAML or SQLite and never a mixture of the two.
+    """
+    if account_store is not None:
+        account_store.ensure()
+        return lambda: account_store
+    resolved = backend or session_module.default_backend()
+    make_account_store(resolved, base_path).ensure()
+    return lambda: make_account_store(resolved, base_path)
+
+
+def create_app(base_path=None, backend=None, account_store=None):
     """A Flask app configured for a games directory.
 
     `base_path` is what `YamlGameRepository`/`SqliteGameRepository` take:
     the directory the `games/` tree lives under. Defaults to the process
     working directory, matching the CLI binaries. `backend` overrides the
     default backend chosen by `session_module.default_backend()`.
+
+    `account_store` is where accounts, seats and tokens are kept. It is one
+    store for the whole server rather than one per game, and it is ensured
+    once at startup - which is what creates `admin` and `observer` the first
+    time a server is run.
     """
-    app = Flask(__name__)
-    app.config['BASE_PATH'] = base_path or os.getcwd()
+    # `static_folder` is the directory beside this module; Flask serves it
+    # at `/static` and refuses a path that climbs out of it. Everything under
+    # it is a plain file - no build step, no package manager, nothing
+    # generated
+    app = Flask(__name__, static_folder='static', static_url_path='/static')
+    app.config['BASE_PATH'] = base_path or session_module.default_base_path()
     app.config['BACKEND'] = backend
+    app.config['ACCOUNT_STORE_FACTORY'] = _account_store_factory(
+        app.config['BASE_PATH'], backend, account_store)
 
     def _repository(gameno):
         # each request builds its own repository - opening one is cheap and
@@ -76,11 +128,24 @@ def create_app(base_path=None, backend=None):
     def health():
         return jsonify({'ok': True})
 
+    @app.get('/')
+    def page():
+        """The one page. Every screen is a route inside it.
+
+        Served without a credential, because it is what a person signs in
+        through. It holds no game state: everything it draws it fetches
+        through the same contract every other client uses, and every one of
+        those requests is guarded.
+        """
+        return app.send_static_file('index.html')
+
     @app.get('/games/<gameno>/players')
+    @authenticated
     def list_players(gameno):
         return jsonify({'players': _repository(gameno).player_numbers()})
 
     @app.get('/games/<gameno>/players/<int:number>/state')
+    @acts_as_number
     def read_state(gameno, number):
         try:
             data = _load_game(gameno, number)
@@ -89,6 +154,7 @@ def create_app(base_path=None, backend=None):
         return jsonify(_state_payload(data))
 
     @app.get('/games/<gameno>/players/<int:number>/views/<subject>')
+    @acts_as_number
     def read_view(gameno, number, subject):
         builder = VIEW_BUILDERS.get(subject)
         if builder is None:
@@ -102,6 +168,7 @@ def create_app(base_path=None, backend=None):
         return jsonify({subject: builder(data)})
 
     @app.post('/games/<gameno>/players/<int:number>/commands')
+    @acts_as_number
     def perform_command(gameno, number):
         record = request.get_json(silent=True)
         if not isinstance(record, dict):
@@ -127,6 +194,7 @@ def create_app(base_path=None, backend=None):
         return '', 204
 
     @app.post('/games/<gameno>/players/<int:number>/commit')
+    @acts_as_number
     def commit_turn(gameno, number):
         try:
             game = Game(_repository(gameno), int(number))
@@ -157,7 +225,13 @@ def create_app(base_path=None, backend=None):
                 return jsonify(payload), (200 if resolved else 202)
             # the administrator: the setup resolution has no barrier
             game.load()
-            game.serverSave()
+            if not game.serverSave():
+                # a resolution that refused. The answer used to be 200 with
+                # `resolved: true` whatever happened, so an administrator who
+                # committed a setup with no board was told it was committed,
+                # went back to the lobby, and found the game still asking to
+                # be set up. The command line said so all along
+                return jsonify({'error': _why_setup_stands(game)}), 400
             game.load()
             payload = _commit_payload(game, resolved=True)
             return jsonify(payload), 200
@@ -169,6 +243,7 @@ def create_app(base_path=None, backend=None):
             return jsonify({'error': str(error)}), 400
 
     @app.get('/games/<gameno>/players/<int:number>/wait/turn')
+    @acts_as_number
     def wait_for_turn(gameno, number):
         # the wait ends when the player's published orders are no longer
         # pending. `has_orders(n)` False means the server consumed them,
@@ -196,6 +271,7 @@ def create_app(base_path=None, backend=None):
             time.sleep(POLL_INTERVAL)
 
     @app.get('/games/<gameno>/players/<int:number>/wait/commit')
+    @acts_as_number
     def wait_for_commit(gameno, number):
         # the wait ends when every awaited player has committed for the
         # current turn - the same condition `wait_for_all_commits` in
@@ -219,6 +295,61 @@ def create_app(base_path=None, backend=None):
                 return jsonify({'met': False, 'waiting_on': missing})
             time.sleep(POLL_INTERVAL)
 
+    sessions_module.register_routes(app)
+    seats_module.register_routes(app)
+    registry_module.register_routes(app)
+    _register_error_handlers(app)
+
+    return app
+
+
+# the prefixes that belong to the contract rather than to the page. A request
+# under one of these that matches no route is a mistake by a client, and gets
+# an answer a client can read; anything else is somebody's address bar
+API_PREFIXES = ('/_/', '/games', '/accounts', '/sessions', '/tokens', '/static')
+
+
+def _wants_the_page(asked):
+    """Whether an unmatched request should be answered with the interface.
+
+    Somebody who types the host and port, or follows a link to a game, or
+    reloads on a screen, should land in the application - which then asks them
+    to sign in. Answering that with a bare 404 makes a working server look
+    broken, and it is the first thing a new player sees.
+
+    A request under an API prefix is not that: a client asking for an endpoint
+    that does not exist wants to be told so in JSON, not handed a page it
+    cannot parse. Nor is anything but a GET, and nor is a caller that asked
+    for JSON.
+    """
+    if asked.method != 'GET':
+        return False
+    if asked.path.startswith(API_PREFIXES):
+        return False
+    return not asked.accept_mimetypes.accept_json or \
+        asked.accept_mimetypes.accept_html
+
+
+def _register_error_handlers(app):
+    """What each kind of refusal becomes on the wire.
+
+    An `AccountError` is answered by `auth.error_response`, which knows the
+    difference between not having said who you are and having said and been
+    refused. Everything else is as it was.
+    """
+
+    @app.errorhandler(404)
+    def _not_found(_error):
+        if _wants_the_page(request):
+            # 200, not a redirect: this *is* the page for that address, and
+            # the application routes on it once it has loaded
+            return app.send_static_file('index.html')
+        return jsonify({'error': 'no such endpoint'}), 404
+
+    @app.errorhandler(AccountError)
+    def _account_error(error):
+        return auth_module.error_response(error)
+
     @app.errorhandler(GameIsBusy)
     def _busy(error):
         return jsonify({'error': str(error)}), 409
@@ -227,7 +358,22 @@ def create_app(base_path=None, backend=None):
     def _game_error(error):
         return _game_error_response(error)
 
-    return app
+
+def _why_setup_stands(data):
+    """Why a setup the administrator asked to commit was not committed.
+
+    `resolve` answers False rather than raising for the two things that are
+    not a caller's mistake so much as a game that is not ready, and it says
+    which to the server's own output. This is that reason, said to the caller
+    who asked - which is the difference between a screen that can explain
+    itself and one that lies.
+    """
+    if data.getSizeX() <= 1 or data.getSizeY() <= 1:
+        return ('the board must be set before this setup can be committed: '
+                'a game is not a game without one')
+    if data.getOutcome() is not None:
+        return 'this game is decided; there is nothing left to commit'
+    return 'this setup could not be committed'
 
 
 def _commit_payload(data, resolved):

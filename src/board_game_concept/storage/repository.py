@@ -183,3 +183,45 @@ class GameRepository:
 
     def write_rejections(self, number, rejected, turn=None):
         raise NotImplementedError
+
+    # --- what the turns did
+    #
+    # Two records of the same resolution. `turn_events` is the whole of it,
+    # which is what a session entitled to the whole game reads; a seat's feed
+    # is the part of it that seat was entitled to be told, decided when the
+    # turn was resolved and by what that seat could see at the time. The
+    # filtering cannot be left to the read: a sighting lasts one turn, so by
+    # the time last week's turn is read back there is nothing left to say who
+    # could see what while it was happening.
+
+    def read_turn_events(self, since=None):
+        """The whole log, oldest first, from turn `since` onwards."""
+        raise NotImplementedError
+
+    def write_turn_events(self, turn, entries):
+        """Record what one resolution did, replacing that turn's entries."""
+        raise NotImplementedError
+
+    def read_events(self, number, since=None):
+        """What this seat was told, oldest first, from turn `since` on."""
+        raise NotImplementedError
+
+    def write_events(self, number, turn, entries):
+        """Record what this seat is told about one turn."""
+        raise NotImplementedError
+
+    # --- what a seat has met
+    #
+    # Sightings last one turn: an enemy not touched this turn is off your
+    # board, and its type is out of your list of types. What you have already
+    # been shown is a different thing from where it is now, and this is where
+    # it is kept - the design of a type you have met, and the turn you met it
+    # on. Positions are not in it and never will be.
+
+    def read_known_types(self, number):
+        """Every enemy type this seat has met, oldest sighting first."""
+        raise NotImplementedError
+
+    def write_known_types(self, number, entries):
+        """Replace what this seat has met with `entries`."""
+        raise NotImplementedError

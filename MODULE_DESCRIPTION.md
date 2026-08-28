@@ -78,6 +78,13 @@ not know how it is drawn.
 - **`turn.py`** - publishing orders, resolving a turn, and the commit barrier.
   The barrier lives here because "every player has committed" is a rule about
   the game, not a fact about files.
+- **`turn_feed.py`** - what each seat is told the turn did. The engine's
+  events, turned into records and filtered per seat: a seat reads anything one
+  of its own units did or had done to it, and other people's units only where
+  it could see every unit involved. The filtering happens at resolution
+  because a sighting lasts one turn, so there is nothing left later to decide
+  it with. It also puts the square of a contest onto the attacks thrown inside
+  it, which is what lets a board draw where a fight was.
 - **`identity.py`** - who a session is: the administrator, a player, or the
   observer, and what each is entitled to. The reserved numbers live here rather
   than in the domain because the engine resolves turns for players and has
@@ -103,11 +110,17 @@ not know how it is drawn.
   `schema.sql`. `held()` is a transaction (`BEGIN IMMEDIATE` for a writer,
   `BEGIN DEFERRED` for a reader, WAL on); `read_view` runs a visibility
   join against `sightings` rather than reading a materialised file; every
-  turn's events are recorded to `turn_events`, ready for a caller to read.
-  SQLite is the default backend.
-- **`schema.sql`** - the DDL loaded on first `ensure()` of a SQLite backend.
-  Each table maps nearly one-to-one to what a YAML file held; `sightings`
-  and `turn_events` are the two the schema adds.
+  turn's events are recorded to `turn_events` and each seat's share of them to
+  `player_events`; `known_types` holds the designs each seat has met, which
+  outlive the sighting that taught them - `show events` and `show designs`
+  read those, at a command line and in a browser alike. The schema is
+  re-applied whenever a table it describes is missing, so a game made by an
+  older build gains the tables added since. SQLite is the default backend.
+- **`schema.sql`** - the DDL loaded when a SQLite backend finds a table it
+  describes missing. Each table maps nearly one-to-one to what a YAML file
+  held; `sightings`, `turn_events`, `player_events` and `known_types` are the
+  four the schema adds. Every statement is `IF NOT EXISTS`, which is what makes
+  re-applying it to an existing game safe.
 - **`serialise.py`** - the plain-data documents storage takes: `units_document`
   for the units file shape, `serialise_draft` and `restore_draft` for the
   commands a session has not committed yet.
@@ -261,7 +274,65 @@ pytest
 
 Python 3.10 or later and PyYAML. Nothing else.
 
+## Accounts
+
+Who is asking, as opposed to what they are entitled to. The player numbers and
+what each may do are unchanged; these modules decide which numbers an account
+may act as, over HTTP.
+
+  * `domain/account.py` - what an account is: its three kinds, the reserved
+    names, and the rules a username and a password must satisfy. Hashes
+    nothing and stores nothing.
+  * `service/accounts.py` - one function per use case (register, authenticate,
+    change and reset a password, mint and end a token, claim and release a
+    seat), and `may_act_as`, which is the one rule about which numbers an
+    account may be. `service/identity.py` still answers what a *number* is
+    entitled to and is untouched.
+  * `storage/account_store.py` - the port, in the shape of
+    `storage/repository.py`, and `make_account_store`, which is the only way
+    one is built.
+  * `storage/sqlite_account_store.py`, `storage/accounts.sql` - the SQLite
+    implementation, one file at `accounts.sqlite3`.
+  * `storage/yaml_account_store.py` - the YAML implementation, three files
+    under `accounts/`, created private to the user running the server because
+    they carry password hashes.
+  * `http/auth.py` - the guard in front of every route that names a number,
+    and where a token is read from.
+  * `http/sessions.py` - registering, signing in and out, passwords, tokens.
+  * `http/seats.py` - which seats a game holds, and taking or giving up one.
+
+The store is one per server, beside the `games/` tree rather than inside any
+game — the only state in this project that is not scoped to one game, because
+a person outlives every game they play in. Which backend keeps it is the
+backend the games use: one choice drives both, and a deployment is never a
+SQLite store beside YAML games. It is opened per request, for the same reason
+a game repository is: a SQLite connection belongs to the thread that opened
+it.
+
+## The web interface
+
+  * `service/registry.py` - which games exist and what state each is in,
+    derived by reading the games tree rather than kept in a record, so it
+    cannot drift out of step with what is on disk. Also making a game.
+  * `http/registry.py` - `GET /games` and `POST /games`, the two things a
+    lobby needs that the per-game API could not answer.
+  * `http/static/` - the interface, as plain files with no build step:
+    `index.html` (one page), `app.js` (one state object, one `render`, and
+    the routing), `api.js` (every call the page makes, in one file),
+    `board.js` (the SVG board), `lobby.js`, `armoury.js`, `play.js`,
+    `style.css`.
+
+The interface reaches the game only through the contract every other client
+uses. That is the cheapest test that the contract is complete: anything the
+page cannot do is a gap in the API rather than a reason for a private route,
+and `tests/test_web_flow.py` drives exactly the calls `api.js` makes.
+
 ## Not built yet
 
-An HTTP API, a web interface, accounts, and the unit programming the concept is
-named for. See `SPEC_COVERAGE.md` for what is documented but absent.
+The unit programming the concept is named for. See `SPEC_COVERAGE.md` for what
+is documented but absent.
+
+What a turn did is no longer among them: `turn_events` holds the whole log for
+a session entitled to the whole game, and `player_events` holds each seat's
+share of it, decided by `service/turn_feed.py` while the turn was being fought
+rather than by filtering the log afterwards.

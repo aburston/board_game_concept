@@ -141,6 +141,47 @@ def print_pending(entries):
         nothing='no orders pending')
 
 
+def print_events(entries):
+    """What the turns did, oldest first.
+
+    One line per thing that happened, in the order it happened, said in the
+    domain's own words - the same sentence the browser draws under its board,
+    because both are reading the same feed.
+    """
+    _print_table(
+        [{'turn': entry.get('turn'), 'text': entry.get('text'),
+          'where': _square_of(entry)} for entry in entries or []],
+        headers=('TURN', 'WHAT', 'WHERE'),
+        keys=('turn', 'text', 'where'),
+        numeric=('TURN',),
+        nothing='nothing has happened yet')
+
+
+def _square_of(entry):
+    """Where an event happened, for the events that do not say so themselves.
+
+    An attack is reported from inside the contest that already named the
+    square, so the sentence does not repeat it - and a table with a column
+    for it should still fill the column in.
+    """
+    detail = entry.get('detail') or {}
+    if detail.get('x') is None or detail.get('y') is None:
+        return ''
+    return f"({detail['x']}, {detail['y']})"
+
+
+def print_designs(entries):
+    """The enemy designs this session has met, as they were designed."""
+    _print_table(
+        entries,
+        headers=('PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
+                 'COST', 'MET'),
+        keys=('player', 'name', 'symbol', 'attack', 'health', 'energy',
+              'cost', 'first_seen'),
+        numeric=('PLAYER', 'ATTACK', 'HEALTH', 'ENERGY', 'COST', 'MET'),
+        nothing='no enemy designs met yet')
+
+
 def print_board_view(view):
     """The grid, and what the symbols on it stand for.
 

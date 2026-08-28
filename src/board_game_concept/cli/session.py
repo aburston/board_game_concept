@@ -64,14 +64,37 @@ def add_backend_argument(parser):
              f"or ${BACKEND_ENV} when set)")
 
 
+# where games and accounts are kept. The directory the caller is in, unless
+# they name one - which is what `bgcapiserver` needs, because an installed
+# command is run from wherever the operator happens to be and would otherwise
+# put a credentials database there, and a different one tomorrow
+HOME_ENV = 'BOARD_GAME_HOME'
+
+
+def default_base_path():
+    """Where games and accounts live when nobody has said.
+
+    `$BOARD_GAME_HOME` if it is set, and the working directory otherwise -
+    so the behaviour every role has always had is unchanged until somebody
+    asks for something else, and one setting moves all of it together.
+    """
+    return os.environ.get(HOME_ENV) or os.getcwd()
+
+
 SERVER_ENV = 'BOARD_GAME_SERVER'
+
+# the token a role proves itself with when it talks to a server. An
+# environment variable as well as a flag because a script, and one of the
+# bots in `matches/`, needs a way to carry a credential that does not put
+# it in a shell history
+TOKEN_ENV = 'BOARD_GAME_TOKEN'
 
 # where the local API server is expected to be, when the caller did not
 # name one explicitly. The guard in `make_session` probes this URL for a
 # live `bgcapiserver` before falling back to local storage; if a caller
 # genuinely wants local mode while an API server is up they set
 # `BOARD_GAME_NO_REDIRECT` to skip the probe
-LOCAL_API_URL = 'http://127.0.0.1:8080'
+LOCAL_API_URL = 'http://127.0.0.1:45678'
 LOCAL_API_ENV = 'BOARD_GAME_LOCAL_API'
 NO_REDIRECT_ENV = 'BOARD_GAME_NO_REDIRECT'
 _PROBE_TIMEOUT = 0.5
@@ -79,6 +102,10 @@ _PROBE_TIMEOUT = 0.5
 
 def default_server():
     return os.environ.get(SERVER_ENV)
+
+
+def default_token():
+    return os.environ.get(TOKEN_ENV)
 
 
 def probe_local_api(url=None):
@@ -122,13 +149,37 @@ def add_server_argument(parser):
     """
     parser.add_argument(
         '--server', default=None,
-        help=f"URL of the game server, e.g. http://127.0.0.1:8080 "
+        help=f"URL of the game server, e.g. http://127.0.0.1:45678 "
              f"(overrides ${SERVER_ENV}); when unset the role uses local "
              f"storage")
+    parser.add_argument(
+        '--token', default=None,
+        help=f"the token this role proves itself with when it talks to a "
+             f"server (overrides ${TOKEN_ENV}); not needed when the role "
+             f"opens a game directory itself")
+
+
+def _http_session(url, gameno, player_number, token):
+    """An HTTP session, or a refusal saying a token is needed.
+
+    A server knows who is asking, so a role talking to one has to say. The
+    refusal happens here rather than at the first request, so that a role
+    without a credential never opens a session at all and never prints a
+    prompt it cannot act on.
+
+    The local flow does not come through here and needs none of this: there
+    is no server to prove anything to.
+    """
+    token = token or default_token()
+    if not token:
+        raise GameError(
+            f'a token is needed to talk to the server at {url}: '
+            f'name one with --token or ${TOKEN_ENV}')
+    return HttpSession(url, gameno, player_number, token=token)
 
 
 def make_session(gameno, player_number, server=None, backend=None,
-                 base_path=None):
+                 base_path=None, token=None):
     """Which session backend a role puts behind its REPL.
 
     Anything the caller named explicitly wins over the guard: `--server`
@@ -146,8 +197,8 @@ def make_session(gameno, player_number, server=None, backend=None,
     """
     if server is not None or default_server():
         # explicit HTTP: use whichever URL the caller named
-        return HttpSession(server or default_server(),
-                           gameno, player_number)
+        return _http_session(server or default_server(), gameno,
+                             player_number, token)
     if backend is not None or os.environ.get(BACKEND_ENV):
         # explicit local: the caller told us which backend, no probe
         return LocalSession(
@@ -162,7 +213,7 @@ def make_session(gameno, player_number, server=None, backend=None,
             f"using HTTP instead of local storage. Set "
             f"${NO_REDIRECT_ENV}=1 to override.",
             file=sys.stderr)
-        return HttpSession(probed, gameno, player_number)
+        return _http_session(probed, gameno, player_number, token)
     return LocalSession(
         make_repository(gameno, backend=backend, base_path=base_path),
         player_number)

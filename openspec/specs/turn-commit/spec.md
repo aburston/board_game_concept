@@ -392,6 +392,13 @@ types and unit placements are fixed and only movement orders are accepted.
 - **THEN** players may order movement
 - **AND** players may no longer define types or place units
 
+#### Scenario: Setup closed by committing it
+
+- **WHEN** a player has committed a setup and the first turn has not resolved
+- **THEN** they may no longer define types or place units
+- **AND** the refusal says their setup is committed rather than naming a turn
+  that has not happened
+
 ### Requirement: Resolution Is Deterministic
 
 The system SHALL resolve a turn as a pure function of the board and the orders

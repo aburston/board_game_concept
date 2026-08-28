@@ -131,6 +131,12 @@ dmypy.json
 # board game concept stuff
 games/
 
+# the account store a test server creates beside the games tree it serves.
+# Same reason `games/` is ignored: it is state a run makes, not source
+accounts.sqlite3
+accounts.sqlite3-shm
+accounts.sqlite3-wal
+
 # match harness: raw session transcripts and per-turn board snapshots are
 # working files; the turn-by-turn match logs are the record of the games and
 # are kept, against the *.log rule above

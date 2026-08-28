@@ -9,9 +9,15 @@ import os
 
 import yaml
 
+from ..domain.events import record as event_record
 from ..service.errors import UnreadableGame
 from . import lock
 from .repository import GameRepository
+
+
+# how many turns of feed a file keeps. A game runs for tens of turns, not
+# thousands, and a file nobody can read is worse than a short memory
+HISTORY_TURNS = 40
 
 
 class YamlGameRepository(GameRepository):
@@ -21,7 +27,10 @@ class YamlGameRepository(GameRepository):
         # process working directory made the caller's current directory part
         # of the storage contract
         if base_path is None:
-            base_path = os.getcwd()
+            # imported here rather than at the top: `cli.session` imports
+            # this module, so a module-level import would be a cycle
+            from ..cli.session import default_base_path
+            base_path = default_base_path()
         self.gameno = gameno
         self.root = os.path.join(base_path, 'games', f'_{gameno}')
         self.data_path = os.path.join(self.root, 'data')
@@ -271,6 +280,88 @@ class YamlGameRepository(GameRepository):
     def write_rejections(self, number, rejected, turn=None):
         with self._replace(self._rejections_file(number)) as file:
             yaml.safe_dump({'turn': turn, 'rejected': rejected}, file)
+
+    # --- what the turns did
+    #
+    # One file for the whole log and one per seat, each a list of turns
+    # oldest first. Trimmed to the last `HISTORY_TURNS`, because a file an
+    # operator is meant to be able to read is one that has to stay readable.
+
+    def _events_file(self, number=None):
+        if number is None:
+            return os.path.join(self.data_path, 'events.yaml')
+        return os.path.join(self.player_path, f'{number}_events.yaml')
+
+    def read_turn_events(self, since=None):
+        return self._read_events(self._events_file(), since,
+                                 'the log of what the turns did')
+
+    def write_turn_events(self, turn, entries):
+        self._write_events(self._events_file(), turn, entries)
+
+    def read_events(self, number, since=None):
+        return self._read_events(self._events_file(number), since,
+                                 f'what player {number} was told')
+
+    def write_events(self, number, turn, entries):
+        self._write_events(self._events_file(number), turn, entries)
+
+    # --- what a seat has met
+
+    def _known_types_file(self, number):
+        return os.path.join(self.player_path, f'{number}_types_seen.yaml')
+
+    def read_known_types(self, number):
+        stored = self._read_yaml(self._known_types_file(number),
+                                 f'the types player {number} has met')
+        return (stored or {}).get('types') or []
+
+    def write_known_types(self, number, entries):
+        with self._replace(self._known_types_file(number)) as file:
+            yaml.safe_dump({'types': list(entries or [])}, file)
+
+    def _read_events(self, path, since, what):
+        stored = self._read_yaml(path, what)
+        turns = (stored or {}).get('turns') or []
+        made = []
+        for held in turns:
+            turn = held.get('turn')
+            if since is not None and turn is not None and turn < since:
+                continue
+            for entry in held.get('events') or []:
+                made.append({'turn': turn,
+                             **event_record(entry.get('kind'),
+                                            entry.get('detail'))})
+        return made
+
+    def _write_events(self, path, turn, entries):
+        stored = self._read_yaml(path, 'a stored feed') or {}
+        turns = [held for held in (stored.get('turns') or [])
+                 if held.get('turn') != turn]
+        turns.append({
+            'turn': turn,
+            # the wording is not stored: it is the domain's, worked out on
+            # the way back out, so an old file reads the way the game reads
+            'events': [{'kind': _kind_of(entry),
+                        'detail': _detail_of(entry)}
+                       for entry in entries or []],
+        })
+        turns.sort(key=lambda held: (held.get('turn') is None,
+                                     held.get('turn')))
+        with self._replace(path) as file:
+            yaml.safe_dump({'turns': turns[-HISTORY_TURNS:]}, file)
+
+
+def _kind_of(entry):
+    """The kind of an entry, whether it arrived as a record or an `Event`."""
+    return getattr(entry, 'kind', None) or entry.get('kind')
+
+
+def _detail_of(entry):
+    detail = getattr(entry, 'detail', None)
+    if detail is None:
+        detail = entry.get('detail') or {}
+    return detail
 
 
 def dump_units(document):

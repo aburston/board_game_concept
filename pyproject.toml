@@ -21,7 +21,14 @@ where = ["src"]
 include = ["board_game_concept", "board_game_concept.*"]
 
 [tool.setuptools.package-data]
-"board_game_concept.storage" = ["schema.sql"]
+# every .sql beside the storage package, rather than a list of them:
+# `accounts.sql` was added and this was not, so a non-editable install
+# had no schema to apply and every request failed
+"board_game_concept.storage" = ["*.sql"]
+# the web interface is served from these files as they were written, so
+# they have to be in the wheel: without them `bgcapiserver` starts, says
+# where it put your games, and answers the front page with a 500
+"board_game_concept.http" = ["static/*"]
 
 [project.scripts]
 bgcclient = "board_game_concept.cli.bgcclient:main"

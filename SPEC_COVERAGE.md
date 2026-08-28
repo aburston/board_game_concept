@@ -21,6 +21,12 @@ source of truth for intended behaviour.
 | `game-outcome` | Player elimination, victory, draw, how a decided game stops, turn numbering |
 | `cli-completion` | What completes at each point in a session, where the candidates come from, and the shell completion for launching a role |
 | `point-budget` | What a player's point budget is and when it is fixed, what a type costs, how spend is derived from the board, and when a deployment is refused |
+| `player-numbering` | Which numbers a player may have, and which are reserved for the administrator and the observer |
+| `identity-and-accounts` | Who is calling: accounts, passwords, sessions, and which seats an account may act as |
+| `game-registry` | Which games exist, what state each is in, and the seats a lobby lists |
+| `cli-output` | One view behind a table and a JSON form, the columns each subject shows, and that a prompt can read everything a browser can |
+| `cli-installation` | The console scripts an install puts on the path, and what a wheel has to carry beside the code |
+| `web-interface` | Playing in a browser: a client of the same contract, what it must make visible, and what it must not remember |
 
 Validate them with:
 
@@ -836,13 +842,15 @@ mid-resolution and what a caller reading a board directly would see.
 
 ## Documented but not implemented
 
-- **Web service.** The Flask/REST API and SQLite backend in `README.md` are
-  aspirational; no such code exists. The prerequisite an API needs — somewhere
-  to put an order that has not been committed yet — was built by the
-  `draft-orders-and-explicit-commit` change, so a request handler no longer
-  has to hold a session's state in memory to accept one.
 - **Unit programming.** The concept the project is named for — programming a
   unit to play itself — does not exist. Units are ordered by hand each turn.
+
+The web service is no longer among these. The Flask/REST API, the SQLite
+backend and the browser interface are built and specified: `web-interface`,
+`identity-and-accounts` and `game-registry` describe them, and
+`tests/test_web_flow.py` drives exactly the calls the page makes. What a
+command line can read of it is held to what the browser can, by
+`cli-output`'s parity requirement.
 
 ## Housekeeping
 

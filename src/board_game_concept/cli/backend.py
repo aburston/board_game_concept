@@ -195,6 +195,21 @@ class LocalSession(Session):
         if subject == 'pending':
             return views_module.pending_view(self._game.getPlayers(),
                                              self._game.getBoard())
+        if subject == 'events':
+            # a session entitled to the whole game reads the whole log; a
+            # seat reads what was written for it when each turn resolved
+            repository = self._game.repository
+            if self._game.seesEverything():
+                return repository.read_turn_events()
+            return repository.read_events(self._game.player_number)
+        if subject == 'designs':
+            if self._game.seesEverything():
+                return views_module.types_seen_view(
+                    views_module.types_view(self._game.getPlayers()),
+                    met=False)
+            return views_module.types_seen_view(
+                self._game.repository.read_known_types(
+                    self._game.player_number))
         raise ValueError(f"unknown view: {subject}")
 
 
@@ -205,8 +220,13 @@ class HttpSession(Session):
     waits raise; step 3 fills them in.
     """
 
-    def __init__(self, base_url, gameno, player_number):
+    def __init__(self, base_url, gameno, player_number, token=None):
         self._session = requests.Session()
+        if token:
+            # one header, set once, on the session every request already
+            # goes through - rather than a change at each of the dozen
+            # call sites that make one
+            self._session.headers['Authorization'] = f'Bearer {token}'
         self.base_url = base_url.rstrip('/')
         self.gameno = gameno
         self.player_number = player_number

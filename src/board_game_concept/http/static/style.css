@@ -1,0 +1,355 @@
+/* Layout and theme, in custom properties so a colour is named once.
+   No colour carries meaning on its own: a seat that is yours is marked by
+   an outline and a word as well as a hue, and the board's selection is an
+   outline first. */
+
+:root {
+  color-scheme: light dark;
+
+  --ink: #16181d;
+  --ink-soft: #5a6472;
+  --page: #f6f7f9;
+  --card: #ffffff;
+  --line: #d8dde5;
+  --edge: #b9c2ce;
+
+  --mine: #2f6f4f;
+  --mine-soft: #e6f2ec;
+  --theirs: #8a3324;
+  --theirs-soft: #f7e9e6;
+  --warn: #8a6d1f;
+  --warn-soft: #fbf3dd;
+
+  --focus: #1b62c9;
+  /* an order in flight. Not `--theirs`: an order is yours, and the two are
+     never drawn on the same square anyway */
+  --order: #c1272d;
+
+  --square: 3.25rem;
+  --radius: 0.5rem;
+  --gap: 1rem;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8ebf0;
+    --ink-soft: #9aa5b4;
+    --page: #14161a;
+    --card: #1c1f25;
+    --line: #2c313a;
+    --edge: #3a414c;
+    --mine: #7fd0a4;
+    --mine-soft: #1b2b23;
+    --theirs: #e79a8c;
+    --theirs-soft: #2c1f1c;
+    --warn: #e2c069;
+    --warn-soft: #2a2417;
+    --order: #ff6b6b;
+    --focus: #7fb2ff;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--page);
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+  flex-wrap: wrap;
+}
+
+.brand { font-weight: 600; color: inherit; text-decoration: none; }
+nav { color: var(--ink-soft); font-size: 0.9rem; }
+nav a { color: inherit; }
+
+main { padding: 1.25rem; max-width: 62rem; margin: 0 auto; }
+
+h1 { font-size: 1.35rem; margin: 0 0 1rem; }
+h2 { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: var(--gap);
+}
+
+.row { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: flex-start; }
+.grow { flex: 1 1 20rem; min-width: 0; }
+
+label { display: block; font-size: 0.85rem; color: var(--ink-soft); }
+
+input, select, button {
+  font: inherit;
+  color: inherit;
+  border-radius: 0.35rem;
+  border: 1px solid var(--edge);
+  padding: 0.4rem 0.6rem;
+  background: var(--card);
+}
+
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+button.primary { background: var(--mine); border-color: var(--mine); color: var(--card); font-weight: 600; }
+button.danger { border-color: var(--theirs); color: var(--theirs); }
+
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--line); }
+th { color: var(--ink-soft); font-weight: 600; }
+td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
+
+.muted { color: var(--ink-soft); }
+.small { font-size: 0.85rem; }
+
+.tag {
+  display: inline-block;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  padding: 0 0.55rem;
+  font-size: 0.78rem;
+}
+.tag.mine { border-color: var(--mine); color: var(--mine); background: var(--mine-soft); }
+.tag.open { border-color: var(--edge); }
+.tag.warn { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+
+/* the budget meter: a number as well as a bar, because a bar alone is not
+   a number and a player is spending points rather than a proportion */
+.meter { height: 0.5rem; background: var(--line); border-radius: 999px; overflow: hidden; }
+.meter > span { display: block; height: 100%; background: var(--mine); }
+
+.board { touch-action: manipulation; max-width: 100%; height: auto; }
+.board .square { fill: var(--card); stroke: var(--line); stroke-width: 1; }
+.board .square.reachable { fill: var(--mine-soft); }
+.board .square:focus-visible { outline: none; }
+.board .cursor { fill: none; stroke: var(--focus); stroke-width: 3; }
+.board .selected { fill: none; stroke: var(--mine); stroke-width: 3; stroke-dasharray: 4 3; }
+
+/* a unit moves by a change of transform; the transition is the animation */
+.board .unit { transition: transform 320ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .board .unit { transition: none; }
+}
+.board .unit text { font-family: var(--mono); font-weight: 700; text-anchor: middle; }
+.board .unit.mine text { fill: var(--mine); }
+.board .unit.theirs text { fill: var(--theirs); }
+.board .unit .ring { fill: none; stroke-width: 2; }
+.board .unit.mine .ring { stroke: var(--mine); }
+.board .unit.theirs .ring { stroke: var(--theirs); stroke-dasharray: 3 2; }
+
+.orders td.fare { font-variant-numeric: tabular-nums; }
+.orders tr.rest td { color: var(--ink-soft); }
+.orders tr.unaffordable td.fare { color: var(--warn); font-weight: 600; }
+
+.notice { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 0.5rem 0.75rem; border-radius: 0.25rem; }
+.lost { border-left: 3px solid var(--theirs); background: var(--theirs-soft); padding: 0.5rem 0.75rem; border-radius: 0.25rem; }
+
+.say {
+  position: fixed;
+  inset-block-end: 1rem;
+  inset-inline: 1rem;
+  margin-inline: auto;
+  max-width: 34rem;
+  background: var(--card);
+  border: 1px solid var(--edge);
+  border-left: 3px solid var(--theirs);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.12);
+}
+
+.waiting::after {
+  content: "";
+  display: inline-block;
+  width: 0.6em;
+  animation: dots 1.2s steps(4, end) infinite;
+}
+@keyframes dots { to { content: "\2026"; } }
+
+.keys { font-size: 0.85rem; color: var(--ink-soft); }
+kbd {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  border: 1px solid var(--edge);
+  border-bottom-width: 2px;
+  border-radius: 0.25rem;
+  padding: 0 0.3em;
+}
+
+/* --- small screens and fingers -------------------------------------------
+   Measured on a 375px phone and on a 280px folded one, against a 10x10
+   board, which is the largest the rules allow. */
+
+/* Wide content scrolls inside its card rather than pushing the page sideways.
+   The orders table is five columns and does not fit a narrow phone; a page
+   that scrolls horizontally to read one table is worse than a table that
+   scrolls on its own. */
+.card { overflow-x: auto; }
+
+@media (max-width: 30rem) {
+  /* the board is the thing worth the width: at 1.25rem of page padding plus
+     1.1rem of card padding, a 10x10 board had only 298 of 375 pixels */
+  main { padding: 0.75rem; }
+  .card { padding: 0.75rem; }
+  h1 { font-size: 1.2rem; }
+  table { font-size: 0.86rem; }
+  th, td { padding: 0.3rem 0.35rem; }
+}
+
+/* A finger is about 44px across, and every control here was 17 to 39px tall.
+   `pointer: coarse` is the touch case rather than the narrow one - a phone
+   in landscape is still a phone, and a small window on a laptop is not. */
+@media (pointer: coarse) {
+  button, input, select {
+    min-height: 44px;
+    padding: 0.55rem 0.8rem;
+  }
+  /* a link in a sentence cannot be 44px tall without breaking the sentence,
+     so it is given room around it instead */
+  td a, p a, nav a { display: inline-block; padding: 0.5rem 0.25rem; }
+  .brand { padding: 0.25rem 0; }
+  .board .square { cursor: default; }
+}
+
+/* Nothing here has a keyboard, and telling somebody which keys to press is
+   noise at best. The board is played by tapping a unit and then a direction,
+   which the orders tray offers as buttons.
+
+   `pointer: coarse` alone, not `and (hover: none)`: the pair is the usual
+   incantation and it did not match under test, leaving the card on screen.
+   Coarse already means the primary pointer is a finger - a laptop with a
+   touchscreen still reports a fine primary pointer. */
+@media (pointer: coarse) {
+  .keys { display: none; }
+}
+
+/* a unit's row in the tray chooses it, which on a phone is the target a
+   finger can actually hit */
+.orders tbody tr { cursor: pointer; }
+.orders tbody tr.chosen td { background: var(--mine-soft); }
+.orders tbody tr.chosen td:first-child { box-shadow: inset 3px 0 0 var(--mine); }
+.orders tbody tr:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+
+@media (pointer: coarse) {
+  .orders tbody td { padding-block: 0.7rem; }
+  td a, p a { padding: 0.6rem 0.3rem; }
+}
+
+/* --- what the last turn did -------------------------------------------- */
+
+/* a square that was fought on. Tinted rather than outlined: the outline is
+   the cursor's and the dashes are the enemy's, and a third stroke on a 32px
+   square is a square nobody can read */
+.board .square.fought { fill: var(--warn-soft); stroke: var(--warn); }
+.board .clash .blades { fill: var(--warn); }
+/* the marks sit on a square a unit may be standing on, so they are drawn
+   with the page behind them rather than trusting the tint to be enough */
+.board .clash text {
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+/* health, under a unit's ring. The track is what it was built with and the
+   bar what play has left it, so a shrinking bar is a unit in trouble */
+.board .health-track { fill: var(--line); }
+.board .unit.mine .health-left { fill: var(--mine); }
+.board .unit.theirs .health-left { fill: var(--theirs); }
+.board .health-left.critical { fill: var(--warn); }
+
+/* the same number in the tray, for anybody reading rows rather than squares */
+.health.hurt { color: var(--warn); }
+.health.critical { color: var(--theirs); font-weight: 600; }
+
+/* the feed. One line per thing that happened, fighting picked out from
+   manoeuvring, because a player scans this for the blows first */
+ul.feed { list-style: none; margin: 0.4rem 0; padding: 0; }
+ul.feed li {
+  padding: 0.25rem 0.5rem;
+  border-left: 3px solid var(--line);
+  margin-bottom: 0.15rem;
+}
+ul.feed li.fought { border-left-color: var(--theirs); background: var(--theirs-soft); }
+ul.feed li.destroyed { font-weight: 600; }
+ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: var(--mine); }
+.clash-key { color: var(--warn); font-weight: 600; }
+
+/* turns before the last one, once somebody asks for them */
+.past-turn { margin-top: 0.8rem; border-top: 1px solid var(--line); padding-top: 0.4rem; }
+.past-turn h3 { font-size: 0.95rem; margin: 0.2rem 0; }
+/* damage this seat took is its own colour: what it cost you and what you
+   cost them are different questions and used to be one number */
+.board .clash .damage { fill: var(--ink-soft); }
+.board .clash .damage.mine { fill: var(--theirs); font-weight: 600; }
+
+/* an order in flight, drawn out of the unit and into the square it is headed
+   for. Red and heavy on purpose: what a turn is about to do is the thing a
+   player checks last before committing, and it used to be a 12px glyph */
+.board .order .shaft {
+  stroke: var(--order);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.board .order .head { fill: var(--order); }
+
+/* the roster: what you have and what you have met, side by side with the
+   board so an attack can be weighed without leaving the screen */
+.roster { font-size: 0.92rem; }
+.roster tbody tr.gone td { color: var(--ink-soft); text-decoration: line-through; }
+.roster tbody tr.gone td:last-child { text-decoration: none; }
+.card h3 { font-size: 0.95rem; margin: 0.7rem 0 0.3rem; }
+
+/* a watched board belongs to nobody, so it is coloured by player rather
+   than by whose it is. Four are named; a fifth falls back to the ink */
+.board.watching .unit .ring { stroke: var(--ink-soft); stroke-dasharray: none; }
+.board.watching .unit text { fill: var(--ink-soft); }
+.board.watching .unit .health-left { fill: var(--ink-soft); }
+.board.watching .unit.player-1 .ring,
+.board.watching .unit.player-1 .health-left { stroke: var(--mine); fill: var(--mine); }
+.board.watching .unit.player-1 text { fill: var(--mine); }
+.board.watching .unit.player-1 .ring { fill: none; }
+.board.watching .unit.player-2 .ring,
+.board.watching .unit.player-2 .health-left { stroke: var(--theirs); fill: var(--theirs); }
+.board.watching .unit.player-2 text { fill: var(--theirs); }
+.board.watching .unit.player-2 .ring { fill: none; }
+.board.watching .unit.player-3 .ring,
+.board.watching .unit.player-3 .health-left { stroke: var(--focus); fill: var(--focus); }
+.board.watching .unit.player-3 text { fill: var(--focus); }
+.board.watching .unit.player-3 .ring { fill: none; }
+.board.watching .unit.player-4 .ring,
+.board.watching .unit.player-4 .health-left { stroke: var(--warn); fill: var(--warn); }
+.board.watching .unit.player-4 text { fill: var(--warn); }
+.board.watching .unit.player-4 .ring { fill: none; }
+.board.watching .unit .health-left.critical { fill: var(--warn); }
+
+/* a unit that has been committed and not yet placed. Drawn where it was
+   deployed, faintly, because it is not on the board until the turn resolves
+   - an empty board was the alternative and it read as work lost */
+.board .unit.pending { opacity: 0.55; }
+.board .unit.pending .ring { stroke-dasharray: 2 3; }
+
+/* the banner drawn while the server is not answering. Above whatever screen
+   is up, because it is about the page rather than about one of them */
+.card.offline { border-left: 4px solid var(--warn); margin-bottom: 0.8rem; }

@@ -33,12 +33,12 @@ installs in place, `[dev]` pulls in the linter.
 
 The three CLI roles talk to a REST server (`bgcapiserver`); with no
 `--server` and no `BOARD_GAME_SERVER` set, the roles probe for one on
-`http://127.0.0.1:8080`. Naming a `--backend` or `--server` explicitly
+`http://127.0.0.1:45678`. Naming a `--backend` or `--server` explicitly
 skips the probe.
 
 ```
 $ bgcapiserver &
-$ export BOARD_GAME_SERVER=http://127.0.0.1:8080
+$ export BOARD_GAME_SERVER=http://127.0.0.1:45678
 $ bgcserver -g 1               # admin: sets the board, registers players
                                # commits and exits
 $ bgcclient 1 1                # player 1
@@ -96,8 +96,253 @@ player record with no budget is refused rather than defaulted, because
 defaulting one would play the game by rules it was not set up under.
 Delete the game directory and start a new one.
 
+# The web interface
+
+Install it and start it. That is the whole of the setup:
+
+```
+$ pip install .
+$ bgcapiserver
+bgcapiserver: http://127.0.0.1:45678/
+  games and accounts in /home/you/games
+    /home/you/games/games/
+    /home/you/games/accounts.sqlite3
+  set $BOARD_GAME_HOME to keep them somewhere else
+  sign in as admin / admin, or observer / observer - each must change its
+  password before it can do anything
+```
+
+It says where it is serving, where it put your games and accounts, and how to
+get in, because a person who has just installed something should not have to
+read the source to find any of that out.
+
+## Where it keeps things
+
+**The directory you start it in**, unless you say otherwise — `games/` and
+either `accounts.sqlite3` or `accounts/` beside each other.
+
+That is fine when you run it in a directory you keep games in, and a trap when
+you don't: an installed command is run from wherever you happen to be, so
+starting it somewhere else tomorrow gives you a **different, empty server**,
+handing out the default passwords again. Set `$BOARD_GAME_HOME` and it stops
+mattering where you were:
+
+```
+$ export BOARD_GAME_HOME=~/board-games
+$ bgcapiserver
+```
+
+One setting moves games and accounts together — a deployment with its games in
+one place and its people in another would be worse than either. `--base-path`
+overrides both.
+
+One page, and it is a client of the same JSON API the command-line roles use
+— there is no route that exists only for the browser. Sign in, take a seat
+from the lobby, design your units, and play.
+
+**No build step and no package manager.** Everything under
+`src/board_game_concept/http/static/` is a plain file served as it was
+written: the board is one `<svg>` and a unit moves by a change of `transform`,
+so the animation is a CSS transition rather than a library. The repository
+stays one language with one toolchain.
+
+The interface shows three things the command line leaves you to find out the
+hard way: what a move will cost before you commit it, that a unit given no
+order recovers a point (so holding is a choice, not an empty row), and that an
+enemy vanishing from your board is contact lost rather than a defect.
+
+It also tells you what the turn did. Every unit is drawn with the health it
+has left against the health its type was built with, so a unit a blow from
+destruction does not look like a fresh one. Under the board is an account of
+the turn in the order it happened — who engaged whom, every attack and the
+damage it dealt, and every unit destroyed — with the turns before it a click
+away. The squares that were fought on are marked on the board itself, with
+what the fighting cost you there and where a unit fell.
+
+That account is the server's, not the browser's. It is written for each seat
+when the turn resolves, out of what that seat could see while it was being
+fought: you are told what happened to your own units and what other people's
+did only where you could see them. A fight between two players you cannot see
+is not in your feed at all — being told it happened would give away that they
+are near each other, which is the thing visibility withholds.
+
+Setting a game up is a thing you are still deciding: the administrator can
+size the board again and add or remove seats until the setup is committed,
+which is when both stand. A resize that would leave a unit off the board is
+refused, naming it. A setup with no board cannot be committed at all, and
+says so before the button rather than after it.
+
+Committing publishes the board, and that is how the lobby tells a game with a
+setup still to do from one whose setup is done: both read as "setting up"
+until a turn resolves, because players are still deploying, but only the
+first is offered a setup screen.
+
+Committing a setup takes you to the board, where the army you committed is
+drawn faintly where you put it: it is published orders until the first turn
+resolves, and stands on no board until then. The lobby sends a seat that has
+committed to the board rather than back to its armoury, and the armoury says
+the setup is committed rather than offering forms whose every answer would be
+refused.
+
+Beside the board is a roster: your own units with what each has left against
+what it was built with, and every enemy design you have met with the
+statistics its owner built it with. That memory outlives the contact that
+taught it — an enemy you touched last turn is off your board this turn, and
+the design you learned from it stays. Only the design: no square, no unit
+name, no count, because a memory of a design is not a memory of a position.
+The watching observer gets the same roster for every player, which is where
+its statistics come from now that it has no orders tray.
+
+A unit under orders is drawn with a red arrow out of it and into the square it
+is headed for, so what a turn is about to do can be checked at a glance before
+it is committed. Hovering a unit gives its statistics — yours or an enemy's —
+and, for your own, how to order it from the keyboard.
+
+It is playable from the keyboard: arrow keys move about the board, `Enter`
+selects the unit under the cursor, an arrow key then orders it that way, and
+`c` commits.
+
+If the server stops answering — restarted under an open tab, a laptop closed,
+a network gone — the page says so and keeps trying, backing off as it goes,
+and picks up where it left off when the server comes back. Nothing committed
+is lost by it.
+
+Everything the browser can do, a command line can do: the interface is a
+client of the served contract and so are the roles. `show events` is the
+account of what the turns did that the browser draws under its board, `show
+designs` the enemy designs you have met, `show units` the statistics of every
+unit you can see, and `remove player` the seat the administrator's screen
+removes with a button. A test holds the two to each other, so a view added to
+one and not the other fails the suite.
+
+## Serving it properly
+
+`bgcapiserver` runs Flask's development server, which is fine for a laptop or
+a club and not for anything else. Each player waiting for a turn holds a
+server thread for the length of the long-poll budget, so a host serving more
+than a few people wants `gunicorn` or `uwsgi` in front of the same app — and
+TLS, as below.
+
+# Accounts
+
+The three CLI roles talk to a game by naming a number. A **server** does not
+take anybody's word for it: over HTTP an account signs in, and what it may do
+is decided by which seats it holds.
+
+An account is who somebody is; a seat is which player number they hold in
+which game. The numbers themselves are unchanged — 0 is still the
+administrator, 1 to 999 the players, 1000 the observer — and what each is
+entitled to is unchanged too. What changed is that a number now has to be
+proved rather than asserted.
+
+Accounts live beside the `games/` tree rather than inside any game, because a
+person outlives every game they play in. **They are kept in the same backend
+the games are**, chosen by the same `--backend` or `BOARD_GAME_BACKEND`: a
+SQLite deployment keeps them in `accounts.sqlite3`, a YAML one in three files
+under `accounts/`. A deployment is one thing or the other; there is no mixture.
+
+Under the YAML backend the password hashes are in a readable file. They are
+scrypt and are not reversible, but a file walks off more easily than a table
+does, so `accounts/` is created `0700` and its files `0600` — keep them that
+way, or run the SQLite backend, which is the default.
+
+## First run
+
+```
+$ bgcapiserver &                  # creates accounts.sqlite3 if it is absent
+```
+
+The store is created with two accounts: **`admin`** with the password
+`admin`, and **`observer`** with the password `observer`. **Both must change
+their password before they can do anything else** — until they do, every
+request is refused except the one that changes it. That is the whole point of
+shipping with a known password: it is a way in, once.
+
+```
+# sign in, and change the password the account was created with
+$ curl -s -X POST localhost:45678/sessions     -H 'Content-Type: application/json'     -d '{"username":"admin","password":"admin"}'
+{"kind":"admin","must_change_password":true,"token":"...","username":"admin"}
+
+$ curl -s -X POST localhost:45678/accounts/current/password     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json'     -d '{"current":"admin","new":"something-better"}'
+```
+
+A password is at least 8 characters and nothing else is required of it. The
+administrator can set anybody's password without knowing it
+(`POST /accounts/<name>/password`); an account changes its own by giving the
+one it has now.
+
+## Joining a game
+
+The administrator sets a game up as it always did — `set board`, then
+`add player <number> [budget]` for each seat. Anyone else registers an
+account and takes an open seat:
+
+```
+$ curl -s -X POST localhost:45678/accounts     -d '{"username":"ada","password":"secret12"}' -H 'Content-Type: application/json'
+$ curl -s localhost:45678/games/1/seats -H "Authorization: Bearer $TOKEN"
+$ curl -s -X POST localhost:45678/games/1/seats/2 -H "Authorization: Bearer $TOKEN"
+```
+
+`admin` and `observer` are reserved and cannot be registered, in any case.
+
+A seat can be taken until a turn of that game has resolved — so a game that
+has been set up but not yet played is still joinable, which is when somebody
+looking for a game to join would arrive. It can be given up in that same
+window and not after.
+
+**One account may hold several seats in one game.** That is deliberate: it is
+how one person plays both sides to try the game out without needing a second
+person. Each seat stays a separate identity — its own army, its own orders,
+its own view, and its own place at the commit barrier — so holding both is no
+way round the fog of war. Because a seat is not implied by the account, it
+stays in the address: `/games/1/players/2/...` is seat 2, and two browser tabs
+can be two seats.
+
+## Playing over HTTP from the command line
+
+A role talking to a server carries a token. Mint one with `POST /tokens` and
+give it to the role:
+
+```
+$ export BOARD_GAME_SERVER=http://127.0.0.1:45678
+$ export BOARD_GAME_TOKEN=...        # or bgcclient --token ...
+$ bgcclient 1 2
+```
+
+A role started against a server with no token says so and exits rather than
+opening a session it cannot act through. A token is also what a script or a
+bot uses, since it keeps a password out of a shell history.
+
+**Playing locally needs no account at all.** Without `BOARD_GAME_SERVER` the
+roles open the game directory themselves, and there is no server to prove
+anything to.
+
+## What the observer sees
+
+The observer account sees **every unit of every player**, on every game —
+that is what the rules grant the observer, and it is what makes watching a
+game worth doing.
+
+It is one shared account, and **nothing stops somebody who holds a seat in a
+game from also signing in as the observer to see the whole board**. That is
+deliberate rather than an oversight: the enforcement that would work costs
+live spectating, and this is a game played among people who would rather play
+it than win it. Change the observer password to whatever your group is
+comfortable sharing, and tell people what it shows.
+
+## Keeping it
+
+The account store — `accounts.sqlite3` or `accounts/`, depending on the
+backend — sits beside `games/` and is worth backing up with it. Losing it
+makes every game unreachable over HTTP while leaving the games themselves
+perfectly intact — a membership names a seat rather than being part of one —
+so the recovery is to recreate the accounts and claim the seats again.
+
 ## Web service - what's next
- * Authentication and TLS
+ * TLS. Tokens and passwords cross the wire in clear, and `bgcapiserver`
+   binds `127.0.0.1` by default. Anything reachable beyond a trusted network
+   wants TLS in front of it, and a real WSGI server rather than Flask's
+   development one.
 
 # Working on the code
 

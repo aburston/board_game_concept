@@ -19,8 +19,10 @@ Two things the schema knows that the file layout could not:
 
 import json
 import os
+import re
 import sqlite3
 
+from ..domain.events import record as event_record
 from ..service.errors import UnreadableGame
 from .lock import GameIsBusy
 from .repository import GameRepository
@@ -45,7 +47,10 @@ class SqliteGameRepository(GameRepository):
 
     def __init__(self, gameno, base_path=None):
         if base_path is None:
-            base_path = os.getcwd()
+            # imported here rather than at the top: `cli.session` imports
+            # this module, so a module-level import would be a cycle
+            from ..cli.session import default_base_path
+            base_path = default_base_path()
         self.gameno = gameno
         self.root = os.path.join(base_path, 'games', f'_{gameno}')
         # `data_path` is what Game reads for the notifier and for error
@@ -130,10 +135,22 @@ class SqliteGameRepository(GameRepository):
             self._connection.execute('COMMIT')
 
     def _has_schema(self):
-        row = self._connection.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' "
-            "AND name='games'").fetchone()
-        return row is not None
+        """Whether this database has every table the schema describes.
+
+        Asking only whether `games` existed made the schema a thing applied
+        once, at creation, and never again: a game opened by a build that
+        knew about a table added since found the table missing and failed on
+        the first write to it - which is what happened when the feed of what
+        a turn did was added to a schema games already existed under.
+
+        Every statement in the file is `IF NOT EXISTS`, so re-running it on a
+        database that is only missing the new tables adds those and touches
+        nothing else. A table that changed shape rather than being added is
+        not this, and would need a migration.
+        """
+        present = {row['name'] for row in self._connection.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'")}
+        return _schema_tables() <= present
 
     # --- the board
 
@@ -448,27 +465,85 @@ class SqliteGameRepository(GameRepository):
                  record.get('unit'), record.get('type'),
                  record.get('x'), record.get('y'), record.get('reason')))
 
-    # --- combat log: written, not yet read
+    # --- what the turns did
 
-    def write_turn_events(self, turn, events):
-        """Record the events one resolution produced.
+    def read_turn_events(self, since=None):
+        if not self._db_ready():
+            return []
+        where, values = ('WHERE turn_no >= ?', (int(since),)) \
+            if since is not None else ('', ())
+        rows = self._get(
+            f'SELECT turn_no, kind, payload FROM turn_events {where} '
+            'ORDER BY turn_no, seq', values).fetchall()
+        return [_entry(row['turn_no'], row['kind'], row['payload'])
+                for row in rows]
 
-        Not on the port. A caller that wants events recorded reaches here;
-        `service/turn.py` does not yet. Kept here so the table is on the
-        schema and reachable for whichever step wires it up.
-        """
+    def write_turn_events(self, turn, entries):
+        """Record what one resolution did, replacing that turn's entries."""
         self.ensure()
         connection = self._get()
         connection.execute('DELETE FROM turn_events WHERE turn_no=?',
                            (int(turn),))
-        for seq, event in enumerate(events):
+        for seq, entry in enumerate(entries or []):
             connection.execute(
                 'INSERT INTO turn_events (turn_no, seq, kind, payload) '
                 'VALUES (?, ?, ?, ?)',
-                (int(turn), seq,
-                 getattr(event, 'kind', None) or event.get('kind'),
-                 json.dumps(getattr(event, 'detail', None)
-                            or event.get('detail') or {})))
+                (int(turn), seq, _kind_of(entry),
+                 json.dumps(_detail_of(entry))))
+
+    def read_events(self, number, since=None):
+        if not self._db_ready():
+            return []
+        values = [int(number)]
+        where = ''
+        if since is not None:
+            where = 'AND turn_no >= ?'
+            values.append(int(since))
+        rows = self._get(
+            f'SELECT turn_no, kind, payload FROM player_events '
+            f'WHERE player_number=? {where} ORDER BY turn_no, seq',
+            tuple(values)).fetchall()
+        return [_entry(row['turn_no'], row['kind'], row['payload'])
+                for row in rows]
+
+    def write_events(self, number, turn, entries):
+        self.ensure()
+        connection = self._get()
+        connection.execute(
+            'DELETE FROM player_events WHERE player_number=? AND turn_no=?',
+            (int(number), int(turn)))
+        for seq, entry in enumerate(entries or []):
+            connection.execute(
+                'INSERT INTO player_events (player_number, turn_no, seq, '
+                'kind, payload) VALUES (?, ?, ?, ?, ?)',
+                (int(number), int(turn), seq, _kind_of(entry),
+                 json.dumps(_detail_of(entry))))
+
+    # --- what a seat has met
+
+    def read_known_types(self, number):
+        if not self._db_ready():
+            return []
+        rows = self._get(
+            'SELECT owner, name, symbol, attack, health, energy, '
+            'first_seen, last_seen FROM known_types WHERE player_number=? '
+            'ORDER BY first_seen, owner, name', (int(number),)).fetchall()
+        return [dict(row) for row in rows]
+
+    def write_known_types(self, number, entries):
+        self.ensure()
+        connection = self._get()
+        connection.execute('DELETE FROM known_types WHERE player_number=?',
+                           (int(number),))
+        for entry in entries or []:
+            connection.execute(
+                'INSERT INTO known_types (player_number, owner, name, '
+                'symbol, attack, health, energy, first_seen, last_seen) '
+                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (int(number), int(entry['owner']), entry['name'],
+                 entry['symbol'], int(entry['attack']), int(entry['health']),
+                 int(entry['energy']), entry.get('first_seen'),
+                 entry.get('last_seen')))
 
     # --- private helpers
 
@@ -561,3 +636,38 @@ def _insert_order(connection, player_number, index, unit):
          int(unit['x']), int(unit['y']),
          int(unit['state']), int(unit['direction']),
          int(bool(unit['destroyed'])), int(bool(unit['on_board']))))
+
+
+# every table `schema.sql` creates, read once and kept
+_TABLES = None
+
+
+def _schema_tables():
+    """Every table `schema.sql` creates, read from the file itself.
+
+    Held to the file rather than to a list here, so a table added to the
+    schema is a table an existing database is given.
+    """
+    global _TABLES
+    if _TABLES is None:
+        with open(_schema_path(), encoding='utf-8') as file:
+            _TABLES = frozenset(re.findall(
+                r'CREATE TABLE IF NOT EXISTS\s+(\w+)', file.read()))
+    return _TABLES
+
+
+def _kind_of(entry):
+    """The kind of an entry, whether it arrived as a record or an `Event`."""
+    return getattr(entry, 'kind', None) or entry.get('kind')
+
+
+def _detail_of(entry):
+    detail = getattr(entry, 'detail', None)
+    if detail is None:
+        detail = entry.get('detail') or {}
+    return detail
+
+
+def _entry(turn, kind, payload):
+    """One stored event as the record every layer above passes around."""
+    return {'turn': turn, **event_record(kind, json.loads(payload))}

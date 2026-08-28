@@ -20,6 +20,7 @@ from board_game_concept.cli.parser import parse
 # invisible in what it prints
 USAGE_LINES = [
     'add player <number> [<budget>]',
+    'remove player <number>',
     'add type <name> <symbol> <attack> <health> <energy>',
     'add unit <type> <name> <x> <y>',
     'load board <file>',
@@ -30,6 +31,8 @@ USAGE_LINES = [
     'show units [json]',
     'show players [json]',
     'show pending [json]',
+    'show events [json]',
+    'show designs [json]',
     'move <unit> <north|east|south|west>',
     'commit',
     'reload',

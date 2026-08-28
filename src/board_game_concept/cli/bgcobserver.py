@@ -10,6 +10,7 @@ if __package__ is None:
 
 from board_game_concept.cli import complete, roles
 from board_game_concept.service import identity
+from board_game_concept.service.errors import GameError
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (add_backend_argument,
@@ -50,8 +51,14 @@ def main(argv=None):
 
     # a session hides how the game is reached: local when the observer opens
     # a game directory itself, HTTP when it reaches the server for it
-    data = make_session(gameno, player_number,
-                        server=args.server, backend=args.backend)
+    try:
+        data = make_session(gameno, player_number,
+                            server=args.server, backend=args.backend,
+                            token=args.token)
+    except GameError as error:
+        for line in error.lines():
+            print(line, file=sys.stderr)
+        sys.exit(1)
 
     # the observer completes what it may run, which is the reading half of the
     # grammar; `roles.OBSERVER` is what decides that, here as everywhere else

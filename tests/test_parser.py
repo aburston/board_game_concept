@@ -210,10 +210,17 @@ class TestRoles:
         assert not roles.OBSERVER.allows(command)
         assert roles.OBSERVER.refusal(command) == 'invalid command'
 
-    def test_the_client_has_no_pending_orders_to_show(self):
+    def test_every_role_may_show_the_pending_orders_it_holds(self):
+        """A player's session holds its own published orders and nobody's else.
+
+        The client used to be refused this, which read as a rule about
+        secrecy and was not one: a player's session is built from that
+        player's own view, so `pending` is their own army and no part of
+        anybody's plan. Refusing it meant an army that had been committed and
+        not yet deployed could be read in a browser and not at a prompt.
+        """
         command = parse('show pending')
-        assert not roles.CLIENT.allows(command)
-        assert roles.CLIENT.refusal(command) == 'invalid show command'
+        assert roles.CLIENT.allows(command)
         assert roles.SERVER.allows(command)
         assert roles.OBSERVER.allows(command)
 

@@ -43,6 +43,10 @@ def _print_table(subject, view):
         render.print_types(view)
     elif subject == 'players':
         render.print_players(view)
+    elif subject == 'events':
+        render.print_events(view)
+    elif subject == 'designs':
+        render.print_designs(view)
     else:
         render.print_pending(view)
 

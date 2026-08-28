@@ -12,8 +12,27 @@ describe couplings that have since been cut. What has landed since:
 | 1. Purify the engine | Done - `domain/` prints nothing, `board.commit()` returns events, rendering is in `cli/render.py` and serialising in `storage/serialise.py` |
 | 2. Extract the service layer | Done - `service/games.py` holds one function per command, and `sys.exit` is gone from library code |
 | 3. Introduce the repository port | Port done - `storage/repository.py` with `YamlGameRepository`. No second implementation |
-| 4. Put HTTP over the service layer | Not started |
-| 5. Build the web UI | Not started |
+| 4. Put HTTP over the service layer | Done - `http/app.py` serves the reads, the commands and the commit over the service layer, and the CLI roles reach it through `HttpSession` |
+| 5. Build the web UI | Done - `http/static/`, a client of the JSON contract with no build step |
+
+§6 offered three presentation options. What landed is **P2 without its
+toolchain**: a client of the JSON API, as P2 describes, but built from vanilla
+ES modules and an SVG board rather than a framework. The two things a
+framework would have bought do not apply here - `board-model` caps the board
+at 10x10, so the tree-diffing is for a hundred squares, and the animation is a
+CSS transition on an SVG `transform`. P1 (server-rendered HTML with htmx) was
+the closer call and loses on one point: every interaction returning markup
+would mean the browser and the CLI were no longer clients of one contract, and
+the interface would stop being a test of the API. `design.md` in the
+`web-play` change has the reasoning.
+
+§5's "Identity and authorisation" is what the `accounts-and-membership` change
+implements, with one departure it did not anticipate. That section expected the
+player number to move out of the URL and into a token. It cannot: one account
+may hold several seats of one game - which is what lets one person play both
+sides - so the account no longer says which seat it is acting as. The number
+stays in the path and authorisation checks it, which also means every route in
+`http/app.py` stayed exactly where it was.
 | 6. Retire the file transport | Not started |
 
 Two things it says are no longer true. §2.5 said business rules live in CLI

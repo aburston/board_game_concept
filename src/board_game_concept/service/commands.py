@@ -107,6 +107,11 @@ class AddPlayer(Node):
         super().__init__(**values)
 
 
+class RemovePlayer(Node):
+    kind = 'remove_player'
+    fields = ('number',)
+
+
 class AddType(Node):
     kind = 'add_type'
     fields = ('name', 'symbol', 'attack', 'health', 'energy')

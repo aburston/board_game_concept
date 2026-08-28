@@ -103,6 +103,34 @@ def types_view(players):
     return entries
 
 
+def types_seen_view(entries, met=True):
+    """Every enemy design this session has met, as the types view shapes one.
+
+    The same fields `types_view` gives, so a screen can draw one list from
+    either, plus the turns the design was first and last met on. A session
+    that sees everything is given the types it can see: it has met them all
+    by definition, and keeping a second record for it would be a record that
+    could disagree with the board.
+    """
+    made = []
+    for entry in entries or []:
+        attack = _as_int(entry['attack'])
+        health = _as_int(entry['health'])
+        energy = _as_int(entry['energy'])
+        made.append({
+            'player': entry['owner'] if met else entry['player'],
+            'name': entry['name'],
+            'symbol': entry['symbol'],
+            'attack': attack,
+            'health': health,
+            'energy': energy,
+            'cost': attack + health + energy,
+            'first_seen': entry.get('first_seen'),
+            'last_seen': entry.get('last_seen'),
+        })
+    return made
+
+
 def units_view(board):
     """Every unit this board holds, with the values play has left it.
 
@@ -193,6 +221,16 @@ def pending_view(players, board=None):
                 'order': order,
                 'x': _as_int(unit.get('x')),
                 'y': _as_int(unit.get('y')),
+                # what the unit is, as well as what it was told to do. An
+                # army that has been committed and not yet resolved is on no
+                # board anywhere, so this is the only thing that can be drawn
+                # for it - and a player who has just committed their setup
+                # was looking at an empty board because of it
+                'type': unit.get('type_name') or unit.get('type'),
+                'symbol': unit.get('symbol'),
+                'attack': _as_int(unit.get('attack')),
+                'health': _as_int(unit.get('health')),
+                'energy': _as_int(unit.get('energy')),
             })
     return entries
 

@@ -105,3 +105,26 @@ def test_a_client_with_no_view_yet_shows_what_it_deployed(tmp_path):
     harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
     client = harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
     assert [unit.name for unit in client.getBoard().units] == ['x1']
+
+
+def test_a_players_pending_orders_are_their_own_and_nobody_elses(tmp_path):
+    """`show pending` is a player reading back what they published.
+
+    Their session is built from their own view and loads no other player's
+    orders, so this is what there is to leak and there is nothing in it.
+    """
+    from board_game_concept.http import views
+
+    harness = GameHarness(tmp_path)
+    harness.create(5, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', 1, 4, 8)], [('X', 'x1', 0, 0)])
+    harness.deploy(2, [('O', 'O', 1, 4, 8)], [('O', 'o1', 4, 2)])
+    harness.resolve()
+    harness.order(1, [('x1', UnitType.EAST)])
+    harness.order(2, [('o1', UnitType.WEST)])
+
+    for number, mine in ((1, 'x1'), (2, 'o1')):
+        session = harness.session(number)
+        pending = views.pending_view(session.getPlayers(), session.getBoard())
+        assert [entry['unit'] for entry in pending] == [mine]
+        assert {entry['player'] for entry in pending} == {number}

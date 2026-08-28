@@ -114,10 +114,23 @@ The system SHALL let the administrator size the board before the game starts via
 - **WHEN** `set board` is given two dimensions and no board exists yet
 - **THEN** a board of that size is created
 
-#### Scenario: Resizing an existing board
+#### Scenario: Resizing a board during setup
 
-- **WHEN** `set board` is run and a board already exists
-- **THEN** the server refuses, reporting that an existing board cannot be resized
+- **WHEN** `set board` is run and a board already exists, and the setup
+  holding it has not been committed
+- **THEN** the board becomes that size
+- **AND** anything already standing keeps the square it stood on
+
+#### Scenario: Resizing after setup is committed
+
+- **WHEN** `set board` is run after the setup that holds it was committed
+- **THEN** the server refuses, saying the setup is committed
+
+#### Scenario: A size with no room for what is standing
+
+- **WHEN** `set board` is given a size that would leave a unit off the board
+- **THEN** the server refuses, naming the units it has no square for
+- **AND** the board keeps the size it had
 
 #### Scenario: Wrong argument count
 
@@ -142,14 +155,39 @@ The system SHALL let the administrator size the board before the game starts via
 ### Requirement: Registering Players
 
 The system SHALL let the administrator register players before the game starts
-via `add player <number>`. The number SHALL be one `player-numbering` permits a
-player, and one that is not SHALL be refused at the prompt — reported, with the
-session continuing — rather than ending the session.
+via `add player <number> [budget]`. The number SHALL be one `player-numbering`
+permits a player, and one that is not SHALL be refused at the prompt —
+reported, with the session continuing — rather than ending the session.
+
+The budget is the point budget `point-budget` describes and is optional: where
+it is not given, the player is registered with the default budget. Where it is
+given, it SHALL be an integer within the range `point-budget` permits, and one
+that is not SHALL be refused at the prompt with no player registered.
 
 #### Scenario: Adding a player
 
 - **WHEN** `add player` is given a player number and the game is new
 - **THEN** that player is registered with no unit types
+- **AND** with the default point budget
+
+#### Scenario: Adding a player with a budget
+
+- **WHEN** `add player` is given a player number and a budget, and the game is new
+- **THEN** that player is registered with that budget
+
+#### Scenario: Adding a player with a budget that is not a number
+
+- **WHEN** `add player` is given a second argument that is not a number
+- **THEN** the server reports that the budget must be a number
+- **AND** no player is registered
+- **AND** the server takes further commands
+
+#### Scenario: Adding a player with a budget out of range
+
+- **WHEN** `add player` is given a budget outside the range `point-budget` permits
+- **THEN** the server refuses, naming the permitted range
+- **AND** no player is registered
+- **AND** the server takes further commands
 
 #### Scenario: Adding a player with a reserved number
 
@@ -165,15 +203,55 @@ session continuing — rather than ending the session.
 - **AND** no player is registered
 - **AND** the server takes further commands
 
-#### Scenario: Adding a player to an established game
+#### Scenario: Adding a player once the setup is committed
 
-- **WHEN** `add player` is run after the game has started
-- **THEN** the server refuses, reporting that players cannot be added to an existing game
+- **WHEN** `add player` is run after the setup holding the seats was committed
+- **THEN** the server refuses, reporting that players cannot be added to an
+  existing game
+- **AND** the same boundary closes `remove player`, so seats are added and
+  removed together or not at all
 
 #### Scenario: Wrong argument count
 
-- **WHEN** `add player` is given other than one argument
-- **THEN** the server reports that one argument is required
+- **WHEN** `add player` is given no arguments, or more than two
+- **THEN** the server reports that a player number and an optional budget are required
+
+### Requirement: Removing A Registered Player
+
+The system SHALL let the administrator take a registered player out of a game
+via `remove player <number>`, while the setup holding it has not been
+committed, and SHALL remove with them anything they had loaded or deployed.
+
+Registering a player is a decision made during setup, and every other decision
+made during setup can be taken back until it is committed. This one could not,
+so a seat number typed wrong, or a player who never turned up, was a game to
+throw away and start again.
+
+#### Scenario: Removing a player
+
+- **WHEN** `remove player` names a registered player and setup is not committed
+- **THEN** that player is no longer registered
+- **AND** nothing of theirs is left on the board
+
+#### Scenario: The number can be used again
+
+- **WHEN** a player is removed and the same number is registered again
+- **THEN** it is registered, with whatever budget it is given
+
+#### Scenario: A player who is not registered
+
+- **WHEN** `remove player` names a number nobody is registered under
+- **THEN** the server refuses, saying there is no such player to remove
+
+#### Scenario: After setup is committed
+
+- **WHEN** `remove player` is run after setup has been committed
+- **THEN** the server refuses
+
+#### Scenario: Only the administrator may remove a player
+
+- **WHEN** `remove player` is run by anyone other than player 0
+- **THEN** the server refuses
 
 ### Requirement: Loading Configuration From Files
 
@@ -181,6 +259,13 @@ The system SHALL let the administrator import board and player configuration
 from files via `load board <file>` and `load player <file>`. A player file
 naming a number `player-numbering` does not permit a player SHALL be refused at
 the prompt, with the session continuing.
+
+A player file MAY carry a `budget:` key, which is that player's point budget.
+A file that does not carry one SHALL register the player with the default
+budget: a player file is configuration written by hand, and a budget left out
+of one is a budget not chosen rather than a game whose budget has been lost. A
+`budget:` outside the range `point-budget` permits SHALL be refused with the
+session continuing and no player registered.
 
 #### Scenario: Loading a board
 
@@ -191,6 +276,23 @@ the prompt, with the session continuing.
 
 - **WHEN** `load player` names a file containing a player number, types, and units
 - **THEN** that player is registered with those types and units
+
+#### Scenario: Loading a player with a budget
+
+- **WHEN** `load player` names a file carrying a `budget:` key
+- **THEN** that player is registered with that budget
+
+#### Scenario: Loading a player without a budget
+
+- **WHEN** `load player` names a file with no `budget:` key
+- **THEN** that player is registered with the default budget
+
+#### Scenario: Loading a player whose budget is out of range
+
+- **WHEN** `load player` names a file whose `budget:` is outside the permitted range
+- **THEN** the server refuses, naming the permitted range
+- **AND** no player is registered
+- **AND** the server returns to the prompt
 
 #### Scenario: Loading a player whose number is not a player's
 
@@ -213,7 +315,6 @@ the prompt, with the session continuing.
 
 - **WHEN** `load board` or `load player` is given other than one argument
 - **THEN** the server reports that one argument is required
-
 ### Requirement: Server Display Commands
 
 The system SHALL let the administrator inspect the full game state. Each
@@ -257,6 +358,27 @@ command ends in `json`, both as `cli-output` describes them.
 - **WHEN** `show` is given without a subject, with an unrecognised one, or with
   a trailing word other than `json`
 - **THEN** the server reports the command as invalid
+
+### Requirement: A Refused Setup Commit Is Reported To Whoever Asked
+
+Where a setup cannot be committed - there is no board, or the game is already
+decided - the system SHALL refuse and say which, to the caller that asked
+rather than only to the server's own output, and SHALL leave the game exactly
+as it was.
+
+An administrator told that a setup was committed when it was not goes looking
+for the game they think they made, and finds one still asking to be set up.
+
+#### Scenario: No board
+
+- **WHEN** a setup with no board is committed
+- **THEN** the caller is told the board must be set first
+- **AND** nothing of the setup is published
+
+#### Scenario: A game already decided
+
+- **WHEN** a setup commit is asked for on a decided game
+- **THEN** the caller is told there is nothing left to commit
 
 ### Requirement: Committing Setup
 

@@ -24,7 +24,8 @@ DIRECTIONS = {
     'west': UnitType.WEST,
 }
 
-SHOW_SUBJECTS = ('board', 'types', 'units', 'players', 'pending')
+SHOW_SUBJECTS = ('board', 'types', 'units', 'players', 'pending',
+                 'events', 'designs')
 
 # the one word a `show` may end in, asking for the answer as JSON rather than
 # as a table
@@ -110,6 +111,8 @@ USAGES = (
                          Optional(Slot('budget', NUMBER))),
           'add a player to the game, before it starts, with an optional '
           'point budget'),
+    Usage('remove_player', ('remove', 'player', Slot('number', NUMBER)),
+          'take a player out of the game, before setup is committed'),
     Usage('add_type', ('add', 'type', Slot('name', NAME),
                        Slot('symbol', SYMBOL), Slot('attack', NUMBER),
                        Slot('health', NUMBER), Slot('energy', NUMBER)),
@@ -130,6 +133,9 @@ USAGES = (
     _show('players', 'show the registered players, as a table or as JSON'),
     _show('pending',
           'show the orders queued for the next turn, as a table or as JSON'),
+    _show('events', 'show what the turns did, as you were told it'),
+    _show('designs',
+          'show the enemy designs you have met, which outlive contact'),
     Usage('move', ('move', Slot('unit', UNIT),
                    Slot('|'.join(DIRECTIONS), DIRECTION)),
           'order one of your units to move'),

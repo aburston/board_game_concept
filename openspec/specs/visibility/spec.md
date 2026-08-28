@@ -135,6 +135,42 @@ point it is displayed is not sufficient.
 - **WHEN** the observer loads a game
 - **THEN** it reads the authoritative record and sees every unit
 
+### Requirement: An Account Of A Turn Is Bounded By What Was Seen
+
+The system SHALL tell a seat what a turn did to and by its own units, and SHALL
+tell it about other players' units only where that seat could see every unit
+involved.
+
+An account of a turn is a way of learning where somebody is. A seat told that
+two other players fought has been told they are near enough to have met, which
+is the fact `Enemy Units Are Hidden Until Contact` withholds.
+
+#### Scenario: My own unit
+
+- **WHEN** a seat's unit strikes, is struck, moves or is destroyed
+- **THEN** that seat is told, and told which unit did it
+
+#### Scenario: Two enemies fighting in sight
+
+- **WHEN** two other players' units fight and this seat can see both
+- **THEN** this seat is told what they did
+
+#### Scenario: Two enemies fighting out of sight
+
+- **WHEN** two other players' units fight and this seat can see neither
+- **THEN** this seat is told nothing of it, including that a square was
+  contested
+
+#### Scenario: Half a fight
+
+- **WHEN** two other players' units fight and this seat can see only one of them
+- **THEN** this seat is told nothing of it
+
+#### Scenario: The observer
+
+- **WHEN** the observer reads what a turn did
+- **THEN** it is told all of it
+
 ### Requirement: Enemy Unit Types Are Disclosed By Contact
 
 The system SHALL disclose an enemy unit type to a player only through contact
@@ -156,7 +192,45 @@ registered in the game.
 #### Scenario: The type of an enemy no longer in contact
 
 - **WHEN** a player made no contact with any unit of an enemy type this turn
-- **THEN** that type is no longer listed for them
+- **THEN** that type is no longer listed among the types they are in contact
+  with
+- **AND** it remains among the types they have met, as `A Design Once Met Is
+  Remembered` describes
+
+### Requirement: A Design Once Met Is Remembered
+
+The system SHALL keep, for each player, every enemy type that player has met,
+with the statistics its owner designed it with and the turn it was first met
+on, and SHALL keep it after contact with that type is lost.
+
+What is kept SHALL be the design and nothing else. It SHALL NOT record where
+any unit was, which units were met, or how many there were: a memory of a
+design is not a memory of a position, and only the first is a player's to
+keep.
+
+A player who has fought a design and cannot afterwards say what it was built
+with is being asked to keep notes on paper, which is not a rule of the game.
+
+#### Scenario: A type met stays known
+
+- **WHEN** a player has met an enemy type and later makes no contact with it
+- **THEN** that type is still among the types they have met
+- **AND** it reads with the statistics its owner designed it with
+
+#### Scenario: A type never met is not known
+
+- **WHEN** a player has made no contact with any unit of an enemy type
+- **THEN** that type is not among the types they have met
+
+#### Scenario: What is remembered says nothing about position
+
+- **WHEN** a player reads the types they have met
+- **THEN** no square, no unit name and no number of units is given
+
+#### Scenario: A session entitled to the whole game
+
+- **WHEN** the observer reads the types it has met
+- **THEN** every type in the game is given, having been seen by definition
 
 ### Requirement: Destroyed Units Are A Marked Casualty Record
 

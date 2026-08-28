@@ -75,6 +75,7 @@ class Parser:
             'show': self._parse_show,
             'set': self._parse_set,
             'add': self._parse_add,
+            'remove': self._parse_remove,
             'load': self._parse_load,
             'move': self._parse_move,
         }
@@ -156,6 +157,18 @@ class Parser:
         return commands.AddPlayer(
             number=number,
             budget=self._integer('budget must be a number'))
+
+    def _parse_remove(self):
+        subject = self._subject('remove', ('player',))
+        if subject == 'player':
+            return self._parse_remove_player()
+        raise ParseError('invalid remove command', self.tokens.position)
+
+    def _parse_remove_player(self):
+        """`remove player <number>`, while setup is still being decided."""
+        self._arity(1, 'must provide a player number')
+        return commands.RemovePlayer(
+            number=self._integer('player number must be a number'))
 
     def _parse_add_type(self):
         self._arity(5, 'must provide 5 args for type')
