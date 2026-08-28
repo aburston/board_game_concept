@@ -600,6 +600,7 @@ function renderWaiting(game) {
  * the screen move on without anybody reloading it.
  */
 async function watch(game) {
+  let missed = 0;
   for (;;) {
     if (state.route.name !== 'play'
         || state.route.gameno !== game.gameno
@@ -608,24 +609,52 @@ async function watch(game) {
     try {
       answer = await api.waitForTurn(game.gameno, game.number, WAIT_BUDGET);
     } catch (error) {
-      say(error.message);
-      return;
+      if (!(await keepTrying(error, ++missed))) return;
+      continue;
     }
     if (answer.resolved) {
       const before = state.game;
       await loadSeat(game.gameno, game.number);
-      set({ waiting: null, previous: before, selected: null });
+      set({ waiting: null, previous: before, selected: null, offline: false });
       return;
     }
     try {
       const barrier = await api.waitForCommit(game.gameno, game.number,
                                               WAIT_BUDGET);
-      set({ waiting: barrier });
+      missed = 0;
+      set({ waiting: barrier, offline: false });
     } catch (error) {
-      say(error.message);
-      return;
+      if (!(await keepTrying(error, ++missed))) return;
     }
   }
+}
+
+/**
+ * What to do about a wait that failed: come back, or stop.
+ *
+ * A tab used to stop watching for good the first time a poll failed, so a
+ * server restarted, a laptop closed, or a poll dropped by something in the
+ * middle left a screen that had quietly stopped being a game - and the only
+ * way to find out was to reload and see the turn had moved on without you.
+ *
+ * A refusal is still final: `not signed in` means signing in, not asking
+ * again in a moment. Anything that is nobody answering is worth asking again,
+ * backing off so a server that is down is not hammered while it comes back.
+ */
+async function keepTrying(error, missed) {
+  if (error && error.notSignedIn) {
+    say(error.message);
+    return false;
+  }
+  if (!(error && error.unreachable) && missed > 3) {
+    // a refusal that keeps coming back is not a connection problem
+    say(error.message);
+    return false;
+  }
+  set({ offline: true });
+  const backoff = Math.min(1000 * 2 ** (missed - 1), 15000);
+  await new Promise((wake) => window.setTimeout(wake, backoff));
+  return true;
 }
 
 // --- what the turns did

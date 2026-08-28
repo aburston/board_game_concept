@@ -47,15 +47,23 @@ class Role:
 SERVER = Role(
     'server',
     kinds=('help', 'exit', 'commit', 'show',
-           'set_board', 'add_player', 'load_board', 'load_player'),
-    show_subjects=('board', 'types', 'units', 'players', 'pending'))
+           'set_board', 'add_player', 'remove_player',
+           'load_board', 'load_player'),
+    show_subjects=('board', 'types', 'units', 'players', 'pending',
+                   'events', 'designs'))
 
 CLIENT = Role(
     'client',
     kinds=('help', 'exit', 'commit', 'show', 'add_type', 'add_unit', 'move'),
-    show_subjects=('board', 'types', 'units', 'players'))
+    # `pending` is this player's own published orders and nobody else's - a
+    # session holds only its own - and it is the only way to read back an
+    # army that has been committed and not yet deployed. The browser shows
+    # it; withholding it here made the two clients answer differently
+    show_subjects=('board', 'types', 'units', 'players', 'pending',
+                   'events', 'designs'))
 
 OBSERVER = Role(
     'observer',
     kinds=('help', 'exit', 'reload', 'show'),
-    show_subjects=('board', 'types', 'units', 'players', 'pending'))
+    show_subjects=('board', 'types', 'units', 'players', 'pending',
+                   'events', 'designs'))

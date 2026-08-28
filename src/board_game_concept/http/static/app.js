@@ -38,6 +38,7 @@ export const state = {
   events: [],          // what the turns did, as this seat was told it
   showHistory: false,  // whether the feed is showing turns before the last
   barrier: null,       // {met, waiting_on}: who this turn is still waiting on
+  offline: false,      // whether the server has stopped answering
   message: null,
   busy: false,
 };
@@ -94,11 +95,20 @@ export async function load() {
 
   try {
     state.account = await api.whoami();
+    state.offline = false;
   } catch (error) {
     if (error.notSignedIn) {
       state.account = null;
       state.route = { name: 'signIn' };
       state.busy = false;
+      return render();
+    }
+    if (error.unreachable) {
+      // the page used to throw here and stay on `Loading` for ever, which is
+      // what a server restarted under an open tab looked like
+      state.offline = true;
+      state.busy = false;
+      retryLoad();
       return render();
     }
     throw error;
@@ -124,12 +134,28 @@ export async function load() {
     if (error.notSignedIn) {
       state.account = null;
       state.route = { name: 'signIn' };
+    } else if (error.unreachable) {
+      state.offline = true;
+      retryLoad();
     } else {
       state.message = error.message;
     }
   }
   state.busy = false;
   return render();
+}
+
+// how long to leave it before asking again, doubling to a cap. A page nobody
+// is watching should not sit hammering a server that is down
+let waited = 0;
+
+function retryLoad() {
+  waited = Math.min(waited ? waited * 2 : 1000, 15000);
+  window.clearTimeout(retryLoad._timer);
+  retryLoad._timer = window.setTimeout(() => {
+    if (!state.offline) return;
+    load();
+  }, waited);
 }
 
 export async function loadSeat(gameno, number) {
@@ -151,11 +177,11 @@ export async function loadSeat(gameno, number) {
     api.readView(gameno, number, 'pending').catch(absent),
     // what this seat has met, which outlives contact with it. The types
     // view is what is in contact now; this is what is known
-    api.readView(gameno, number, 'types_seen').catch(absent),
+    api.readView(gameno, number, 'designs').catch(absent),
     // the feed is a history rather than a snapshot, so it is fetched with
     // everything else: a screen that has to ask for it separately is a
     // screen that draws a board and then changes its mind about it
-    api.readEvents(gameno, number).catch(absent),
+    api.readView(gameno, number, 'events').catch(absent),
     // who has committed, asked with no budget so it answers at once. A
     // player deciding whether to think for another minute wants to know
     // whether everyone else is already waiting on them
@@ -175,7 +201,7 @@ export async function loadSeat(gameno, number) {
     types: types.types,
     players: players.players,
     pending: (pending && pending.pending) || [],
-    seen: (seen && seen.types_seen) || [],
+    seen: (seen && seen.designs) || [],
   };
 }
 
@@ -224,6 +250,23 @@ export function render() {
   }
   const screen = screens[name] || renderLobby;
   main.replaceChildren(screen());
+  // drawn here rather than by a screen, because losing the server is not
+  // something one screen has and the others do not
+  if (state.offline) main.prepend(renderOffline());
+}
+
+/**
+ * Said while the server is not answering.
+ *
+ * A page that has lost the server looks exactly like a page where nothing is
+ * happening, so it has to say so - and say that it is still trying, because
+ * it is, and that nothing committed is lost, because nothing is.
+ */
+function renderOffline() {
+  return element('div', { class: 'card notice offline' },
+    element('strong', {}, 'Not reaching the server. '),
+    'Still trying — this picks up where it left off when the server answers '
+    + 'again. Nothing you have committed is lost.');
 }
 
 // --- the two screens that belong to nobody else

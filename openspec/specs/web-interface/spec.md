@@ -348,6 +348,54 @@ drawn alike.
 - **WHEN** the interface is used on a touchscreen
 - **THEN** health is readable without hovering anything
 
+### Requirement: A Setup Can Be Changed Until It Is Committed
+
+The system SHALL let the administrator size the board again, and add and
+remove seats, for as long as the setup holding them has not been committed,
+and SHALL say that this is what it is offering.
+
+#### Scenario: Sizing the board again
+
+- **WHEN** the administrator sizes a board that already has a size, before
+  committing
+- **THEN** the board becomes that size
+
+#### Scenario: Removing a seat
+
+- **WHEN** the administrator removes a registered seat before committing
+- **THEN** it is no longer registered and no longer offered in the lobby
+
+#### Scenario: After committing
+
+- **WHEN** the setup has been committed
+- **THEN** neither the size nor the seats are offered for changing
+
+### Requirement: Losing The Server Is Said And Recovered From
+
+The system SHALL say, when the server stops answering, that it is not
+reaching it and is still trying, and SHALL keep trying rather than stopping
+at the first failure.
+
+A screen that has quietly stopped asking looks exactly like a game in which
+nothing is happening, so a player waiting for a turn cannot tell the
+difference between the others thinking and their own tab having given up.
+
+#### Scenario: The server goes away under an open screen
+
+- **WHEN** a request fails because the server did not answer
+- **THEN** the screen says it is not reaching the server and is still trying
+
+#### Scenario: The server comes back
+
+- **WHEN** the server answers again
+- **THEN** the screen carries on from where it was, without being reloaded
+- **AND** stops saying it is not reaching the server
+
+#### Scenario: A refusal is not a lost connection
+
+- **WHEN** a request is refused because the session is not signed in
+- **THEN** the screen asks for a sign-in rather than retrying for ever
+
 ### Requirement: A Committed Setup Is Shown As Committed
 
 The system SHALL show a player who has committed a setup what they committed,

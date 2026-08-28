@@ -17,19 +17,36 @@ from .errors import GameError
 
 
 def set_board_size(data, command):
-    """Size the board, before the game starts."""
-    if data.getBoard() is not None:
-        raise GameError("can't resize an existing board")
+    """Size the board, and size it again, until setup is committed.
+
+    A board that existed could not be resized, so an administrator who typed
+    the wrong number had a game to throw away and make again. Setup is a
+    thing you are still deciding: the size stands when it is committed, and
+    until then it can be changed like everything else in it.
+    """
+    if not data.getNewGame():
+        raise GameError("can't resize the board once setup is committed")
     if command.size_x < 2:
         raise GameError("x must be greater than 1")
     if command.size_y < 2:
         raise GameError("y must be greater than 1")
     try:
-        # the board has its own limits beyond the minimum, and states them
-        board = Board(command.size_x, command.size_y)
+        # the board has its own limits beyond the minimum, and states them.
+        # Built and thrown away here so a refused size is refused before
+        # anything standing is moved onto a board that will not exist
+        Board(command.size_x, command.size_y)
     except AssertionError as e:
         raise GameError(str(e)) from e
-    data.setBoard(board)
+    data.resizeBoard(command.size_x, command.size_y)
+
+
+def remove_player(data, command):
+    """Take a registered player out of the game, before setup is committed."""
+    if data.getNewGame() is False:
+        raise GameError("can't remove players from an existing game")
+    if not identity.is_player(command.number):
+        raise GameError(identity.out_of_range(command.number))
+    data.removePlayer(command.number)
 
 
 def _player(number, points=Player.DEFAULT_BUDGET):
@@ -206,6 +223,7 @@ def set_new_game(data, command):
 ACTIONS = {
     'set_board': set_board_size,
     'add_player': add_player,
+    'remove_player': remove_player,
     'load_board': load_board,
     'load_player': load_player,
     'add_type': define_type,

@@ -349,3 +349,7 @@ ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: va
    - an empty board was the alternative and it read as work lost */
 .board .unit.pending { opacity: 0.55; }
 .board .unit.pending .ring { stroke-dasharray: 2 3; }
+
+/* the banner drawn while the server is not answering. Above whatever screen
+   is up, because it is about the page rather than about one of them */
+.card.offline { border-left: 4px solid var(--warn); margin-bottom: 0.8rem; }

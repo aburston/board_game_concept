@@ -92,40 +92,62 @@ function renderCommittedSetup(game) {
 function renderAdminSetup(game) {
   const card = element('div', { class: 'card' });
   card.append(element('h2', {}, 'The board'));
+  // sized as often as it takes, until this setup is committed. Everything
+  // else in setup can be taken back, and a board that could not be was a
+  // mistyped number you had to make a new game to correct
+  const x = field('Width (2–10)', 'number');
+  const y = field('Height (2–10)', 'number');
   if (game.board) {
-    card.append(element('p', { class: 'muted' },
-      `Sized ${game.board.size_x}×${game.board.size_y}. ` +
-      'A board that exists cannot be resized.'));
-  } else {
-    const x = field('Width (2–10)', 'number');
-    const y = field('Height (2–10)', 'number');
-    const form = element('form', { class: 'row' });
-    form.append(element('div', { class: 'grow' }, x.label),
+    x.input.value = game.board.size_x;
+    y.input.value = game.board.size_y;
+    card.append(element('p', { class: 'muted small' },
+      `Sized ${game.board.size_x}×${game.board.size_y}. `
+      + 'It can be changed until you commit this setup.'));
+  }
+  const sizing = element('form', { class: 'row' });
+  sizing.append(element('div', { class: 'grow' }, x.label),
                 element('div', { class: 'grow' }, y.label),
                 element('p', {}, element('button',
-                  { class: 'primary', type: 'submit' }, 'Set board')));
-    form.addEventListener('submit', send(game,
-      () => api.setBoard(Number(x.input.value), Number(y.input.value))));
-    card.append(form);
-  }
+                  { class: 'primary', type: 'submit' },
+                  game.board ? 'Resize board' : 'Set board')));
+  sizing.addEventListener('submit', send(game,
+    () => api.setBoard(Number(x.input.value), Number(y.input.value))));
+  card.append(sizing);
 
   card.append(element('h2', {}, 'Seats'));
   card.append(element('p', { class: 'small muted' },
-    'A seat is a player number. Register them here; people take them from ' +
-    'the lobby. No player can be added once the game has started.'));
+    'A seat is a player number. Register them here; people take them from '
+    + 'the lobby once this setup is committed. Seats can be added and '
+    + 'removed until then, and neither after.'));
 
   const registered = game.players || [];
   if (registered.length) {
     const table = element('table', {});
     table.append(element('thead', {}, element('tr', {},
       element('th', { class: 'number' }, 'Seat'),
-      element('th', { class: 'number' }, 'Budget'))));
+      element('th', { class: 'number' }, 'Budget'),
+      element('th', {}, ''))));
     const body = element('tbody', {});
     for (const player of registered) {
       body.append(element('tr', {},
         element('td', { class: 'number' }, String(player.player)),
         element('td', { class: 'number' },
-                player.budget === null ? '—' : String(player.budget))));
+                player.budget === null ? '—' : String(player.budget)),
+        // registering a seat is a decision like any other in setup, and
+        // every other one can be taken back until it is committed
+        element('td', {}, button('remove', async () => {
+          if (!window.confirm(
+            `Remove seat ${player.player} from this game?`)) return;
+          try {
+            await api.perform(game.gameno, 0,
+                              api.removePlayer(player.player));
+            await loadSeat(game.gameno, game.number);
+            say(`Seat ${player.player} removed.`);
+          } catch (error) {
+            say(error.message);
+          }
+          set({});
+        }, { class: 'danger small' }))));
     }
     table.append(body);
     card.append(table);

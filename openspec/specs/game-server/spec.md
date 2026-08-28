@@ -114,10 +114,23 @@ The system SHALL let the administrator size the board before the game starts via
 - **WHEN** `set board` is given two dimensions and no board exists yet
 - **THEN** a board of that size is created
 
-#### Scenario: Resizing an existing board
+#### Scenario: Resizing a board during setup
 
-- **WHEN** `set board` is run and a board already exists
-- **THEN** the server refuses, reporting that an existing board cannot be resized
+- **WHEN** `set board` is run and a board already exists, and the setup
+  holding it has not been committed
+- **THEN** the board becomes that size
+- **AND** anything already standing keeps the square it stood on
+
+#### Scenario: Resizing after setup is committed
+
+- **WHEN** `set board` is run after the setup that holds it was committed
+- **THEN** the server refuses, saying the setup is committed
+
+#### Scenario: A size with no room for what is standing
+
+- **WHEN** `set board` is given a size that would leave a unit off the board
+- **THEN** the server refuses, naming the units it has no square for
+- **AND** the board keeps the size it had
 
 #### Scenario: Wrong argument count
 
@@ -174,6 +187,43 @@ session continuing — rather than ending the session.
 
 - **WHEN** `add player` is given other than one argument
 - **THEN** the server reports that one argument is required
+
+### Requirement: Removing A Registered Player
+
+The system SHALL let the administrator take a registered player out of a game
+via `remove player <number>`, while the setup holding it has not been
+committed, and SHALL remove with them anything they had loaded or deployed.
+
+Registering a player is a decision made during setup, and every other decision
+made during setup can be taken back until it is committed. This one could not,
+so a seat number typed wrong, or a player who never turned up, was a game to
+throw away and start again.
+
+#### Scenario: Removing a player
+
+- **WHEN** `remove player` names a registered player and setup is not committed
+- **THEN** that player is no longer registered
+- **AND** nothing of theirs is left on the board
+
+#### Scenario: The number can be used again
+
+- **WHEN** a player is removed and the same number is registered again
+- **THEN** it is registered, with whatever budget it is given
+
+#### Scenario: A player who is not registered
+
+- **WHEN** `remove player` names a number nobody is registered under
+- **THEN** the server refuses, saying there is no such player to remove
+
+#### Scenario: After setup is committed
+
+- **WHEN** `remove player` is run after setup has been committed
+- **THEN** the server refuses
+
+#### Scenario: Only the administrator may remove a player
+
+- **WHEN** `remove player` is run by anyone other than player 0
+- **THEN** the server refuses
 
 ### Requirement: Loading Configuration From Files
 

@@ -166,6 +166,11 @@ did only where you could see them. A fight between two players you cannot see
 is not in your feed at all — being told it happened would give away that they
 are near each other, which is the thing visibility withholds.
 
+Setting a game up is a thing you are still deciding: the administrator can
+size the board again and add or remove seats until the setup is committed,
+which is when both stand. A resize that would leave a unit off the board is
+refused, naming it.
+
 Committing a setup takes you to the board, where the army you committed is
 drawn faintly where you put it: it is published orders until the first turn
 resolves, and stands on no board until then. The lobby sends a seat that has
@@ -190,6 +195,19 @@ and, for your own, how to order it from the keyboard.
 It is playable from the keyboard: arrow keys move about the board, `Enter`
 selects the unit under the cursor, an arrow key then orders it that way, and
 `c` commits.
+
+If the server stops answering — restarted under an open tab, a laptop closed,
+a network gone — the page says so and keeps trying, backing off as it goes,
+and picks up where it left off when the server comes back. Nothing committed
+is lost by it.
+
+Everything the browser can do, a command line can do: the interface is a
+client of the served contract and so are the roles. `show events` is the
+account of what the turns did that the browser draws under its board, `show
+designs` the enemy designs you have met, `show units` the statistics of every
+unit you can see, and `remove player` the seat the administrator's screen
+removes with a button. A test holds the two to each other, so a view added to
+one and not the other fails the suite.
 
 ## Serving it properly
 

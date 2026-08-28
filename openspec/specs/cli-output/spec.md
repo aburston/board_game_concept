@@ -101,7 +101,21 @@ once, so a unit holding no order SHALL read `-`.
 
 `players`: `PLAYER`, `STATUS`.
 
-`pending`: `PLAYER`, `UNIT`, `ORDER`, `X`, `Y`.
+`pending`: `PLAYER`, `UNIT`, `ORDER`, `X`, `Y`. A player asking holds their
+own published orders and no other player's, which is what makes this theirs
+to read: it is how an army that has been committed and not yet deployed is
+read back.
+
+`events`: `TURN`, `WHAT`, `WHERE`. One row per thing the turn did, oldest
+first, in the words the domain gives it - the same sentence any other client
+draws for the same event. `WHERE` SHALL be the square it happened on, filled
+in for the events that are reported from inside a contest and do not repeat
+the square in their own words.
+
+`designs`: `PLAYER`, `NAME`, `SYMBOL`, `ATTACK`, `HEALTH`, `ENERGY`, `COST`,
+`MET`. The statistics SHALL be the design as its owner built it rather than
+the state a unit of it happened to be in when it was met, and `MET` the turn
+it was first met on.
 
 `board`: the existing ASCII grid, followed by a blank line and a legend table
 with the columns `SYMBOL`, `PLAYER`, `TYPE`, holding one row per distinct
@@ -207,6 +221,26 @@ and SHALL NOT carry storage-internal fields.
 - **WHEN** `show board json` is entered
 - **THEN** the document holds the board's dimensions and its rows of squares as
   the role may see them
+
+### Requirement: A Command Line Can Read Everything A Browser Can
+
+Every view the served contract offers SHALL be readable from a command-line
+role, so that what a person can find out does not depend on which client they
+are holding.
+
+The interface is a client of the contract and so are the roles. A view the
+browser draws and no role can ask for makes the browser the product rather
+than a client of one.
+
+#### Scenario: A view the interface reads
+
+- **WHEN** the interface reads a view of a seat
+- **THEN** some role's `show` offers that subject
+
+#### Scenario: A command the interface sends
+
+- **WHEN** the interface sends a command that changes a game
+- **THEN** the grammar has a line that builds the same command
 
 ### Requirement: Show Grammar
 

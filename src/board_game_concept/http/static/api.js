@@ -23,13 +23,49 @@ export class ApiError extends Error {
   }
 }
 
-async function call(method, path, body) {
+/**
+ * A request the server never answered: it was restarted, the network went, or
+ * the browser gave up on it.
+ *
+ * Told apart from a refusal on purpose. A refusal is the server saying no and
+ * is the caller's to deal with; this is nobody saying anything, and the only
+ * sensible answer to it is to ask again in a moment.
+ */
+export class Unreachable extends Error {
+  constructor(cause) {
+    super('the server did not answer');
+    this.cause = cause;
+    this.unreachable = true;
+  }
+}
+
+// how long to wait for an answer before deciding there is not going to be
+// one. The long polls are deliberately longer than this and say so
+const PATIENCE = 15000;
+
+async function call(method, path, body, patience) {
   const options = { method, headers: {}, credentials: 'same-origin' };
   if (body !== undefined) {
     options.headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify(body);
   }
-  const response = await fetch(path, options);
+  // a request with nothing behind it hangs until the browser decides, which
+  // on a dropped connection is minutes. The screen is left saying nothing at
+  // all in the meantime, which is what "it lost the server" looks like
+  const limit = patience === undefined ? PATIENCE : patience;
+  const giveUp = new AbortController();
+  const timer = window.setTimeout(() => giveUp.abort(), limit);
+  options.signal = giveUp.signal;
+
+  let response;
+  try {
+    response = await fetch(path, options);
+  } catch (error) {
+    throw new Unreachable(error);
+  } finally {
+    window.clearTimeout(timer);
+  }
+
   const text = await response.text();
   let parsed = null;
   if (text) {
@@ -90,18 +126,18 @@ export const perform = (gameno, number, command) =>
 export const commit = (gameno, number) =>
   post(`${seatPath(gameno, number)}/commit`);
 
-// what the turns did, as this seat was told it. `since` is a turn number:
-// the feed is a history, and a screen that only ever wants the last turn asks
-// for the last turn rather than being handed one
-export const readEvents = (gameno, number, since) =>
-  get(`${seatPath(gameno, number)}/events`
-      + (since === undefined || since === null ? '' : `?since=${since}`));
+// the long polls, which are meant to take as long as their budget. They are
+// given that budget plus a margin to answer in, rather than the patience an
+// ordinary request gets, which they would exceed by design
+const waitPatience = (budget) => (Number(budget) + 10) * 1000;
 
 export const waitForTurn = (gameno, number, budget) =>
-  get(`${seatPath(gameno, number)}/wait/turn?budget=${budget}`);
+  call('GET', `${seatPath(gameno, number)}/wait/turn?budget=${budget}`,
+       undefined, waitPatience(budget));
 
 export const waitForCommit = (gameno, number, budget) =>
-  get(`${seatPath(gameno, number)}/wait/commit?budget=${budget}`);
+  call('GET', `${seatPath(gameno, number)}/wait/commit?budget=${budget}`,
+       undefined, waitPatience(budget));
 
 // --- the commands, as the records `service/commands.py` reads back
 //
@@ -113,6 +149,9 @@ export const setBoard = (sizeX, sizeY) =>
 
 export const addPlayer = (number, budget) =>
   ({ kind: 'add_player', number, budget });
+
+export const removePlayer = (number) =>
+  ({ kind: 'remove_player', number });
 
 export const addType = (name, symbol, attack, health, energy) =>
   ({ kind: 'add_type', name, symbol, attack, health, energy });

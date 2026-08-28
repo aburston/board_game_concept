@@ -98,10 +98,8 @@ class Page:
     def commit(self, gameno, number):
         return self.client.post(f'/games/{gameno}/players/{number}/commit')
 
-    def read_events(self, gameno, number, since=None):
-        query = '' if since is None else f'?since={since}'
-        return self.client.get(
-            f'/games/{gameno}/players/{number}/events{query}')
+    def read_events(self, gameno, number):
+        return self.read_view(gameno, number, 'events')
 
     def wait_for_turn(self, gameno, number, budget=0.2):
         return self.client.get(
@@ -501,14 +499,14 @@ def test_a_type_met_is_remembered_after_contact_is_lost(app):
     bob.commit(GAME, 2)
 
     # nothing met yet: they were deployed out of contact
-    assert ada.read_view(GAME, 1, 'types_seen').get_json()['types_seen'] == []
+    assert ada.read_view(GAME, 1, 'designs').get_json()['designs'] == []
 
     # ada walks into bob, which is contact
     ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': EAST})
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
-    met = ada.read_view(GAME, 1, 'types_seen').get_json()['types_seen']
+    met = ada.read_view(GAME, 1, 'designs').get_json()['designs']
     assert [entry['name'] for entry in met] == ['T2']
     assert met[0]['player'] == 2
     assert met[0]['attack'] == 1 and met[0]['health'] == 8
@@ -521,7 +519,7 @@ def test_a_type_met_is_remembered_after_contact_is_lost(app):
     types = ada.read_view(GAME, 1, 'types').get_json()['types']
     assert [entry['name'] for entry in types] == ['T1'], (
         'the types view is what is in contact now')
-    still = ada.read_view(GAME, 1, 'types_seen').get_json()['types_seen']
+    still = ada.read_view(GAME, 1, 'designs').get_json()['designs']
     assert [entry['name'] for entry in still] == ['T2']
 
 
@@ -536,7 +534,7 @@ def test_a_type_never_met_is_not_remembered(app):
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
-    assert ada.read_view(GAME, 1, 'types_seen').get_json()['types_seen'] == []
+    assert ada.read_view(GAME, 1, 'designs').get_json()['designs'] == []
 
 
 def test_the_observer_is_given_every_type_as_met(app):
@@ -555,7 +553,7 @@ def test_the_observer_is_given_every_type_as_met(app):
     observer.sign_in('observer', 'observer')
     observer.change_password('observer', 'observer-secret')
 
-    met = observer.read_view(GAME, 1000, 'types_seen').get_json()['types_seen']
+    met = observer.read_view(GAME, 1000, 'designs').get_json()['designs']
     assert {entry['name'] for entry in met} == {'T1', 'T2'}
     assert all({'attack', 'health', 'energy', 'cost'} <= set(entry)
                for entry in met)
@@ -649,6 +647,41 @@ def test_every_seat_endpoint_the_page_calls_exists(app):
                    or route.startswith(seat + literal + '/')
                    for route in offered), (
             f'api.js calls {path} and no route serves it')
+
+
+def test_every_view_the_page_reads_is_readable_from_a_command_line():
+    """One contract, and both clients can say everything it says.
+
+    The interface is a client of the served contract, and so are the roles.
+    A view the browser draws and no role can ask for is a thing you can only
+    find out by opening a browser - which is how the browser stops being a
+    client and starts being the product.
+    """
+    from board_game_concept.cli import roles
+    from board_game_concept.http.app import VIEW_BUILDERS
+
+    offered = set()
+    for role in (roles.SERVER, roles.CLIENT, roles.OBSERVER):
+        offered |= set(role.show_subjects)
+
+    missing = sorted(set(VIEW_BUILDERS) - offered)
+    assert not missing, (
+        f'no command-line role can show {", ".join(missing)}')
+
+
+def test_every_command_the_page_sends_can_be_typed():
+    """Same rule for the commands: `api.js` builds them, the grammar takes them."""
+    from board_game_concept.cli.grammar import USAGES
+
+    source = _static('api.js')
+    built = set(re.findall(r"kind: '(\w+)'", source))
+    typed = {usage.kind for usage in USAGES}
+    # `set_new_game` is the HTTP tier's own setter and has no line to type:
+    # the local flow calls it directly rather than sending it
+    missing = sorted(built - typed - {'set_new_game'})
+    assert not missing, (
+        f'the page sends {", ".join(missing)} and the grammar has no line '
+        'for it')
 
 
 def test_the_page_asks_only_for_views_that_exist():

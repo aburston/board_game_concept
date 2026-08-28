@@ -10,7 +10,7 @@ which this delegates to so that callers have one thing to talk to.
 
 from ..domain import Board, Player, UnitType
 from ..storage.notify import NullNotifier
-from ..storage.serialise import restore_draft, serialise_draft
+from ..storage.serialise import restore_draft, serialise_draft, units_document
 from . import games, identity, turn
 from .errors import (GameDataError, GameError, NoSuchGame, NoSuchPlayer,
                      UnreadableGame)
@@ -106,6 +106,62 @@ class Game:
 
     def setBoard(self, board):
         self.board = board
+
+    def resizeBoard(self, size_x, size_y):
+        """A board of this size, with whatever was standing moved across.
+
+        Sizing a board that already existed used to be refused outright, so an
+        administrator who typed the wrong number had a game to throw away and
+        make again. It is a decision like any other in setup: it stands until
+        the setup that holds it is committed, and until then it can be taken
+        back.
+
+        Nothing standing is quietly dropped. A unit outside the board being
+        asked for is a refusal naming it, because the alternative is somebody
+        finding out later that a corner of their army was rubbed out by a
+        number typed into a form.
+        """
+        standing = [] if self.board is None else [
+            (unit.name, unit.x, unit.y) for unit in self.board.units
+            if unit.on_board and not unit.destroyed]
+        # and the armies loaded from files, which are records waiting to be
+        # deployed rather than units standing anywhere. They are the ones
+        # this is really for: during setup they are all there is
+        for player in self.players.values():
+            for unit in player.get('units') or []:
+                standing.append(
+                    (str(unit['name']), int(unit['x']), int(unit['y'])))
+        outside = [name for name, x, y in standing
+                   if x >= size_x or y >= size_y]
+        if outside:
+            raise GameError(
+                f"a {size_x}x{size_y} board has no square for "
+                f"{', '.join(sorted(outside))}: move or remove "
+                f"{'it' if len(outside) == 1 else 'them'} first")
+        board = Board(size_x, size_y)
+        if self.board is not None and self.board.units:
+            self._restore(board, units_document(self.board)['units'])
+        self.board = board
+
+    def removePlayer(self, number):
+        """Take a player out of the game, with anything they had deployed.
+
+        Registering a player is a decision made during setup, and every other
+        decision made during setup can be taken back until it is committed.
+        This one could not, so a mistyped seat number was a game to start
+        again.
+        """
+        if number not in self.players:
+            raise GameError(f"there is no player {number} to remove")
+        board = self.board
+        if board is not None:
+            theirs = [unit for unit in board.units
+                      if unit.player.number == number]
+            for unit in theirs:
+                if unit.on_board and not unit.destroyed:
+                    unit.vacate()
+                board.units.remove(unit)
+        del self.players[number]
 
     def seesEverything(self):
         return self.sees_everything

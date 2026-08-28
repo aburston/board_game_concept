@@ -112,9 +112,10 @@ not know how it is drawn.
   join against `sightings` rather than reading a materialised file; every
   turn's events are recorded to `turn_events` and each seat's share of them to
   `player_events`; `known_types` holds the designs each seat has met, which
-  outlive the sighting that taught them. The schema is re-applied whenever a table it describes is
-  missing, so a game made by an older build gains the tables added since.
-  SQLite is the default backend.
+  outlive the sighting that taught them - `show events` and `show designs`
+  read those, at a command line and in a browser alike. The schema is
+  re-applied whenever a table it describes is missing, so a game made by an
+  older build gains the tables added since. SQLite is the default backend.
 - **`schema.sql`** - the DDL loaded when a SQLite backend finds a table it
   describes missing. Each table maps nearly one-to-one to what a YAML file
   held; `sightings`, `turn_events`, `player_events` and `known_types` are the

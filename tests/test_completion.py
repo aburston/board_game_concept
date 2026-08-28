@@ -57,7 +57,8 @@ class TestWordsOfTheLanguage:
 
     def test_show_offers_its_subjects(self):
         assert candidates('show ', roles.SERVER) == [
-            'board', 'pending', 'players', 'types', 'units']
+            'board', 'designs', 'events', 'pending', 'players', 'types',
+            'units']
 
     def test_a_subject_offers_the_json_form(self):
         assert candidates('show units ', roles.CLIENT) == ['json']
@@ -96,8 +97,11 @@ class TestTheRoleDecides:
         assert offered == ['exit', 'help', 'reload', 'show']
 
     def test_a_show_subject_a_role_does_not_have_is_not_offered(self):
-        assert 'pending' not in candidates('show ', roles.CLIENT)
+        assert 'events' in candidates('show ', roles.CLIENT)
         assert 'pending' in candidates('show ', roles.OBSERVER)
+        # the observer changes nothing, so it is offered nothing that does
+        assert candidates('remove ', roles.OBSERVER) == []
+        assert candidates('remove ', roles.SERVER) == ['player']
 
     def test_the_server_is_not_offered_a_player_command(self):
         offered = candidates('', roles.SERVER)
