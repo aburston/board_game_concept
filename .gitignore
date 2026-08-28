@@ -145,3 +145,9 @@ matches/logs/*_server.txt
 matches/logs/*_observer.txt
 matches/logs/*_history.json
 !matches/logs/game_*.log
+
+# an editor's swap files. One was committed by a `git add -A` run while a
+# file happened to be open in vim, which is the only warning this needs
+*.swp
+*.swo
+*~
