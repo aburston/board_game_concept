@@ -152,3 +152,79 @@ through by one person to test it.
   each seat of every turn
 - **THEN** each turn resolves when the last of its seats has committed
 - **AND** the game reaches an outcome as it would with a person at each seat
+
+### Requirement: Claiming A Seat
+
+The system SHALL let a registered account claim a seat in a game, where a seat
+is a player number the administrator has registered for that game. A seat
+SHALL have at most one holder.
+
+A claim SHALL be refused when the seat is already held, when the game has no
+such registered player, and when the game has started.
+
+The system SHALL refuse a claim from the account of the observer kind. The
+observer is 1000 of every game and holds a seat in none: the account is shared
+and `visibility` grants it every unit of every player, so a seat it held would
+be a seat played with the whole board in view by whoever knows the shared
+password. The refusal SHALL say that the observer holds a seat in no game.
+
+An account of the observer kind SHALL NOT be able to act as a player number of
+any game, whatever the system has stored about which seats are held. The rule
+SHALL be answered from what the account is, so that it holds of a store as it
+is found and not only of a store as it is written.
+
+A game SHALL be taken to have started once one of its turns has been resolved,
+rather than once its setup has been committed. The administrator's commit that
+ends setup is not a turn and does not number one, so between that commit and
+the first resolved turn the board is set and nobody has moved - which is the
+window a person joining a game arrives in, and a seat SHALL still be claimable
+then.
+
+#### Scenario: Claiming an unclaimed seat
+
+- **WHEN** an account claims a seat no account holds, in a game that has not started
+- **THEN** it holds that seat
+- **AND** it may act as that number in that game
+
+#### Scenario: Claiming a seat someone holds
+
+- **WHEN** an account claims a seat another account holds
+- **THEN** it is refused
+- **AND** the holder is unchanged
+
+#### Scenario: Claiming a seat that is not registered
+
+- **WHEN** an account claims a number the administrator has not registered as a
+  player of that game
+- **THEN** it is refused
+- **AND** no player is added to the game
+
+#### Scenario: Claiming after the game has started
+
+- **WHEN** an account claims a seat in a game one of whose turns has resolved
+- **THEN** it is refused
+
+#### Scenario: Claiming after setup is committed but before the first turn
+
+- **WHEN** an account claims an unclaimed seat in a game whose setup has been
+  committed and none of whose turns has resolved
+- **THEN** it holds that seat
+
+#### Scenario: Claiming does not register a player
+
+- **WHEN** a seat is claimed
+- **THEN** the game's registered players are the same as before
+- **AND** the budget of the seat is the one it was registered with
+
+#### Scenario: The observer is refused a seat
+
+- **WHEN** the observer claims an unclaimed seat of a game that has not started
+- **THEN** it is refused, saying it holds a seat in no game
+- **AND** the seat is still unclaimed
+
+#### Scenario: A stored seat does not make the observer a player
+
+- **WHEN** the system holds a record that the observer holds a seat, and the
+  observer asks to act as that number
+- **THEN** it is refused
+- **AND** what it may see as 1000 of that game is unchanged

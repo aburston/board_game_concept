@@ -310,6 +310,37 @@ way round the fog of war. Because a seat is not implied by the account, it
 stays in the address: `/games/1/players/2/...` is seat 2, and two browser tabs
 can be two seats.
 
+**The observer is the one account that may hold no seat.** It is 1000 of every
+game and sees every unit of every player, so a seat it held would be a seat
+played with the whole board in view — and the account is shared. A claim from
+it is refused.
+
+### Playing a game single-handed, to test a change
+
+The administrator may take a seat like anybody, and a seat it holds is an
+ordinary seat: it sees what that seat may see and no more, it spends that
+seat's budget, and the turn waits for it. Nothing about being the
+administrator reaches into it. So one person with one account can set a game
+up and play every side of it, which is the quickest way to try a rule change
+end to end:
+
+```
+$ curl -s -X POST localhost:45678/sessions       -d '{"username":"admin","password":"admin"}' -H 'Content-Type: application/json'
+$ curl -s -X POST localhost:45678/accounts/current/password       -d '{"current":"admin","new":"admin-secret"}' -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN"
+$ curl -s -X POST localhost:45678/games          -d '{"gameno":"1"}' -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN"
+# set board, add player 1, add player 2, commit — as player 0
+$ curl -s -X POST localhost:45678/games/1/seats/1 -H "Authorization: Bearer $TOKEN"
+$ curl -s -X POST localhost:45678/games/1/seats/2 -H "Authorization: Bearer $TOKEN"
+```
+
+`admin` starts with the password `admin` and must change it before it may do
+anything else, which is the first call above. From there, drive each seat at
+its own address — in two browser tabs, or as two `bgcclient` sessions carrying
+the same token — and commit them one at a time; the turn resolves when the
+last of them has. Playing every side means seeing each side's blind view in
+turn, which is not the game the rules describe; it is a way to exercise them,
+not a way to play.
+
 ## Playing over HTTP from the command line
 
 A role talking to a server carries a token. Mint one with `POST /tokens` and

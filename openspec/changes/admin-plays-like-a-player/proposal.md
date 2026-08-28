@@ -47,29 +47,43 @@ Write the property down, and cover it.
   the spec does not say so. Make it explicit that a seat is offered to any
   account that may hold one, and withheld only from the observer.
 
-- No behaviour changes. Every scenario below is written against what the code
-  does today, verified by driving it. This is a change that makes an existing
-  property load-bearing, not one that adds a property.
+- **The observer is refused a seat.** **BREAKING** for the observer account,
+  and the one behaviour change here. Covering the lobby rule found that the
+  contract let the *observer* claim a seat and play it - while still reading
+  1000 of the same game and seeing every unit of every player. The account is
+  shared, so that is a seat anybody with the shared password could play with
+  the whole board in view. `claim_seat` now refuses it, and `may_act_as`
+  answers from what the account is rather than from a stored row, so the rule
+  holds of a store as it is found.
+
+- Nothing else changes. Every other scenario is written against what the code
+  does today, verified by driving it. This is mostly a change that makes an
+  existing property load-bearing, not one that adds a property.
 
 ## Capabilities
 
 ### Modified Capabilities
 
 - `identity-and-accounts`: what a seat held by the administrator entitles it to,
-  that its administrative privileges do not reach into that seat, and that one
-  account may hold every seat of a game and play it through.
+  that its administrative privileges do not reach into that seat, that one
+  account may hold every seat of a game and play it through, and that the
+  observer holds a seat in none.
 - `web-interface`: the lobby offers a seat to any account that may hold one, and
   withholds it only from the observer.
 
 ## Impact
 
-- **specs**: two delta specs. No requirement is weakened; the equivalence is
-  added beside the permission that already exists.
-- **service**: no change expected. `claim_seat` and `may_act_as` already answer
-  as the new requirement demands, and the tasks below verify that rather than
-  assuming it. Anything found to disagree is a defect to fix and to record in
-  `SPEC_COVERAGE.md`.
-- **http**, **cli**, **web**: no change expected, on the same terms.
+- **specs**: two delta specs. The equivalence is added beside the permission
+  that already exists, weakening nothing. `Claiming A Seat` is narrowed by one
+  account: the observer, which the requirement already implied by saying a seat
+  is claimed by a *registered* account and which nothing enforced.
+- **service**: `claim_seat` refuses an account of the observer kind, and
+  `may_act_as` refuses the observer a player number whatever is stored. Nothing
+  else: for the administrator, both already answer as the new requirements
+  demand, and the tasks below verify that rather than assuming it.
+- **http**, **cli**: no change. **web**: `lobby.js` asks whether an account may
+  hold a seat rather than listing the kinds that may, so the button it draws
+  and the refusal the server gives cannot fall out of step.
 - **tests**: the bulk of the work. A new `tests/test_admin_plays.py` holding the
   equivalence at the served contract - every view of an administrator-held seat
   compared against the same view of a player-held seat, and a whole game played
