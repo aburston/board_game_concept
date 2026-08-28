@@ -149,6 +149,13 @@ def may_act_as(store, account, gameno, number):
         return account.is_administrator()
     if number == identity.OBSERVER:
         return account.is_observer() or account.is_administrator()
+    # the observer holds a seat in no game, whatever a membership row says.
+    # Asked here as well as refused in `claim_seat` so the rule is true of the
+    # store as it is found rather than only of the store as it is written: a
+    # row from before the claim was refused must not become a seat played with
+    # the whole board in view
+    if account.is_observer():
+        return False
     return store.holds_seat(gameno, number, account.account_id)
 
 
@@ -168,8 +175,19 @@ def claim_seat(store, game_repository, account, gameno, number):
     number is a registered player of that game, and whether the game has
     started - and is never written to. Claiming a seat is not a way around
     `add player`.
+
+    The observer is the one account that may hold no seat. It is 1000 of every
+    game and is shared, and `visibility` grants it every unit of every player -
+    so a seat it held would be a seat played with the whole board in view, by
+    whoever knows the shared password. The administrator is refused nothing
+    here: it holds a seat like any other account, and what it may see as player
+    0 is a second session it opens deliberately rather than something its seat
+    hands it.
     """
     require_usable(account)
+    if account.is_observer():
+        raise NotAuthorised(
+            'the observer watches every game and holds a seat in none')
     if not identity.is_player(number):
         raise AccountError(identity.out_of_range(number))
     if number not in game_repository.player_numbers():

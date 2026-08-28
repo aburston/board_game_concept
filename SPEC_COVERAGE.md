@@ -23,7 +23,7 @@ source of truth for intended behaviour.
 | `point-budget` | What a player's point budget is and when it is fixed, what a type costs, how spend is derived from the board, and when a deployment is refused |
 | `flag-carrier` | Which unit carries a player's flag, when it is fixed, what a flag shows everybody, and what its destruction does to its owner and their army |
 | `player-numbering` | Which numbers a player may have, and which are reserved for the administrator and the observer |
-| `identity-and-accounts` | Who is calling: accounts, passwords, sessions, and which seats an account may act as |
+| `identity-and-accounts` | Who is calling: accounts, passwords, sessions, which seats an account may act as, and that a seat is the same seat whoever holds it |
 | `game-registry` | Which games exist, what state each is in, and the seats a lobby lists |
 | `cli-output` | One view behind a table and a JSON form, the columns each subject shows, and that a prompt can read everything a browser can |
 | `cli-installation` | The console scripts an install puts on the path, and what a wheel has to carry beside the code |
@@ -53,6 +53,37 @@ pytest tests/test_cli_client_surface.py tests/test_cli_server_surface.py tests/t
 ```
 
 They are what any change to the command surface is checked against.
+
+`identity-and-accounts` says a seat the administrator holds is an ordinary
+seat: the kind of the account holding a seat is not consulted when the system
+decides what that seat sees, spends, may command, is refused, or whether the
+turn waits for it. That is a statement about two games rather than about one,
+so `tests/test_admin_plays.py` holds it by comparison rather than by assertion
+— the same game is set up twice, with seat 1 held by a registered player in one
+and by the administrator in the other, and every view of the two compared as a
+whole value. A field that started carrying the holder's kind into a seat's
+answer would fail it whether or not any assertion mentioned that field.
+
+| Requirement | Held by |
+|---|---|
+| `identity-and-accounts` — A Seat The Administrator Holds Is An Ordinary Seat | `test_admin_plays.py` for the views, the budget, the barrier and the refusal; `test_account_service.py` for claiming and giving up |
+| `identity-and-accounts` — The Administrator's Privileges Do Not Reach Into Its Seat | `test_admin_plays.py` |
+| `identity-and-accounts` — One Account May Hold Several Seats In One Game | `test_admin_plays.py`, which plays a whole game to an outcome with one account at every seat |
+| `identity-and-accounts` — Claiming A Seat (the observer's refusal) | `test_account_service.py`, for the refusal and for a stored row |
+| `web-interface` — A Person Finds And Joins A Game From A Lobby (who is offered a seat) | `test_web_flow.py` |
+| The client surface, run by the administrator for a seat it holds | `test_admin_client_over_http.py` |
+
+The rule is held at each tier that could break it:
+
+```
+pytest tests/test_account_service.py tests/test_admin_plays.py \
+       tests/test_admin_client_over_http.py tests/test_web_flow.py
+```
+
+`test_admin_client_over_http.py` is pinned to the SQLite backend, as the other
+suites that serve a role over HTTP are; run it with
+`BOARD_GAME_BACKEND=sqlite`.
+
 
 ## Known divergences
 
@@ -873,6 +904,54 @@ Two places deliberately still say *cell*, because renaming inside them would
 falsify a record: `openspec/changes/archive/`, which is what those changes
 actually said when they were made, and `TEST_RESULTS.md`, which is what a test
 run actually printed on a particular machine on a particular day.
+
+
+### 31. The observer could take a seat and play it — fixed
+
+`identity-and-accounts` says the observer is 1000 of every game, sees every
+unit of every player, and changes nothing. It also says a seat may be claimed
+by a *registered* account, which the observer is not — registration only ever
+makes accounts of the player kind, and the two system accounts are made by the
+store.
+
+`service.accounts.claim_seat` never asked what kind of account was claiming. It
+did not need to for the administrator, which may hold a seat like anybody: a
+seat is a membership row and the row does not record a kind. But the same
+silence let the *observer* claim one. Having claimed it, `may_act_as` granted
+the seat on the row — `1 to 999 requires that the account holds that seat` —
+so the observer could design, deploy, order and commit as a player.
+
+What makes that more than an oddity is the second session. The observer is
+1000 of every game, so the same account, at the same moment, could read the
+whole board: every unit of every player, including the ones its own seat was
+playing blind against. The account is shared and its password is not anybody's
+in particular, so this was a seat anybody who knew that password could play
+with the whole board in view. The bargain the specs state — that a *person*
+who holds a seat may also watch, and is trusted not to — was about a person
+using two accounts, not about the observer account holding a seat itself.
+
+Reproduction: sign in as `observer`, change its password, `POST
+/games/<gameno>/seats/1`. It answered `201`. Deploying, committing and
+resolving a turn as seat 1 all followed, and `GET
+/games/<gameno>/players/1000/views/units` listed both players' units
+throughout.
+
+Found while covering the lobby rule for the `admin-plays-like-a-player` change:
+the browser already withheld the button from the observer, so the test written
+against the contract was the first thing to ask the server the same question.
+The page had been the only thing enforcing it.
+
+Addressed by the same change: `claim_seat` refuses an account of the observer
+kind, and `may_act_as` answers the observer's player numbers from what the
+account is rather than from a stored row — so a row written before the refusal
+existed cannot become a seat. `lobby.js` now asks whether an account may hold a
+seat rather than listing the kinds that may, so the button and the refusal
+cannot fall out of step again.
+
+Held by `tests/test_account_service.py` for both the refusal and the stored-row
+case, and by `tests/test_web_flow.py`, which asks the server of each kind
+whether it may take a seat and requires the answer to be the one the page
+would have drawn.
 
 
 `src/board_game_concept/test_suite.py`, run as

@@ -110,7 +110,7 @@ def token_for(app, account, label=None):
     return accounts.mint_token(_store_of(app), account, label=label)
 
 
-def authorise(app, gameno, number, username=None):
+def authorise(app, gameno, number, username=None, holder=None):
     """Bearer headers for an account entitled to act as this number.
 
     0 is the administrator and 1000 the observer, each with its password
@@ -118,6 +118,16 @@ def authorise(app, gameno, number, username=None):
     seat is claimed directly through the store rather than through
     `service.accounts.claim_seat`, so that a suite can set up a game that has
     already started - which claiming would rightly refuse.
+
+    After this returns, the named account holds the seat: that is what every
+    caller assumes of it, so it is made true rather than left to whatever the
+    store happened to hold already.
+
+    `holder` names which account should hold a player seat: `'admin'` for the
+    administrator, anything else for the registered player made today. A seat
+    is a membership row and the row does not record what kind of account holds
+    it, so the administrator holding one is arranged exactly as a player
+    holding one is - which is the point of being able to ask for it here.
     """
     from board_game_concept.service import identity
 
@@ -126,9 +136,17 @@ def authorise(app, gameno, number, username=None):
     elif number == identity.OBSERVER:
         account = make_observer(app)
     else:
-        account = make_player(app, username or f'player{number}')
+        account = (make_admin(app) if holder == 'admin'
+                   else make_player(app, username or f'player{number}'))
         store = _store_of(app)
-        if store.read_membership(str(gameno), number) is None:
+        # the seat is made to be this account's, rather than claimed only when
+        # nobody holds it. Skipping the claim for a seat somebody else held
+        # handed back a token that could not act as the seat, and the test
+        # failed on entitlement instead of on what it was testing
+        held_by = store.read_membership(str(gameno), number)
+        if held_by != account.account_id:
+            if held_by is not None:
+                store.release_seat(str(gameno), number)
             store.claim_seat(str(gameno), number, account.account_id)
     return {'Authorization': f'Bearer {token_for(app, account)}'}
 
@@ -147,8 +165,9 @@ def _make_token():
     `BOARD_GAME_TOKEN` in its environment rather than making requests
     themselves.
     """
-    def make(app, gameno, number, username=None):
-        headers = authorise(app, gameno, number, username=username)
+    def make(app, gameno, number, username=None, holder=None):
+        headers = authorise(app, gameno, number, username=username,
+                            holder=holder)
         return headers['Authorization'].split(' ', 1)[1]
     return make
 
@@ -229,12 +248,12 @@ def _authorising_client():
     return authorising_client
 
 
-def make_token_for(app, gameno, number, username=None):
+def make_token_for(app, gameno, number, username=None, holder=None):
     """A bare token proving this identity, for a subprocess or a session.
 
     The same arrangement `authorise` makes, handed back as the token string
     rather than as a header - which is what a role reads from
     `BOARD_GAME_TOKEN`, and what `HttpSession` takes directly.
     """
-    return authorise(app, gameno, number,
-                     username=username)['Authorization'].split(' ', 1)[1]
+    return authorise(app, gameno, number, username=username,
+                     holder=holder)['Authorization'].split(' ', 1)[1]

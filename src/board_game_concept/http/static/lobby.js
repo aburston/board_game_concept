@@ -155,6 +155,17 @@ function renderSeats(game, mine) {
   return table;
 }
 
+// Whether this account may hold a seat at all, which is what decides whether
+// a seat is offered to be taken. Asked as one question rather than as a list
+// of kinds, because the server answers it as one: a seat is a membership row
+// and the row does not record what kind of account holds it, so the only
+// account that may not hold one is the observer - which is 1000 of every game
+// and holds no seat in any. Enumerating the kinds that may instead meant the
+// button was drawn from a list that could fall out of step with the refusal.
+function mayHoldASeat(account) {
+  return account.kind !== 'observer';
+}
+
 function seatAction(game, seat, isMine) {
   if (isMine) {
     // a seat that has committed goes to the board, whatever the game is
@@ -178,7 +189,7 @@ function seatAction(game, seat, isMine) {
     return actions;
   }
   if (seat.held_by) return element('span', { class: 'muted small' }, '—');
-  if (state.account.kind !== 'player' && state.account.kind !== 'admin') {
+  if (!mayHoldASeat(state.account)) {
     return element('span', { class: 'muted small' }, '—');
   }
   if (game.state !== 'setting up') {

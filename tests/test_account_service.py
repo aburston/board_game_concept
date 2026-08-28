@@ -426,3 +426,191 @@ def _play_one_turn(harness):
         games.perform(session, SetFlag(unit=f'u{number}'))
         session.clientSave()
     harness.session(0).resolveWhenReady()
+
+
+# --- the administrator's seat is an ordinary seat
+#
+# The administrator can play because `claim_seat` never asks what kind of
+# account is claiming and `may_act_as` grants a seat on the membership rather
+# than on the kind. Both are properties of this module, so this is where they
+# are held; the served contract is held to the same rule in
+# `tests/test_admin_plays.py`.
+
+def test_the_administrator_may_claim_a_seat(store, harness):
+    harness.create(5, 5, [1, 2])
+    administrator = _usable_admin(store)
+
+    accounts.claim_seat(store, harness.repository(), administrator,
+                        harness.gameno, 1)
+
+    assert store.holds_seat(harness.gameno, 1, administrator.account_id)
+    assert (store.read_membership(harness.gameno, 1)
+            == administrator.account_id)
+
+
+def test_the_administrator_may_act_as_the_seat_it_holds(store, harness):
+    harness.create(5, 5, [1, 2])
+    administrator = _usable_admin(store)
+    accounts.claim_seat(store, harness.repository(), administrator,
+                        harness.gameno, 1)
+
+    assert accounts.may_act_as(store, administrator, harness.gameno, 1)
+    # the seat it does not hold is still refused: holding one is not holding
+    # them all, and being the administrator does not stand in for a membership
+    assert not accounts.may_act_as(store, administrator, harness.gameno, 2)
+    # and what it was already entitled to is untouched by holding a seat
+    assert accounts.may_act_as(store, administrator, harness.gameno,
+                               identity.ADMINISTRATOR)
+    assert accounts.may_act_as(store, administrator, harness.gameno,
+                               identity.OBSERVER)
+
+
+def _refusal(call):
+    """The message a call was refused with, so two refusals can be compared."""
+    with pytest.raises(AccountError) as raised:
+        call()
+    return str(raised.value)
+
+
+def test_the_administrator_is_refused_a_claim_exactly_as_a_player_is(store,
+                                                                     harness):
+    """Each claim refusal, worded as it is for a registered player.
+
+    Compared against a player's refusal rather than against a literal, so the
+    two cannot drift apart: the requirement is that they are the same message,
+    not that either is any particular message.
+    """
+    harness.create(5, 5, [1, 2])
+    ada = accounts.register(store, 'ada', 'secret12')
+    bob = accounts.register(store, 'bob', 'secret12')
+    administrator = _usable_admin(store)
+
+    # a seat somebody else holds
+    accounts.claim_seat(store, harness.repository(), ada, harness.gameno, 2)
+    held_by_player = _refusal(
+        lambda: accounts.claim_seat(store, harness.repository(), bob,
+                                    harness.gameno, 2))
+    held_by_admin = _refusal(
+        lambda: accounts.claim_seat(store, harness.repository(),
+                                    administrator, harness.gameno, 2))
+    assert held_by_admin == held_by_player
+    assert store.read_membership(harness.gameno, 2) == ada.account_id
+
+    # a number the game never registered
+    assert (_refusal(lambda: accounts.claim_seat(
+                store, harness.repository(), administrator, harness.gameno, 7))
+            == _refusal(lambda: accounts.claim_seat(
+                store, harness.repository(), bob, harness.gameno, 7)))
+    assert store.read_membership(harness.gameno, 7) is None
+    assert harness.repository().player_numbers() == [1, 2]
+
+    # a number outside the player range at all
+    assert (_refusal(lambda: accounts.claim_seat(
+                store, harness.repository(), administrator,
+                harness.gameno, identity.OBSERVER))
+            == _refusal(lambda: accounts.claim_seat(
+                store, harness.repository(), bob,
+                harness.gameno, identity.OBSERVER)))
+
+
+def test_the_administrator_is_refused_a_claim_after_a_turn_resolves(store,
+                                                                    harness):
+    harness.create(5, 5, [1, 2])
+    harness.session(0).serverSave()
+    _play_one_turn(harness)
+    bob = accounts.register(store, 'bob', 'secret12')
+    administrator = _usable_admin(store)
+
+    started = _refusal(lambda: accounts.claim_seat(
+        store, harness.repository(), administrator, harness.gameno, 2))
+
+    assert started == _refusal(lambda: accounts.claim_seat(
+        store, harness.repository(), bob, harness.gameno, 2))
+    assert 'has started' in started
+
+
+def test_the_administrator_gives_up_a_seat_on_the_same_terms(store, harness):
+    harness.create(5, 5, [1, 2])
+    administrator = _usable_admin(store)
+    accounts.claim_seat(store, harness.repository(), administrator,
+                        harness.gameno, 1)
+
+    accounts.release_seat(store, harness.repository(), administrator,
+                          harness.gameno, 1)
+
+    assert store.read_membership(harness.gameno, 1) is None
+    # and the seat is open to anybody, as giving one up leaves it
+    ada = accounts.register(store, 'ada', 'secret12')
+    accounts.claim_seat(store, harness.repository(), ada, harness.gameno, 1)
+    assert store.read_membership(harness.gameno, 1) == ada.account_id
+
+
+def test_the_administrator_may_not_give_up_a_seat_it_does_not_hold(store,
+                                                                   harness):
+    harness.create(5, 5, [1, 2])
+    ada = accounts.register(store, 'ada', 'secret12')
+    accounts.claim_seat(store, harness.repository(), ada, harness.gameno, 2)
+    administrator = _usable_admin(store)
+
+    with pytest.raises(NotAuthorised):
+        accounts.release_seat(store, harness.repository(), administrator,
+                              harness.gameno, 2)
+
+    assert store.read_membership(harness.gameno, 2) == ada.account_id
+
+
+def test_the_administrator_is_refused_a_release_after_a_turn_resolves(
+        store, harness):
+    """The refusal a player is given, given to the administrator too."""
+    harness.create(5, 5, [1, 2])
+    ada = accounts.register(store, 'ada', 'secret12')
+    administrator = _usable_admin(store)
+    accounts.claim_seat(store, harness.repository(), administrator,
+                        harness.gameno, 1)
+    accounts.claim_seat(store, harness.repository(), ada, harness.gameno, 2)
+    harness.session(0).serverSave()
+    _play_one_turn(harness)
+
+    started = _refusal(lambda: accounts.release_seat(
+        store, harness.repository(), administrator, harness.gameno, 1))
+
+    assert started == _refusal(lambda: accounts.release_seat(
+        store, harness.repository(), ada, harness.gameno, 2))
+    assert 'has started' in started
+    assert store.holds_seat(harness.gameno, 1, administrator.account_id)
+
+
+# --- the observer holds a seat in no game
+#
+# The account is shared and `visibility` grants it every unit of every player,
+# so a seat it held would be a seat played with the whole board in view by
+# whoever knows the shared password.
+
+def test_the_observer_may_not_claim_a_seat(store, harness):
+    harness.create(5, 5, [1, 2])
+    observer = store.read_account_by_name('observer')
+    accounts.change_password(store, observer, 'observer', 'new-secret')
+    observer = store.read_account_by_name('observer')
+
+    with pytest.raises(NotAuthorised, match='holds a seat in none'):
+        accounts.claim_seat(store, harness.repository(), observer,
+                            harness.gameno, 1)
+
+    assert store.read_membership(harness.gameno, 1) is None
+
+
+def test_a_seat_row_does_not_make_the_observer_a_player(store, harness):
+    """Defence in depth: a row written before the claim was refused.
+
+    `claim_seat` refuses the observer, so no new row can appear. This is about
+    a store as it is found rather than as it is written - the rule holds even
+    where a row already exists.
+    """
+    harness.create(5, 5, [1, 2])
+    observer = store.read_account_by_name('observer')
+    store.claim_seat(harness.gameno, 1, observer.account_id)
+
+    assert not accounts.may_act_as(store, observer, harness.gameno, 1)
+    # and what it is entitled to is untouched
+    assert accounts.may_act_as(store, observer, harness.gameno,
+                               identity.OBSERVER)

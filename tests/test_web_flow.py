@@ -902,3 +902,99 @@ def test_the_page_asks_only_for_views_that_exist():
                               _static('app.js') + _static('play.js')
                               + _static('armoury.js')):
         assert subject in VIEW_BUILDERS, subject
+
+
+# --- the lobby offers a seat by entitlement, not by kind
+
+def _observer(app):
+    page = Page(app)
+    assert page.sign_in('observer', 'observer').status_code == 200
+    assert page.change_password('observer',
+                                'observer-secret').status_code == 200
+    return page
+
+
+def test_the_administrator_takes_a_seat_from_the_lobby(app):
+    """Exactly the calls `lobby.js` makes to take a seat, as the admin."""
+    admin = _administrator(app)
+    _set_up(admin)
+
+    listed = [entry for entry in admin.list_games().get_json()['games']
+              if entry['gameno'] == GAME][0]
+    assert listed['open_seats'] == 2
+
+    assert admin.claim_seat(GAME, 1).status_code == 201
+
+    seats = [entry for entry in admin.list_games().get_json()['games']
+             if entry['gameno'] == GAME][0]['seats']
+    assert [seat['held_by'] for seat in seats] == ['admin', None]
+    assert {'gameno': GAME, 'number': 1} in admin.whoami().get_json()['seats']
+
+
+def test_the_observer_is_offered_no_seat(app):
+    admin = _administrator(app)
+    _set_up(admin)
+    observer = _observer(app)
+
+    refused = observer.claim_seat(GAME, 1)
+
+    # 403: it said who it is, and the answer is no
+    assert refused.status_code == 403
+    assert 'holds a seat in none' in refused.get_json()['error']
+    seats = [entry for entry in admin.list_games().get_json()['games']
+             if entry['gameno'] == GAME][0]['seats']
+    assert [seat['held_by'] for seat in seats] == [None, None]
+
+
+def test_the_lobby_offers_a_seat_to_exactly_who_the_server_would_let_take_one(
+        app):
+    """The button and the refusal cannot fall out of step.
+
+    `lobby.js` asks one question - may this account hold a seat - and this
+    asks the server the same question of each kind. A kind the page would
+    offer the button to and the server would refuse is a dead button; a kind
+    the server would accept and the page withholds from is a seat nobody can
+    take.
+    """
+    source = _static('lobby.js')
+    assert re.search(r'function mayHoldASeat\(account\) \{\s*'
+                     r"return account\.kind !== 'observer';", source), (
+        'lobby.js should decide by whether the account may hold a seat')
+    assert 'mayHoldASeat(state.account)' in source
+
+    admin = _administrator(app)
+    _set_up(admin, gameno='w', seats=(1, 2, 3))
+    would_offer = {'admin': True, 'player': True, 'observer': False}
+    pages = {'admin': admin, 'player': _player(app, 'ada'),
+             'observer': _observer(app)}
+
+    # a free seat each, so a refusal is the account being refused and not the
+    # seat already being held by the account tried before it
+    for seat, (kind, page) in enumerate(pages.items(), start=1):
+        accepted = page.claim_seat('w', seat)
+        assert (accepted.status_code == 201) is would_offer[kind], (
+            f'{kind}: the page offers the button to {would_offer[kind]} and '
+            f'the server answered {accepted.status_code}')
+
+
+def test_the_administrators_own_ways_in_are_offered_beside_its_seat(app):
+    """Playing a seat and administering the game are both reachable."""
+    admin = _administrator(app)
+    _set_up(admin)
+    assert admin.claim_seat(GAME, 1).status_code == 201
+
+    entry = [game for game in admin.list_games().get_json()['games']
+             if game['gameno'] == GAME][0]
+    held = [seat['number'] for seat in entry['seats']
+            if seat['held_by'] == 'admin']
+    assert held == [1]
+
+    # the seat's own screens answer, and so do the administrator's
+    assert admin.read_state(GAME, 1).status_code == 200
+    assert admin.read_view(GAME, 0, 'board').status_code == 200
+    assert admin.read_view(GAME, 1000, 'board').status_code == 200
+
+    # and the lobby draws the administrator's ways in for an admin account
+    source = _static('lobby.js')
+    assert "link('Watch'" in source
+    assert "link('Set this game up'" in source

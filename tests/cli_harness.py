@@ -176,17 +176,58 @@ def remove_games_dir():
     shutil.rmtree(GAMES_DIR, ignore_errors=True)
 
 
+def remove_account_store():
+    """Delete the account store the served suites share, if one was made.
+
+    The suites that serve a role over HTTP run the app with `TEST_DIR` as its
+    base path, because the roles they start are subprocesses cwd'd there and
+    the games tree has to be the one they write. The account store lives
+    beside that tree, so those suites share one store - and unlike the games
+    directory nothing was clearing it. Accounts, tokens and above all *seats*
+    survived from one test to the next and from one run to the next.
+
+    A stale seat is the one that bites. `conftest.authorise` arranges a seat
+    by claiming it, and a seat already held by somebody else made it hand back
+    a token for an account that did not hold the seat - so the test failed
+    with a 403 about entitlement rather than about whatever it was testing,
+    and which test it was depended on what a previous run had left behind.
+
+    The filenames come from the stores themselves rather than being written
+    out again here, so a store that moves takes this with it.
+    """
+    from board_game_concept.storage.sqlite_account_store import STORE_FILENAME
+    from board_game_concept.storage.yaml_account_store import STORE_DIRNAME
+
+    base = Path(TEST_DIR)
+    # SQLite keeps a write-ahead log and a shared-memory file beside the
+    # database; leaving either behind would restore what the database held
+    for name in (STORE_FILENAME, f'{STORE_FILENAME}-wal',
+                 f'{STORE_FILENAME}-shm'):
+        try:
+            (base / name).unlink()
+        except FileNotFoundError:
+            pass
+    shutil.rmtree(base / STORE_DIRNAME, ignore_errors=True)
+
+
 class CliTestCase(unittest.TestCase):
-    """Starts and stops roles, and cleans the game directory around each test."""
+    """Starts and stops roles, and cleans up around each test.
+
+    The game directory and the account store are both cleared at each end, so
+    a test starts from nothing whatever ran before it - in this class, in
+    another suite, or in a previous run.
+    """
 
     def setUp(self):
         remove_games_dir()
+        remove_account_store()
         self.processes = []
 
     def tearDown(self):
         for proc in self.processes:
             proc.terminate()
         remove_games_dir()
+        remove_account_store()
 
     def _start(self, args):
         proc = InteractiveProcess(args, cwd=TEST_DIR)
