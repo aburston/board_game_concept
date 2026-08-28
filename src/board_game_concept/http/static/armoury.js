@@ -32,11 +32,16 @@ export function renderArmoury() {
     return wrap;
   }
 
-  // this seat has committed its setup: its army is published and nothing
-  // here can be changed. The screen used to draw the designer and the deploy
-  // board anyway, over a board with nothing of theirs on it, and refuse
-  // every command they gave it
-  if (game.unprocessed_moves) {
+  // this seat has committed its setup: its army is published, or has taken
+  // the field, and nothing here can be changed either way. The screen used
+  // to draw the designer and the deploy board anyway, over a board with
+  // nothing of theirs on it, and refuse every command they gave it.
+  //
+  // Asked of the setup being closed rather than of orders being in flight:
+  // orders stop being in flight the moment the turn resolves, and a seat
+  // whose army was resolved - or refused, and left with nothing - was being
+  // offered the forms again with every answer a refusal
+  if (game.new_game === false || game.unprocessed_moves) {
     wrap.append(renderCommittedSetup(game));
     return wrap;
   }
@@ -110,20 +115,31 @@ function renderFlag(game) {
 /**
  * What a seat sees when it comes back to setup having already committed.
  *
- * Its army is published and waiting for the first turn to resolve, so there
- * is nothing to design and nothing to deploy. This says so, and sends it to
- * the board, rather than offering forms whose every answer is a refusal.
+ * Its army is waiting for the first turn to resolve, or has been through it,
+ * and either way there is nothing to design and nothing to deploy. This says
+ * which of the two it is, and sends the seat to the board, rather than
+ * offering forms whose every answer is a refusal.
  */
 function renderCommittedSetup(game) {
   const card = element('div', { class: 'card' });
-  card.append(element('h2', {}, 'Your setup is committed'));
+  // waiting to be resolved, or resolved already: the second is not "waiting
+  // to take the field" and saying so to somebody whose army is already on it
+  // - or was refused, and is nowhere - reads as a screen that has not caught
+  // up with the game
+  const waiting = Boolean(game.unprocessed_moves);
+  card.append(element('h2', {},
+    waiting ? 'Your setup is committed' : 'Setup is over'));
   const deployed = (game.pending || []).filter(
     (entry) => entry.player === game.number);
   card.append(element('p', {},
-    deployed.length
-      ? `${deployed.length} ${deployed.length === 1 ? 'unit is' : 'units are'}`
-        + ' waiting to take the field.'
-      : 'You committed without deploying anything.'));
+    !waiting
+      ? 'The first turn has resolved. What happened to your army is on the '
+        + 'board.'
+      : deployed.length
+        ? `${deployed.length} `
+          + `${deployed.length === 1 ? 'unit is' : 'units are'}`
+          + ' waiting to take the field.'
+        : 'You committed without deploying anything.'));
   if (deployed.length) {
     const list = element('ul', {});
     for (const entry of deployed) {
@@ -134,9 +150,13 @@ function renderCommittedSetup(game) {
     card.append(list);
   }
   card.append(element('p', { class: 'small muted' },
-    'A committed setup cannot be withdrawn or amended. The first turn '
-    + 'resolves when every player has committed one, and your units appear '
-    + 'on the board then.'));
+    waiting
+      ? 'A committed setup cannot be withdrawn or amended. The first turn '
+        + 'resolves when every player has committed one, and your units '
+        + 'appear on the board then.'
+      : 'A committed setup cannot be withdrawn or amended, and there is no '
+        + 'second setup: whatever the first turn left you is what you play '
+        + 'with.'));
   card.append(element('p', {},
     link('Go to the board',
          `#/play/${encodeURIComponent(game.gameno)}/${game.number}`,
@@ -195,12 +215,23 @@ function renderAdminSetup(game) {
   card.append(element('h2', {}, 'The board'));
   // sized as often as it takes, until this setup is committed. Everything
   // else in setup can be taken back, and a board that could not be was a
-  // mistyped number you had to make a new game to correct
-  const x = field('Width (2–10)', 'number');
-  const y = field('Height (2–10)', 'number');
+  // mistyped number you had to make a new game to correct.
+  //
+  // A size half-typed is held in `state`, because registering or removing a
+  // seat redraws this screen and used to empty these two fields: the form
+  // you were not using threw away the one you were. Nothing held means
+  // whatever the board already is
+  const bindSize = (label, key, sized) => {
+    const made = field(label, 'number');
+    made.input.value = state.boardSize[key] || sized;
+    made.input.addEventListener('input', () => {
+      state.boardSize[key] = made.input.value;
+    });
+    return made;
+  };
+  const x = bindSize('Width (2–10)', 'x', game.board ? game.board.size_x : '');
+  const y = bindSize('Height (2–10)', 'y', game.board ? game.board.size_y : '');
   if (game.board) {
-    x.input.value = game.board.size_x;
-    y.input.value = game.board.size_y;
     card.append(element('p', { class: 'muted small' },
       `Sized ${game.board.size_x}×${game.board.size_y}. `
       + 'It can be changed until you commit this setup.'));
@@ -212,7 +243,9 @@ function renderAdminSetup(game) {
                   { class: 'primary', type: 'submit' },
                   game.board ? 'Resize board' : 'Set board')));
   sizing.addEventListener('submit', send(game,
-    () => api.setBoard(Number(x.input.value), Number(y.input.value))));
+    () => api.setBoard(Number(x.input.value), Number(y.input.value)),
+    // sent and accepted, so the fields go back to reading the board itself
+    () => { state.boardSize = { x: '', y: '' }; }));
   card.append(sizing);
 
   card.append(element('h2', {}, 'Seats'));
@@ -440,6 +473,18 @@ function renderDeploy(game) {
     chooser.append(element('option', { value: type.name },
                            `${type.name} — ${costOf(type)} points`));
   }
+  // deploying redraws this whole screen, and a chooser built from nothing
+  // comes back on its first option - so laying down five of one type meant
+  // choosing it five times. Kept in `state` like everything else half-done
+  // here, and dropped back to the first type if that one is gone
+  if (mine.some((type) => type.name === state.deployType)) {
+    chooser.value = state.deployType;
+  } else {
+    state.deployType = chooser.value;
+  }
+  chooser.addEventListener('change', () => {
+    state.deployType = chooser.value;
+  });
   const unitName = field('Unit name', 'text');
   unitName.input.value = state.unitName;
   unitName.input.addEventListener('input', () => {

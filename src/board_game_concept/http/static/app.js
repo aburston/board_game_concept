@@ -32,6 +32,8 @@ export const state = {
   // the middle of - which is the moment they are most likely to give up
   design: { name: '', symbol: '', attack: '1', health: '1', energy: '1' },
   unitName: '',
+  deployType: '',      // the type being deployed, kept across placements
+  boardSize: { x: '', y: '' },   // a size typed and not yet sent
   cursor: { x: 0, y: 0 },
   waiting: null,       // {met, waiting_on} while a commit is outstanding
   watching: false,     // whether a wait loop is already running
