@@ -191,3 +191,42 @@ def test_an_orders_row_chooses_its_unit():
         source = file.read()
     assert "role: 'button'" in source
     assert "row.addEventListener('click', choose)" in source
+
+
+# --- what a redraw must not throw away
+#
+# The interface replaces the whole screen from one state object whenever
+# anything changes, so a choice held only in the page is lost to the next
+# thing the person does. Each of these was found by using the armoury, and
+# each is a value that has to live in `state` for the redraw to find it.
+
+
+def _module(name):
+    with open(os.path.join(STATIC, name), encoding='utf-8') as file:
+        return file.read()
+
+
+def test_the_state_holds_what_the_armoury_is_half_way_through():
+    state = _module('app.js')
+    assert 'deployType' in state, 'the type being deployed'
+    assert 'boardSize' in state, 'a board size typed and not yet sent'
+
+
+def test_the_deploy_chooser_is_read_and_written_through_the_state():
+    """It went back to the first type after every placement."""
+    armoury = _module('armoury.js')
+    assert 'chooser.value = state.deployType' in armoury
+    assert re.search(r"chooser\.addEventListener\('change'", armoury)
+
+
+def test_the_board_size_fields_are_read_and_written_through_the_state():
+    """Registering a seat emptied a size somebody was still typing."""
+    armoury = _module('armoury.js')
+    assert 'state.boardSize[key]' in armoury
+    assert "made.input.addEventListener('input'" in armoury
+
+
+def test_the_armoury_offers_nothing_to_a_seat_whose_setup_is_over():
+    """`unprocessed_moves` stops being true the moment the turn resolves."""
+    armoury = _module('armoury.js')
+    assert 'game.new_game === false || game.unprocessed_moves' in armoury

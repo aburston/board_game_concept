@@ -362,22 +362,18 @@ class TestServerClientIntegration(unittest.TestCase):
             self.assertEqual((refused[0]['x'], refused[0]['y']), (1, 1))
             self.assertIn('both were refused', refused[0]['reason'])
 
-        # and each sees it when they next log in
+        # and each sees it when they next log in - along with the end of the
+        # game, because a first turn that refuses every deployment leaves
+        # both players with nothing standing. It used to leave them holding
+        # an empty board they could neither add to nor finish
         for number, unit_name in ((1, 'x1'), (2, 'o1')):
             client = self.start_client('test-01', number)
             client.read_until('bgcclient> ')
             self.assertIn('rejected last turn', client.output)
             self.assertIn(unit_name, client.output)
+            self.assertIn('game over: a draw on turn 1', client.output)
             client.send_line('commit')
-            client.read_until('commit complete')
-
-        # a later turn in which nothing is refused clears the report, so
-        # rejections describe the last turn rather than accumulating
-        self.read_until_count(server, 'commit complete', 3)
-        for number in (1, 2):
-            self.assertEqual(yaml.safe_load(
-                (players_dir / f'{number}_rejected.yaml').read_text())['rejected'],
-                [])
+            client.read_until('the game is over')
 
     def test_an_order_with_an_invalid_state_is_rejected_not_fatal(self):
         # game-persistence requires the server to reject an order whose state
