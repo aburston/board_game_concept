@@ -22,12 +22,38 @@ def _types_without_objects(player):
     return types
 
 
+def setup_refusal(game):
+    """Why this player's setup may not be committed yet, or None if it may.
+
+    Only a setup is held to this. A player committing a later turn has a flag
+    already, fixed by the setup they committed, and a game set up before flags
+    existed has none to fix - so this asks only of a session that still has a
+    setup to commit.
+    """
+    if not game.getNewGame() or not identity.is_player(game.player_number):
+        return None
+    board = game.getBoard()
+    if board is None:
+        return None                 # the board is refused above, and first
+    if board.flagOf(game.player_number) is None:
+        return ("one of your units must carry your flag before this setup "
+                "can be committed - `set flag <unit>` designates it")
+    return None
+
+
 def publish(game):
     """Publish this player's orders and wait for the turn to be resolved."""
     if game.getSizeX() <= 1 or game.getSizeY() <= 1:
         print(f"the board size is too small ({game.getSizeX()}, "
               f"{game.getSizeY()})")
         return False
+
+    # raised rather than answered False, because unlike a board too small to
+    # play on this has a reason worth reading, and every client already
+    # reports what a refused command says
+    refusal = setup_refusal(game)
+    if refusal is not None:
+        raise GameError(refusal)
 
     number = game.player_number
     repository = game.repository
@@ -250,6 +276,13 @@ def eliminated_players(game):
         return []
     out = []
     for number, player in game.players.items():
+        # a flag that has fallen puts its player out whatever else they hold:
+        # what keeps a player in the game is something that can act *and* a
+        # flag still standing. Derived from the board like the clause beside
+        # it, so a game restored from storage answers what it answered before
+        if game.board.flagFallen(number):
+            out.append(number)
+            continue
         alive = any(unit.player.number == number
                     and unit.on_board and not unit.destroyed
                     and unit.type_energy > 0

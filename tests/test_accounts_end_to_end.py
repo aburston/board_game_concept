@@ -122,6 +122,9 @@ def test_a_whole_game_from_an_empty_directory(client, base_path, backend):
     _command(client, seats['bob'], 2,
              {'kind': 'add_unit', 'type_name': 'Circle', 'name': 'b1',
               'x': 3, 'y': 3})
+    # a setup is refused unless a unit carries the player's flag
+    _command(client, seats['ada'], 1, {'kind': 'set_flag', 'unit': 'a1'})
+    _command(client, seats['bob'], 2, {'kind': 'set_flag', 'unit': 'b1'})
 
     # --- and both commit; the turn resolves on the second
     ada_commit = client.post(f'/games/{GAME}/players/1/commit',
@@ -162,6 +165,8 @@ def _play_a_turn(client):
         _command(client, seats[name], number,
                  {'kind': 'add_unit', 'type_name': f'T{number}',
                   'name': f'u{number}', 'x': square[0], 'y': square[1]})
+        _command(client, seats[name], number,
+                 {'kind': 'set_flag', 'unit': f'u{number}'})
     client.post(f'/games/{GAME}/players/1/commit', headers=seats['ada'])
     client.post(f'/games/{GAME}/players/2/commit', headers=seats['bob'])
     return admin, seats

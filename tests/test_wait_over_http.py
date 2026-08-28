@@ -16,8 +16,8 @@ import requests
 from board_game_concept import Game
 from board_game_concept.cli.backend import HttpSession
 from board_game_concept.service import games as game_ops
-from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
-                                                 SetBoard)
+from board_game_concept.service.commands import (
+    AddPlayer, AddType, AddUnit, SetBoard, SetFlag)
 from board_game_concept.storage.sqlite_repository import SqliteGameRepository
 
 pytestmark = pytest.mark.backend('sqlite')
@@ -72,6 +72,7 @@ def _game_with_resolved_turn(base_path):
                                      attack=1, health=5, energy=10))
     game_ops.perform(player, AddUnit(type_name='Cross', name='x1',
                                      x=0, y=0))
+    game_ops.perform(player, SetFlag(unit='x1'))
     player.clientSave()
 
     server = Game(SqliteGameRepository('one', base_path=str(base_path)), 0)
@@ -111,6 +112,7 @@ def test_wait_for_turn_returns_when_the_turn_is_resolved_during_the_wait(
                                      attack=1, health=5, energy=10))
     game_ops.perform(player, AddUnit(type_name='Cross', name='x1',
                                      x=0, y=0))
+    game_ops.perform(player, SetFlag(unit='x1'))
     player.clientSave()
     # player 1 has published; the barrier is met (one player), so any
     # resolve_when_ready wins. Fire it in a background thread half a

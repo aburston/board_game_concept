@@ -54,7 +54,8 @@ SERVER = Role(
 
 CLIENT = Role(
     'client',
-    kinds=('help', 'exit', 'commit', 'show', 'add_type', 'add_unit', 'move'),
+    kinds=('help', 'exit', 'commit', 'show', 'add_type', 'add_unit',
+           'set_flag', 'move'),
     # `pending` is this player's own published orders and nobody else's - a
     # session holds only its own - and it is the only way to read back an
     # army that has been committed and not yet deployed. The browser shows

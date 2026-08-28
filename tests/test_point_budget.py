@@ -10,9 +10,8 @@ import pytest
 from board_game_concept import Board, Player, UnitType
 from board_game_concept.domain import budget
 from board_game_concept.service import games
-from board_game_concept.service.commands import (AddPlayer, AddType,
-                                                 AddUnit, LoadPlayer,
-                                                 SetBoard)
+from board_game_concept.service.commands import (
+    AddPlayer, AddType, AddUnit, LoadPlayer, SetBoard, SetFlag)
 from board_game_concept.service.errors import GameError
 
 from board_game_concept.storage.serialise import units_document
@@ -429,6 +428,9 @@ def test_two_players_build_armies_against_different_budgets(tmp_path):
     assert budget.remaining(one.getBoard(), one.getPlayerObj(1)) == 16
     with pytest.raises(GameError):
         games.perform(one, AddUnit(type_name='Cross', name='x4', x=4, y=0))
+    # a setup is refused without a carrier, and carrying costs nothing: the
+    # spend below is the same number it was before flags existed
+    games.perform(one, SetFlag(unit='x0'))
     assert one.clientSave()
 
     # player 2 takes one expensive unit and can afford nothing beside it
@@ -441,6 +443,7 @@ def test_two_players_build_armies_against_different_budgets(tmp_path):
                                health=1, energy=1))
     with pytest.raises(GameError):
         games.perform(two, AddUnit(type_name='Speck', name='s0', x=8, y=9))
+    games.perform(two, SetFlag(unit='b0'))
     assert two.clientSave()
 
     harness.resolve()

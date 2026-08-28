@@ -1,48 +1,48 @@
 ## 1. The flag, in the engine
 
-- [ ] 1.1 Give a unit a flag in `domain/unit.py`: a `flag` attribute set after
+- [x] 1.1 Give a unit a flag in `domain/unit.py`: a `flag` attribute set after
       construction the way `state` and `direction` are, defaulting to not
       carrying one, and never read by `move_cost`, `cost` or any combat
       arithmetic. Verify: a unit's cost and move cost are the same whether or
       not it carries the flag.
-- [ ] 1.2 Add `Board.flagOf(player_number)` — the unit carrying that player's
+- [x] 1.2 Add `Board.flagOf(player_number)` — the unit carrying that player's
       flag, or None — and `Board.flagFallen(player_number)`, true when that
       player designated a carrier and it is destroyed. Both read the board and
       nothing else. Verify: a board with a designated, standing carrier
       answers the unit; one whose carrier is destroyed answers fallen; one
       where nobody designated answers neither.
-- [ ] 1.3 Report a flag falling from `Board.commit`: an event of its own,
+- [x] 1.3 Report a flag falling from `Board.commit`: an event of its own,
       beside `destroyed`, naming the unit and the player it belonged to.
       Verify: `tests/test_turn_events.py` gains a case where destroying a
       carrier reports it, and destroying a unit that is not one does not.
-- [ ] 1.4 Make a unit belonging to a player whose flag has fallen inert in
+- [x] 1.4 Make a unit belonging to a player whose flag has fallen inert in
       resolution: it plans no move and lands no attack, and is still attacked,
       damaged and destroyed like any other. Verify: a contest between a live
       unit and an eliminated player's unit ends with only the live one having
       struck.
-- [ ] 1.5 Hold the determinism invariant: nothing added consults a clock, a
+- [x] 1.5 Hold the determinism invariant: nothing added consults a clock, a
       random source or an object's identity. Verify:
       `tests/test_determinism.py` passes unchanged.
-- [ ] 1.6 Add `tests/test_flag_carrier.py` covering 1.1 to 1.4 against a board
+- [x] 1.6 Add `tests/test_flag_carrier.py` covering 1.1 to 1.4 against a board
       directly, including a carrier that is a wall and a carrier destroyed in
       the same round as its killer.
 
 ## 2. Designating it, and refusing a setup without one
 
-- [ ] 2.1 Add the `SetFlag(unit)` command record to `service/commands.py`,
+- [x] 2.1 Add the `SetFlag(unit)` command record to `service/commands.py`,
       kind `set_flag`. Verify: `as_record` and `from_record` round-trip it,
       alongside the existing records in `tests/test_draft_serialisation.py`.
-- [ ] 2.2 Add `set_flag` to `service/games.py` and its `ACTIONS`: it names one
+- [x] 2.2 Add `set_flag` to `service/games.py` and its `ACTIONS`: it names one
       of the calling player's own units, moves the designation from whatever
       held it, and is refused after that player's setup is committed, for a
       unit that is not theirs, and for a name no unit has. Verify: each
       refusal is a `GameError` naming the reason, and the designation is
       unchanged after one.
-- [ ] 2.3 Refuse a player's setup commit unless exactly one of their units
+- [x] 2.3 Refuse a player's setup commit unless exactly one of their units
       carries the flag, where "the board is too small to commit" is already
       refused. A commit for a later turn is not refused. Verify: the refusal
       names what is missing and publishes nothing.
-- [ ] 2.4 Add the flag-loss clause to `eliminated_players` in
+- [x] 2.4 Add the flag-loss clause to `eliminated_players` in
       `service/turn.py`, derived from the board beside the existing one.
       Verify: a player whose carrier is destroyed is eliminated with units
       still standing; a player who designated nothing is judged as before.
@@ -88,7 +88,7 @@
 
 ## 5. The command line
 
-- [ ] 5.1 Add `set flag <unit>` to `cli/grammar.py` and `cli/parser.py` as a
+- [x] 5.1 Add `set flag <unit>` to `cli/grammar.py` and `cli/parser.py` as a
       second `set` production, and to the client role in `cli/roles.py`.
       Verify: the pinned usage lines in `tests/test_grammar.py` gain the line,
       and every role that may not use it refuses it.

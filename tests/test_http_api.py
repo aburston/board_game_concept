@@ -12,8 +12,8 @@ from board_game_concept.domain import Board, Player, UnitType
 from board_game_concept.http.app import create_app
 from board_game_concept.service import games as game_ops
 from board_game_concept.domain import Player
-from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
-                                                 SetBoard)
+from board_game_concept.service.commands import (
+    AddPlayer, AddType, AddUnit, SetBoard, SetFlag)
 from board_game_concept.storage.sqlite_repository import SqliteGameRepository
 
 pytestmark = pytest.mark.backend('sqlite')
@@ -33,6 +33,7 @@ def _set_up(base_path, gameno='one'):
                                      attack=1, health=5, energy=10))
     game_ops.perform(player, AddUnit(type_name='Cross', name='x1',
                                      x=2, y=3))
+    game_ops.perform(player, SetFlag(unit='x1'))
     player.clientSave()
 
     server = Game(SqliteGameRepository(gameno, base_path=str(base_path)), 0)

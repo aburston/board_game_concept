@@ -127,6 +127,8 @@ USAGES = (
     Usage('set_board', ('set', 'board', Slot('size_x', NUMBER),
                         Slot('size_y', NUMBER)),
           'set the size of the board, before the game starts'),
+    Usage('set_flag', ('set', 'flag', Slot('unit', UNIT)),
+          'designate which of your units carries your flag, during setup'),
     _show('board', 'show the board as you see it, as a table or as JSON'),
     _show('types', 'show the unit types you know of, as a table or as JSON'),
     _show('units', 'show the units you know of, as a table or as JSON'),

@@ -135,13 +135,19 @@ def _set_up(admin, gameno=GAME, seats=(1, 2), size=(4, 4)):
     assert admin.commit(gameno, 0).status_code == 200
 
 
-def _deploy(page, gameno, number, symbol, square, health=8, energy=10):
+def _deploy(page, gameno, number, symbol, square, health=8, energy=10,
+            flag=True):
     assert page.perform(gameno, number, {
         'kind': 'add_type', 'name': f'T{number}', 'symbol': symbol,
         'attack': 1, 'health': health, 'energy': energy}).status_code == 204
     assert page.perform(gameno, number, {
         'kind': 'add_unit', 'type_name': f'T{number}', 'name': f'u{number}',
         'x': square[0], 'y': square[1]}).status_code == 204
+    # a setup is refused without a carrier, so the one unit deployed here
+    # carries the flag unless a test is about not having one
+    if flag:
+        assert page.perform(gameno, number, {
+            'kind': 'set_flag', 'unit': f'u{number}'}).status_code == 204
 
 
 # --- the flow
@@ -260,7 +266,8 @@ def test_a_game_played_partly_through_a_role_is_readable_by_the_page(
     """Neither client leaves the other in a state it cannot read."""
     from game_harness import GameHarness
     from board_game_concept.service import games as game_ops
-    from board_game_concept.service.commands import AddType, AddUnit
+    from board_game_concept.service.commands import (AddType, AddUnit,
+                                                     SetFlag)
 
     admin = _administrator(app)
     _set_up(admin, gameno='shared')
@@ -275,6 +282,7 @@ def test_a_game_played_partly_through_a_role_is_readable_by_the_page(
     game_ops.perform(session, AddType(name='R', symbol='O', attack=1,
                                       health=8, energy=10))
     game_ops.perform(session, AddUnit(type_name='R', name='r2', x=3, y=3))
+    game_ops.perform(session, SetFlag(unit='r2'))
     session.clientSave()
 
     assert ada.commit('shared', 1).get_json()['resolved'] is True

@@ -26,6 +26,7 @@ USAGE_LINES = [
     'load board <file>',
     'load player <file>',
     'set board <size_x> <size_y>',
+    'set flag <unit>',
     'show board [json]',
     'show types [json]',
     'show units [json]',

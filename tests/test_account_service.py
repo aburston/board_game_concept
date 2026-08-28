@@ -414,7 +414,8 @@ def test_giving_up_a_seat_nobody_holds(store, harness):
 def _play_one_turn(harness):
     """Deploy for both players and resolve, so the turn number reaches 1."""
     from board_game_concept.service import games
-    from board_game_concept.service.commands import AddType, AddUnit
+    from board_game_concept.service.commands import (AddType, AddUnit,
+                                                     SetFlag)
 
     for number, square in ((1, (0, 0)), (2, (4, 4))):
         session = harness.session(number)
@@ -422,5 +423,6 @@ def _play_one_turn(harness):
                                        health=1, energy=10))
         games.perform(session, AddUnit(type_name='Cross', name=f'u{number}',
                                        x=square[0], y=square[1]))
+        games.perform(session, SetFlag(unit=f'u{number}'))
         session.clientSave()
     harness.session(0).resolveWhenReady()

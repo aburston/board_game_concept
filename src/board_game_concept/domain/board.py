@@ -52,6 +52,11 @@ class Board:
         self.units = []
         self.unit_dict = {}
         self.types = {}
+        # whose flag had fallen when the turn now being resolved began, read
+        # once at the top of `commit`. Empty between resolutions, so a board
+        # that has never been committed answers "nobody is out" rather than
+        # answering nothing at all
+        self.out = set()
 
     def add(
             self,
@@ -173,6 +178,43 @@ class Board:
                 f"unit {name} does not exist for player {player.number}"
             )
 
+    def flagOf(self, player_number):
+        """The unit carrying this player's flag, or None if none does.
+
+        Read off the board rather than from a list a player record keeps: a
+        record naming a unit the board does not hold has to be reconciled by
+        somebody, and the reconciliation is where the bug lives. Here, a game
+        restored from storage cannot contradict itself.
+        """
+        for unit in self.units:
+            if unit.flag and unit.player is not None \
+                    and unit.player.number == player_number:
+                return unit
+        return None
+
+    def flagFallen(self, player_number):
+        """Whether this player designated a carrier and it has been destroyed.
+
+        False for a player who designated nobody, which is what keeps a game
+        set up before flags existed playing under the rules it was set up
+        under.
+        """
+        carrier = self.flagOf(player_number)
+        return carrier is not None and carrier.destroyed
+
+    def flagBearers(self):
+        """Every flag on the board, by the number of the player it belongs to.
+
+        Sorted by player number so that what is published from it is in a
+        settled order rather than in whichever order the units happen to be
+        held in.
+        """
+        found = {}
+        for unit in self.units:
+            if unit.flag and unit.player is not None:
+                found.setdefault(unit.player.number, unit)
+        return dict(sorted(found.items()))
+
     # the unit this player holds by this name, or None if it holds no such
     # unit. Unlike getUnitByName this answers rather than asserting, so callers
     # can ask whether a unit is already known
@@ -238,11 +280,48 @@ class Board:
         resting = {unit: unit.energy for unit in self.units
                    if unit.on_board and not unit.destroyed
                    and unit.state != UnitType.MOVING}
+        # whose flag had already fallen when the turn began. A unit of theirs
+        # is terrain for the whole of this resolution: it plans no move and
+        # lands no attack, and being read once here rather than per unit is
+        # what stops a flag falling mid-turn from silencing an army that was
+        # still in the game when the turn started
+        self.out = {number for number in self._playerNumbers()
+                    if self.flagFallen(number)}
+
         self._deploy(events)
         pairs, free = self._move(events)
         self._fight(events, pairs, free)
         self._rest(events, resting)
+        self._reportFallenFlags(events)
         return events
+
+    def _playerNumbers(self):
+        """Every player number the board holds a unit for."""
+        return {unit.player.number for unit in self.units
+                if unit.player is not None}
+
+    def isOut(self, player_number):
+        """Whether this player's flag had already fallen when the turn began.
+
+        A unit of theirs takes no order and lands no attack: an army without
+        its flag is terrain. Read once at the top of `commit`, so it is the
+        same answer for every unit in one resolution - a flag falling mid-turn
+        does not silence an army that was still in the game when the turn
+        started.
+        """
+        return player_number in self.out
+
+    def _reportFallenFlags(self, events):
+        """Say which flags fell while this turn was being resolved.
+
+        Reported after the fighting rather than inside it: a flag falls
+        because its carrier was destroyed, and the destruction is already
+        reported where it happened. This is what it cost the player.
+        """
+        for number, carrier in self.flagBearers().items():
+            if carrier.destroyed and number not in self.out:
+                events.append(Event('flag_fallen', unit=carrier.name,
+                                    player=number))
 
     def _rest(self, events, resting):
         """Give a point of energy back to every unit that did nothing.
@@ -289,6 +368,14 @@ class Board:
         plans = []
         for unit in self.units:
             if not unit.on_board or unit.destroyed:
+                continue
+            if unit.player is not None and self.isOut(unit.player.number):
+                # an army without its flag is terrain: it holds its square and
+                # goes nowhere. The order is consumed rather than kept, so
+                # nothing is waiting to be carried out if the board is read
+                # again
+                unit.state = UnitType.NOP
+                unit.direction = UnitType.NONE
                 continue
             destination, refusal = unit.planMove()
             if refusal is not None:
@@ -379,7 +466,8 @@ class Board:
                 if not (type(square) is list):
                     continue
                 if len(square) > 1:
-                    resolveContest(self.board, x, y, list(square), free, events)
+                    resolveContest(self.board, x, y, list(square), free,
+                                   events, self.out)
                 else:
                     self.board[x, y] = square[0]
 
@@ -388,7 +476,7 @@ class Board:
         for first, second in pairs:
             if first.destroyed or second.destroyed:
                 continue
-            resolveCollision(first, second, events)
+            resolveCollision(first, second, events, self.out)
 
         # a destroyed unit holds no square
         for unit in self.units:

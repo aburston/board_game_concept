@@ -15,7 +15,7 @@ from game_harness import GameHarness, DEFAULT_BACKEND       # noqa: E402
 from board_game_concept.service import games as game_ops    # noqa: E402
 from board_game_concept.service import registry             # noqa: E402
 from board_game_concept.service.commands import (           # noqa: E402
-    AddType, AddUnit)
+    AddType, AddUnit, SetFlag)
 from board_game_concept.service.errors import GameError     # noqa: E402
 
 
@@ -31,6 +31,7 @@ def _play_a_turn(harness, players=(1, 2)):
                                           health=1, energy=10))
         game_ops.perform(session, AddUnit(type_name='Cross',
                                           name=f'u{number}', x=index, y=index))
+        game_ops.perform(session, SetFlag(unit=f'u{number}'))
         session.clientSave()
     harness.session(0).resolveWhenReady()
 
