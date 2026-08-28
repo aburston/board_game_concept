@@ -41,6 +41,8 @@ DESCRIPTIONS = {
     'contested': lambda d: f"({d['x']}, {d['y']}) is contested by {d['units']} units",
     'attacked': lambda d: f"{d['unit']} attacks {d['target']} for {d['damage']}",
     'destroyed': lambda d: f"{d['unit']} is destroyed",
+    'flag_fallen': lambda d: (f"{d['unit']} carried player {d['player']}'s "
+                              f"flag, and it has fallen"),
     'retreated': lambda d: f"{d['unit']} falls back to ({d['x']}, {d['y']})",
     'refused': lambda d: (f"{d['unit']} stays at ({d['x']}, {d['y']}): "
                           f"{d['reason']}"),
@@ -59,7 +61,8 @@ DESCRIPTIONS = {
 # the kinds that say a blow was struck. A board marks these squares, and
 # what counts as fighting is the domain's to say rather than a browser's
 FIGHTING = frozenset((
-    'contested', 'collided', 'attacked', 'destroyed', 'undecided', 'engaged'))
+    'contested', 'collided', 'attacked', 'destroyed', 'undecided', 'engaged',
+    'flag_fallen'))
 
 
 def record(kind, detail):

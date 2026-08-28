@@ -13,7 +13,7 @@ from board_game_concept import Game
 from board_game_concept.cli import views
 from board_game_concept.service import games
 from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
-                                                 Move, SetBoard)
+                                                 Move, SetBoard, SetFlag)
 from game_harness import GameHarness
 
 CROSS = ('Cross', 'X', 1, 5, 10)
@@ -25,8 +25,13 @@ def abandon(session):
     del session
 
 
-def deployed_without_committing(harness, number, types, units):
-    """A session that defines types and deploys units, and then dies."""
+def deployed_without_committing(harness, number, types, units, flag=True):
+    """A session that defines types and deploys units, and then dies.
+
+    It designates a carrier too, because a setup that has one is what a
+    session interrupted mid-setup would have had - and what it must have to
+    be committable when it is reopened.
+    """
     session = harness.session(number)
     for name, symbol, attack, health, energy in types:
         games.perform(session, AddType(name=name, symbol=symbol, attack=attack,
@@ -34,6 +39,8 @@ def deployed_without_committing(harness, number, types, units):
     for type_name, unit_name, x, y in units:
         games.perform(session, AddUnit(type_name=type_name, name=unit_name,
                                        x=x, y=y))
+    if flag and units:
+        games.perform(session, SetFlag(unit=units[0][1]))
     abandon(session)
 
 
@@ -225,8 +232,9 @@ def test_a_dropped_command_is_not_offered_again(tmp_path):
 
     harness.session(1)
 
+    # the designation is a command like any other, and is drafted like one
     assert [record['kind'] for record in repository.read_draft(1)['commands']] \
-        == ['add_type', 'add_unit']
+        == ['add_type', 'add_unit', 'set_flag']
     assert harness.session(1).getDropped() == []
 
 

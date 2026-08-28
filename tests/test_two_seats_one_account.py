@@ -60,6 +60,9 @@ def _deploy(client, headers, number, x, y):
     _command(client, headers, number,
              {'kind': 'add_unit', 'type_name': f'Cross{number}',
               'name': f'u{number}', 'x': x, 'y': y})
+    # a setup is refused unless a unit carries the seat's flag
+    _command(client, headers, number,
+             {'kind': 'set_flag', 'unit': f'u{number}'})
 
 
 def _units(client, headers, number):

@@ -13,8 +13,11 @@ import os
 
 from board_game_concept import Game, YamlGameRepository
 from board_game_concept.service import games
-from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
-                                                 Move, SetBoard)
+from board_game_concept.service.commands import (
+    AddPlayer, AddType, AddUnit, Move, SetBoard, SetFlag)
+
+# "the first unit deployed", told apart from `None`, which means no flag at all
+_FIRST = object()
 from board_game_concept.storage.sqlite_repository import SqliteGameRepository
 
 
@@ -76,11 +79,18 @@ class GameHarness:
         assert server.serverSave()
         return server
 
-    def deploy(self, player_number, types, units):
-        """Define types and deploy units, as a player does during setup.
+    def deploy(self, player_number, types, units, flag=_FIRST, commit=True):
+        """Define types, deploy units and carry the flag, as a player does.
 
         `types` are `(name, symbol, attack, health, energy)` tuples and `units`
         are `(type_name, unit_name, x, y)`.
+
+        A setup is refused unless one unit carries the player's flag, so the
+        first unit deployed carries it unless the test says otherwise: a test
+        about some other rule should not have to know about flags, and one
+        about flags names the carrier it wants. `flag=None` commits without
+        one, which the service layer refuses for a player - it is there for a
+        test that wants to see that refusal.
         """
         client = self.session(player_number)
         for name, symbol, attack, health, energy in types:
@@ -90,7 +100,14 @@ class GameHarness:
         for type_name, unit_name, x, y in units:
             games.deploy_unit(client, AddUnit(
                 type_name=type_name, name=unit_name, x=x, y=y))
-        assert client.clientSave()
+        carrier = (units[0][1] if units else None) if flag is _FIRST else flag
+        if carrier is not None:
+            games.perform(client, SetFlag(unit=carrier))
+        # a player who deployed nothing has nothing to carry the flag, so
+        # their setup cannot be committed - `commit=False` is how a test sets
+        # up the player who never turns up
+        if commit:
+            assert client.clientSave()
         return client
 
     # --- playing it

@@ -137,7 +137,9 @@ def test_a_player_who_deployed_nothing_is_eliminated(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
-    harness.deploy(2, [('O', 'O', 1, 5, 50)], [])
+    # deployed nothing, so there is nothing to carry their flag and nothing
+    # to commit: the administrator resolves the turn without them
+    harness.deploy(2, [('O', 'O', 1, 5, 50)], [], commit=False)
     harness.resolve()
     assert harness.session(0).getEliminated() == [2]
 

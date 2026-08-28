@@ -36,6 +36,7 @@ export const state = {
   waiting: null,       // {met, waiting_on} while a commit is outstanding
   watching: false,     // whether a wait loop is already running
   events: [],          // what the turns did, as this seat was told it
+  flagChoice: '',      // the unit being designated in the armoury
   showHistory: false,  // whether the feed is showing turns before the last
   barrier: null,       // {met, waiting_on}: who this turn is still waiting on
   offline: false,      // whether the server has stopped answering
@@ -164,8 +165,8 @@ export async function loadSeat(gameno, number) {
   // than "no such thing". `types` and `players` answer either way, which is
   // what the armoury needs before a board exists.
   const absent = (error) => (error.status === 404 ? null : Promise.reject(error));
-  const [seatState, board, units, types, players, pending, seen, events,
-         barrier] = await Promise.all([
+  const [seatState, board, units, types, players, pending, seen, flags,
+         events, barrier] = await Promise.all([
     api.readState(gameno, number),
     api.readView(gameno, number, 'board').catch(absent),
     api.readView(gameno, number, 'units').catch(absent),
@@ -178,6 +179,9 @@ export async function loadSeat(gameno, number) {
     // what this seat has met, which outlives contact with it. The types
     // view is what is in contact now; this is what is known
     api.readView(gameno, number, 'designs').catch(absent),
+    // every flag in the game, whoever it belongs to: the one thing shown
+    // without contact, so it does not travel inside this seat's own view
+    api.readView(gameno, number, 'flags').catch(absent),
     // the feed is a history rather than a snapshot, so it is fetched with
     // everything else: a screen that has to ask for it separately is a
     // screen that draws a board and then changes its mind about it
@@ -202,6 +206,7 @@ export async function loadSeat(gameno, number) {
     players: players.players,
     pending: (pending && pending.pending) || [],
     seen: (seen && seen.designs) || [],
+    flags: (flags && flags.flags) || [],
   };
 }
 

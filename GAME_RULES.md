@@ -151,6 +151,19 @@ Because a wall can never recover and never act, **it does not keep its owner in
 the game** (**R7.1**). An army of nothing but walls has already lost; walls are
 ground you deny an opponent, not an army.
 
+**R2.11 One of your units carries your flag.** You designate it during setup
+with `set flag <unit>`, naming one of your own units, and you may change your
+mind until you commit; after that it is fixed for the game and cannot be moved
+to another unit. Carrying costs nothing and changes nothing about the unit: a
+carrier fights, moves and costs exactly what its type says. A setup is
+**refused** unless exactly one of your units carries your flag — a player who
+cannot lose a flag would be playing a different game from everybody else at
+the table — and a player who deployed nothing therefore cannot commit at all.
+
+This rule is a **break**: a game set up before flags existed cannot be played
+on, because its units carry none and nothing will read a flag that is not
+there. Finish such a game by starting a new one.
+
 ---
 
 ## R3. The turn
@@ -395,10 +408,18 @@ did not touch this turn drops off your board and out of `show units`.
 view is the *only* board the client is given — it never reads the record of
 every unit. A unit fought by several of your units is still named once.
 
-**R6.5 The observer sees everything** — all units, all squares, all types,
+**R6.5 A flag is the one thing shown without contact.** Every player is shown
+which square each flag stands on and which player it belongs to, whoever they
+have met (**R2.11**). Nothing else about the unit carrying it is shown — not
+its name, its type, its symbol or its statistics — until contact discloses
+them the way contact discloses any unit's (**R6.2**). You know where to go,
+not what you will meet. A flag whose carrier has been destroyed is reported as
+fallen and stands on no square.
+
+**R6.6 The observer sees everything** — all units, all squares, all types,
 regardless of ownership or contact.
 
-**R6.6 Your casualties stay on your list.** Your own destroyed units keep being
+**R6.7 Your casualties stay on your list.** Your own destroyed units keep being
 listed for you, marked destroyed and off the board, so you can see what you have
 lost. They are never drawn on a square. An enemy unit you destroyed appears in
 your view for that turn only, and drops out like any other contact (**R6.3**).
@@ -419,6 +440,17 @@ the energy-at-least-health rule of **R2.4** is for: without it a type could be
 designed that rests for ever and never affords a square, which would be a wall
 in everything but name while still keeping its owner in the game. A player who deployed nothing is out on the
 first turn with units on the board.
+
+**R7.1a You are also eliminated when your flag falls.** A player whose flag
+carrier is destroyed is out at that resolution, whatever else they still hold
+(**R2.11**). What keeps you in is something that can act *and* a flag still
+standing.
+
+**R7.1b An eliminated player's units are left standing and go inert.** They
+hold the squares they are on, take no orders and land no attack, and they are
+still attacked and destroyed like any other unit — clearing them is how the
+square is taken. An army without its flag is terrain: it blocks a square until
+somebody clears it, and it decides nobody's game.
 
 **R7.2 The last player standing wins.** The game is decided at the end of the
 turn in which every other player becomes eliminated. If the last players lose
@@ -447,11 +479,12 @@ Every role: `help`, `exit`, `show ...`.
 | `load player <file>` | ✔ | | |
 | `add type <name> <symbol> <attack> <health> <energy>` | | ✔ | |
 | `add unit <type> <name> <x> <y>` | | ✔ | |
+| `set flag <unit>` | | ✔ | |
 | `move <unit> <north\|south\|east\|west>` | | ✔ | |
 | `commit` | ✔ | ✔ | |
 | `reload` | | | ✔ |
 | `show board` / `types` / `units` / `players` | ✔ | ✔ | ✔ |
-| `show pending` | ✔ | | ✔ |
+| `show pending` / `events` / `designs` / `flags` | ✔ | ✔ | ✔ |
 
 Every `show` answers with a table: a header naming its columns, then one row per
 thing, lined up so a row can be read across and a column compared down.

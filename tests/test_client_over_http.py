@@ -110,15 +110,16 @@ class ClientOverHttp(CliTestCase):
         client = self._start_client_over_http()
         self._send_and_wait(client, 'add type Cross X 1 5 10', 2)
         self._send_and_wait(client, 'add unit Cross x1 0 0', 3)
+        self._send_and_wait(client, 'set flag x1', 4)
         # commit closes the barrier for the one player - the server
         # resolves the setup turn during the request (option b) and the
         # client prints `commit complete` and returns to the prompt
         client.send_line('commit')
         client.read_until('commit complete')
-        client.read_until_count(CLIENT_PROMPT, 4)
+        client.read_until_count(CLIENT_PROMPT, 5)
         # a subsequent `show units` reads back the deployed unit as it
         # stands after the turn resolved
-        self._send_and_wait(client, 'show units', 5)
+        self._send_and_wait(client, 'show units', 6)
         assert 'x1' in client.output
 
     def test_two_players_commit_in_turn_and_neither_wins(self):
@@ -136,8 +137,10 @@ class ClientOverHttp(CliTestCase):
 
         self._send_and_wait(one, 'add type Cross X 1 5 10', 2)
         self._send_and_wait(one, 'add unit Cross x1 0 0', 3)
+        self._send_and_wait(one, 'set flag x1', 4)
         self._send_and_wait(two, 'add type Ring O 1 5 10', 2)
         self._send_and_wait(two, 'add unit Ring o1 3 3', 3)
+        self._send_and_wait(two, 'set flag o1', 4)
 
         # player 1 commits first and is left waiting on the barrier
         one.send_line('commit')
@@ -146,19 +149,19 @@ class ClientOverHttp(CliTestCase):
         # player 2's commit closes it, and the turn resolves in the request
         two.send_line('commit')
         two.read_until('commit complete')
-        two.read_until_count(CLIENT_PROMPT, 4, timeout=60)
+        two.read_until_count(CLIENT_PROMPT, 5, timeout=60)
 
         # the resolution releases player 1, who is prompted again
-        one.read_until_count(CLIENT_PROMPT, 4, timeout=60)
+        one.read_until_count(CLIENT_PROMPT, 5, timeout=60)
 
         for client in (one, two):
             assert 'game over' not in client.output, client.output
             assert 'out of the game' not in client.output, client.output
 
         # and both units are standing where they were deployed
-        self._send_and_wait(one, 'show units', 5)
+        self._send_and_wait(one, 'show units', 6)
         assert 'x1' in one.output
-        self._send_and_wait(two, 'show units', 5)
+        self._send_and_wait(two, 'show units', 6)
         assert 'o1' in two.output
 
 

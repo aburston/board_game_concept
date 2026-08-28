@@ -28,6 +28,12 @@ The system SHALL show a player every unit they own, wherever it stands.
 The system SHALL hide enemy units from a player until one of that player's units
 has engaged them.
 
+The one exception is a flag: the square a flag carrier stands on, and the
+player it belongs to, SHALL be shown to every player without contact, as
+`flag-carrier` describes. Nothing else about that unit SHALL be shown - not
+its name, its type, its symbol or its statistics - so what is disclosed is
+where to go rather than what will be met.
+
 #### Scenario: Unseen enemy is not listed
 
 - **WHEN** a player lists units and no unit of theirs has engaged a given enemy unit
@@ -38,6 +44,17 @@ has engaged them.
 - **WHEN** a player renders the board
 - **THEN** squares holding enemy units they have not seen are drawn as empty
 
+#### Scenario: An enemy flag is shown without contact
+
+- **WHEN** a player lists the flags and has engaged nothing
+- **THEN** each enemy flag's square and owner are given
+
+#### Scenario: The unit carrying it is still hidden
+
+- **WHEN** a player is shown an enemy flag's square and has not engaged the
+  unit carrying it
+- **THEN** that unit is not among the units they are shown
+- **AND** the square is drawn as holding a flag rather than as holding a unit
 ### Requirement: Contact Establishes Visibility
 
 The system SHALL record mutual visibility between units that engage each other
@@ -197,6 +214,10 @@ registered in the game.
 - **AND** it remains among the types they have met, as `A Design Once Met Is
   Remembered` describes
 
+#### Scenario: A flag discloses no type
+
+- **WHEN** a player is shown the square an enemy flag is on
+- **THEN** the type of the unit carrying it is not listed for them
 ### Requirement: A Design Once Met Is Remembered
 
 The system SHALL keep, for each player, every enemy type that player has met,

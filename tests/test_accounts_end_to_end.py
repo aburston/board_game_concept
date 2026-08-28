@@ -13,6 +13,7 @@ import os
 import pytest
 
 from board_game_concept.domain import Empty
+from board_game_concept.http.views import FLAG_SYMBOL
 from board_game_concept.http.app import create_app
 
 # deliberately not pinned to a backend. Everything below happens over HTTP,
@@ -122,6 +123,9 @@ def test_a_whole_game_from_an_empty_directory(client, base_path, backend):
     _command(client, seats['bob'], 2,
              {'kind': 'add_unit', 'type_name': 'Circle', 'name': 'b1',
               'x': 3, 'y': 3})
+    # a setup is refused unless a unit carries the player's flag
+    _command(client, seats['ada'], 1, {'kind': 'set_flag', 'unit': 'a1'})
+    _command(client, seats['bob'], 2, {'kind': 'set_flag', 'unit': 'b1'})
 
     # --- and both commit; the turn resolves on the second
     ada_commit = client.post(f'/games/{GAME}/players/1/commit',
@@ -162,6 +166,8 @@ def _play_a_turn(client):
         _command(client, seats[name], number,
                  {'kind': 'add_unit', 'type_name': f'T{number}',
                   'name': f'u{number}', 'x': square[0], 'y': square[1]})
+        _command(client, seats[name], number,
+                 {'kind': 'set_flag', 'unit': f'u{number}'})
     client.post(f'/games/{GAME}/players/1/commit', headers=seats['ada'])
     client.post(f'/games/{GAME}/players/2/commit', headers=seats['bob'])
     return admin, seats
@@ -190,9 +196,16 @@ def test_each_seat_is_given_only_what_visibility_entitles_it_to(client):
         # rather than assumed
         empty = str(Empty())
         symbols = {symbol for row in board['rows'] for symbol in row}
-        assert symbols == {empty, 'X' if number == 1 else 'O'}, name
-        drawn = [entry['symbol'] for entry in board['legend']]
-        assert len(drawn) == 1, f'{name} should see only their own symbol'
+        # their own units, and the enemy's flag - which is the one thing
+        # shown without contact, and shows a square and an owner rather than
+        # a unit. The unit standing there is still not in `units` above
+        assert symbols == {empty, 'X' if number == 1 else 'O',
+                           FLAG_SYMBOL}, name
+        legend = {entry['symbol']: entry for entry in board['legend']}
+        assert set(legend) == {'X' if number == 1 else 'O', FLAG_SYMBOL}, name
+        flag = legend[FLAG_SYMBOL]
+        assert flag['type'] == 'flag'
+        assert flag['player'] != number, 'their own flag needs no marker'
 
 
 def test_asking_in_another_players_name_is_refused(client):

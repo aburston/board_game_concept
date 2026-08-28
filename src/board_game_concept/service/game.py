@@ -385,6 +385,12 @@ class Game:
                 bool(unit['destroyed']),
                 bool(unit['on_board']),
                 restoring=True)
+            # the flag comes back with the unit that carried it
+            if unit['flag']:
+                restored = board.findUnit(unit['name'],
+                                          self.players[number]['obj'])
+                if restored is not None:
+                    restored.flag = True
 
     def _type_for(self, number, unit):
         """The type a saved unit was made from.

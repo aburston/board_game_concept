@@ -357,6 +357,7 @@ class UnattendedTurnCycle(CliTestCase):
         client.send_line('add type Cross X 1 1 10')
         client.read_until_count('bgcclient> ', 2)
         client.send_line('add unit Cross x1 0 0')
+        client.send_line('set flag x1')
         client.read_until_count('bgcclient> ', 3)
         client.send_line('commit')
 

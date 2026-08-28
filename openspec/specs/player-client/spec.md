@@ -281,6 +281,13 @@ the same visibility limit as the table.
   a trailing word other than `json`
 - **THEN** the client reports the command as invalid
 
+#### Scenario: Showing the flags
+
+- **WHEN** the player runs `show flags`
+- **THEN** every flag in the game is listed with the player it belongs to and
+  the square it is on
+- **AND** an enemy flag is listed whether or not that enemy has been met
+- **AND** a fallen flag is listed as fallen, with no square
 ### Requirement: Committing A Turn
 
 The system SHALL let a player finalise their turn via `commit`, after which the
@@ -302,6 +309,12 @@ client waits for the turn to be resolved.
 - **WHEN** the server has resolved the turn
 - **THEN** the client reloads the game and resumes accepting orders
 
+#### Scenario: Committing a setup with no flag
+
+- **WHEN** the player runs `commit` during setup and no unit of theirs carries
+  the flag
+- **THEN** the client reports that a unit must carry the flag
+- **AND** returns to the prompt with the setup unchanged
 ### Requirement: Work Survives A Session
 
 The system SHALL restore a player's uncommitted work when they reopen a game,
@@ -418,3 +431,32 @@ either case.
 
 - **WHEN** a player opens a session for a game that is neither decided nor lost to them
 - **THEN** the client reports no outcome and prompts as usual
+
+### Requirement: Designating The Flag Carrier
+
+The system SHALL let a player designate which of their units carries their
+flag via `set flag <unit>`, during setup, naming a unit of their own. A
+designation given after the player has committed their setup SHALL be refused
+at the prompt, with the session continuing.
+
+#### Scenario: Designating a unit
+
+- **WHEN** `set flag` names one of the player's own units during setup
+- **THEN** that unit carries the flag
+- **AND** `show units` marks it as the carrier
+
+#### Scenario: Designating a unit that is not theirs
+
+- **WHEN** `set flag` names a unit the player does not own, or no unit at all
+- **THEN** the client refuses, saying which
+- **AND** the flag is where it was
+
+#### Scenario: Designating after committing
+
+- **WHEN** `set flag` is run after the player has committed their setup
+- **THEN** the client refuses, saying the flag is fixed for the game
+
+#### Scenario: Wrong argument count
+
+- **WHEN** `set flag` is given other than one argument
+- **THEN** the client reports that one unit name is required

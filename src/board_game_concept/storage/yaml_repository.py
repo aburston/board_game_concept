@@ -306,6 +306,19 @@ class YamlGameRepository(GameRepository):
     def write_events(self, number, turn, entries):
         self._write_events(self._events_file(number), turn, entries)
 
+    # --- where the flags are
+
+    def _flags_file(self):
+        return os.path.join(self.data_path, 'flags.yaml')
+
+    def read_flags(self):
+        stored = self._read_yaml(self._flags_file(), 'where the flags are')
+        return (stored or {}).get('flags') or []
+
+    def write_flags(self, entries):
+        with self._replace(self._flags_file()) as file:
+            yaml.safe_dump({'flags': list(entries or [])}, file)
+
     # --- what a seat has met
 
     def _known_types_file(self, number):
@@ -415,6 +428,10 @@ def _unit_line(unit):
         f"x: {unit.get('x')}, y: {unit.get('y')}, "
         f"state: {unit.get('state')}, direction: {unit.get('direction')}, "
         f"destroyed: {unit.get('destroyed')}, on_board: {unit.get('on_board')}"
+        # written for every unit, not only the carrier: a record that says
+        # nothing about the flag is a record every reader has to guess at,
+        # and the two other booleans beside it are always written too
+        f", flag: {bool(unit.get('flag'))}"
     )
 
 

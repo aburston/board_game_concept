@@ -12,8 +12,8 @@ from board_game_concept.domain import Board, Player, UnitType
 from board_game_concept.http.app import create_app
 from board_game_concept.service import games as game_ops
 from board_game_concept.domain import Player
-from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
-                                                 SetBoard)
+from board_game_concept.service.commands import (
+    AddPlayer, AddType, AddUnit, SetBoard, SetFlag)
 from board_game_concept.storage.sqlite_repository import SqliteGameRepository
 
 pytestmark = pytest.mark.backend('sqlite')
@@ -33,6 +33,7 @@ def _set_up(base_path, gameno='one'):
                                      attack=1, health=5, energy=10))
     game_ops.perform(player, AddUnit(type_name='Cross', name='x1',
                                      x=2, y=3))
+    game_ops.perform(player, SetFlag(unit='x1'))
     player.clientSave()
 
     server = Game(SqliteGameRepository(gameno, base_path=str(base_path)), 0)
@@ -158,6 +159,8 @@ def test_wait_for_turn_times_out_when_orders_still_pending(tmp_path):
     web.post('/games/pending/players/1/commands',
              json={'kind': 'add_unit', 'type_name': 'Cross',
                    'name': 'x1', 'x': 0, 'y': 0})
+    web.post('/games/pending/players/1/commands',
+             json={'kind': 'set_flag', 'unit': 'x1'})
     web.post('/games/pending/players/1/commit')
 
     response = web.get('/games/pending/players/1/wait/turn?budget=0.3')
@@ -182,6 +185,8 @@ def test_wait_for_commit_returns_at_once_when_barrier_is_met(tmp_path):
     web.post('/games/closed/players/1/commands',
              json={'kind': 'add_unit', 'type_name': 'Cross',
                    'name': 'x1', 'x': 0, 'y': 0})
+    web.post('/games/closed/players/1/commands',
+             json={'kind': 'set_flag', 'unit': 'x1'})
     web.post('/games/closed/players/1/commit')
     # after that commit, the turn resolved; the barrier for the next turn
     # opens again with player 1 owed, so the admin's wait times out
@@ -263,6 +268,8 @@ def test_commit_by_the_last_player_resolves_the_turn(tmp_path):
     client.post('/games/two/players/1/commands',
                 json={'kind': 'add_unit', 'type_name': 'Cross',
                       'name': 'x1', 'x': 0, 'y': 0})
+    client.post('/games/two/players/1/commands',
+                json={'kind': 'set_flag', 'unit': 'x1'})
 
     response = client.post('/games/two/players/1/commit')
     assert response.status_code == 200
@@ -291,6 +298,8 @@ def test_commit_that_does_not_close_the_barrier_is_202(tmp_path):
     web.post('/games/three/players/1/commands',
              json={'kind': 'add_unit', 'type_name': 'Cross',
                    'name': 'x1', 'x': 0, 'y': 0})
+    web.post('/games/three/players/1/commands',
+             json={'kind': 'set_flag', 'unit': 'x1'})
     response = web.post('/games/three/players/1/commit')
     assert response.status_code == 202
     payload = response.get_json()

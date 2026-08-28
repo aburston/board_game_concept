@@ -25,7 +25,7 @@ DIRECTIONS = {
 }
 
 SHOW_SUBJECTS = ('board', 'types', 'units', 'players', 'pending',
-                 'events', 'designs')
+                 'events', 'designs', 'flags')
 
 # the one word a `show` may end in, asking for the answer as JSON rather than
 # as a table
@@ -127,6 +127,8 @@ USAGES = (
     Usage('set_board', ('set', 'board', Slot('size_x', NUMBER),
                         Slot('size_y', NUMBER)),
           'set the size of the board, before the game starts'),
+    Usage('set_flag', ('set', 'flag', Slot('unit', UNIT)),
+          'designate which of your units carries your flag, during setup'),
     _show('board', 'show the board as you see it, as a table or as JSON'),
     _show('types', 'show the unit types you know of, as a table or as JSON'),
     _show('units', 'show the units you know of, as a table or as JSON'),
@@ -136,6 +138,7 @@ USAGES = (
     _show('events', 'show what the turns did, as you were told it'),
     _show('designs',
           'show the enemy designs you have met, which outlive contact'),
+    _show('flags', 'show where every flag is, whoever it belongs to'),
     Usage('move', ('move', Slot('unit', UNIT),
                    Slot('|'.join(DIRECTIONS), DIRECTION)),
           'order one of your units to move'),

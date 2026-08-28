@@ -176,7 +176,12 @@ an order, and a restored unit SHALL NOT be treated as waiting to be deployed.
 #### Scenario: Saving units
 
 - **WHEN** the server saves a game
-- **THEN** every unit's player, type, name, symbol, attack, health, energy, coordinates, state, direction, destroyed flag, and on-board flag are written to `data/units.yaml`
+- **THEN** every unit's player, type, name, symbol, attack, health, energy, coordinates, state, direction, destroyed flag, on-board flag, and whether it carries its player's flag are written to `data/units.yaml`
+
+#### Scenario: Restoring the carrier
+
+- **WHEN** a game holding a flag carrier is loaded
+- **THEN** the same unit carries that player's flag
 
 #### Scenario: Restoring units
 
@@ -202,7 +207,6 @@ an order, and a restored unit SHALL NOT be treated as waiting to be deployed.
 - **THEN** loading it restores every one of those units to that square
 - **AND** loading does not fail
 - **AND** the rule refusing deployment onto an occupied square does not apply
-
 ### Requirement: Order Publication
 
 The system SHALL have players publish pending orders as a per-player file that
@@ -543,3 +547,26 @@ turn number and the same result.
 
 - **WHEN** a game that is still being played is loaded
 - **THEN** no outcome is read
+
+### Requirement: Flag Publication
+
+The system SHALL publish, on every resolution, the square each player's flag
+is on and whether it is still standing, as a record every player may read
+whatever their visibility. It SHALL NOT publish the name, type or statistics
+of the unit carrying it: those reach a player only through their own view, as
+contact allows.
+
+#### Scenario: Publishing the flags
+
+- **WHEN** a turn is resolved
+- **THEN** each player's flag is published with its owner and its square
+
+#### Scenario: A flag that has fallen
+
+- **WHEN** a resolution destroys a flag carrier
+- **THEN** that flag is published as fallen, with no square
+
+#### Scenario: What is not published with it
+
+- **WHEN** the published flags are read
+- **THEN** no carrier's name, type, symbol or statistics are in them

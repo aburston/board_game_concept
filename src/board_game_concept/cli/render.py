@@ -113,12 +113,16 @@ def print_types(entries):
 
 
 def print_units(entries):
+    # `FLAG` reads `yes` for the one unit carrying its player's flag; the
+    # renderer draws `-` for everything false, as it does elsewhere
+    entries = [{**entry, 'flag': 'yes' if entry.get('flag') else None}
+               for entry in entries or []]
     _print_table(
         entries,
         headers=('PLAYER', 'NAME', 'TYPE', 'SYMBOL', 'ATTACK', 'HEALTH',
-                 'ENERGY', 'X', 'Y', 'STATE', 'DIRECTION'),
+                 'ENERGY', 'X', 'Y', 'STATE', 'DIRECTION', 'FLAG'),
         keys=('player', 'name', 'type', 'symbol', 'attack', 'health',
-              'energy', 'x', 'y', 'state', 'direction'),
+              'energy', 'x', 'y', 'state', 'direction', 'flag'),
         numeric=('PLAYER', 'ATTACK', 'HEALTH', 'ENERGY', 'X', 'Y'),
         nothing='no units yet')
 
@@ -180,6 +184,24 @@ def print_designs(entries):
               'cost', 'first_seen'),
         numeric=('PLAYER', 'ATTACK', 'HEALTH', 'ENERGY', 'COST', 'MET'),
         nothing='no enemy designs met yet')
+
+
+def print_flags(entries):
+    """Where every flag is, whoever it belongs to.
+
+    Listed for every session whatever contact it has made: a flag's square is
+    the one thing `visibility` discloses without it. What is standing on that
+    square is not here - that reaches a player through their own units.
+    """
+    _print_table(
+        [{'player': entry.get('player'),
+          'x': entry.get('x'), 'y': entry.get('y'),
+          'standing': 'yes' if entry.get('standing') else 'no'}
+         for entry in entries or []],
+        headers=('PLAYER', 'X', 'Y', 'STANDING'),
+        keys=('player', 'x', 'y', 'standing'),
+        numeric=('PLAYER', 'X', 'Y'),
+        nothing='no flags yet')
 
 
 def print_board_view(view):

@@ -112,6 +112,11 @@ class RemovePlayer(Node):
     fields = ('number',)
 
 
+class SetFlag(Node):
+    kind = 'set_flag'
+    fields = ('unit',)
+
+
 class AddType(Node):
     kind = 'add_type'
     fields = ('name', 'symbol', 'attack', 'health', 'energy')

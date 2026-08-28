@@ -175,11 +175,12 @@ def test_an_order_naming_a_destroyed_unit_is_refused(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     # each keeps a reserve out of the way, so losing the duellist does not end
-    # the game and there are further turns to play
+    # the game and there are further turns to play - and each reserve carries
+    # the flag, for the same reason
     harness.deploy(1, [('X', 'X', 5, 5, 50)],
-                   [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)])
+                   [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)], flag='x2')
     harness.deploy(2, [('O', 'O', 5, 5, 50)],
-                   [('O', 'o1', 1, 0), ('O', 'o2', 5, 2)])
+                   [('O', 'o1', 1, 0), ('O', 'o2', 5, 2)], flag='o2')
     harness.resolve()
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     assert harness.units()['x1'].destroyed

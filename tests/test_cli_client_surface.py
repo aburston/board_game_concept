@@ -19,23 +19,65 @@ class ClientTestCase(CliTestCase):
         client.read_until(CLIENT_PROMPT)
         return client
 
-    def with_a_unit(self):
+    def with_a_unit(self, flag=False):
         client = self.player_client()
         client.send_line('add type Cross X 1 1 10')
         client.read_until_count(CLIENT_PROMPT, 2)
         client.send_line('add unit Cross x1 0 0')
         client.read_until_count(CLIENT_PROMPT, 3)
+        if flag:
+            client.send_line('set flag x1')
+            client.read_until_count(CLIENT_PROMPT, 4)
         return client
 
     def in_play(self):
         """Past setup: the player has committed and the turn has resolved."""
-        client = self.with_a_unit()
+        client = self.with_a_unit(flag=True)
         client.send_line('commit')
         client.read_until('commit complete')
         # the sole player's commit satisfies the barrier and the server
         # signals the client, so this returns as soon as the turn is resolved
-        client.read_until_count(CLIENT_PROMPT, 4, timeout=60)
+        client.read_until_count(CLIENT_PROMPT, 5, timeout=60)
         return client
+
+
+class CarryingTheFlag(ClientTestCase):
+    """`set flag <unit>`, and what a setup without one is told."""
+
+    def test_designating_a_carrier(self):
+        client = self.with_a_unit()
+        client.send_line('set flag x1')
+        client.read_until_count(CLIENT_PROMPT, 4)
+        shown = self.shown(client, CLIENT_PROMPT, 'show units')
+        assert 'FLAG' in shown
+        assert shown.splitlines()[1].split()[-1] == 'yes'
+
+    def test_designating_a_unit_that_is_not_yours(self):
+        client = self.with_a_unit()
+        client.send_line('set flag nobody')
+        client.read_until('there is no unit of yours called nobody')
+
+    def test_wrong_argument_count(self):
+        client = self.with_a_unit()
+        client.send_line('set flag')
+        client.read_until('must provide the name of one of your units')
+
+    def test_committing_a_setup_with_no_carrier(self):
+        client = self.with_a_unit()
+        client.send_line('commit')
+        client.read_until('must carry your flag')
+
+    def test_designating_after_the_setup_is_committed(self):
+        client = self.in_play()
+        client.send_line('set flag x1')
+        client.read_until('the flag is fixed for the game')
+
+    def test_showing_the_flags(self):
+        client = self.in_play()
+        shown = self.shown(client, CLIENT_PROMPT, 'show flags')
+        assert shown.splitlines()[0].split() == ['PLAYER', 'X', 'Y',
+                                                 'STANDING']
+        assert shown.splitlines()[1].split() == ['1', '0', '0', 'yes']
 
 
 class ClientInvocation(CliTestCase):
@@ -209,8 +251,9 @@ class OrderingMovement(ClientTestCase):
         # the order is read back as the units table, showing it took
         assert lines[0].split() == [
             'PLAYER', 'NAME', 'TYPE', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
-            'X', 'Y', 'STATE', 'DIRECTION']
-        assert lines[1].split()[-2:] == ['moving', 'north']
+            'X', 'Y', 'STATE', 'DIRECTION', 'FLAG']
+        # `FLAG` is last now, and this unit carries one
+        assert lines[1].split()[-3:] == ['moving', 'north', 'yes']
 
     def test_wrong_argument_count(self):
         client = self.player_client()
@@ -254,9 +297,11 @@ class ClientDisplayCommands(ClientTestCase):
         lines = self.shown_table(client, CLIENT_PROMPT, 'units')
         assert lines[0].split() == [
             'PLAYER', 'NAME', 'TYPE', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
-            'X', 'Y', 'STATE', 'DIRECTION']
+            'X', 'Y', 'STATE', 'DIRECTION', 'FLAG']
+        # the last `-` is `FLAG`: this unit carries nothing
         assert lines[1].split() == [
-            '1', 'x1', 'Cross', 'X', '1', '1', '10', '0', '0', 'holding', '-']
+            '1', 'x1', 'Cross', 'X', '1', '1', '10', '0', '0', 'holding',
+            '-', '-']
 
     def test_showing_units_before_any_are_deployed(self):
         client = self.player_client()
@@ -293,7 +338,7 @@ class ClientDisplayCommands(ClientTestCase):
         assert document['units'] == [{
             'player': 1, 'name': 'x1', 'type': 'Cross', 'symbol': 'X',
             'attack': 1, 'health': 1, 'energy': 10, 'x': 0, 'y': 0,
-            'state': 'holding', 'direction': None}]
+            'state': 'holding', 'direction': None, 'flag': False}]
 
     def test_the_json_holds_no_storage_field(self):
         client = self.with_a_unit()
@@ -344,7 +389,7 @@ class ClientDisplayCommands(ClientTestCase):
 class CommittingATurn(ClientTestCase):
 
     def test_committing(self):
-        client = self.with_a_unit()
+        client = self.with_a_unit(flag=True)
         client.send_line('commit')
         client.read_until('commit complete')
         client.read_until('waiting for turn to complete...')

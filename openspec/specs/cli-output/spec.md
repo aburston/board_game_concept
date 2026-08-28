@@ -94,7 +94,8 @@ SHALL name them with these headers.
 can read what deploying one unit of the type will spend.
 
 `units`: `PLAYER`, `NAME`, `TYPE`, `SYMBOL`, `ATTACK`, `HEALTH`, `ENERGY`,
-`X`, `Y`, `STATE`, `DIRECTION`. `ATTACK`, `HEALTH` and `ENERGY` SHALL be the
+`X`, `Y`, `STATE`, `DIRECTION`, `FLAG`. `FLAG` SHALL read `yes` for the unit
+carrying its player's flag and `-` for every other unit. `ATTACK`, `HEALTH` and `ENERGY` SHALL be the
 unit's current values, which play wears down, not its type's. A unit that is
 not on the board SHALL read `-` for `X` and `Y`. `DIRECTION` SHALL be the
 direction of the order the unit is holding, and SHALL NOT be presented as a
@@ -122,9 +123,17 @@ the square in their own words.
 the state a unit of it happened to be in when it was met, and `MET` the turn
 it was first met on.
 
+`flags`: `PLAYER`, `X`, `Y`, `STANDING`. One row per flag in the game,
+whatever the session's visibility, as `flag-carrier` allows. A flag whose
+carrier has been destroyed SHALL read `-` for `X` and `Y` and `no` under
+`STANDING`.
+
 `board`: the existing ASCII grid, followed by a blank line and a legend table
 with the columns `SYMBOL`, `PLAYER`, `TYPE`, holding one row per distinct
-symbol drawn on the grid.
+symbol drawn on the grid. A square holding a flag whose carrier the session
+cannot see SHALL be drawn with the flag's own glyph rather than as empty, and
+the legend SHALL name it as a flag and the player it belongs to rather than as
+a type.
 
 #### Scenario: Unit statistics are the unit's own
 
@@ -170,6 +179,27 @@ symbol drawn on the grid.
 - **WHEN** `show board` is entered and no unit is visible on the board
 - **THEN** the grid is printed and no legend is printed
 
+#### Scenario: The unit carrying the flag
+
+- **WHEN** a player lists their units and one of them carries the flag
+- **THEN** that unit's `FLAG` column reads `yes` and every other reads `-`
+
+#### Scenario: The flags table
+
+- **WHEN** `show flags` is entered
+- **THEN** every flag in the game is listed with its owner and its square
+
+#### Scenario: A fallen flag
+
+- **WHEN** a flag's carrier has been destroyed
+- **THEN** its row reads `-` for `X` and `Y` and `no` under `STANDING`
+
+#### Scenario: A flag drawn on the board
+
+- **WHEN** a player renders the board and an enemy flag stands on a square they
+  cannot otherwise see
+- **THEN** that square is drawn with the flag glyph
+- **AND** the legend names it as that player's flag
 ### Requirement: Readable Values
 
 Tabular output SHALL name things the way a player speaks of them, never with
@@ -215,8 +245,8 @@ then write its content as a single JSON document to standard output instead of
 a table.
 
 The document SHALL be a JSON object with one key naming the subject — `types`,
-`units`, `players`, `pending`, `events`, `designs` or `board` — whose value
-holds the same content the table would have shown. List subjects SHALL hold an array, empty when there
+`units`, `players`, `pending`, `events`, `designs`, `flags` or `board` —
+whose value holds the same content the table would have shown. List subjects SHALL hold an array, empty when there
 is nothing to show, rather than a message. Field names SHALL be lower case and
 stable, and numbers SHALL be written as JSON numbers, not as strings. A number
 the session is not entitled to know SHALL be written as JSON `null` rather than
@@ -256,6 +286,11 @@ and SHALL NOT carry storage-internal fields.
 - **THEN** the document holds the board's dimensions and its rows of squares as
   the role may see them
 
+#### Scenario: The flags as JSON
+
+- **WHEN** `show flags json` is entered
+- **THEN** the document holds one entry per flag, each with its owner, its
+  square, and whether it is standing
 ### Requirement: A Command Line Can Read Everything A Browser Can
 
 Every view the served contract offers SHALL be readable from a command-line

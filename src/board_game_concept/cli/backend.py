@@ -183,7 +183,9 @@ class LocalSession(Session):
 
     def getView(self, subject):
         if subject == 'board':
-            return views_module.board_view(self._game.getBoard())
+            return views_module.board_view(
+                self._game.getBoard(),
+                flags=self._game.repository.read_flags())
         if subject == 'units':
             return views_module.units_view(self._game.getBoard())
         if subject == 'types':
@@ -202,6 +204,11 @@ class LocalSession(Session):
             if self._game.seesEverything():
                 return repository.read_turn_events()
             return repository.read_events(self._game.player_number)
+        if subject == 'flags':
+            # read from what the resolution published, so every session gets
+            # every flag whatever contact it has made
+            return views_module.flags_view(
+                self._game.repository.read_flags())
         if subject == 'designs':
             if self._game.seesEverything():
                 return views_module.types_seen_view(

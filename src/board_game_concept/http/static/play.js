@@ -56,6 +56,7 @@ export function renderPlay() {
   wrap.append(element('p', {}, link('← lobby', '#/')));
 
   if (game.outcome) wrap.append(renderOutcome(game));
+  else if (isOut(game)) wrap.append(renderOut(game));
 
   if (!game.board) {
     wrap.append(element('p', { class: 'card muted' }, 'No board yet.'));
@@ -65,7 +66,9 @@ export function renderPlay() {
   const layout = element('div', { class: 'row' });
   layout.append(element('div', { class: 'grow' }, renderBoardCard(game)));
   const side = element('div', { class: 'grow' });
-  if (!watching && !game.outcome) side.append(renderOrders(game));
+  if (!watching && !game.outcome && !isOut(game)) {
+    side.append(renderOrders(game));
+  }
   // the roster is drawn for everybody, watching included: an observer with
   // no orders tray had nowhere at all to read a unit's statistics
   side.append(renderForces(game));
@@ -173,7 +176,8 @@ function rosterTable(game, units) {
   for (const unit of units) {
     const gone = unit.state === 'destroyed';
     body.append(element('tr', { class: gone ? 'gone' : '' },
-      element('td', {}, unit.name),
+      element('td', {}, unit.name,
+              unit.flag ? element('span', { class: 'flag-key' }, ' ⚑') : null),
       element('td', {}, unit.type),
       element('td', { class: 'number' }, String(unit.attack)),
       element('td', { class: 'number' }, health(game, unit)),
@@ -324,6 +328,7 @@ function renderBoardCard(game) {
     cursor: watching ? null : state.cursor,
     reachable: selected ? reachableFrom(game, selected) : null,
     marks: fought,
+    flags: game.flags || [],
     watching,
     // the keyboard hint belongs where a hand already is, which is over the
     // board rather than in a card below it
@@ -347,17 +352,32 @@ function renderBoardCard(game) {
     },
   }));
 
+  // the flag rows of the legend are the grid's way of naming a glyph it drew
+  // for a text board; this one draws flags itself and says so below, so
+  // repeating them here would name the same thing twice, differently
+  const symbols = (game.board.legend || []).filter(
+    (entry) => entry.type !== 'flag');
   const legend = element('p', { class: 'small muted' });
-  for (const entry of (game.board.legend || [])) {
+  for (const entry of symbols) {
     legend.append(element('span', {},
       `${entry.symbol} = ${entry.type} (player ${entry.player})`), '  ');
   }
-  if ((game.board.legend || []).length) card.append(legend);
+  if (symbols.length) card.append(legend);
   if (waiting.length) {
     card.append(element('p', { class: 'small muted' },
       `Your ${waiting.length === 1 ? 'unit is' : 'units are'} drawn where you `
       + 'deployed them and are not on the board yet: a committed setup takes '
       + 'the field when the first turn resolves.'));
+  }
+  const flags = (game.flags || []).filter((flag) => flag.standing);
+  if (flags.length) {
+    card.append(element('p', { class: 'small muted' },
+      element('span', { class: 'flag-key' }, '⚑'),
+      ' a flag: '
+      + flags.map((flag) => (flag.player === game.number
+        ? 'yours'
+        : `player ${flag.player}'s`)).join(', ')
+      + '. Every flag is shown to everybody; what carries it is not.'));
   }
   if (fought.size) {
     card.append(element('p', { class: 'small muted' },
@@ -816,6 +836,32 @@ export function outcomeText(outcome, seat) {
     + 'standing.';
 }
 
+/**
+ * Whether this seat is out of the game.
+ *
+ * Its flag has fallen: the published flags say so, and they say so to
+ * everybody. Nothing else is needed - a player whose flag is down is out
+ * whatever else they still hold.
+ */
+export function isOut(game) {
+  const mine = (game.flags || []).find(
+    (flag) => flag.player === game.number);
+  return Boolean(mine) && mine.standing === false;
+}
+
+function renderOut(game) {
+  const card = element('div', { class: 'card' });
+  card.append(element('h2', {}, 'You are out of the game'));
+  card.append(element('p', { class: 'notice' },
+    'Your flag has fallen. A player whose flag carrier is destroyed leaves '
+    + 'the game, whatever else they hold.'));
+  card.append(element('p', { class: 'small muted' },
+    'Your units are still on the board and hold the squares they stand on, '
+    + 'but they take no orders and strike nothing. The board and what each '
+    + 'turn does keep arriving here for as long as you want to watch.'));
+  return card;
+}
+
 function renderOutcome(game) {
   const card = element('div', { class: 'card' });
   card.append(element('h2', {}, 'The game is decided'));
@@ -846,7 +892,7 @@ function renderKeys() {
 export function handleKey(event) {
   const game = state.game;
   if (!game || state.route.name !== 'play' || game.number === 1000) return;
-  if (game.outcome) return;
+  if (game.outcome || isOut(game)) return;
   if (event.target && ['INPUT', 'SELECT', 'TEXTAREA']
       .includes(event.target.tagName)) return;
 

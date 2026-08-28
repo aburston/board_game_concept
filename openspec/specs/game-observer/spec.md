@@ -156,6 +156,10 @@ ends in `json`, both as `cli-output` describes them.
   a trailing word other than `json`
 - **THEN** the observer reports the command as invalid
 
+#### Scenario: Showing the flags
+
+- **WHEN** the observer runs `show flags`
+- **THEN** every player's flag is listed with its owner and its square
 ### Requirement: Refreshing The View
 
 The system SHALL let the observer reload the game from disk to pick up turns

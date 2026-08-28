@@ -97,6 +97,16 @@ class UnitType:
         self.direction = UnitType.NONE
         self.destroyed = False
         self.on_board = False
+        # whether this unit carries its player's flag. Set after construction,
+        # the way `state` and `direction` are, because carrying it is
+        # something that happens to a unit during setup rather than part of
+        # the design it was built from - and because nothing that builds a
+        # unit today should have to learn about it.
+        #
+        # It is a standing and not a statistic: nothing here reads it, so a
+        # carrier costs what its type costs, moves for what its type pays, and
+        # strikes for what its type strikes
+        self.flag = False
         self.seen_by = []
         self.player = None
         # square this unit vacated during the current turn's preCommit phase,
@@ -285,8 +295,22 @@ class UnitType:
 # forever. There is friendly fire: a contestant attacks every other unit in the
 # contest, whoever owns it. Running out of energy never destroys a unit, it only
 # makes it inert.
-def exchangeAttacks(contestants, events=None):
-    """Fight until the contest is decided or nobody can pay. Returns survivors."""
+def _isOut(unit, out):
+    """Whether this unit belongs to a player whose flag has already fallen.
+
+    Passed in from the resolution rather than looked up: `unit.board` is the
+    grid of squares and knows nothing about players, and a contest has to be
+    decided from the position and the orders alone.
+    """
+    return unit.player is not None and unit.player.number in out
+
+
+def exchangeAttacks(contestants, events=None, out=()):
+    """Fight until the contest is decided or nobody can pay. Returns survivors.
+
+    `out` is the players whose flag has fallen. Their units contest the square
+    they stand on and land no attack: an army without its flag is terrain.
+    """
     while True:
         # recount the survivors afresh each round, rather than decrementing
         # a running total that counts the same casualty again every round
@@ -307,6 +331,11 @@ def exchangeAttacks(contestants, events=None):
                 # a wall does not fight. Without this it would pay nothing,
                 # deal nothing, and still count as an attack landed, and a
                 # round that lands an attack is a round that repeats (R5.6)
+                continue
+            if _isOut(unit, out):
+                # its player's flag has fallen: the unit holds its square and
+                # strikes nothing. It is still struck, and still destroyed -
+                # clearing it is how the square is taken
                 continue
             if unit.energy < unit.attack:
                 # too spent to attack: inert, but not destroyed. The round is
@@ -339,12 +368,12 @@ def exchangeAttacks(contestants, events=None):
     return [unit for unit in contestants if not unit.destroyed]
 
 
-def resolveContest(board, x, y, contestants, free, events=None):
+def resolveContest(board, x, y, contestants, free, events=None, out=()):
     """Fight out one square and decide who is left holding it."""
     if events is not None:
         events.append(Event(
             'contested', x=x, y=y, units=len(contestants)))
-    survivors = exchangeAttacks(contestants, events)
+    survivors = exchangeAttacks(contestants, events, out)
 
     for unit in contestants:
         if unit.destroyed:
@@ -377,7 +406,7 @@ def resolveContest(board, x, y, contestants, free, events=None):
                 'shared', x=x, y=y, units=len(survivors)))
 
 
-def resolveCollision(first, second, events=None):
+def resolveCollision(first, second, events=None, out=()):
     """Fight out a head-on exchange, in which neither unit moved.
 
     Two units ordered into each other's squares used to pass straight through
@@ -394,7 +423,7 @@ def resolveCollision(first, second, events=None):
         events.append(Event(
             'collided', unit=near.name, target=far.name,
             x=near.x, y=near.y, to_x=far.x, to_y=far.y))
-    survivors = exchangeAttacks([first, second], events)
+    survivors = exchangeAttacks([first, second], events, out)
 
     for unit in (first, second):
         if unit.destroyed:

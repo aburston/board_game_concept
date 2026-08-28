@@ -210,6 +210,36 @@ def order_move(data, command):
     unit.move(command.direction)
 
 
+def set_flag(data, command):
+    """Designate which of this player's units carries their flag.
+
+    Made during setup and fixed by the commit that ends it. It may be moved
+    from one of the player's units to another until then - designating is a
+    setup decision like the board's size or a seat, and every other one can be
+    taken back until it is committed.
+    """
+    board = data.getBoard()
+    if board is None:
+        raise GameError("board must be loaded in order to carry a flag")
+    if not data.getNewGame():
+        raise GameError(
+            "the flag is fixed for the game: it is designated during setup "
+            "and cannot be moved once that setup is committed")
+    player_obj = data.getPlayerObj(data.player_number)
+    unit = board.findUnit(command.unit, player_obj)
+    if unit is None:
+        raise GameError(
+            f"there is no unit of yours called {command.unit} to carry the "
+            f"flag")
+    # exactly one, enforced where the designation is made rather than
+    # reconciled later: a board that holds two carriers for one player is a
+    # state nothing else in the game knows how to read
+    for held in board.units:
+        if held.player is not None and held.player.number == data.player_number:
+            held.flag = False
+    unit.flag = True
+
+
 # which function carries out which command. Named here rather than by building
 # a function name from the kind, so that a helper in this module cannot become
 # a command by accident - the same reason `parser.py` names its verbs one by
@@ -228,6 +258,7 @@ ACTIONS = {
     'load_player': load_player,
     'add_type': define_type,
     'add_unit': deploy_unit,
+    'set_flag': set_flag,
     'move': order_move,
     'set_new_game': set_new_game,
 }

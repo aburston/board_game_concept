@@ -210,6 +210,21 @@ class GameRepository:
         """Record what this seat is told about one turn."""
         raise NotImplementedError
 
+    # --- where the flags are
+    #
+    # Published for every player to read, whatever their visibility: a flag's
+    # square and its owner are the one thing shown without contact. Nothing
+    # about the unit carrying it is here - no name, no type, no statistics -
+    # because those reach a player only through their own view.
+
+    def read_flags(self):
+        """Every player's flag: `{player, x, y, standing}`, by player."""
+        raise NotImplementedError
+
+    def write_flags(self, entries):
+        """Replace the published flags with these."""
+        raise NotImplementedError
+
     # --- what a seat has met
     #
     # Sightings last one turn: an enemy not touched this turn is off your

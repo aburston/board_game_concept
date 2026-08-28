@@ -11,8 +11,8 @@ import os
 import pytest
 
 from board_game_concept.service import games
-from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
-                                                 SetBoard)
+from board_game_concept.service.commands import (
+    AddPlayer, AddType, AddUnit, SetBoard, SetFlag)
 from game_harness import GameHarness
 
 CROSS = ('Cross', 'X', 1, 5, 10)
@@ -104,6 +104,7 @@ def test_a_game_whose_markers_predate_the_turn_being_recorded(tmp_path):
     games.perform(client, AddType(name='Cross', symbol='X', attack=1,
                                   health=5, energy=10))
     games.perform(client, AddUnit(type_name='Cross', name='x1', x=0, y=0))
+    games.perform(client, SetFlag(unit='x1'))
     assert client.clientSave()
 
     # as the marker was written before a commit recorded which turn it was for

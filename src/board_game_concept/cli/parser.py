@@ -119,11 +119,17 @@ class Parser:
         return commands.Show(subject=subject, format=show_format)
 
     def _parse_set(self):
-        subject = self._subject('set', ('board',))
-        # only one production, but written as a branch so the next one fits
+        subject = self._subject('set', ('board', 'flag'))
         if subject == 'board':
             return self._parse_set_board()
+        if subject == 'flag':
+            return self._parse_set_flag()
         raise ParseError('invalid set command', self.tokens.position)
+
+    def _parse_set_flag(self):
+        """`set flag <unit>`, during setup: which unit carries your flag."""
+        self._arity(1, 'must provide the name of one of your units')
+        return commands.SetFlag(unit=self.tokens.take())
 
     def _parse_set_board(self):
         self._arity(2, 'must provide x and y for size')

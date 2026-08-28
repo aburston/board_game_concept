@@ -80,4 +80,9 @@ def _unit_record(unit):
         'x': unit.x, 'y': unit.y,
         'state': unit.state, 'direction': unit.direction,
         'destroyed': unit.destroyed, 'on_board': unit.on_board,
+        # whether this unit carries its player's flag. A record written before
+        # flags existed has no such field and reads back as carrying nothing,
+        # which is what keeps an older game playing under the rules it was set
+        # up under
+        'flag': unit.flag,
     }

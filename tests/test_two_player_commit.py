@@ -33,6 +33,9 @@ NOUGHT = {'kind': 'add_type', 'name': 'Nought', 'symbol': 'O',
           'attack': 1, 'health': 5, 'energy': 10}
 X1 = {'kind': 'add_unit', 'type_name': 'Cross', 'name': 'x1', 'x': 0, 'y': 0}
 O1 = {'kind': 'add_unit', 'type_name': 'Nought', 'name': 'o1', 'x': 5, 'y': 5}
+# a setup is refused unless a unit carries the flag, and each side has one
+X_FLAG = {'kind': 'set_flag', 'unit': 'x1'}
+O_FLAG = {'kind': 'set_flag', 'unit': 'o1'}
 
 GAME = 'duel'
 
@@ -79,8 +82,10 @@ def set_up(base_path):
 
     web.perform(1, CROSS)
     web.perform(1, X1)
+    web.perform(1, X_FLAG)
     web.perform(2, NOUGHT)
     web.perform(2, O1)
+    web.perform(2, O_FLAG)
     return web
 
 

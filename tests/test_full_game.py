@@ -18,11 +18,14 @@ def two_players(tmp_path, stats=(5, 5, 50), enemy=None):
     harness = GameHarness(tmp_path)
     harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
     attack, health, energy = stats
+    # the flag goes to the unit that stays out of the fighting below: these
+    # are tests about what a destroyed unit does next, and a carrier dying
+    # would end the game before they got there
     harness.deploy(1, [('X', 'X', attack, health, energy)],
-                   [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)])
+                   [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)], flag='x2')
     e_attack, e_health, e_energy = enemy or stats
     harness.deploy(2, [('O', 'O', e_attack, e_health, e_energy)],
-                   [('O', 'o1', 2, 0), ('O', 'o2', 5, 2)])
+                   [('O', 'o1', 2, 0), ('O', 'o2', 5, 2)], flag='o2')
     harness.resolve()
     return harness
 

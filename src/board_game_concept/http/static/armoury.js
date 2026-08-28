@@ -51,8 +51,60 @@ export function renderArmoury() {
   wrap.append(renderDesigner(game));
   wrap.append(renderTypes(game));
   if (game.board) wrap.append(renderDeploy(game));
+  if (game.board) wrap.append(renderFlag(game));
   wrap.append(renderCommit(game));
   return wrap;
+}
+
+/**
+ * Which of this player's units carries their flag.
+ *
+ * Everybody can see where a flag is, and losing its carrier is losing the
+ * game, so choosing which unit holds it is the last decision of a setup and
+ * the one that cannot be taken back afterwards. A setup without one cannot
+ * be committed, which this says before the button rather than after it.
+ */
+function renderFlag(game) {
+  const card = element('div', { class: 'card' });
+  card.append(element('h2', {}, 'The flag'));
+  card.append(element('p', { class: 'small muted' },
+    'One of your units carries your flag. Every player can see which square '
+    + 'it is on — not what stands there — and if it is destroyed you are out '
+    + 'of the game. It cannot be moved to another unit once you commit.'));
+
+  const mine = (game.units || []).filter(
+    (unit) => unit.player === game.number);
+  if (mine.length === 0) {
+    card.append(element('p', { class: 'notice small' },
+      'Deploy a unit first: one of them has to carry it.'));
+    return card;
+  }
+
+  const carrier = mine.find((unit) => unit.flag) || null;
+  card.append(element('p', {},
+    carrier
+      ? element('span', {}, 'Carried by ',
+                element('strong', {}, carrier.name),
+                ` (${carrier.type}) at (${carrier.x}, ${carrier.y}).`)
+      : element('span', { class: 'notice' },
+                'Nothing carries it yet. Choose a unit below.')));
+
+  const row = element('p', {});
+  for (const unit of mine) {
+    const holds = Boolean(unit.flag);
+    row.append(button(holds ? `${unit.name} ✓` : unit.name, async () => {
+      try {
+        await api.perform(game.gameno, game.number, api.setFlag(unit.name));
+        await loadSeat(game.gameno, game.number);
+        say(`${unit.name} carries your flag.`);
+      } catch (error) {
+        say(error.message);
+      }
+      set({});
+    }, { class: holds ? 'primary' : '' }), ' ');
+  }
+  card.append(row);
+  return card;
 }
 
 /**
@@ -424,6 +476,15 @@ function renderCommit(game) {
   card.append(element('p', { class: 'small muted' },
     'Committing publishes your army for the first turn. It cannot be ' +
     'withdrawn or amended.'));
+  // a setup with nothing carrying the flag is refused by the server, and
+  // finding that out by pressing the button is finding it out at the worst
+  // moment
+  const carrier = (game.units || []).some(
+    (unit) => unit.player === game.number && unit.flag);
+  if (!carrier) {
+    card.append(element('p', { class: 'notice small' },
+      'One of your units must carry your flag before you can commit.'));
+  }
   card.append(button('Commit setup', async () => {
     if (!window.confirm(
       'Commit? This cannot be withdrawn or amended.')) return;
@@ -434,7 +495,7 @@ function renderCommit(game) {
     } catch (error) {
       say(error.message);
     }
-  }, { class: 'primary' }));
+  }, { class: 'primary', disabled: !carrier }));
   return card;
 }
 

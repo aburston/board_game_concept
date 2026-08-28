@@ -167,8 +167,16 @@ def main(argv=None):
 
             if command.kind == 'commit':
                 # commit as this role commits - the session knows which
-                # meaning by the identity it was opened as
-                if data.commit():
+                # meaning by the identity it was opened as. A refusal is
+                # reported and the prompt comes back, the way a refused
+                # command is: a setup with nothing carrying the flag is a
+                # thing to fix, not a reason to end somebody's session
+                try:
+                    committed = data.commit()
+                except GameError as error:
+                    report(error)
+                    continue
+                if committed:
                     print("commit complete")
                     break
                 continue

@@ -9,8 +9,8 @@ import pytest
 from board_game_concept import Game
 from board_game_concept.http.app import create_app
 from board_game_concept.service import games as game_ops
-from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
-                                                 SetBoard)
+from board_game_concept.service.commands import (
+    AddPlayer, AddType, AddUnit, SetBoard, SetFlag)
 from board_game_concept.storage.sqlite_repository import SqliteGameRepository
 
 pytestmark = pytest.mark.backend('sqlite')
@@ -40,6 +40,7 @@ def _play_a_turn(base_path, gameno=GAME, players=(1, 2)):
                                           health=1, energy=10))
         game_ops.perform(session, AddUnit(type_name='Cross',
                                           name=f'u{number}', x=index, y=index))
+        game_ops.perform(session, SetFlag(unit=f'u{number}'))
         session.clientSave()
     resolver = Game(_repository(base_path, gameno), 0)
     resolver.load()

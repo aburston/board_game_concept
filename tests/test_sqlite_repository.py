@@ -16,13 +16,13 @@ from board_game_concept.storage.sqlite_repository import SqliteGameRepository
 pytestmark = pytest.mark.backend('sqlite')
 
 
-def _one_unit(unit_id=0, player=1, name='x1'):
+def _one_unit(unit_id=0, player=1, name='x1', flag=False):
     return {
         'id': unit_id, 'player': player, 'type': 'Cross', 'name': name,
         'symbol': 'X', 'attack': 1, 'health': 5, 'energy': 10,
         'type_attack': 1, 'type_health': 5, 'type_energy': 10,
         'x': 2, 'y': 3, 'state': 0, 'direction': 0,
-        'destroyed': False, 'on_board': True,
+        'destroyed': False, 'on_board': True, 'flag': flag,
     }
 
 

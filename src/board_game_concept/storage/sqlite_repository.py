@@ -35,7 +35,7 @@ _UNIT_COLUMNS = (
     'owner', 'name', 'type_name', 'symbol',
     'attack', 'health', 'energy',
     'type_attack', 'type_health', 'type_energy',
-    'x', 'y', 'state', 'direction', 'destroyed', 'on_board',
+    'x', 'y', 'state', 'direction', 'destroyed', 'on_board', 'flag',
 )
 
 
@@ -519,6 +519,31 @@ class SqliteGameRepository(GameRepository):
                 (int(number), int(turn), seq, _kind_of(entry),
                  json.dumps(_detail_of(entry))))
 
+    # --- where the flags are
+
+    def read_flags(self):
+        if not self._db_ready():
+            return []
+        rows = self._get(
+            'SELECT player_number, x, y, standing FROM flags '
+            'ORDER BY player_number').fetchall()
+        return [{'player': row['player_number'], 'x': row['x'],
+                 'y': row['y'], 'standing': bool(row['standing'])}
+                for row in rows]
+
+    def write_flags(self, entries):
+        self.ensure()
+        connection = self._get()
+        connection.execute('DELETE FROM flags')
+        for entry in entries or []:
+            connection.execute(
+                'INSERT INTO flags (player_number, x, y, standing) '
+                'VALUES (?, ?, ?, ?)',
+                (int(entry['player']),
+                 None if entry.get('x') is None else int(entry['x']),
+                 None if entry.get('y') is None else int(entry['y']),
+                 int(bool(entry.get('standing')))))
+
     # --- what a seat has met
 
     def read_known_types(self, number):
@@ -607,6 +632,7 @@ def _unit_row_to_dict(row):
         'state': row['state'], 'direction': row['direction'],
         'destroyed': bool(row['destroyed']),
         'on_board': bool(row['on_board']),
+        'flag': bool(row['flag']),
     }
 
 
@@ -621,7 +647,8 @@ def _insert_unit(connection, unit):
          int(unit['type_energy']),
          int(unit['x']), int(unit['y']),
          int(unit['state']), int(unit['direction']),
-         int(bool(unit['destroyed'])), int(bool(unit['on_board']))))
+         int(bool(unit['destroyed'])), int(bool(unit['on_board'])),
+         int(bool(unit['flag']))))
 
 
 def _insert_order(connection, player_number, index, unit):
@@ -635,7 +662,8 @@ def _insert_order(connection, player_number, index, unit):
          int(unit['type_energy']),
          int(unit['x']), int(unit['y']),
          int(unit['state']), int(unit['direction']),
-         int(bool(unit['destroyed'])), int(bool(unit['on_board']))))
+         int(bool(unit['destroyed'])), int(bool(unit['on_board'])),
+         int(bool(unit['flag']))))
 
 
 # every table `schema.sql` creates, read once and kept

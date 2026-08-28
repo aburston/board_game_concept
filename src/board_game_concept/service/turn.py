@@ -22,12 +22,37 @@ def _types_without_objects(player):
     return types
 
 
+def setup_refusal(game):
+    """Why this player's setup may not be committed yet, or None if it may.
+
+    Only a setup is held to this: a player committing a later turn has a flag
+    already, fixed by the setup they committed, so this asks only of a session
+    that still has a setup to commit.
+    """
+    if not game.getNewGame() or not identity.is_player(game.player_number):
+        return None
+    board = game.getBoard()
+    if board is None:
+        return None                 # the board is refused above, and first
+    if board.flagOf(game.player_number) is None:
+        return ("one of your units must carry your flag before this setup "
+                "can be committed - `set flag <unit>` designates it")
+    return None
+
+
 def publish(game):
     """Publish this player's orders and wait for the turn to be resolved."""
     if game.getSizeX() <= 1 or game.getSizeY() <= 1:
         print(f"the board size is too small ({game.getSizeX()}, "
               f"{game.getSizeY()})")
         return False
+
+    # raised rather than answered False, because unlike a board too small to
+    # play on this has a reason worth reading, and every client already
+    # reports what a refused command says
+    refusal = setup_refusal(game)
+    if refusal is not None:
+        raise GameError(refusal)
 
     number = game.player_number
     repository = game.repository
@@ -193,6 +218,7 @@ def _apply_orders(game, reject):
         if state == UnitType.INITIAL:
             try:
                 game.board.add(owner, x, y, name, unit_type)
+                _carry_flag(game, owner, name, unit)
             except AssertionError as e:
                 reject(p_number, unit, e)
         elif state == UnitType.MOVING:
@@ -210,6 +236,7 @@ def _apply_orders(game, reject):
                 # yet: this is its deployment
                 try:
                     game.board.add(owner, x, y, name, unit_type)
+                    _carry_flag(game, owner, name, unit)
                 except AssertionError as e:
                     reject(p_number, unit, e)
         else:
@@ -250,6 +277,13 @@ def eliminated_players(game):
         return []
     out = []
     for number, player in game.players.items():
+        # a flag that has fallen puts its player out whatever else they hold:
+        # what keeps a player in the game is something that can act *and* a
+        # flag still standing. Derived from the board like the clause beside
+        # it, so a game restored from storage answers what it answered before
+        if game.board.flagFallen(number):
+            out.append(number)
+            continue
         alive = any(unit.player.number == number
                     and unit.on_board and not unit.destroyed
                     and unit.type_energy > 0
@@ -354,6 +388,12 @@ def resolve(game):
             repository.write_rejections(number, rejected.get(number, []),
                                         turn=turn_number)
 
+        # where every flag is, for every player to read whatever they have
+        # made contact with. Written beside the authoritative record because
+        # that is what it is read off: the square and the owner, and nothing
+        # about the unit standing on it
+        repository.write_flags(_flags_document(game))
+
         # the authoritative record, and then what each player is entitled to see
         repository.write_units(units_document(game.board, turn=turn_number))
         views = {}
@@ -408,6 +448,41 @@ def resolve(game):
             game.notifier.wake(number)
 
     return True
+
+
+def _carry_flag(game, owner, name, order):
+    """Give a unit just deployed the flag its owner designated it with.
+
+    A player designates during setup and publishes their army as orders, so
+    the designation arrives with the order that deploys the unit - it is not
+    a second thing to be told about, and a deployment that lost it would put
+    a player in a game they could not lose.
+    """
+    if not order['flag']:
+        return
+    deployed = game.board.findUnit(name, owner)
+    if deployed is not None:
+        deployed.flag = True
+
+
+def _flags_document(game):
+    """Where each flag is, as the record every player may read.
+
+    Three fields and no more: the player it belongs to, the square it is on,
+    and whether it is still standing. A fallen flag is on no square - naming
+    the square it fell on would be a position its owner no longer holds, told
+    to everybody for ever.
+    """
+    published = []
+    for number, carrier in game.board.flagBearers().items():
+        standing = (carrier.on_board and not carrier.destroyed)
+        published.append({
+            'player': number,
+            'x': carrier.x if standing else None,
+            'y': carrier.y if standing else None,
+            'standing': standing,
+        })
+    return published
 
 
 def _remember_types(repository, number, view, turn_number):
@@ -529,6 +604,11 @@ def _loaded_orders_document(game, number, player, turn):
             'state': unit.get('state'), 'direction': unit.get('direction'),
             'destroyed': unit.get('destroyed', False),
             'on_board': unit.get('on_board', False),
+            # a hand-written file may say which unit carries the flag, and
+            # one that says nothing carries none. Defaulted here with the
+            # other fields a person writing a file need not think about,
+            # rather than everywhere the document is read
+            'flag': unit.get('flag', False),
         })
     return {
         'board': {'size_x': game.board.size_x, 'size_y': game.board.size_y},
