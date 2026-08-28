@@ -64,10 +64,13 @@ def test_each_direction_moves_the_axis_the_rules_say():
 def duel_to_the_death(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
+    # the duellists fight to the death, so the flags go to the pair that
+    # stays out of it: this is about what a casualty looks like, not about
+    # what losing a flag costs
     harness.deploy(1, [('X', 'X', 5, 5, 50)],
-                   [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)])
+                   [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)], flag='x2')
     harness.deploy(2, [('O', 'O', 5, 5, 50)],
-                   [('O', 'o1', 1, 0), ('O', 'o2', 3, 2)])
+                   [('O', 'o1', 1, 0), ('O', 'o2', 3, 2)], flag='o2')
     harness.resolve()
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     return harness

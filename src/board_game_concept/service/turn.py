@@ -219,6 +219,7 @@ def _apply_orders(game, reject):
         if state == UnitType.INITIAL:
             try:
                 game.board.add(owner, x, y, name, unit_type)
+                _carry_flag(game, owner, name, unit)
             except AssertionError as e:
                 reject(p_number, unit, e)
         elif state == UnitType.MOVING:
@@ -236,6 +237,7 @@ def _apply_orders(game, reject):
                 # yet: this is its deployment
                 try:
                     game.board.add(owner, x, y, name, unit_type)
+                    _carry_flag(game, owner, name, unit)
                 except AssertionError as e:
                     reject(p_number, unit, e)
         else:
@@ -387,6 +389,12 @@ def resolve(game):
             repository.write_rejections(number, rejected.get(number, []),
                                         turn=turn_number)
 
+        # where every flag is, for every player to read whatever they have
+        # made contact with. Written beside the authoritative record because
+        # that is what it is read off: the square and the owner, and nothing
+        # about the unit standing on it
+        repository.write_flags(_flags_document(game))
+
         # the authoritative record, and then what each player is entitled to see
         repository.write_units(units_document(game.board, turn=turn_number))
         views = {}
@@ -441,6 +449,41 @@ def resolve(game):
             game.notifier.wake(number)
 
     return True
+
+
+def _carry_flag(game, owner, name, order):
+    """Give a unit just deployed the flag its owner designated it with.
+
+    A player designates during setup and publishes their army as orders, so
+    the designation arrives with the order that deploys the unit - it is not
+    a second thing to be told about, and a deployment that lost it would put
+    a player in a game they could not lose.
+    """
+    if not order.get('flag'):
+        return
+    deployed = game.board.findUnit(name, owner)
+    if deployed is not None:
+        deployed.flag = True
+
+
+def _flags_document(game):
+    """Where each flag is, as the record every player may read.
+
+    Three fields and no more: the player it belongs to, the square it is on,
+    and whether it is still standing. A fallen flag is on no square - naming
+    the square it fell on would be a position its owner no longer holds, told
+    to everybody for ever.
+    """
+    published = []
+    for number, carrier in game.board.flagBearers().items():
+        standing = (carrier.on_board and not carrier.destroyed)
+        published.append({
+            'player': number,
+            'x': carrier.x if standing else None,
+            'y': carrier.y if standing else None,
+            'standing': standing,
+        })
+    return published
 
 
 def _remember_types(repository, number, view, turn_number):

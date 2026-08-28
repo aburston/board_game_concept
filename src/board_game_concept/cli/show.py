@@ -47,6 +47,8 @@ def _print_table(subject, view):
         render.print_events(view)
     elif subject == 'designs':
         render.print_designs(view)
+    elif subject == 'flags':
+        render.print_flags(view)
     else:
         render.print_pending(view)
 

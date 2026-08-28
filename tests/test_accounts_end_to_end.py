@@ -13,6 +13,7 @@ import os
 import pytest
 
 from board_game_concept.domain import Empty
+from board_game_concept.http.views import FLAG_SYMBOL
 from board_game_concept.http.app import create_app
 
 # deliberately not pinned to a backend. Everything below happens over HTTP,
@@ -195,9 +196,16 @@ def test_each_seat_is_given_only_what_visibility_entitles_it_to(client):
         # rather than assumed
         empty = str(Empty())
         symbols = {symbol for row in board['rows'] for symbol in row}
-        assert symbols == {empty, 'X' if number == 1 else 'O'}, name
-        drawn = [entry['symbol'] for entry in board['legend']]
-        assert len(drawn) == 1, f'{name} should see only their own symbol'
+        # their own units, and the enemy's flag - which is the one thing
+        # shown without contact, and shows a square and an owner rather than
+        # a unit. The unit standing there is still not in `units` above
+        assert symbols == {empty, 'X' if number == 1 else 'O',
+                           FLAG_SYMBOL}, name
+        legend = {entry['symbol']: entry for entry in board['legend']}
+        assert set(legend) == {'X' if number == 1 else 'O', FLAG_SYMBOL}, name
+        flag = legend[FLAG_SYMBOL]
+        assert flag['type'] == 'flag'
+        assert flag['player'] != number, 'their own flag needs no marker'
 
 
 def test_asking_in_another_players_name_is_refused(client):

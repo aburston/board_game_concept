@@ -103,6 +103,26 @@ def types_view(players):
     return entries
 
 
+def flags_view(entries):
+    """Where every flag is, as any session may read it.
+
+    Read from what the resolution published rather than from the session's
+    own board: a flag is the one thing shown without contact, so it cannot
+    travel inside a view whose whole meaning is "these are units you may
+    see". Three fields, and nothing about the unit carrying it.
+    """
+    made = []
+    for entry in entries or []:
+        made.append({
+            'player': _as_int(entry.get('player')),
+            'x': _as_int(entry.get('x')),
+            'y': _as_int(entry.get('y')),
+            'standing': bool(entry.get('standing')),
+        })
+    return sorted(made, key=lambda flag: (flag['player'] is None,
+                                          flag['player']))
+
+
 def types_seen_view(entries, met=True):
     """Every enemy design this session has met, as the types view shapes one.
 
@@ -153,6 +173,10 @@ def units_view(board):
             'y': unit.y if placed else None,
             'state': state_word(unit.state, unit.destroyed),
             'direction': direction_word(unit.direction) if placed else None,
+            # whether this unit carries its player's flag. A seat is only
+            # ever given units it may see, so this says nothing it was not
+            # already being told - where an enemy flag is comes from `flags`
+            'flag': bool(getattr(unit, 'flag', False)),
         })
     return entries
 
@@ -259,11 +283,24 @@ def occupant(square, player=None):
     return None
 
 
-def board_view(board, player=None):
+# what a flag is drawn with on a square whose unit this session cannot see.
+# One character, like every other square, and not a symbol any type may use:
+# a type's symbol is one character a player chose, and a player who chose
+# this one would be drawing somebody else's flag
+FLAG_SYMBOL = '!'
+
+
+def board_view(board, player=None, flags=()):
     """The board as it may be seen: its size, its squares, and its symbols.
 
     The legend is collected from the squares the grid drew, so a symbol that
     was not drawn is not explained either.
+
+    `flags` is where the flags are, which every session may know whatever it
+    has met. A flag standing on a square this session cannot otherwise see is
+    drawn as a flag - the square, and whose flag it is, and nothing about the
+    unit holding it. Where the session can see the unit, the unit is drawn as
+    it always was: it is already telling them more than the flag would.
     """
     rows = []
     legend = {}
@@ -277,6 +314,16 @@ def board_view(board, player=None):
             drawn.append(str(unit))
             legend[(str(unit), unit.player.number, unit.type_name)] = None
         rows.append(drawn)
+
+    for flag in flags or []:
+        x, y = _as_int(flag.get('x')), _as_int(flag.get('y'))
+        if not flag.get('standing') or x is None or y is None:
+            continue
+        if rows[y][x] != str(Empty()):
+            continue                    # a unit is drawn there already
+        rows[y][x] = FLAG_SYMBOL
+        legend[(FLAG_SYMBOL, _as_int(flag.get('player')), 'flag')] = None
+
     return {
         'size_x': board.size_x,
         'size_y': board.size_y,

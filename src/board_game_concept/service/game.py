@@ -385,6 +385,14 @@ class Game:
                 bool(unit['destroyed']),
                 bool(unit['on_board']),
                 restoring=True)
+            # the flag comes back with the unit that carried it. A record
+            # written before flags existed has no such field, and reads back
+            # as carrying nothing
+            if unit.get('flag'):
+                restored = board.findUnit(unit['name'],
+                                          self.players[number]['obj'])
+                if restored is not None:
+                    restored.flag = True
 
     def _type_for(self, number, unit):
         """The type a saved unit was made from.

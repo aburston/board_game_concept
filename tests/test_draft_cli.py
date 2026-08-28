@@ -53,12 +53,14 @@ class ClientDrafts(CliTestCase):
         client.read_until_count(CLIENT_PROMPT, 2)
         client.send_line('add unit Cross x1 0 0')
         client.read_until_count(CLIENT_PROMPT, 3)
+        client.send_line('set flag x1')
+        client.read_until_count(CLIENT_PROMPT, 4)
         client.send_line('commit')
         client.read_until('commit complete')
-        client.read_until_count(CLIENT_PROMPT, 4, timeout=60)
+        client.read_until_count(CLIENT_PROMPT, 5, timeout=60)
 
         client.send_line('move x1 north')
-        client.read_until_count(CLIENT_PROMPT, 5)
+        client.read_until_count(CLIENT_PROMPT, 6)
 
         draft = draft_of('test-01', 1)
         self.assertEqual(draft['commands'],
@@ -72,6 +74,8 @@ class ClientDrafts(CliTestCase):
         client.read_until_count(CLIENT_PROMPT, 2)
         client.send_line('add unit Cross x1 0 0')
         client.read_until_count(CLIENT_PROMPT, 3)
+        client.send_line('set flag x1')
+        client.read_until_count(CLIENT_PROMPT, 4)
 
         client.send_line('commit')
         client.read_until('commit complete')

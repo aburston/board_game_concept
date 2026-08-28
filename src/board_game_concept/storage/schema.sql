@@ -48,7 +48,10 @@ CREATE TABLE IF NOT EXISTS unit_types (
     PRIMARY KEY (player_number, name)
 );
 
--- the authoritative board. `type_attack`/`type_health`/`type_energy` are
+-- the authoritative board. `flag` is whether the unit carries its player's
+-- flag, defaulted rather than required so a row written before flags existed
+-- reads back as carrying nothing - the rule an older game keeps playing
+-- under. `type_attack`/`type_health`/`type_energy` are
 -- the design of the type at the time the unit was made; they are how a
 -- type learned by contact is the type as its owner built it.
 CREATE TABLE IF NOT EXISTS units (
@@ -68,7 +71,8 @@ CREATE TABLE IF NOT EXISTS units (
     state         INTEGER NOT NULL,
     direction     INTEGER NOT NULL,
     destroyed     INTEGER NOT NULL,
-    on_board      INTEGER NOT NULL
+    on_board      INTEGER NOT NULL,
+    flag          INTEGER NOT NULL DEFAULT 0
 );
 
 -- one player's orders for the open turn. Present rows mean "not consumed
@@ -92,6 +96,7 @@ CREATE TABLE IF NOT EXISTS orders (
     direction     INTEGER,
     destroyed     INTEGER,
     on_board      INTEGER,
+    flag          INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (player_number, id)
 );
 
@@ -142,6 +147,18 @@ CREATE TABLE IF NOT EXISTS turn_events (
     kind          TEXT NOT NULL,
     payload       TEXT NOT NULL,
     PRIMARY KEY (turn_no, seq)
+);
+
+-- where each player's flag is, published for every player to read whatever
+-- their visibility. The square and the owner and nothing else: what unit
+-- carries it, and what that unit is, reach a player through their own view.
+-- `standing` is 0 once the carrier has been destroyed, and the square is then
+-- NULL rather than the square it fell on.
+CREATE TABLE IF NOT EXISTS flags (
+    player_number INTEGER PRIMARY KEY,
+    x             INTEGER,
+    y             INTEGER,
+    standing      INTEGER NOT NULL DEFAULT 1
 );
 
 -- the designs a seat has met. `sightings` lasts one turn, because where a

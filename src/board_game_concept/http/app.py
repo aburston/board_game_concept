@@ -40,7 +40,8 @@ POLL_INTERVAL = 0.2
 
 
 VIEW_BUILDERS = {
-    'board': lambda data: views_module.board_view(data.getBoard()),
+    'board': lambda data: views_module.board_view(
+        data.getBoard(), flags=data.repository.read_flags()),
     'units': lambda data: views_module.units_view(data.getBoard()),
     'types': lambda data: views_module.types_view(data.getPlayers()),
     'players': lambda data: views_module.players_view(
@@ -56,6 +57,10 @@ VIEW_BUILDERS = {
         if identity.sees_everything(data.player_number)
         else views_module.types_seen_view(
             data.repository.read_known_types(data.player_number))),
+    # where every flag is. Read from what the resolution published, so a seat
+    # is given every flag whatever contact it has made - the one thing
+    # `visibility` discloses without it
+    'flags': lambda data: views_module.flags_view(data.repository.read_flags()),
     # what the turns did, as this session was told it. A view rather than a
     # route of its own, so that `show events` at a command line and the panel
     # under the board are one thing asked for in one way

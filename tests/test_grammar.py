@@ -34,6 +34,7 @@ USAGE_LINES = [
     'show pending [json]',
     'show events [json]',
     'show designs [json]',
+    'show flags [json]',
     'move <unit> <north|east|south|west>',
     'commit',
     'reload',

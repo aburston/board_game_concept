@@ -57,6 +57,8 @@ class TurnsResolveWithoutWaiting(CliTestCase):
         client.read_until_count(CLIENT_PROMPT, 2)
         client.send_line('add unit Cross x1 0 0')
         client.read_until_count(CLIENT_PROMPT, 3)
+        client.send_line('set flag x1')
+        client.read_until_count(CLIENT_PROMPT, 4)
 
         started = time.monotonic()
         client.send_line('commit')

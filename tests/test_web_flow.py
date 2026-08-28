@@ -404,6 +404,107 @@ def test_the_observer_reads_the_whole_log(app):
     assert deployed == {'u1', 'u2'}
 
 
+def test_designating_a_carrier_through_the_contract(app):
+    """`set_flag` is a command like any other, sent the way they all are."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0), flag=False)
+
+    assert ada.perform(GAME, 1, {'kind': 'set_flag',
+                                 'unit': 'u1'}).status_code == 204
+
+    mine = [unit for unit
+            in ada.read_view(GAME, 1, 'units').get_json()['units']
+            if unit['name'] == 'u1'][0]
+    assert mine['flag'] is True
+
+
+def test_a_setup_with_no_carrier_is_refused(app):
+    """The rule the whole feature rests on, at the contract."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0), flag=False)
+
+    refused = ada.commit(GAME, 1)
+
+    assert refused.status_code == 400
+    assert 'flag' in refused.get_json()['error']
+    assert ada.read_view(GAME, 1, 'pending').get_json()['pending'] == [], (
+        'a refused commit published an army')
+
+
+def test_a_flag_is_read_by_a_seat_that_has_met_nobody(app):
+    """The one thing shown without contact: the square, and whose it is."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    flags = ada.read_view(GAME, 1, 'flags').get_json()['flags']
+
+    assert [flag['player'] for flag in flags] == [1, 2]
+    theirs = [flag for flag in flags if flag['player'] == 2][0]
+    assert (theirs['x'], theirs['y']) == (3, 3)
+    assert theirs['standing'] is True
+
+    # and the unit standing there is still nobody they have met
+    seen = {unit['name'] for unit
+            in ada.read_view(GAME, 1, 'units').get_json()['units']}
+    assert seen == {'u1'}
+
+
+def test_a_flag_says_nothing_about_the_unit_carrying_it(app):
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    flags = ada.read_view(GAME, 1, 'flags').get_json()['flags']
+
+    for flag in flags:
+        assert set(flag) == {'player', 'x', 'y', 'standing'}
+
+
+def test_a_fallen_flag_is_on_no_square(app):
+    admin = _administrator(app)
+    _set_up(admin, size=(2, 2))
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0), health=8, energy=20)
+    _deploy(bob, GAME, 2, 'O', (1, 0), health=1, energy=3)
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': EAST})
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    flags = ada.read_view(GAME, 1, 'flags').get_json()['flags']
+    theirs = [flag for flag in flags if flag['player'] == 2][0]
+    assert theirs['standing'] is False
+    assert (theirs['x'], theirs['y']) == (None, None)
+
+    # and losing it ended the game
+    assert ada.read_state(GAME, 1).get_json()['outcome']['winner'] == 1
+
+
 def test_a_committed_setup_is_readable_before_the_first_turn(app):
     """What a player has committed, in the gap before the turn resolves.
 

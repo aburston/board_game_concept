@@ -38,6 +38,8 @@ class DecidedGame(CliTestCase):
             client.read_until_count(CLIENT_PROMPT, 2)
             client.send_line(f'add unit {type_name} {unit} {square}')
             client.read_until_count(CLIENT_PROMPT, 3)
+            client.send_line(f'set flag {unit}')
+            client.read_until_count(CLIENT_PROMPT, 4)
             client.send_line('commit')
             client.read_until('waiting for turn to complete...')
 

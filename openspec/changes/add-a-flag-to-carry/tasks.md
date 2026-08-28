@@ -46,43 +46,43 @@
       `service/turn.py`, derived from the board beside the existing one.
       Verify: a player whose carrier is destroyed is eliminated with units
       still standing; a player who designated nothing is judged as before.
-- [ ] 2.5 Extend `tests/test_setup_is_flexible.py` (or a sibling) with the
+- [x] 2.5 Extend `tests/test_setup_is_flexible.py` (or a sibling) with the
       designation being changeable until the commit and fixed after it.
 
 ## 3. Storing it and publishing it
 
-- [ ] 3.1 Carry the flag through `storage/serialise.py`: `_unit_record` writes
+- [x] 3.1 Carry the flag through `storage/serialise.py`: `_unit_record` writes
       it and a record without it reads back as carrying nothing. Verify: a
       units document written before this change loads with no carrier.
-- [ ] 3.2 Persist it in the YAML backend beside `destroyed` and `on_board`,
+- [x] 3.2 Persist it in the YAML backend beside `destroyed` and `on_board`,
       and in the SQLite backend as a column on `units`. Verify: the byte-diff
       tests move by the one field and no more, and a SQLite game made by an
       older build gains the column on its next `ensure()`.
-- [ ] 3.3 Add `read_flags()` / `write_flags(entries)` to the repository port
+- [x] 3.3 Add `read_flags()` / `write_flags(entries)` to the repository port
       and both backends: one entry per player, holding the owner, the square
       and whether the carrier is standing, and nothing else. Verify: a
       round-trip on each backend, and a test asserting the entry has exactly
       those three fields.
-- [ ] 3.4 Publish the flags on every resolution in `service/turn.py`, written
+- [x] 3.4 Publish the flags on every resolution in `service/turn.py`, written
       before anybody waiting on the turn is released, the way the views and
       the feed already are. Verify: after a resolution every player's flag is
       readable, and a fallen one is published as fallen with no square.
 
 ## 4. The contract
 
-- [ ] 4.1 Add a `flags` view to `http/views.py` and register it in
+- [x] 4.1 Add a `flags` view to `http/views.py` and register it in
       `VIEW_BUILDERS`, reading the published flags rather than the session's
       own board, so a seat is given every flag whatever its visibility.
       Verify: a seat out of contact reads an enemy flag's square.
-- [ ] 4.2 Add the flag to `units_view` as a field of the unit, so a seat can
+- [x] 4.2 Add the flag to `units_view` as a field of the unit, so a seat can
       see which of the units it can see is a carrier. Verify: a seat's own
       carrier reads as one, and a seat is never given the flag field of a unit
       it cannot see - because it is not given that unit at all.
-- [ ] 4.3 Extend `tests/test_web_flow.py`: designating through `/commands`,
+- [x] 4.3 Extend `tests/test_web_flow.py`: designating through `/commands`,
       the setup commit refused without a carrier, the `flags` view read by a
       seat with no contact, and the proof that it carries no name, type or
       statistics.
-- [ ] 4.4 Check the parity tests still pass, and that they cover the new view
+- [x] 4.4 Check the parity tests still pass, and that they cover the new view
       and command: every view the page reads is a subject some role shows, and
       every command it sends is a line the grammar takes.
 
@@ -92,21 +92,21 @@
       second `set` production, and to the client role in `cli/roles.py`.
       Verify: the pinned usage lines in `tests/test_grammar.py` gain the line,
       and every role that may not use it refuses it.
-- [ ] 5.2 Add `show flags` as a subject in the grammar, the parser and all
+- [x] 5.2 Add `show flags` as a subject in the grammar, the parser and all
       three roles, answered by `cli/backend.py` from the published flags.
       Verify: a player, the administrator and the observer each get the same
       table.
-- [ ] 5.3 Render it in `cli/render.py`: the `flags` table, and the `FLAG`
+- [x] 5.3 Render it in `cli/render.py`: the `flags` table, and the `FLAG`
       column on `units`. Verify: `tests/test_cli_tables.py` covers the columns
       and the fallen case.
-- [ ] 5.4 Draw a flag on the ASCII board for a square whose unit the session
+- [x] 5.4 Draw a flag on the ASCII board for a square whose unit the session
       cannot see, with a legend row naming the player rather than a type.
       Verify: a player out of contact renders the enemy flag's square as a
       flag, and the legend does not name a type.
-- [ ] 5.5 Extend the three CLI surface suites: designating, the refusal after
+- [x] 5.5 Extend the three CLI surface suites: designating, the refusal after
       committing, `show flags`, and the setup commit refused without a
       carrier.
-- [ ] 5.6 Regenerate or extend the shell completions so `set` offers `flag`
+- [x] 5.6 Regenerate or extend the shell completions so `set` offers `flag`
       and `show` offers `flags`. Verify: `tests/test_completion.py` and
       `tests/test_shell_completion.py`.
 

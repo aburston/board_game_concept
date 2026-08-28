@@ -57,12 +57,16 @@ class TestWordsOfTheLanguage:
 
     def test_show_offers_its_subjects(self):
         assert candidates('show ', roles.SERVER) == [
-            'board', 'designs', 'events', 'pending', 'players', 'types',
-            'units']
+            'board', 'designs', 'events', 'flags', 'pending', 'players',
+            'types', 'units']
 
     def test_a_subject_offers_the_json_form(self):
         assert candidates('show units ', roles.CLIENT) == ['json']
         assert candidates('show units j', roles.CLIENT) == ['json']
+
+    def test_a_player_is_offered_the_flag_to_set(self):
+        assert candidates('set ', roles.CLIENT) == ['flag']
+        assert candidates('set ', roles.SERVER) == ['board']
 
     def test_set_add_and_load_offer_their_subjects(self):
         assert candidates('set ', roles.SERVER) == ['board']
