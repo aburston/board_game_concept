@@ -308,6 +308,27 @@ command ends in `json`, both as `cli-output` describes them.
   a trailing word other than `json`
 - **THEN** the server reports the command as invalid
 
+### Requirement: A Refused Setup Commit Is Reported To Whoever Asked
+
+Where a setup cannot be committed - there is no board, or the game is already
+decided - the system SHALL refuse and say which, to the caller that asked
+rather than only to the server's own output, and SHALL leave the game exactly
+as it was.
+
+An administrator told that a setup was committed when it was not goes looking
+for the game they think they made, and finds one still asking to be set up.
+
+#### Scenario: No board
+
+- **WHEN** a setup with no board is committed
+- **THEN** the caller is told the board must be set first
+- **AND** nothing of the setup is published
+
+#### Scenario: A game already decided
+
+- **WHEN** a setup commit is asked for on a decided game
+- **THEN** the caller is told there is nothing left to commit
+
 ### Requirement: Committing Setup
 
 The system SHALL let the administrator end setup via `commit`, writing the game

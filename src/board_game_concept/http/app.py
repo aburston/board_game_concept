@@ -225,7 +225,13 @@ def create_app(base_path=None, backend=None, account_store=None):
                 return jsonify(payload), (200 if resolved else 202)
             # the administrator: the setup resolution has no barrier
             game.load()
-            game.serverSave()
+            if not game.serverSave():
+                # a resolution that refused. The answer used to be 200 with
+                # `resolved: true` whatever happened, so an administrator who
+                # committed a setup with no board was told it was committed,
+                # went back to the lobby, and found the game still asking to
+                # be set up. The command line said so all along
+                return jsonify({'error': _why_setup_stands(game)}), 400
             game.load()
             payload = _commit_payload(game, resolved=True)
             return jsonify(payload), 200
@@ -351,6 +357,23 @@ def _register_error_handlers(app):
     @app.errorhandler(GameError)
     def _game_error(error):
         return _game_error_response(error)
+
+
+def _why_setup_stands(data):
+    """Why a setup the administrator asked to commit was not committed.
+
+    `resolve` answers False rather than raising for the two things that are
+    not a caller's mistake so much as a game that is not ready, and it says
+    which to the server's own output. This is that reason, said to the caller
+    who asked - which is the difference between a screen that can explain
+    itself and one that lies.
+    """
+    if data.getSizeX() <= 1 or data.getSizeY() <= 1:
+        return ('the board must be set before this setup can be committed: '
+                'a game is not a game without one')
+    if data.getOutcome() is not None:
+        return 'this game is decided; there is nothing left to commit'
+    return 'this setup could not be committed'
 
 
 def _commit_payload(data, resolved):

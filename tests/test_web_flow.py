@@ -427,6 +427,76 @@ def test_a_committed_setup_is_readable_before_the_first_turn(app):
     assert pending[0]['health'] == 8
 
 
+def test_committing_a_setup_with_no_board_is_refused_and_says_so(app):
+    """The answer used to be 200, and the game was not set up at all.
+
+    An administrator who committed a game before sizing its board was told
+    the setup was committed, went back to the lobby, and found the game still
+    asking to be set up - because it was. `resolve` had refused and said so
+    to the server's own output, which nobody reading a browser can see.
+    """
+    admin = _administrator(app)
+    assert admin.create_game(GAME).status_code == 201
+    admin.perform(GAME, 0, {'kind': 'add_player', 'number': 1, 'budget': 100})
+
+    refused = admin.commit(GAME, 0)
+
+    assert refused.status_code == 400
+    assert 'board' in refused.get_json()['error']
+
+    listed = [entry for entry in admin.list_games().get_json()['games']
+              if entry['gameno'] == GAME][0]
+    assert listed['size_x'] is None, 'a refused commit published a board'
+
+    # and with a board it goes through
+    admin.perform(GAME, 0, {'kind': 'set_board', 'size_x': 4, 'size_y': 4})
+    assert admin.commit(GAME, 0).status_code == 200
+    listed = [entry for entry in admin.list_games().get_json()['games']
+              if entry['gameno'] == GAME][0]
+    assert listed['size_x'] == 4
+
+
+def test_the_lobby_says_whether_a_game_has_been_set_up(app):
+    """The board is published by the setup commit and by nothing else.
+
+    That is how the lobby tells a game with a setup still to do from one
+    whose setup is committed - they are both "setting up" until a turn
+    resolves, so it offered the administrator a setup screen for both, and
+    every command that screen could send on a committed game is refused.
+    """
+    admin = _administrator(app)
+    assert admin.create_game(GAME).status_code == 201
+
+    def listed():
+        return [entry for entry in admin.list_games().get_json()['games']
+                if entry['gameno'] == GAME][0]
+
+    assert listed()['size_x'] is None, 'a game nobody set up has no board'
+
+    admin.perform(GAME, 0, {'kind': 'set_board', 'size_x': 4, 'size_y': 4})
+    admin.perform(GAME, 0, {'kind': 'add_player', 'number': 1, 'budget': 100})
+    assert listed()['size_x'] is None, (
+        'a board that has not been committed is not published')
+
+    admin.commit(GAME, 0)
+
+    assert listed()['size_x'] == 4
+    assert listed()['state'] == registry.SETTING_UP, (
+        'the game is still being set up by its players')
+
+
+def test_an_administrator_cannot_set_up_a_committed_game(app):
+    """Which is why the lobby stops offering it - the screen is a dead end."""
+    admin = _administrator(app)
+    _set_up(admin)
+
+    refused = admin.perform(GAME, 0, {'kind': 'set_board',
+                                      'size_x': 6, 'size_y': 6})
+    assert refused.status_code == 400
+    also = admin.perform(GAME, 0, {'kind': 'add_player', 'number': 3})
+    assert also.status_code == 400
+
+
 def test_the_lobby_says_which_seats_have_committed(app):
     """So it can send a committed seat to the board rather than the armoury."""
     admin = _administrator(app)

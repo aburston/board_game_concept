@@ -169,7 +169,13 @@ are near each other, which is the thing visibility withholds.
 Setting a game up is a thing you are still deciding: the administrator can
 size the board again and add or remove seats until the setup is committed,
 which is when both stand. A resize that would leave a unit off the board is
-refused, naming it.
+refused, naming it. A setup with no board cannot be committed at all, and
+says so before the button rather than after it.
+
+Committing publishes the board, and that is how the lobby tells a game with a
+setup still to do from one whose setup is done: both read as "setting up"
+until a turn resolves, because players are still deploying, but only the
+first is offered a setup screen.
 
 Committing a setup takes you to the board, where the army you committed is
 drawn faintly where you put it: it is published orders until the first turn

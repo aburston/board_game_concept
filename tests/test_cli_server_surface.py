@@ -84,13 +84,48 @@ class SettingBoardSize(CliTestCase):
         server.send_line('show board')
         server.read_until('#')
 
-    def test_resizing_an_existing_board(self):
+    def test_resizing_a_board_during_setup(self):
+        """Setup is a thing you are still deciding, size included.
+
+        A board that existed could not be resized, so a 6 typed for a 5 was a
+        game to throw away and make again. It stands when the setup holding
+        it is committed and not before.
+        """
         server = self.start_server()
         server.read_until(SERVER_PROMPT)
         server.send_line('set board 4 4')
         server.read_until_count(SERVER_PROMPT, 2)
-        server.send_line('set board 5 5')
-        server.read_until("can't resize an existing board")
+        server.send_line('set board 6 3')
+        server.read_until_count(SERVER_PROMPT, 3)
+        self.assertNotIn('resize', server.since(SERVER_PROMPT))
+        server.send_line('show board')
+        # six squares across and three rows down is the size just asked for
+        server.read_until('+-+-+-+-+-+-+')
+
+    # what happens after the setup is committed is not testable at this
+    # prompt: `commit` ends the administrator's session by design, so it is
+    # held where the rule lives, in `test_setup_is_flexible.py`
+
+    def test_removing_a_registered_player(self):
+        server = self.start_server()
+        server.read_until(SERVER_PROMPT)
+        server.send_line('set board 4 4')
+        server.read_until_count(SERVER_PROMPT, 2)
+        server.send_line('add player 1')
+        server.read_until_count(SERVER_PROMPT, 3)
+        server.send_line('add player 2')
+        server.read_until_count(SERVER_PROMPT, 4)
+        server.send_line('remove player 2')
+        server.read_until_count(SERVER_PROMPT, 5)
+        server.send_line('show players')
+        server.read_until('1')
+        self.assertNotIn('\n     2', server.since(SERVER_PROMPT))
+
+    def test_removing_a_player_who_is_not_registered(self):
+        server = self.start_server()
+        server.read_until(SERVER_PROMPT)
+        server.send_line('remove player 4')
+        server.read_until('there is no player 4 to remove')
 
     def test_wrong_argument_count(self):
         server = self.start_server()

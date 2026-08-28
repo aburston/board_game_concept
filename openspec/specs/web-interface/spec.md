@@ -369,6 +369,21 @@ and SHALL say that this is what it is offering.
 
 - **WHEN** the setup has been committed
 - **THEN** neither the size nor the seats are offered for changing
+- **AND** the lobby stops offering to set that game up
+- **AND** the administrator's setup screen says the setup is committed rather
+  than showing forms whose every answer would be refused
+
+#### Scenario: A setup that cannot be committed
+
+- **WHEN** the administrator commits a setup that has no board
+- **THEN** the commit is refused, saying the board must be set first
+- **AND** the game is left exactly as it was, with its setup still to do
+
+#### Scenario: Several games at once
+
+- **WHEN** one game's setup is committed and another's is not
+- **THEN** each says which of the two it is
+- **AND** only the one still to be set up is offered a setup screen
 
 ### Requirement: Losing The Server Is Said And Recovered From
 

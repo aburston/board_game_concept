@@ -23,7 +23,12 @@ export function renderArmoury() {
   wrap.append(element('p', {}, link('← lobby', '#/')));
 
   if (game.number === 0) {
-    wrap.append(renderAdminSetup(game));
+    // the setup was committed: the board is published and the seats are
+    // fixed, so this screen has nothing left to offer. It used to draw every
+    // form anyway and refuse each one when it was used
+    wrap.append(game.new_game === false
+      ? renderCommittedAdminSetup(game)
+      : renderAdminSetup(game));
     return wrap;
   }
 
@@ -88,6 +93,50 @@ function renderCommittedSetup(game) {
 }
 
 // --- the administrator's half
+
+/**
+ * What the administrator sees having committed a game's setup.
+ *
+ * Committing publishes the board and fixes the seats, and both are refused
+ * afterwards, so there is nothing here to change. What there is to do is
+ * watch, or wait for the people who hold the seats.
+ */
+function renderCommittedAdminSetup(game) {
+  const card = element('div', { class: 'card' });
+  card.append(element('h2', {}, 'This setup is committed'));
+  card.append(element('p', {},
+    game.board
+      ? `The board is ${game.board.size_x}×${game.board.size_y} and `
+      : 'The board is set and ',
+    `${(game.players || []).length} `
+    + `${(game.players || []).length === 1 ? 'seat is' : 'seats are'} `
+    + 'registered. Neither can be changed now.'));
+
+  const registered = game.players || [];
+  if (registered.length) {
+    const table = element('table', {});
+    table.append(element('thead', {}, element('tr', {},
+      element('th', { class: 'number' }, 'Seat'),
+      element('th', { class: 'number' }, 'Budget'))));
+    const body = element('tbody', {});
+    for (const player of registered) {
+      body.append(element('tr', {},
+        element('td', { class: 'number' }, String(player.player)),
+        element('td', { class: 'number' },
+                player.budget === null ? '—' : String(player.budget))));
+    }
+    table.append(body);
+    card.append(table);
+  }
+
+  card.append(element('p', { class: 'small muted' },
+    'The game starts when every seat is held and every player has committed '
+    + 'a setup of their own. Nothing is asked of you until then.'));
+  card.append(element('p', {},
+    link('Watch this game', `#/play/${encodeURIComponent(game.gameno)}/1000`),
+    ' · ', link('back to the lobby', '#/')));
+  return card;
+}
 
 function renderAdminSetup(game) {
   const card = element('div', { class: 'card' });
@@ -169,6 +218,13 @@ function renderAdminSetup(game) {
   card.append(element('p', { class: 'small muted' },
     'Committing ends setup and publishes the board. Seats can still be ' +
     'taken until the first turn resolves.'));
+  if (!game.board) {
+    // said before the button rather than after it: a setup with no board
+    // cannot be committed, and finding that out by pressing the button is
+    // finding it out at the worst moment
+    card.append(element('p', { class: 'notice small' },
+      'Set the board first. A setup with no board cannot be committed.'));
+  }
   card.append(button('Commit setup', async () => {
     try {
       await api.commit(game.gameno, 0);
@@ -177,7 +233,7 @@ function renderAdminSetup(game) {
     } catch (error) {
       say(error.message);
     }
-  }, { class: 'primary' }));
+  }, { class: 'primary', disabled: !game.board }));
   return card;
 }
 
