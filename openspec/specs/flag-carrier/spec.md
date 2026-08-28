@@ -102,6 +102,11 @@ A flag SHALL be shown for as long as its carrier is standing. Once the carrier
 is destroyed the flag SHALL be reported as fallen rather than placed on a
 square.
 
+Every player in a game that has begun SHALL be reported on, including one
+whose carrier never reached the board because its deployment was refused. A
+flag that never arrived SHALL be reported as not standing and on no square, so
+that a player who is out for want of a flag can be told so.
+
 #### Scenario: An enemy flag out of contact
 
 - **WHEN** a player has made no contact with an enemy army
@@ -128,10 +133,22 @@ square.
 - **WHEN** a flag carrier has been destroyed
 - **THEN** that flag is reported as fallen and is on no square
 
+#### Scenario: A flag that never arrived
+
+- **WHEN** a player's flag carrier was refused as the first turn resolved
+- **THEN** that player's flag is reported as not standing and on no square
+
 ### Requirement: Losing The Flag Puts A Player Out
 
 The system SHALL eliminate a player whose flag carrier is destroyed, in the
 resolution that destroys it, whatever else that player still holds.
+
+A player whose flag is not standing SHALL be eliminated whether the carrier
+was destroyed or never reached the board at all. A setup is refused unless one
+unit carries the flag, but a deployment can still be refused as the turn
+resolves — a contested square, or a budget that will not pay — and a player
+left holding an army and no flag would be the one player the flag could never
+be taken from.
 
 #### Scenario: The carrier is destroyed
 
@@ -143,6 +160,12 @@ resolution that destroys it, whatever else that player still holds.
 - **WHEN** a player's flag carrier is destroyed and other units of theirs are
   standing
 - **THEN** that player is still eliminated
+
+#### Scenario: A carrier that never reached the board
+
+- **WHEN** the deployment of a player's flag carrier is refused as the first
+  turn resolves, and other units of theirs take the field
+- **THEN** that player is eliminated at that resolution
 
 #### Scenario: The last player standing
 

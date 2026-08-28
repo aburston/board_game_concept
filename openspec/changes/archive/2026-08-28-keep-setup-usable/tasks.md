@@ -12,7 +12,7 @@
 - [x] 1.5 Test: the same over the served contract, so the state a seat reads
       says the game is decided rather than showing an empty board with no
       outcome
-- [ ] 1.6 Check both backends answer the same, since the commit marker is read
+- [x] 1.6 Check both backends answer the same, since the commit marker is read
       from storage
 - [x] 1.7 Put a player whose flag never reached the board out, like one whose
       flag has fallen, and report every player's flag in a game that has begun
@@ -38,6 +38,6 @@
 
 ## 4. Finishing
 
-- [ ] 4.1 `node --check` every changed module, and run flake8 over the package
-- [ ] 4.2 Run the whole suite on both backends
-- [ ] 4.3 Sync the specs and archive the change
+- [x] 4.1 `node --check` every changed module, and run flake8 over the package
+- [x] 4.2 Run the whole suite on both backends
+- [x] 4.3 Sync the specs and archive the change
