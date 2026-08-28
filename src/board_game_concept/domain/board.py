@@ -195,9 +195,9 @@ class Board:
     def flagFallen(self, player_number):
         """Whether this player designated a carrier and it has been destroyed.
 
-        False for a player who designated nobody, which is what keeps a game
-        set up before flags existed playing under the rules it was set up
-        under.
+        False for a player who has designated nobody, which during setup is
+        every player: a setup is refused until one of their units carries it,
+        so by the time a turn is resolved there is one to lose.
         """
         carrier = self.flagOf(player_number)
         return carrier is not None and carrier.destroyed

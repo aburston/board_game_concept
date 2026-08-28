@@ -81,7 +81,6 @@ class SqliteGameRepository(GameRepository):
             self._apply_schema()
             self._connection.execute(
                 'INSERT OR IGNORE INTO games (id) VALUES (1)')
-        self._add_missing_columns()
 
     def _connect(self):
         if self._connection is not None:
@@ -152,31 +151,6 @@ class SqliteGameRepository(GameRepository):
         present = {row['name'] for row in self._connection.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         return _schema_tables() <= present
-
-    def _add_missing_columns(self):
-        """Give an existing table any column the schema has grown since.
-
-        `CREATE TABLE IF NOT EXISTS` adds a table and never touches one that
-        is already there, so re-running the schema brings a database up to
-        date on tables and leaves it a column behind - which is a failure on
-        the first write that names the column rather than a refusal anybody
-        can read. SQLite adds one in place, and every column added this way
-        carries a default, so the rows already stored answer for themselves.
-
-        A column that changed type or lost its default is not this, and would
-        need a migration written on purpose.
-        """
-        connection = self._connection
-        for table, columns in _schema_columns().items():
-            present = {row['name'] for row in connection.execute(
-                f'PRAGMA table_info({table})')}
-            if not present:
-                continue                # the table itself is not there yet
-            for name, definition in columns.items():
-                if name in present:
-                    continue
-                connection.execute(
-                    f'ALTER TABLE {table} ADD COLUMN {definition}')
 
     # --- the board
 
@@ -674,7 +648,7 @@ def _insert_unit(connection, unit):
          int(unit['x']), int(unit['y']),
          int(unit['state']), int(unit['direction']),
          int(bool(unit['destroyed'])), int(bool(unit['on_board'])),
-         int(bool(unit.get('flag')))))
+         int(bool(unit['flag']))))
 
 
 def _insert_order(connection, player_number, index, unit):
@@ -689,45 +663,11 @@ def _insert_order(connection, player_number, index, unit):
          int(unit['x']), int(unit['y']),
          int(unit['state']), int(unit['direction']),
          int(bool(unit['destroyed'])), int(bool(unit['on_board'])),
-         int(bool(unit.get('flag')))))
+         int(bool(unit['flag']))))
 
 
-# every table `schema.sql` creates, and the columns each one declares, read
-# once and kept
+# every table `schema.sql` creates, read once and kept
 _TABLES = None
-_COLUMNS = None
-
-
-def _schema_columns():
-    """Each table's columns, as `{table: {column: its definition}}`.
-
-    Read from the schema file rather than listed here, so a column added to
-    the file is a column an existing database is given. Only the plain
-    `<name> <type> ...` lines count: a `PRIMARY KEY (...)` or a `CHECK` is a
-    constraint rather than a column, and cannot be added to a table in place
-    anyway.
-    """
-    global _COLUMNS
-    if _COLUMNS is None:
-        with open(_schema_path(), encoding='utf-8') as file:
-            schema = file.read()
-        found = {}
-        for table, body in re.findall(
-                r'CREATE TABLE IF NOT EXISTS\s+(\w+)\s*\((.*?)\n\);',
-                schema, re.S):
-            columns = {}
-            for line in body.splitlines():
-                line = line.split('--')[0].strip().rstrip(',')
-                if not line:
-                    continue
-                name = line.split()[0]
-                if name.upper() in ('PRIMARY', 'FOREIGN', 'UNIQUE', 'CHECK',
-                                    'CONSTRAINT'):
-                    continue
-                columns[name] = line
-            found[table] = columns
-        _COLUMNS = found
-    return _COLUMNS
 
 
 def _schema_tables():

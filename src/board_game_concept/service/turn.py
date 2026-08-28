@@ -25,10 +25,9 @@ def _types_without_objects(player):
 def setup_refusal(game):
     """Why this player's setup may not be committed yet, or None if it may.
 
-    Only a setup is held to this. A player committing a later turn has a flag
-    already, fixed by the setup they committed, and a game set up before flags
-    existed has none to fix - so this asks only of a session that still has a
-    setup to commit.
+    Only a setup is held to this: a player committing a later turn has a flag
+    already, fixed by the setup they committed, so this asks only of a session
+    that still has a setup to commit.
     """
     if not game.getNewGame() or not identity.is_player(game.player_number):
         return None
@@ -459,7 +458,7 @@ def _carry_flag(game, owner, name, order):
     a second thing to be told about, and a deployment that lost it would put
     a player in a game they could not lose.
     """
-    if not order.get('flag'):
+    if not order['flag']:
         return
     deployed = game.board.findUnit(name, owner)
     if deployed is not None:
@@ -605,6 +604,11 @@ def _loaded_orders_document(game, number, player, turn):
             'state': unit.get('state'), 'direction': unit.get('direction'),
             'destroyed': unit.get('destroyed', False),
             'on_board': unit.get('on_board', False),
+            # a hand-written file may say which unit carries the flag, and
+            # one that says nothing carries none. Defaulted here with the
+            # other fields a person writing a file need not think about,
+            # rather than everywhere the document is read
+            'flag': unit.get('flag', False),
         })
     return {
         'board': {'size_x': game.board.size_x, 'size_y': game.board.size_y},

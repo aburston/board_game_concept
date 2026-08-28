@@ -428,9 +428,10 @@ def _unit_line(unit):
         f"x: {unit.get('x')}, y: {unit.get('y')}, "
         f"state: {unit.get('state')}, direction: {unit.get('direction')}, "
         f"destroyed: {unit.get('destroyed')}, on_board: {unit.get('on_board')}"
-        # written only for the unit that carries the flag, so a file for a
-        # game without one is the file it always was, byte for byte
-        + (", flag: True" if unit.get('flag') else "")
+        # written for every unit, not only the carrier: a record that says
+        # nothing about the flag is a record every reader has to guess at,
+        # and the two other booleans beside it are always written too
+        f", flag: {bool(unit.get('flag'))}"
     )
 
 

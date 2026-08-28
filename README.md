@@ -191,7 +191,9 @@ you know where to go rather than what you will meet. Lose your carrier and you
 are out of the game: your units stay where they are as terrain, taking no
 orders and striking nothing, and the last player left wins. A setup without a
 carrier is refused, because a player who cannot lose a flag is playing a
-different game from everybody else at the table.
+different game from everybody else at the table. This is a breaking change:
+a game set up before flags existed cannot be opened, so finish one by
+starting it again.
 
 Beside the board is a roster: your own units with what each has left against
 what it was built with, and every enemy design you have met with the

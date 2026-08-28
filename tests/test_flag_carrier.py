@@ -81,7 +81,7 @@ def test_a_flag_is_fallen_only_once_its_carrier_is_destroyed():
 
 
 def test_a_player_who_designated_nobody_has_no_flag_to_lose():
-    """Which is what keeps a game set up before flags playing as it was."""
+    """Which is the state every player is in until they designate one."""
     board = a_board()
     unit = deploy(board, Player(1), 'a1', (0, 0))
     unit.destroyed = True

@@ -429,7 +429,7 @@ def test_two_players_build_armies_against_different_budgets(tmp_path):
     with pytest.raises(GameError):
         games.perform(one, AddUnit(type_name='Cross', name='x4', x=4, y=0))
     # a setup is refused without a carrier, and carrying costs nothing: the
-    # spend below is the same number it was before flags existed
+    # spend asserted below is unchanged by designating one
     games.perform(one, SetFlag(unit='x0'))
     assert one.clientSave()
 

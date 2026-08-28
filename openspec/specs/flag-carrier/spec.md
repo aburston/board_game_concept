@@ -6,6 +6,11 @@ The one thing an army cannot hide and cannot afford to lose: a unit that
 carries its player's flag, whose square everybody can see, and whose
 destruction puts its owner out of the game.
 
+This is a break rather than an addition. A game set up before flags existed
+cannot be played on: its stored units carry no flag, and nothing here reads
+one that is missing. Games in progress when this lands are finished by
+starting them again.
+
 ## Requirements
 
 ### Requirement: One Unit Carries The Flag
@@ -188,21 +193,3 @@ it, and it decides nobody's game.
   standing
 - **THEN** that player is still eliminated
 - **AND** they are not waited for at the commit barrier
-
-### Requirement: A Game Set Up Without Flags Is Played Without Them
-
-The system SHALL keep playing a game whose setups were committed before flags
-existed, under the rules that game was set up under: no unit carries a flag,
-no flag is shown, and nobody is eliminated by flag loss.
-
-#### Scenario: An older game
-
-- **WHEN** a game whose players committed without designating a carrier is
-  opened
-- **THEN** it is readable and playable
-- **AND** no flag is reported for any player
-
-#### Scenario: Elimination in an older game
-
-- **WHEN** a turn of such a game is resolved
-- **THEN** a player is eliminated only by having nothing left that can act

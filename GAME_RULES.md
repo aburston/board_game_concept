@@ -159,8 +159,10 @@ carrier fights, moves and costs exactly what its type says. A setup is
 **refused** unless exactly one of your units carries your flag — a player who
 cannot lose a flag would be playing a different game from everybody else at
 the table — and a player who deployed nothing therefore cannot commit at all.
-A game whose setups were committed before flags existed is played without
-them: no unit carries one, and nobody can lose one.
+
+This rule is a **break**: a game set up before flags existed cannot be played
+on, because its units carry none and nothing will read a flag that is not
+there. Finish such a game by starting a new one.
 
 ---
 

@@ -385,10 +385,8 @@ class Game:
                 bool(unit['destroyed']),
                 bool(unit['on_board']),
                 restoring=True)
-            # the flag comes back with the unit that carried it. A record
-            # written before flags existed has no such field, and reads back
-            # as carrying nothing
-            if unit.get('flag'):
+            # the flag comes back with the unit that carried it
+            if unit['flag']:
                 restored = board.findUnit(unit['name'],
                                           self.players[number]['obj'])
                 if restored is not None:

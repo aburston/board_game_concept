@@ -89,9 +89,8 @@ class GameHarness:
         first unit deployed carries it unless the test says otherwise: a test
         about some other rule should not have to know about flags, and one
         about flags names the carrier it wants. `flag=None` commits without
-        one, which is what a game set up before flags existed looks like - the
-        service layer refuses that for a player, so it is only reachable
-        through `load player`.
+        one, which the service layer refuses for a player - it is there for a
+        test that wants to see that refusal.
         """
         client = self.session(player_number)
         for name, symbol, attack, health, energy in types:

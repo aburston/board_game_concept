@@ -183,12 +183,6 @@ an order, and a restored unit SHALL NOT be treated as waiting to be deployed.
 - **WHEN** a game holding a flag carrier is loaded
 - **THEN** the same unit carries that player's flag
 
-#### Scenario: A game stored before flags existed
-
-- **WHEN** a game whose stored units carry no such field is loaded
-- **THEN** it loads
-- **AND** no unit carries a flag
-
 #### Scenario: Restoring units
 
 - **WHEN** a game is loaded and `data/units.yaml` exists

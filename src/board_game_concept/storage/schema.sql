@@ -49,9 +49,7 @@ CREATE TABLE IF NOT EXISTS unit_types (
 );
 
 -- the authoritative board. `flag` is whether the unit carries its player's
--- flag, defaulted rather than required so a row written before flags existed
--- reads back as carrying nothing - the rule an older game keeps playing
--- under. `type_attack`/`type_health`/`type_energy` are
+-- flag. `type_attack`/`type_health`/`type_energy` are
 -- the design of the type at the time the unit was made; they are how a
 -- type learned by contact is the type as its owner built it.
 CREATE TABLE IF NOT EXISTS units (
@@ -72,7 +70,7 @@ CREATE TABLE IF NOT EXISTS units (
     direction     INTEGER NOT NULL,
     destroyed     INTEGER NOT NULL,
     on_board      INTEGER NOT NULL,
-    flag          INTEGER NOT NULL DEFAULT 0
+    flag          INTEGER NOT NULL
 );
 
 -- one player's orders for the open turn. Present rows mean "not consumed
@@ -96,7 +94,7 @@ CREATE TABLE IF NOT EXISTS orders (
     direction     INTEGER,
     destroyed     INTEGER,
     on_board      INTEGER,
-    flag          INTEGER NOT NULL DEFAULT 0,
+    flag          INTEGER NOT NULL,
     PRIMARY KEY (player_number, id)
 );
 
