@@ -119,6 +119,10 @@ def authorise(app, gameno, number, username=None, holder=None):
     `service.accounts.claim_seat`, so that a suite can set up a game that has
     already started - which claiming would rightly refuse.
 
+    After this returns, the named account holds the seat: that is what every
+    caller assumes of it, so it is made true rather than left to whatever the
+    store happened to hold already.
+
     `holder` names which account should hold a player seat: `'admin'` for the
     administrator, anything else for the registered player made today. A seat
     is a membership row and the row does not record what kind of account holds
@@ -135,7 +139,14 @@ def authorise(app, gameno, number, username=None, holder=None):
         account = (make_admin(app) if holder == 'admin'
                    else make_player(app, username or f'player{number}'))
         store = _store_of(app)
-        if store.read_membership(str(gameno), number) is None:
+        # the seat is made to be this account's, rather than claimed only when
+        # nobody holds it. Skipping the claim for a seat somebody else held
+        # handed back a token that could not act as the seat, and the test
+        # failed on entitlement instead of on what it was testing
+        held_by = store.read_membership(str(gameno), number)
+        if held_by != account.account_id:
+            if held_by is not None:
+                store.release_seat(str(gameno), number)
             store.claim_seat(str(gameno), number, account.account_id)
     return {'Authorization': f'Bearer {token_for(app, account)}'}
 

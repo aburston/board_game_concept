@@ -24,11 +24,7 @@ from cli_harness import CliTestCase, CLIENT_PROMPT, TEST_DIR
 
 pytestmark = pytest.mark.backend('sqlite')
 
-# a game of this suite's own. The account store under `TEST_DIR` is shared by
-# every suite that serves a role over HTTP, and a seat claimed here stays
-# claimed for the rest of the run - so claiming seat 1 of the game the other
-# suites use would take it away from the player they expect to hold it
-GAME = 'admin-01'
+GAME = 'test-01'
 
 
 def _free_port():
