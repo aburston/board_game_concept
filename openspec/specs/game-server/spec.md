@@ -359,6 +359,10 @@ command ends in `json`, both as `cli-output` describes them.
   a trailing word other than `json`
 - **THEN** the server reports the command as invalid
 
+#### Scenario: Showing the flags
+
+- **WHEN** the administrator runs `show flags`
+- **THEN** every player's flag is listed with its owner and its square
 ### Requirement: A Refused Setup Commit Is Reported To Whoever Asked
 
 Where a setup cannot be committed - there is no board, or the game is already

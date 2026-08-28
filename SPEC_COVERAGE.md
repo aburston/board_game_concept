@@ -21,6 +21,7 @@ source of truth for intended behaviour.
 | `game-outcome` | Player elimination, victory, draw, how a decided game stops, turn numbering |
 | `cli-completion` | What completes at each point in a session, where the candidates come from, and the shell completion for launching a role |
 | `point-budget` | What a player's point budget is and when it is fixed, what a type costs, how spend is derived from the board, and when a deployment is refused |
+| `flag-carrier` | Which unit carries a player's flag, when it is fixed, what a flag shows everybody, and what its destruction does to its owner and their army |
 | `player-numbering` | Which numbers a player may have, and which are reserved for the administrator and the observer |
 | `identity-and-accounts` | Who is calling: accounts, passwords, sessions, and which seats an account may act as |
 | `game-registry` | Which games exist, what state each is in, and the seats a lobby lists |

@@ -327,6 +327,11 @@ def board_view(board, player=None, flags=()):
     return {
         'size_x': board.size_x,
         'size_y': board.size_y,
+        # the glyph an empty square is drawn with, said rather than left to be
+        # inferred from the rows: a reader that guessed it from the first
+        # non-empty cell would guess a flag's glyph on a board whose first
+        # square holds one
+        'empty': str(Empty()),
         'rows': rows,
         'legend': [{'symbol': symbol, 'player': number, 'type': type_name}
                    for symbol, number, type_name in sorted(legend)],

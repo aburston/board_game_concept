@@ -112,30 +112,30 @@
 
 ## 6. The browser
 
-- [ ] 6.1 Read the `flags` view in `loadSeat` beside the others, and hold it
+- [x] 6.1 Read the `flags` view in `loadSeat` beside the others, and hold it
       in state. Verify: the seat's state holds every flag in the game.
-- [ ] 6.2 Designate in the armoury: mark which deployed unit carries the flag,
+- [x] 6.2 Designate in the armoury: mark which deployed unit carries the flag,
       let another be chosen while setup is open, and say a carrier is needed
       before offering to commit. Verify: in a browser, choosing, changing, and
       the commit button refusing to be offered without one.
-- [ ] 6.3 Draw every flag on the board: on the seat's own carrier as a mark
+- [x] 6.3 Draw every flag on the board: on the seat's own carrier as a mark
       beside the unit, and on an enemy square with no unit drawn, naming the
       player it belongs to and nothing else. Verify: in a browser, from a seat
       that has made no contact.
-- [ ] 6.4 Name the carrier in the Forces roster, and say in the feed when a
+- [x] 6.4 Name the carrier in the Forces roster, and say in the feed when a
       flag falls. Verify: the turn that destroys a carrier reads as one.
-- [ ] 6.5 Tell an eliminated player they are out and why, stop offering orders
+- [x] 6.5 Tell an eliminated player they are out and why, stop offering orders
       and commits, and keep the board and the feed arriving. Verify: in a
       browser, playing a game to a flag falling.
 
 ## 7. Finishing
 
-- [ ] 7.1 Run both suites - `pytest` and `BOARD_GAME_BACKEND=sqlite pytest` -
+- [x] 7.1 Run both suites - `pytest` and `BOARD_GAME_BACKEND=sqlite pytest` -
       and the flake8 gate CI runs. Verify: green on both backends.
-- [ ] 7.2 Play a whole game in a browser, from designating to a flag falling,
+- [x] 7.2 Play a whole game in a browser, from designating to a flag falling,
       with two seats and a watching observer. Verify: the loser is told, the
       winner is told, and the observer sees both.
-- [ ] 7.3 Update `README.md`, `GAME_RULES.md` and `MODULE_DESCRIPTION.md` for
+- [x] 7.3 Update `README.md`, `GAME_RULES.md` and `MODULE_DESCRIPTION.md` for
       the rule and the commands. Verify: the rules file states the flag rule
       where the other rules are stated.
 - [ ] 7.4 Run `openspec validate --all --strict`, then sync and archive this

@@ -353,3 +353,10 @@ ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: va
 /* the banner drawn while the server is not answering. Above whatever screen
    is up, because it is about the page rather than about one of them */
 .card.offline { border-left: 4px solid var(--warn); margin-bottom: 0.8rem; }
+
+/* a flag, on the square it stands on. Drawn for every player whatever they
+   have met: where a flag is, is the one thing shown without contact */
+.board .flag .standard { font-size: 13px; }
+.board .flag.mine .standard { fill: var(--mine); }
+.board .flag.theirs .standard { fill: var(--theirs); }
+.flag-key { color: var(--theirs); font-weight: 600; }

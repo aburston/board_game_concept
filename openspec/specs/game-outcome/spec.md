@@ -39,6 +39,10 @@ no energy — SHALL NOT keep its owner in the game: it can never move, never
 strike and never recover, so a player holding nothing but walls holds nothing
 that can play.
 
+A player whose flag carrier is destroyed SHALL be eliminated in that
+resolution, whatever else they still hold: what keeps a player in the game is
+having something that can act **and** a flag still standing.
+
 #### Scenario: The last unit is destroyed
 
 - **WHEN** a turn is resolved in which a player's last undestroyed unit is destroyed
@@ -67,12 +71,17 @@ that can play.
 - **WHEN** the first turn with units on the board is resolved and a registered player holds none of them
 - **THEN** that player is eliminated
 
+#### Scenario: The flag carrier is destroyed
+
+- **WHEN** a turn is resolved in which a player's flag carrier is destroyed
+- **THEN** that player is eliminated
+- **AND** their remaining units stay on the board, holding their squares
+
 #### Scenario: Elimination is not reversible
 
 - **WHEN** a later turn is resolved after a player has been eliminated
 - **THEN** that player remains eliminated
 - **AND** no unit is created for them
-
 ### Requirement: Victory
 
 The system SHALL decide the game in favour of the last player who is not

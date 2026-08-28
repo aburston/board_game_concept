@@ -184,6 +184,15 @@ committed to the board rather than back to its armoury, and the armoury says
 the setup is committed rather than offering forms whose every answer would be
 refused.
 
+One of your units carries your flag, designated during setup and fixed when
+you commit it. Every player can see which square each flag is on and whose it
+is, whoever they have met — and nothing else about the unit standing there, so
+you know where to go rather than what you will meet. Lose your carrier and you
+are out of the game: your units stay where they are as terrain, taking no
+orders and striking nothing, and the last player left wins. A setup without a
+carrier is refused, because a player who cannot lose a flag is playing a
+different game from everybody else at the table.
+
 Beside the board is a roster: your own units with what each has left against
 what it was built with, and every enemy design you have met with the
 statistics its owner built it with. That memory outlives the contact that
@@ -210,9 +219,10 @@ is lost by it.
 Everything the browser can do, a command line can do: the interface is a
 client of the served contract and so are the roles. `show events` is the
 account of what the turns did that the browser draws under its board, `show
-designs` the enemy designs you have met, `show units` the statistics of every
-unit you can see, and `remove player` the seat the administrator's screen
-removes with a button. A test holds the two to each other, so a view added to
+designs` the enemy designs you have met, `show flags` where every flag is,
+`show units` the statistics of every unit you can see, `set flag` the
+designation the armoury makes with a button, and `remove player` the seat the
+administrator's screen removes with another. A test holds the two to each other, so a view added to
 one and not the other fails the suite.
 
 ## Serving it properly

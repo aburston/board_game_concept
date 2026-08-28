@@ -159,6 +159,8 @@ def test_wait_for_turn_times_out_when_orders_still_pending(tmp_path):
     web.post('/games/pending/players/1/commands',
              json={'kind': 'add_unit', 'type_name': 'Cross',
                    'name': 'x1', 'x': 0, 'y': 0})
+    web.post('/games/pending/players/1/commands',
+             json={'kind': 'set_flag', 'unit': 'x1'})
     web.post('/games/pending/players/1/commit')
 
     response = web.get('/games/pending/players/1/wait/turn?budget=0.3')
@@ -183,6 +185,8 @@ def test_wait_for_commit_returns_at_once_when_barrier_is_met(tmp_path):
     web.post('/games/closed/players/1/commands',
              json={'kind': 'add_unit', 'type_name': 'Cross',
                    'name': 'x1', 'x': 0, 'y': 0})
+    web.post('/games/closed/players/1/commands',
+             json={'kind': 'set_flag', 'unit': 'x1'})
     web.post('/games/closed/players/1/commit')
     # after that commit, the turn resolved; the barrier for the next turn
     # opens again with player 1 owed, so the admin's wait times out
@@ -264,6 +268,8 @@ def test_commit_by_the_last_player_resolves_the_turn(tmp_path):
     client.post('/games/two/players/1/commands',
                 json={'kind': 'add_unit', 'type_name': 'Cross',
                       'name': 'x1', 'x': 0, 'y': 0})
+    client.post('/games/two/players/1/commands',
+                json={'kind': 'set_flag', 'unit': 'x1'})
 
     response = client.post('/games/two/players/1/commit')
     assert response.status_code == 200
@@ -292,6 +298,8 @@ def test_commit_that_does_not_close_the_barrier_is_202(tmp_path):
     web.post('/games/three/players/1/commands',
              json={'kind': 'add_unit', 'type_name': 'Cross',
                    'name': 'x1', 'x': 0, 'y': 0})
+    web.post('/games/three/players/1/commands',
+             json={'kind': 'set_flag', 'unit': 'x1'})
     response = web.post('/games/three/players/1/commit')
     assert response.status_code == 202
     payload = response.get_json()

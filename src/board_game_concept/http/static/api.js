@@ -161,6 +161,8 @@ export const addUnit = (typeName, name, x, y) =>
 
 export const move = (unit, direction) => ({ kind: 'move', unit, direction });
 
+export const setFlag = (unit) => ({ kind: 'set_flag', unit });
+
 // what the engine calls each direction, and what a person calls it
 export const DIRECTIONS = [
   { key: 'north', word: 'north', value: 1, dx: 0, dy: -1, arrow: '↑' },

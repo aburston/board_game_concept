@@ -36,7 +36,10 @@ function svg(tag, attributes) {
 
 export function emptySymbol(board) {
   // the glyph an empty square is drawn with is the domain's to choose, so it
-  // is read off the rows rather than assumed here
+  // is asked for rather than assumed here. The scan is the fallback for a
+  // view drawn before the field existed - and it is only a fallback because
+  // it guesses a flag's glyph on a board whose first square holds one
+  if (board.empty) return board.empty;
   for (const row of board.rows) {
     for (const cell of row) if (cell) return cell;
   }
@@ -70,6 +73,8 @@ export function renderBoard(board, units, options) {
 
   const empty = emptySymbol(board);
   const marks = settings.marks || new Map();
+  const flags = (settings.flags || []).filter(
+    (flag) => flag.standing && flag.x !== null && flag.y !== null);
   const squares = svg('g', {});
   for (let y = 0; y < board.size_y; y += 1) {
     for (let x = 0; x < board.size_x; x += 1) {
@@ -97,6 +102,33 @@ export function renderBoard(board, units, options) {
     }
   }
   root.append(squares);
+
+  // every flag in the game, on the square it stands on. Drawn for a carrier
+  // this seat has never met as well as for one it can see: a flag's square is
+  // the one thing shown without contact, and what stands there is not part of
+  // it - so this draws a flag and never a unit
+  for (const flag of flags) {
+    const group = svg('g', {
+      class: `flag ${flag.player === settings.mine ? 'mine' : 'theirs'}`,
+      transform: `translate(${PAD + flag.x * SQUARE}, ${PAD + flag.y * SQUARE})`,
+    });
+    const mark = svg('text', {
+      class: 'standard',
+      x: SQUARE - 9,
+      y: 13,
+      'font-size': 13,
+      'text-anchor': 'middle',
+    });
+    mark.textContent = '⚑';
+    group.append(mark);
+    const title = svg('title', {});
+    title.textContent = flag.player === settings.mine
+      ? `your flag, at (${flag.x}, ${flag.y})`
+      : `player ${flag.player}'s flag, at (${flag.x}, ${flag.y}). `
+        + 'Destroy what carries it and they are out of the game';
+    group.append(title);
+    root.append(group);
+  }
 
   // where the last turn was fought. Drawn on the square rather than named in
   // a list, because "the contest at (0, 4)" is a coordinate and this is a

@@ -51,8 +51,11 @@ touching the parts that do not care.
 - **`board.py`** - `Board`, the grid and the units on it. Placement, lookup,
   visibility bookkeeping, and `commit`, which resolves a turn in two phases:
   every unit moves, and only then is combat resolved in every contested square.
+  It also answers who carries each player's flag and whose has fallen, read
+  off the board rather than from a list that could disagree with it.
 - **`events.py`** - what happened while a turn was resolved. `Board.commit`
   returns these in order; whoever called it decides whether to show them.
+  `flag_fallen` is the one that ends somebody's game.
 
 The engine performs no I/O. It does not print, does not write YAML, and does
 not know how it is drawn.
