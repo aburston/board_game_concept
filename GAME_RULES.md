@@ -444,7 +444,10 @@ first turn with units on the board.
 **R7.1a You are also eliminated when your flag falls.** A player whose flag
 carrier is destroyed is out at that resolution, whatever else they still hold
 (**R2.11**). What keeps you in is something that can act *and* a flag still
-standing.
+standing — so a carrier that never reached the board puts you out the same
+way. Your setup cannot be committed without one, but a deployment can still be
+refused as the turn resolves (**R3.5**), and a player holding an army with no
+flag would be the one player the flag could never be taken from.
 
 **R7.1b An eliminated player's units are left standing and go inert.** They
 hold the squares they are on, take no orders and land no attack, and they are
@@ -455,6 +458,14 @@ somebody clears it, and it decides nobody's game.
 **R7.2 The last player standing wins.** The game is decided at the end of the
 turn in which every other player becomes eliminated. If the last players lose
 their last playable unit together, it is a **draw**.
+
+**R7.2a The game begins when the players' setups are resolved**, not when the
+first unit lands. The administrator's commit that ends setup is resolved like
+a turn before anybody has committed one of their own, and eliminates nobody.
+Everything after it is the game — including a first turn that refuses every
+deployment, which leaves both players with nothing standing and is a draw.
+Judging that turn on what survived it left a game that could be neither played
+on nor finished.
 
 **R7.3 A game with fewer than two registered players is never decided.** There
 is nobody to be the last player standing against; a solo game is a sandbox.

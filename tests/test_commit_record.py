@@ -36,9 +36,9 @@ def test_a_turn_that_advances_nothing_does_not_resolve_itself_again(tmp_path):
     """The spin a recorded commit invites, if nothing ever spends it.
 
     When two players deploy onto one square both are refused, so no unit
-    reaches the board and the turn number does not advance. Under a commit
-    that outlives its turn, the barrier is still satisfied by the commits that
-    opened it, and the server resolves the same turn for ever.
+    reaches the board. Under a commit that outlives its turn, the barrier is
+    still satisfied by the commits that opened it, and the server resolves the
+    same turn for ever.
     """
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [1, 2])
@@ -48,10 +48,12 @@ def test_a_turn_that_advances_nothing_does_not_resolve_itself_again(tmp_path):
     harness.resolve()
 
     server = harness.session(0)
-    # neither deployment was accepted, so the turn number has not moved
-    assert server.getTurnNumber() == 0
+    # the turn was resolved, even though nothing reached the board: the
+    # players' setups were carried out, and what they left is the game
+    assert server.getTurnNumber() == 1
     # and nobody is holding a commit for it any more
     assert server.committedPlayerCount() == 0
+    assert harness.repository().committed_players(1) == []
     assert harness.repository().committed_players(0) == []
 
 

@@ -133,6 +133,87 @@ def test_both_players_losing_their_last_playable_unit_is_a_draw(tmp_path):
     assert outcome(harness)['winner'] is None
 
 
+def test_a_first_turn_that_refuses_every_deployment_is_decided(tmp_path):
+    """The game used to be left where it could be neither played nor left.
+
+    Two armies deployed onto the same squares are both refused for it, so the
+    resolution that ends setup puts nothing on the board. The game judged
+    "not started" from the empty board, eliminated nobody and decided nothing
+    - while setup was over for both players, so no more units could ever be
+    added. This is the game that was found in that state.
+    """
+    harness = GameHarness(tmp_path)
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
+    harness.deploy(2, [('O', 'O', 1, 5, 50)], [('O', 'o1', 0, 0)])
+    harness.resolve()
+
+    assert harness.units() == {}, 'both deployments were refused'
+    assert harness.session(0).getTurnNumber() == 1
+    assert harness.session(0).getEliminated() == [1, 2]
+    assert outcome(harness) == {'decided': True, 'winner': None, 'turn': 1}
+
+
+def test_one_army_refused_leaves_the_other_the_winner(tmp_path):
+    harness = GameHarness(tmp_path)
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
+    # both ask for (0, 0), and only player 2 has anything anywhere else -
+    # their flag among it, so what they are left with is still a game
+    harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
+    harness.deploy(2, [('O', 'O', 1, 5, 50)],
+                   [('O', 'o1', 0, 0), ('O', 'o2', 2, 0)], flag='o2')
+    harness.resolve()
+
+    assert sorted(harness.units()) == ['o2']
+    assert harness.session(0).getEliminated() == [1]
+    assert outcome(harness) == {'decided': True, 'winner': 2, 'turn': 1}
+
+
+def test_an_army_whose_flag_never_arrived_is_out(tmp_path):
+    """The one player the flag could otherwise never be taken from.
+
+    A setup is refused unless one unit carries the flag, so the carrier is
+    chosen before anything is committed - but a deployment can still be
+    refused as the turn resolves. A player left holding an army and no flag
+    would be playing a different game from everybody else.
+    """
+    harness = GameHarness(tmp_path)
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', 1, 5, 50)],
+                   [('X', 'x1', 0, 0), ('X', 'x2', 4, 0)], flag='x2')
+    # player 2's carrier is the one that collides, and the rest of their army
+    # takes the field without it
+    harness.deploy(2, [('O', 'O', 1, 5, 50)],
+                   [('O', 'o1', 0, 0), ('O', 'o2', 2, 0)], flag='o1')
+    harness.resolve()
+
+    assert sorted(harness.units()) == ['o2', 'x2']
+    assert harness.session(0).getEliminated() == [2]
+    assert outcome(harness) == {'decided': True, 'winner': 1, 'turn': 1}
+
+    # and the record every player reads says so, rather than saying nothing
+    # about the player whose flag never arrived
+    assert harness.repository().read_flags() == [
+        {'player': 1, 'x': 4, 'y': 0, 'standing': True},
+        {'player': 2, 'x': None, 'y': None, 'standing': False}]
+
+
+def test_a_setup_commit_before_any_player_has_committed_starts_nothing(
+        tmp_path):
+    """The case the "has the game started" question exists for.
+
+    The administrator's commit is resolved like a turn on an empty board, and
+    judging elimination there would put every player out before the game had
+    begun.
+    """
+    harness = GameHarness(tmp_path)
+    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
+
+    assert harness.session(0).getTurnNumber() == 0
+    assert harness.session(0).getEliminated() == []
+    assert outcome(harness) is None
+
+
 def test_a_player_who_deployed_nothing_is_eliminated(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)

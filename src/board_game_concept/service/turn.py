@@ -246,13 +246,26 @@ def _apply_orders(game, reject):
 
 
 def has_started(game):
-    """Whether the game has begun: whether any unit has ever reached the board.
+    """Whether the game has begun: whether a player's setup has been resolved.
 
     The administrator's commit that ends setup is resolved like a turn, and at
-    that point nobody has deployed anything. Judging elimination there would
-    declare every player out before the game had started.
+    that point no player has committed a setup of their own. Judging
+    elimination there would declare every player out before the game had
+    started.
+
+    This used to ask whether any unit had reached the board, which is the same
+    question on every turn but one. A first turn in which *every* deployment
+    was refused - two armies deployed onto the same squares, so both were
+    refused for it - left the board empty and answered "not started": nobody
+    was eliminated and nothing was decided, while setup was over and no more
+    units could be added. The game could then be neither played nor finished,
+    and there was nothing anybody could do about it.
+
+    A commit marker outlives the turn it was made for - it is also what tells
+    a player their setup is over - so this is durable, and a game read back
+    from either backend answers it as it answered when the turn resolved.
     """
-    return bool(game.board.units)
+    return bool(game.board.units) or bool(game.repository.committed_players())
 
 
 def eliminated_players(game):
@@ -277,11 +290,19 @@ def eliminated_players(game):
         return []
     out = []
     for number, player in game.players.items():
-        # a flag that has fallen puts its player out whatever else they hold:
-        # what keeps a player in the game is something that can act *and* a
-        # flag still standing. Derived from the board like the clause beside
-        # it, so a game restored from storage answers what it answered before
-        if game.board.flagFallen(number):
+        # a flag that is not standing puts its player out whatever else they
+        # hold: what keeps a player in the game is something that can act
+        # *and* a flag still standing. Derived from the board like the clause
+        # beside it, so a game restored from storage answers what it answered
+        # before.
+        #
+        # Not standing covers a carrier that has been destroyed and one that
+        # never arrived. A setup is refused unless a unit carries the flag,
+        # but a deployment can still be refused as the turn resolves - a
+        # contested square, or a budget that will not pay - and a player left
+        # with an army and no flag would be the one player the flag could
+        # never be taken from
+        if game.board.flagOf(number) is None or game.board.flagFallen(number):
             out.append(number)
             continue
         alive = any(unit.player.number == number
@@ -472,10 +493,24 @@ def _flags_document(game):
     and whether it is still standing. A fallen flag is on no square - naming
     the square it fell on would be a position its owner no longer holds, told
     to everybody for ever.
+
+    Every player in a game that has begun is named here, whether or not the
+    board holds a carrier for them. A carrier can be refused as the turn
+    resolves - a contested square, or a budget that will not pay - and a
+    player whose flag simply never appeared is as out as one whose flag fell;
+    saying nothing about them would leave them the only player who could not
+    be told so.
     """
+    carriers = game.board.flagBearers()
     published = []
-    for number, carrier in game.board.flagBearers().items():
-        standing = (carrier.on_board and not carrier.destroyed)
+    for number in sorted(game.players):
+        carrier = carriers.get(number)
+        if carrier is None and not has_started(game):
+            # setup is being resolved and nobody has deployed anything yet:
+            # every flag is still to come rather than missing
+            continue
+        standing = (carrier is not None and carrier.on_board
+                    and not carrier.destroyed)
         published.append({
             'player': number,
             'x': carrier.x if standing else None,
