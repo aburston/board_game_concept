@@ -21,7 +21,7 @@ from . import render
 NO_BOARD = "must create board - set size and commit"
 
 # the subjects that have nothing to say until the board exists
-NEEDS_BOARD = ('board', 'units')
+NEEDS_BOARD = ('board', 'units', 'placement')
 
 
 def _view(data, subject):
@@ -49,6 +49,8 @@ def _print_table(subject, view):
         render.print_designs(view)
     elif subject == 'flags':
         render.print_flags(view)
+    elif subject == 'placement':
+        render.print_placement(view)
     else:
         render.print_pending(view)
 

@@ -28,10 +28,12 @@ class DecidedGame(CliTestCase):
         server.send_line('commit')
         server.read_until('commit complete')
 
-        # a heavy unit against a light one, one square apart
+        # a heavy unit against a light one, one square apart. Each deploys in
+        # its own half - rows 0 and 1 are player 1's on a four-row board, rows
+        # 2 and 3 player 2's - so they face each other down a column
         for number, type_name, symbol, stats, unit, square in (
-                (1, 'Cross', 'X', '10 10 100', 'x1', '0 0'),
-                (2, 'Naught', 'O', '1 1 100', 'o1', '1 0')):
+                (1, 'Cross', 'X', '10 10 100', 'x1', '0 1'),
+                (2, 'Naught', 'O', '1 1 100', 'o1', '0 2')):
             client = self.start_client(game_number, number)
             client.read_until(CLIENT_PROMPT)
             client.send_line(f'add type {type_name} {symbol} {stats}')
@@ -47,7 +49,7 @@ class DecidedGame(CliTestCase):
         server.read_until_count('commit complete', 2)
 
         # and now player 1 walks into player 2's only unit
-        for number, order in ((1, 'move x1 east'), (2, None)):
+        for number, order in ((1, 'move x1 south'), (2, None)):
             client = self.start_client(game_number, number)
             client.read_until(CLIENT_PROMPT)
             if order:

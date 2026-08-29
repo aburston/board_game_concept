@@ -209,6 +209,12 @@ class LocalSession(Session):
             # every flag whatever contact it has made
             return views_module.flags_view(
                 self._game.repository.read_flags())
+        if subject == 'placement':
+            # where this session may deploy, from the same helper the two
+            # refusals ask, so a prompt reads the limit the browser draws
+            return views_module.placement_view(
+                self._game.player_number, self._game.getPlayers(),
+                self._game.getBoard())
         if subject == 'designs':
             if self._game.seesEverything():
                 return views_module.types_seen_view(

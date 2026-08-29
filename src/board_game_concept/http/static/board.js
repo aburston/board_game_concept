@@ -79,7 +79,9 @@ export function renderBoard(board, units, options) {
   for (let y = 0; y < board.size_y; y += 1) {
     for (let x = 0; x < board.size_x; x += 1) {
       const rect = svg('rect', {
-        class: 'square' + (isReachable(settings, x, y) ? ' reachable' : ''),
+        class: 'square'
+          + (isReachable(settings, x, y) ? ' reachable' : '')
+          + (isOutOfPlay(settings, y) ? ' out-of-play' : ''),
         x: PAD + x * SQUARE,
         y: PAD + y * SQUARE,
         width: SQUARE,
@@ -88,7 +90,7 @@ export function renderBoard(board, units, options) {
       });
       rect.dataset.x = x;
       rect.dataset.y = y;
-      if (settings.onSquare) {
+      if (settings.onSquare && !isOutOfPlay(settings, y)) {
         rect.addEventListener('click', () => settings.onSquare(x, y));
         rect.style.cursor = 'pointer';
       }
@@ -292,6 +294,17 @@ function orderArrow({ dx, dy }) {
   ].join(' ');
   group.append(svg('polygon', { class: 'head', points: head }));
   return group;
+}
+
+/**
+ * Whether this row is one the seat being drawn for may not deploy in.
+ *
+ * `placeable` is the rows the contract says this seat may use, and it is
+ * given only while units are being placed. Absent - on the play board, or in
+ * a game whose placement is unrestricted - nothing is greyed.
+ */
+function isOutOfPlay(settings, y) {
+  return Boolean(settings.placeable) && !settings.placeable.includes(y);
 }
 
 function isReachable(settings, x, y) {

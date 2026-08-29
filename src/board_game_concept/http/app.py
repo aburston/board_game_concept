@@ -48,6 +48,11 @@ VIEW_BUILDERS = {
         data.getPlayers(), data.getEliminated(), data.getBoard()),
     'pending': lambda data: views_module.pending_view(
         data.getPlayers(), data.getBoard()),
+    # where this seat may deploy during setup. Published so a client can show
+    # the limit without knowing the rule, and read from the same helper the
+    # deployment refusals ask, so the two cannot disagree
+    'placement': lambda data: views_module.placement_view(
+        data.player_number, data.getPlayers(), data.getBoard()),
     # what this session has met, rather than what it is in contact with now.
     # A session entitled to the whole game has met everything, so it is given
     # the types it can already see rather than a second record of its own
@@ -70,7 +75,7 @@ VIEW_BUILDERS = {
         else data.repository.read_events(data.player_number)),
 }
 
-VIEWS_THAT_NEED_A_BOARD = ('board', 'units', 'pending')
+VIEWS_THAT_NEED_A_BOARD = ('board', 'units', 'pending', 'placement')
 
 
 def _account_store_factory(base_path, backend=None, account_store=None):

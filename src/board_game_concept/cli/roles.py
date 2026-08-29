@@ -50,7 +50,7 @@ SERVER = Role(
            'set_board', 'add_player', 'remove_player',
            'load_board', 'load_player'),
     show_subjects=('board', 'types', 'units', 'players', 'pending',
-                   'events', 'designs', 'flags'))
+                   'events', 'designs', 'flags', 'placement'))
 
 CLIENT = Role(
     'client',
@@ -61,10 +61,10 @@ CLIENT = Role(
     # army that has been committed and not yet deployed. The browser shows
     # it; withholding it here made the two clients answer differently
     show_subjects=('board', 'types', 'units', 'players', 'pending',
-                   'events', 'designs', 'flags'))
+                   'events', 'designs', 'flags', 'placement'))
 
 OBSERVER = Role(
     'observer',
     kinds=('help', 'exit', 'reload', 'show'),
     show_subjects=('board', 'types', 'units', 'players', 'pending',
-                   'events', 'designs', 'flags'))
+                   'events', 'designs', 'flags', 'placement'))

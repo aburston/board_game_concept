@@ -142,6 +142,13 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
 .board { touch-action: manipulation; max-width: 100%; height: auto; }
 .board .square { fill: var(--card); stroke: var(--line); stroke-width: 1; }
 .board .square.reachable { fill: var(--mine-soft); }
+/* a square this seat may not deploy in, while it is placing units: greyed and
+   not clickable, so the limit guides the hand instead of refusing it after */
+.board .square.out-of-play {
+  fill: var(--line);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .board .square:focus-visible { outline: none; }
 .board .cursor { fill: none; stroke: var(--focus); stroke-width: 3; }
 .board .selected { fill: none; stroke: var(--mine); stroke-width: 3; stroke-dasharray: 4 3; }

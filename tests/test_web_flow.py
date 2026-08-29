@@ -265,6 +265,52 @@ def test_a_committed_move_is_still_readable_from_the_pending_view(app):
     assert (mine['x'], mine['y']) == (0, 0)
 
 
+def test_a_seat_reads_where_it_may_deploy(app):
+    """The area the browser greys the rest of the board from.
+
+    Published per seat so a client can show the limit without knowing the
+    rule, and read from the same helper that refuses a deployment, so what a
+    seat is shown and what it will be allowed cannot come apart.
+    """
+    admin = _administrator(app)
+    _set_up(admin, size=(4, 5))          # five rows, so there is a neutral one
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+
+    mine = ada.read_view(GAME, 1, 'placement').get_json()['placement']
+    assert mine == {'size_x': 4, 'size_y': 5, 'rows': [0, 1],
+                    'neutral_row': 2, 'restricted': True}
+    theirs = bob.read_view(GAME, 2, 'placement').get_json()['placement']
+    assert theirs['rows'] == [3, 4], 'the halves do not overlap'
+    assert theirs['restricted'] is True
+
+    # and what it says is what the server enforces
+    assert ada.perform(GAME, 1, {
+        'kind': 'add_type', 'name': 'T1', 'symbol': 'X',
+        'attack': 1, 'health': 4, 'energy': 10}).status_code == 204
+    allowed = ada.perform(GAME, 1, {'kind': 'add_unit', 'type_name': 'T1',
+                                    'name': 'a1', 'x': 0, 'y': 1})
+    assert allowed.status_code == 204
+    refused = ada.perform(GAME, 1, {'kind': 'add_unit', 'type_name': 'T1',
+                                    'name': 'a2', 'x': 0, 'y': 2})
+    assert refused.status_code == 400
+    assert 'neutral' in refused.get_json()['error']
+
+
+def test_a_game_that_is_not_two_player_reads_the_whole_board(app):
+    """The null case, over the contract: nothing greyed, nothing refused."""
+    admin = _administrator(app)
+    _set_up(admin, seats=(1, 2, 3), size=(4, 5))
+    ada = _player(app, 'ada')
+    ada.claim_seat(GAME, 1)
+
+    area = ada.read_view(GAME, 1, 'placement').get_json()['placement']
+    assert area['rows'] == [0, 1, 2, 3, 4]
+    assert area['restricted'] is False
+    assert area['neutral_row'] is None
+
+
 def test_each_seat_is_shown_only_what_it_may_see(app):
     admin = _administrator(app)
     _set_up(admin)
@@ -381,11 +427,11 @@ def test_what_the_last_turn_did_is_readable(app):
     ada.claim_seat(GAME, 1)
     bob.claim_seat(GAME, 2)
     _deploy(ada, GAME, 1, 'X', (0, 0))
-    _deploy(bob, GAME, 2, 'O', (1, 0))
+    _deploy(bob, GAME, 2, 'O', (0, 1))
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
-    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': EAST})
+    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': SOUTH})
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
@@ -397,7 +443,7 @@ def test_what_the_last_turn_did_is_readable(app):
     assert attacks, 'the page was told nothing about the fight'
     for attack in attacks:
         assert {'unit', 'target', 'damage'} <= set(attack['detail'])
-        assert (attack['detail']['x'], attack['detail']['y']) == (1, 0)
+        assert (attack['detail']['x'], attack['detail']['y']) == (0, 1)
         assert attack['text']
         assert attack['fighting'] is True
     assert {entry['turn'] for entry in events} <= {1, 2}
@@ -537,11 +583,11 @@ def test_a_fallen_flag_is_on_no_square(app):
     ada.claim_seat(GAME, 1)
     bob.claim_seat(GAME, 2)
     _deploy(ada, GAME, 1, 'X', (0, 0), health=8, energy=20)
-    _deploy(bob, GAME, 2, 'O', (1, 0), health=1, energy=3)
+    _deploy(bob, GAME, 2, 'O', (0, 1), health=1, energy=3)
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
-    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': EAST})
+    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': SOUTH})
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
@@ -588,20 +634,27 @@ def test_a_committed_setup_is_readable_before_the_first_turn(app):
 def test_a_first_turn_that_refuses_every_deployment_is_shown_as_decided(app):
     """The state a browser was left in with nothing left to do.
 
-    Both seats deployed onto the same square, so both deployments were
-    refused and the first turn put nothing on the board. The seat read an
-    empty board, no outcome and a setup it could not add to: the interface
-    had nothing true to draw, because the game had nothing true to say.
+    Seats deployed onto the same square, so their deployments were refused
+    and the first turn put nothing on the board. The seat read an empty
+    board, no outcome and a setup it could not add to: the interface had
+    nothing true to draw, because the game had nothing true to say.
+
+    Three seats, because two cannot ask for one square any more: each of two
+    players is given their own half of the board by `placement-zones`.
     """
     admin = _administrator(app)
-    _set_up(admin)
+    _set_up(admin, seats=(1, 2, 3))
     ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    cass = _player(app, 'cass')
     ada.claim_seat(GAME, 1)
     bob.claim_seat(GAME, 2)
+    cass.claim_seat(GAME, 3)
     _deploy(ada, GAME, 1, 'X', (0, 0))
     _deploy(bob, GAME, 2, 'O', (0, 0))
+    _deploy(cass, GAME, 3, 'S', (0, 0))
     assert ada.commit(GAME, 1).status_code == 202
-    assert bob.commit(GAME, 2).status_code == 200
+    assert bob.commit(GAME, 2).status_code == 202
+    assert cass.commit(GAME, 3).status_code == 200
 
     state = ada.read_state(GAME, 1).get_json()
     assert state['turn_number'] == 1
@@ -611,7 +664,8 @@ def test_a_first_turn_that_refuses_every_deployment_is_shown_as_decided(app):
     # standing, for a carrier that never reached a square
     flags = ada.read_view(GAME, 1, 'flags').get_json()['flags']
     assert flags == [{'player': 1, 'x': None, 'y': None, 'standing': False},
-                     {'player': 2, 'x': None, 'y': None, 'standing': False}]
+                     {'player': 2, 'x': None, 'y': None, 'standing': False},
+                     {'player': 3, 'x': None, 'y': None, 'standing': False}]
     # and the refusal says why there is nothing there
     assert 'deployed at (0, 0)' in state['rejected'][0]['reason']
 
@@ -752,8 +806,8 @@ def test_a_type_met_is_remembered_after_contact_is_lost(app):
     # little energy each, so the contest ends undecided and both survive it -
     # a fight to the death would end the game and there would be no turn
     # afterwards in which contact could be lost
-    _deploy(ada, GAME, 1, 'X', (0, 0), energy=3)
-    _deploy(bob, GAME, 2, 'O', (1, 0), energy=3)
+    _deploy(ada, GAME, 1, 'X', (0, 1), energy=3)
+    _deploy(bob, GAME, 2, 'O', (0, 2), energy=3)
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
@@ -761,7 +815,7 @@ def test_a_type_met_is_remembered_after_contact_is_lost(app):
     assert ada.read_view(GAME, 1, 'designs').get_json()['designs'] == []
 
     # ada walks into bob, which is contact
-    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': EAST})
+    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': SOUTH})
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 

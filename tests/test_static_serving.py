@@ -226,6 +226,19 @@ def test_the_board_size_fields_are_read_and_written_through_the_state():
     assert "made.input.addEventListener('input'" in armoury
 
 
+def test_the_deploy_board_greys_where_a_seat_may_not_place():
+    """The limit is drawn from the contract, not worked out in the browser."""
+    app_js, armoury, board = (_module('app.js'), _module('armoury.js'),
+                              _module('board.js'))
+    # fetched per seat, held in state, and handed to the board as rows
+    assert "'placement'" in app_js
+    assert 'placement' in armoury and 'placeable' in armoury
+    # the squares outside those rows are greyed and take no click
+    assert 'out-of-play' in board
+    assert re.search(r'settings\.onSquare && !isOutOfPlay', board)
+    assert '.square.out-of-play' in _stylesheet()
+
+
 def test_the_play_screen_keeps_committed_orders_drawn():
     """The board reset to before the orders on commit; it overlays them now."""
     play = _module('play.js')

@@ -15,7 +15,7 @@ The words are also chosen here rather than in the renderer: a state of 1 is
 `moving` in a table and in JSON alike, because that is content, not layout.
 """
 
-from ..domain import Empty, UnitType, budget
+from ..domain import Empty, UnitType, budget, placement
 
 # what the stored numbers mean, said the way a player says them
 DIRECTION_WORDS = {
@@ -336,3 +336,19 @@ def board_view(board, player=None, flags=()):
         'legend': [{'symbol': symbol, 'player': number, 'type': type_name}
                    for symbol, number, type_name in sorted(legend)],
     }
+
+
+def placement_view(player_number, players, board):
+    """Where this session may deploy during setup, as any client reads it.
+
+    The rows rather than the squares: a half is the full width of the board,
+    so a row list is the whole of the area, and it is what the browser greys
+    the rest of the board from. `restricted` is false when the area is the
+    whole board - a game that is not two-player, or a session that watches
+    rather than places - which is what a caption is drawn from.
+
+    Read from the same helper the two refusals ask, so what a client is shown
+    and what it will be allowed cannot come apart.
+    """
+    return placement.area(player_number, list(players),
+                          board.size_x, board.size_y)

@@ -29,8 +29,11 @@ def _play_a_turn(harness, players=(1, 2)):
         session = harness.session(number)
         game_ops.perform(session, AddType(name='Cross', symbol='X', attack=1,
                                           health=1, energy=10))
+        # each player deploys in the half a two-player setup gives them: the
+        # first on the top row, the rest along the bottom one
+        row = 0 if index == 0 else session.getBoard().size_y - 1
         game_ops.perform(session, AddUnit(type_name='Cross',
-                                          name=f'u{number}', x=index, y=index))
+                                          name=f'u{number}', x=index, y=row))
         game_ops.perform(session, SetFlag(unit=f'u{number}'))
         session.clientSave()
     harness.session(0).resolveWhenReady()

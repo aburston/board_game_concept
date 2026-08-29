@@ -57,8 +57,8 @@ class TestWordsOfTheLanguage:
 
     def test_show_offers_its_subjects(self):
         assert candidates('show ', roles.SERVER) == [
-            'board', 'designs', 'events', 'flags', 'pending', 'players',
-            'types', 'units']
+            'board', 'designs', 'events', 'flags', 'pending', 'placement',
+            'players', 'types', 'units']
 
     def test_a_subject_offers_the_json_form(self):
         assert candidates('show units ', roles.CLIENT) == ['json']
@@ -164,8 +164,9 @@ class TestNamesFromTheGame:
         games.define_type(session, AddType(name='tank', symbol='T', attack=3,
                                            health=5, energy=10))
         before = candidates('move ', roles.CLIENT, source)
+        # row 1 is player 1's: a two-player board is halved by rows
         games.deploy_unit(session, AddUnit(type_name='tank', name='bravo',
-                                           x=2, y=2))
+                                           x=2, y=1))
 
         assert before == []
         assert candidates('move ', roles.CLIENT, source) == ['bravo']

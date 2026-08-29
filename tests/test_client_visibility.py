@@ -15,9 +15,9 @@ from game_harness import GameHarness
 def apart(tmp_path):
     """Two players who have not met."""
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.create(4, 4, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('Sneaky', 'X', 9, 9, 90)], [('Sneaky', 'x1', 0, 0)])
-    harness.deploy(2, [('Brute', 'O', 2, 2, 20)], [('Brute', 'o1', 3, 2)])
+    harness.deploy(2, [('Brute', 'O', 2, 2, 20)], [('Brute', 'o1', 3, 3)])
     harness.resolve()
     return harness
 
@@ -66,12 +66,14 @@ def touching(tmp_path):
     that has been decided resolves no further turn.
     """
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('Sneaky', 'X', 3, 10, 14)], [('Sneaky', 'x1', 0, 0)])
-    harness.deploy(2, [('Brute', 'O', 3, 10, 14)], [('Brute', 'o1', 2, 0)])
+    # four rows: player 1 owns 0 and 1, player 2 owns 2 and 3, and they face
+    # each other across the line the halves meet on
+    harness.create(4, 4, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('Sneaky', 'X', 3, 10, 14)], [('Sneaky', 'x1', 0, 1)])
+    harness.deploy(2, [('Brute', 'O', 3, 10, 14)], [('Brute', 'o1', 0, 2)])
     harness.resolve()
-    # both step into (1, 0) and fight there
-    harness.turn({1: [('x1', UnitType.EAST)], 2: [('o1', UnitType.WEST)]})
+    # x1 steps into o1's square and they fight there
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     return harness
 
 
@@ -102,7 +104,7 @@ def test_an_enemy_type_drops_out_when_contact_lapses(tmp_path):
 
 def test_a_client_with_no_view_yet_shows_what_it_deployed(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.create(4, 4, [1, 2], budget=Player.MAX_BUDGET)
     client = harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
     assert [unit.name for unit in client.getBoard().units] == ['x1']
 
@@ -116,7 +118,7 @@ def test_a_players_pending_orders_are_their_own_and_nobody_elses(tmp_path):
     from board_game_concept.http import views
 
     harness = GameHarness(tmp_path)
-    harness.create(5, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.create(5, 4, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', 1, 4, 8)], [('X', 'x1', 0, 0)])
     harness.deploy(2, [('O', 'O', 1, 4, 8)], [('O', 'o1', 4, 2)])
     harness.resolve()

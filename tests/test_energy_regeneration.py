@@ -13,11 +13,14 @@ from game_harness import GameHarness
 
 def a_game(tmp_path, mine=(1, 2, 10), theirs=None, my_units=None,
            their_units=None):
+    # four rows, so player 1 owns rows 0 and 1 and player 2 rows 2 and 3 with
+    # no neutral row between them: a two-player board is halved by rows, and
+    # the two sides meet where the halves do
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', *mine)], my_units or [('X', 'x1', 0, 0)])
+    harness.create(6, 4, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', *mine)], my_units or [('X', 'x1', 0, 1)])
     harness.deploy(2, [('O', 'O', *(theirs or mine))],
-                   their_units or [('O', 'o1', 5, 2)])
+                   their_units or [('O', 'o1', 5, 3)])
     harness.resolve()
     return harness
 
@@ -46,7 +49,8 @@ def test_resting_never_passes_the_energy_the_type_was_designed_with(tmp_path):
 def test_a_unit_that_was_ordered_does_not_rest(tmp_path):
     # ordered into the board's edge: the move is refused and costs nothing,
     # and it is still an order, so there is no refuelling by walking into a wall
-    harness = a_game(tmp_path)
+    # deployed on row 0 - player 1's top row - so north is the board's edge
+    harness = a_game(tmp_path, my_units=[('X', 'x1', 0, 0)])
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     assert harness.units()['x1'].energy == 9
     for _ in range(3):
@@ -57,9 +61,9 @@ def test_a_unit_that_was_ordered_does_not_rest(tmp_path):
 def test_a_unit_that_fought_does_not_rest(tmp_path):
     # x1 walks into o1 and both trade a blow; neither has done nothing
     harness = a_game(tmp_path, mine=(1, 10, 20),
-                     my_units=[('X', 'x1', 0, 0)],
-                     their_units=[('O', 'o1', 1, 0)])
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+                     my_units=[('X', 'x1', 0, 1)],
+                     their_units=[('O', 'o1', 0, 2)])
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     units = harness.units()
     # x1 paid three to move - a quarter of its health - and then its share of
     # the fight; o1
@@ -75,15 +79,15 @@ def test_a_unit_too_spent_to_strike_back_still_rests(tmp_path):
     # what rests. Both players keep a reserve out of the way so that nobody
     # runs out of units while this plays out
     harness = a_game(tmp_path, mine=(1, 2, 4), theirs=(5, 4, 5),
-                     my_units=[('X', 'x1', 0, 0), ('X', 'x2', 0, 2)],
-                     their_units=[('O', 'o1', 2, 0), ('O', 'o2', 5, 2)])
+                     my_units=[('X', 'x1', 1, 1), ('X', 'x2', 0, 1)],
+                     their_units=[('O', 'o1', 2, 2), ('O', 'o2', 5, 3)])
     for step in range(4):
         harness.turn({1: [], 2: [('o1', UnitType.EAST if step % 2
                                   else UnitType.WEST)]})
     assert harness.units()['o1'].energy == 1
 
     # x1 walks two squares to reach it and spends what is left attacking
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     assert harness.units()['o1'].energy == 2, 'a quiet turn is a point back'
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
 

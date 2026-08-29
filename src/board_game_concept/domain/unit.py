@@ -55,15 +55,18 @@ class UnitType:
         assert ((energy >= 0) and (energy <= 100)
                 ), "energy must be a value from 0 to 100"
 
-        # a wall: no attack and no energy, so it cannot move, cannot fight,
-        # and cannot be worn down - it is health and a square, and the only
-        # way past it is through it. The two zeroes go together: a unit with
-        # no energy and an attack it can never pay for is a wall that was
-        # charged for an attack, and a unit with energy and no attack is a
-        # scout the rules already allow at attack 1
-        assert ((attack == 0) == (energy == 0)), (
-            "a type with no attack must have no energy, and a type with no "
-            "energy must have no attack: that pair is a wall")
+        # a type with no attack is allowed, with or without energy. With none
+        # it is a **wall**: health standing on a square, which cannot move,
+        # cannot fight and cannot be worn down, and the only way past is
+        # through it. With energy it is a **scout**: it goes where it likes
+        # and strikes nothing, which is a unit worth paying less for rather
+        # than one the rules should refuse.
+        #
+        # What is still refused is energy 0 with an attack above it: an attack
+        # it could never pay for is a wall that was charged for a weapon
+        assert (attack == 0 or energy > 0), (
+            "a type with no energy can have no attack: an attack it could "
+            "never pay for is a wall charged for a weapon")
 
         # the design this unit was made from, kept alongside the values play
         # wears down. `type_name` was already preserved through the copy for
@@ -87,8 +90,10 @@ class UnitType:
         # player to discover it a turn at a time from refused orders. A wall is
         # exempt and is checked for first: 0 energy against a fare it can never
         # pay is what makes it a wall, and holding it to this rule would
-        # abolish it
-        assert (attack == 0 or energy >= self.move_cost), (
+        # abolish it. The exemption is energy rather than attack, so that a
+        # scout - no attack, but energy to walk on - is held to it like
+        # anything else that means to move
+        assert (energy == 0 or energy >= self.move_cost), (
             f"a type that can move must have at least its movement cost in "
             f"energy: health {health} costs {self.move_cost} to move, so it "
             f"needs energy {self.move_cost} or more, not {energy}")
