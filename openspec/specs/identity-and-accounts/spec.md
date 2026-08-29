@@ -403,8 +403,6 @@ something it chooses to do, and is not something its seat does for it.
 - **THEN** it is allowed, as it is of every game
 - **AND** the seat it holds is unaffected by its having done so
 
-## MODIFIED Requirements
-
 ### Requirement: The Observer Is 1000 Of Every Game And Sees Everything
 
 The system SHALL treat the account of the observer kind as the observer,
