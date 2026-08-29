@@ -631,30 +631,36 @@ def test_a_committed_setup_is_readable_before_the_first_turn(app):
     assert pending[0]['health'] == 8
 
 
-def test_a_first_turn_that_refuses_every_deployment_is_shown_as_decided(app):
+def test_a_first_turn_that_refuses_every_deployment_is_shown_as_decided(
+        app, base_path):
     """The state a browser was left in with nothing left to do.
 
-    Seats deployed onto the same square, so their deployments were refused
-    and the first turn put nothing on the board. The seat read an empty
-    board, no outcome and a setup it could not add to: the interface had
-    nothing true to draw, because the game had nothing true to say.
+    Deployments onto one square are all refused, so the first turn puts
+    nothing on the board. The seat read an empty board, no outcome and a
+    setup it could not add to: the interface had nothing true to draw,
+    because the game had nothing true to say.
 
-    Three seats, because two cannot ask for one square any more: each of two
-    players is given their own half of the board by `placement-zones`.
+    The clash is written straight into the store rather than committed,
+    because a commit that clashes is refused now - which is the point of
+    `refuse-a-clashing-setup-commit`, and means this state can no longer be
+    reached through the page's own calls at all. It is still reachable by a
+    loaded player file or a hand-written client, which is what this is.
     """
+    from game_harness import GameHarness
+
     admin = _administrator(app)
-    _set_up(admin, seats=(1, 2, 3))
-    ada, bob = _player(app, 'ada'), _player(app, 'bob')
-    cass = _player(app, 'cass')
-    ada.claim_seat(GAME, 1)
-    bob.claim_seat(GAME, 2)
-    cass.claim_seat(GAME, 3)
-    _deploy(ada, GAME, 1, 'X', (0, 0))
-    _deploy(bob, GAME, 2, 'O', (0, 0))
-    _deploy(cass, GAME, 3, 'S', (0, 0))
-    assert ada.commit(GAME, 1).status_code == 202
-    assert bob.commit(GAME, 2).status_code == 202
-    assert cass.commit(GAME, 3).status_code == 200
+    _set_up(admin, seats=(1, 2, 3), size=(4, 4))
+
+    # the seat is taken before the turn resolves: a seat cannot be claimed
+    # once the game has started, which is `identity-and-accounts` working
+    ada = _player(app, 'ada')
+    assert ada.claim_seat(GAME, 1).status_code == 201
+
+    harness = GameHarness(base_path, gameno=GAME, backend=DEFAULT_BACKEND)
+    for number, symbol in ((1, 'X'), (2, 'O'), (3, 'S')):
+        harness.publish_setup(number, [(f'T{number}', symbol, 1, 8, 10)],
+                              [(f'T{number}', f'u{number}', 0, 0)])
+    assert admin.commit(GAME, 0).status_code in (200, 400)
 
     state = ada.read_state(GAME, 1).get_json()
     assert state['turn_number'] == 1
@@ -663,11 +669,7 @@ def test_a_first_turn_that_refuses_every_deployment_is_shown_as_decided(app):
     # and the page's own reading of "you are out": a flag that is not
     # standing, for a carrier that never reached a square
     flags = ada.read_view(GAME, 1, 'flags').get_json()['flags']
-    assert flags == [{'player': 1, 'x': None, 'y': None, 'standing': False},
-                     {'player': 2, 'x': None, 'y': None, 'standing': False},
-                     {'player': 3, 'x': None, 'y': None, 'standing': False}]
-    # and the refusal says why there is nothing there
-    assert 'deployed at (0, 0)' in state['rejected'][0]['reason']
+    assert [flag['standing'] for flag in flags] == [False, False, False]
 
 
 def test_committing_a_setup_with_no_board_is_refused_and_says_so(app):

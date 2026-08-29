@@ -152,6 +152,24 @@ class DefiningUnitTypes(ClientTestCase):
         client.read_until(
             'error adding unit type: attack must be a value from 0 to 10')
 
+    def test_taking_a_unit_back(self):
+        client = self.player_client()
+        client.send_line('add type Cross X 1 1 10')
+        client.read_until_count(CLIENT_PROMPT, 2)
+        client.send_line('add unit Cross x1 0 0')
+        client.read_until_count(CLIENT_PROMPT, 3)
+
+        client.send_line('remove unit x1')
+        client.read_until_count(CLIENT_PROMPT, 4)
+
+        units = self.shown_json(client, CLIENT_PROMPT, 'units')['units']
+        assert [unit['name'] for unit in units] == []
+
+    def test_taking_back_a_unit_that_is_not_there(self):
+        client = self.player_client()
+        client.send_line('remove unit nobody')
+        client.read_until('no unit of yours is called nobody')
+
     def test_a_type_with_no_energy_can_have_no_attack(self):
         client = self.player_client()
         client.send_line('add type Half H 3 10 0')

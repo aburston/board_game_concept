@@ -170,6 +170,17 @@ class UnitType:
         self.state = UnitType.MOVING
         self.direction = direction
 
+    def hold(self):
+        """Take back the order this unit was given, leaving it with none.
+
+        Holding is the absence of an order rather than an order of its own,
+        which is why this puts the unit back to `NOP` and no direction rather
+        than recording a hold: a unit that was never ordered and one whose
+        order was taken back are the same unit, and both rest.
+        """
+        self.state = UnitType.NOP
+        self.direction = UnitType.NONE
+
     def setName(self, name):
         self.name = name
 

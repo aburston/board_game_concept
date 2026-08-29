@@ -159,7 +159,11 @@ export const addType = (name, symbol, attack, health, energy) =>
 export const addUnit = (typeName, name, x, y) =>
   ({ kind: 'add_unit', type_name: typeName, name, x, y });
 
+export const removeUnit = (name) => ({ kind: 'remove_unit', name });
+
 export const move = (unit, direction) => ({ kind: 'move', unit, direction });
+
+export const hold = (unit) => ({ kind: 'hold', unit });
 
 export const setFlag = (unit) => ({ kind: 'set_flag', unit });
 

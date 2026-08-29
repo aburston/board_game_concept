@@ -40,6 +40,80 @@ def setup_refusal(game):
     return None
 
 
+def _squares_committed_by_others(repository, number):
+    """The squares other players' committed setups already deploy onto.
+
+    Read from the repository rather than from this session, which holds only
+    its own view and cannot see where anybody else is. A published unit that
+    is a deployment claims its square; a move claims nothing, because the unit
+    is already standing somewhere the board knows about.
+    """
+    claimed = {}
+    for other in repository.player_numbers():
+        if int(other) == int(number):
+            continue
+        orders = repository.read_orders(other)
+        if not orders:
+            continue
+        units = orders.get('units')
+        # a player holding no units publishes "units: None", which reads back
+        # as the string rather than as null
+        if not units or units == 'None':
+            continue
+        for unit in units:
+            try:
+                square = (int(unit['x']), int(unit['y']))
+            except (KeyError, TypeError, ValueError):
+                continue
+            claimed.setdefault(square, int(other))
+    return claimed
+
+
+def clash_refusal(game):
+    """Why this setup may not be committed onto the squares it wants.
+
+    A player cannot see anybody else's units while they are setting up, so two
+    of them can choose one square without knowing it. This used to be found
+    only when the turn resolved, and both deployments were refused: each
+    player lost the unit, was told afterwards, and could do nothing about it,
+    because their setup was committed and closed.
+
+    Refusing the commit leaves the setup open instead - nothing published,
+    nothing marked committed - so the player moves the unit and commits again.
+    The setup committed first keeps the square, which is a change from "both
+    are refused, so neither is favoured by the order they were read in": it is
+    the price of the refused player being able to act on it.
+
+    Only a setup is checked. Deployments happen nowhere else - `deploy_unit`
+    refuses once setup is closed - so on any later turn there is nothing here
+    to find.
+    """
+    if not game.getNewGame() or not identity.is_player(game.player_number):
+        return None
+    board = game.getBoard()
+    if board is None:
+        return None
+    taken = _squares_committed_by_others(game.repository, game.player_number)
+    if not taken:
+        return None
+    # every unit of this player's claims its square. During setup nothing has
+    # been resolved by the server, so all of them are deployments waiting to
+    # be placed - and the state is no guide, because a client settles its own
+    # deployment onto its own board at once so that its owner can see it,
+    # which leaves it holding `NOP` rather than `INITIAL`
+    for unit in board.units:
+        if unit.player is None or unit.player.number != game.player_number:
+            continue
+        if unit.destroyed:
+            continue
+        square = (int(unit.x), int(unit.y))
+        if square in taken:
+            return (f"{unit.name} is deployed at {square}, which another "
+                    "player has already committed a unit to - deploy it "
+                    "somewhere else and commit again")
+    return None
+
+
 def publish(game):
     """Publish this player's orders and wait for the turn to be resolved."""
     if game.getSizeX() <= 1 or game.getSizeY() <= 1:
@@ -59,6 +133,14 @@ def publish(game):
     # held for writing: publishing an order file and resolving a turn, which
     # deletes every order file, must not overlap
     with repository.held():
+        # asked under the same lock as the writes it guards, and before the
+        # first of them: two players committing at the same moment are
+        # serialised, so the second reads what the first wrote and is refused
+        # rather than both landing on one square. A refusal here leaves the
+        # setup exactly as it was, to be fixed and committed again
+        clash = clash_refusal(game)
+        if clash is not None:
+            raise GameError(clash)
         repository.write_player(
             number, _types_without_objects(game.players[number]),
             game.getPlayerObj(number).budget)

@@ -238,6 +238,35 @@ class Board:
     # a square is free when nothing holds it and nothing is waiting to deploy
     # onto it, which matters because deployments are only placed on the board
     # when the turn is resolved
+    def take_back(self, unit):
+        """Take a unit that has never been played off the board entirely.
+
+        Taking one back leaves no trace of it, which is what lets a player
+        change their mind during setup: `add unit` and then this is the same
+        as never having typed either. The square it stood on falls free and
+        its name can be used again.
+
+        **When** this is allowed is the service layer's to decide, not the
+        board's - it is a rule about setup being open, and a board holds no
+        opinion about that. What is refused here is the one thing that would
+        be nonsense whatever the caller believes: erasing a casualty. A
+        destroyed unit is kept as a record for ever (`combat-resolution`),
+        so it is never taken back.
+        """
+        assert not unit.destroyed, (
+            f"{unit.name} is a casualty and is kept as one, not taken back")
+        # clears the square if it is standing on one. A client settles its own
+        # deployment onto its own board at once, so during setup it usually is
+        unit.vacate()
+        self.units = [each for each in self.units if each is not unit]
+        held = self.unit_dict.get(unit.name, [])
+        remaining = [each for each in held if each is not unit]
+        if remaining:
+            self.unit_dict[unit.name] = remaining
+        else:
+            self.unit_dict.pop(unit.name, None)
+        unit.setOnBoard(False)
+
     def squareIsFree(self, x, y):
         if not (type(self.board[x, y]) is Empty):
             return False

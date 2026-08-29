@@ -78,6 +78,7 @@ class Parser:
             'remove': self._parse_remove,
             'load': self._parse_load,
             'move': self._parse_move,
+            'hold': self._parse_hold,
         }
 
     def parse(self):
@@ -165,10 +166,17 @@ class Parser:
             budget=self._integer('budget must be a number'))
 
     def _parse_remove(self):
-        subject = self._subject('remove', ('player',))
+        subject = self._subject('remove', ('player', 'unit'))
         if subject == 'player':
             return self._parse_remove_player()
+        if subject == 'unit':
+            return self._parse_remove_unit()
         raise ParseError('invalid remove command', self.tokens.position)
+
+    def _parse_remove_unit(self):
+        """`remove unit <name>`, while this player's setup is still theirs."""
+        self._arity(1, 'must provide a unit name')
+        return commands.RemoveUnit(name=self.tokens.take())
 
     def _parse_remove_player(self):
         """`remove player <number>`, while setup is still being decided."""
@@ -209,6 +217,11 @@ class Parser:
         if word not in DIRECTIONS:
             raise ParseError(f'invalid direction {word}', self.tokens.position)
         return commands.Move(unit=unit, direction=DIRECTIONS[word])
+
+    def _parse_hold(self):
+        """`hold <unit>`: take back the order it was given this turn."""
+        self._arity(1, 'must provide a unit name')
+        return commands.Hold(unit=self.tokens.take())
 
     # --- terminals
 

@@ -44,9 +44,11 @@ def test_a_turn_that_advances_nothing_does_not_resolve_itself_again(tmp_path):
     # three players, because two cannot contest a deployment square any more:
     # `placement-zones` gives each of two players their own half of the board
     harness.create(4, 4, [1, 2, 3])
-    harness.deploy(1, [CROSS], [('Cross', 'x1', 1, 1)])
-    harness.deploy(2, [RING], [('Ring', 'o1', 1, 1)])
-    harness.deploy(3, [('Star', 'S', 1, 5, 10)], [('Star', 's1', 1, 1)])
+    # published past the commit: a clash cannot be committed any more, and
+    # this is about what the resolution does with one that reaches it anyway
+    harness.publish_setup(1, [CROSS], [('Cross', 'x1', 1, 1)])
+    harness.publish_setup(2, [RING], [('Ring', 'o1', 1, 1)])
+    harness.publish_setup(3, [('Star', 'S', 1, 5, 10)], [('Star', 's1', 1, 1)])
 
     harness.resolve()
 

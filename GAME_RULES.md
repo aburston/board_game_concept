@@ -174,6 +174,13 @@ This rule is a **break**: a game set up before flags existed cannot be played
 on, because its units carry none and nothing will read a flag that is not
 there. Finish such a game by starting a new one.
 
+**R2.12 You can take back a unit you have not committed.** `remove unit
+<name>` puts it back in your hand: the square falls free, the points are
+unspent, and the name can be used again. It is the same as never having
+deployed it. Once your setup is committed the units are published and playing,
+and what happens to them is the game's business rather than yours — so this is
+refused after the commit, as everything else in setup is.
+
 ---
 
 ## R3. The turn
@@ -185,8 +192,12 @@ eliminated (**R7.1**) is not waited for. Nobody gains from committing early or
 late, and nobody gains from the order the server happens to read the orders
 in.
 
-**R3.2 Commits are final.** Once you commit you cannot withdraw or amend. Your
-client blocks and waits for the server rather than accepting further orders.
+**R3.2 Commits are final, and nothing before one is.** Once you commit you
+cannot withdraw or amend. Your client blocks and waits for the server rather
+than accepting further orders. Until then every order is still yours to
+change: `hold <unit>` takes back the order a unit was given this turn, leaving
+it with none at all — which is holding, so it rests (**R3.9**) like any unit
+that was told to do nothing.
 
 **R3.3 Orders are used once.** After a turn resolves, every unit's direction is
 cleared and its state returns to `NOP`. An order never carries over to the next
@@ -208,9 +219,27 @@ phases complete inside the same turn: a fight never carries over.
 **R3.5 Deployment happens on the turn you commit it.** A newly created unit is
 placed on the board when the turn resolves. If its square is taken by then, the
 deployment is refused, no unit is created, and the turn resolves without it —
-the turn is not failed. When **two** deployments contend for one square in the
-same turn, **both** are refused, so neither player gains from being read
-first.
+the turn is not failed.
+
+**R3.5a A setup commit that clashes with a committed square is refused.** You
+cannot see anybody else's units while you are setting up, so two of you can
+choose one square without knowing it. Committing a setup that deploys onto a
+square another player has already committed a unit to is **refused**, naming
+the square: nothing of yours is published, nothing is marked committed, and
+your setup is still yours to change. Take the unit back (**R2.12**), put it
+somewhere else, and commit again.
+
+The setup committed **first** keeps the square. That is a change from refusing
+both, which was there so that neither player gained from the order they were
+read in; the price of being able to do something about a clash is that
+committing early decides it. It also tells you that the square is taken,
+which you would not otherwise know until you met what is standing there — the
+least that lets you deploy somewhere else. Both are accepted **for setup**,
+and this rule reaches nothing else: deployments happen only during setup.
+
+Where deployments reach the server without a commit — a loaded player file, or
+orders written by hand — **both** are still refused when the turn resolves, so
+nothing that goes round the commit gains by it.
 
 **R3.6 A refused order does not stop the turn.** The server refuses the single
 order, records it against that player, and carries on. Each player is written a
@@ -504,16 +533,20 @@ Every role: `help`, `exit`, `show ...`.
 |---|:--:|:--:|:--:|
 | `set board <x> <y>` | ✔ | | |
 | `add player <number> [budget]` | ✔ | | |
+| `remove player <number>` | ✔ | | |
 | `load board <file>` | ✔ | | |
 | `load player <file>` | ✔ | | |
 | `add type <name> <symbol> <attack> <health> <energy>` | | ✔ | |
 | `add unit <type> <name> <x> <y>` | | ✔ | |
+| `remove unit <name>` | | ✔ | |
 | `set flag <unit>` | | ✔ | |
 | `move <unit> <north\|south\|east\|west>` | | ✔ | |
+| `hold <unit>` | | ✔ | |
 | `commit` | ✔ | ✔ | |
 | `reload` | | | ✔ |
 | `show board` / `types` / `units` / `players` | ✔ | ✔ | ✔ |
 | `show pending` / `events` / `designs` / `flags` | ✔ | ✔ | ✔ |
+| `show placement` | ✔ | ✔ | ✔ |
 
 Every `show` answers with a table: a header naming its columns, then one row per
 thing, lined up so a row can be read across and a column compared down.

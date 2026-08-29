@@ -196,6 +196,39 @@ def deploy_unit(data, command):
         raise GameError(f"error creating new unit {e}") from e
 
 
+def remove_unit(data, command):
+    """Take back one of this player's units, before the setup is committed.
+
+    A deployment is a setup decision like the board's size or a seat, and
+    every other one can be taken back until it is committed. Without this a
+    player who deployed a unit on the wrong square had to live with it: there
+    was no way to move it and no way to be rid of it, and a setup refused for
+    clashing with another player's square could not be fixed at all.
+
+    Only a unit that has never taken the field. Once the turn that deploys it
+    has resolved it is on the board and playing, and what happens to it then
+    is the game's business rather than the player's.
+    """
+    board = data.getBoard()
+    if board is None:
+        raise GameError("board must be loaded in order to remove units")
+    if not data.getNewGame():
+        raise GameError(
+            "your setup is committed, so its units can no longer be taken "
+            "back - what is on the board now is what you play with")
+    player_obj = data.getPlayerObj(data.player_number)
+    unit = board.findUnit(command.name, player_obj)
+    if unit is None:
+        raise GameError(
+            f"no unit of yours is called {command.name}")
+    # setup being open is the whole of the rule: nothing has been resolved
+    # while it is, so every unit this player holds is one they deployed and
+    # can still take back. The unit's own state says nothing useful - a
+    # client settles its deployment onto its own board at once so the player
+    # can see it, which leaves it holding `NOP`
+    board.take_back(unit)
+
+
 def order_move(data, command):
     """Order one of this player's units to move."""
     board = data.getBoard()
@@ -218,6 +251,36 @@ def order_move(data, command):
     if not unit.on_board:
         raise GameError("can't move units not on the board")
     unit.move(command.direction)
+
+
+def hold_unit(data, command):
+    """Take back an order given to one of this player's units this turn.
+
+    An order is not final until the turn is committed - `turn-commit` says a
+    turn is decided all at once, and until then a player is still deciding.
+    There was no way to change your mind about one: a unit ordered north was
+    ordered north, and the only way out was to commit the turn and let it
+    happen.
+
+    Holding is the absence of an order rather than an order of its own, so
+    this puts the unit back to having none: it takes no direction, pays no
+    fare, and rests like any other unit that was given nothing to do.
+    """
+    board = data.getBoard()
+    if board is None:
+        raise GameError("board must be loaded in order to order units")
+    if data.getNewGame():
+        raise GameError(
+            "there are no orders to take back until the first turn is "
+            "complete")
+    player_obj = data.getPlayerObj(data.player_number)
+    try:
+        unit = board.getUnitByName(command.unit, player_obj)[0]
+    except Exception as e:
+        raise GameError(f"error holding unit {e}") from e
+    if data.player_number != unit.player.number:
+        raise GameError("can't order units belonging to other players")
+    unit.hold()
 
 
 def set_flag(data, command):
@@ -264,6 +327,8 @@ ACTIONS = {
     'set_board': set_board_size,
     'add_player': add_player,
     'remove_player': remove_player,
+    'remove_unit': remove_unit,
+    'hold': hold_unit,
     'load_board': load_board,
     'load_player': load_player,
     'add_type': define_type,

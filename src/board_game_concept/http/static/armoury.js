@@ -56,9 +56,60 @@ export function renderArmoury() {
   wrap.append(renderDesigner(game));
   wrap.append(renderTypes(game));
   if (game.board) wrap.append(renderDeploy(game));
+  if (game.board) wrap.append(renderDeployed(game));
   if (game.board) wrap.append(renderFlag(game));
   wrap.append(renderCommit(game));
   return wrap;
+}
+
+/**
+ * What this seat has deployed, and a way to take any of it back.
+ *
+ * A deployment is a setup decision like every other one here, and every other
+ * one can be taken back until it is committed. This one could not: a unit put
+ * on the wrong square had to stay there, and a setup refused for clashing
+ * with another player's square could not be fixed at all.
+ */
+function renderDeployed(game) {
+  const card = element('div', { class: 'card' });
+  card.append(element('h2', {}, 'Deployed'));
+  const mine = (game.units || []).filter(
+    (unit) => unit.player === game.number);
+  if (mine.length === 0) {
+    card.append(element('p', { class: 'muted' },
+      'Nothing deployed yet.'));
+    return card;
+  }
+  const table = element('table', {});
+  table.append(element('thead', {}, element('tr', {},
+    element('th', {}, 'Unit'), element('th', {}, 'Type'),
+    element('th', { class: 'number' }, 'Square'),
+    element('th', {}, ''))));
+  const body = element('tbody', {});
+  for (const unit of mine) {
+    body.append(element('tr', {},
+      element('td', {}, unit.name),
+      element('td', {}, unit.type),
+      element('td', { class: 'number' }, `(${unit.x}, ${unit.y})`),
+      element('td', {}, button('take back', async () => {
+        try {
+          await api.perform(game.gameno, game.number,
+                            api.removeUnit(unit.name));
+          await loadSeat(game.gameno, game.number);
+          say(`${unit.name} taken back.`);
+        } catch (error) {
+          say(error.message);
+        }
+        set({});
+      }, { class: 'danger small' }))));
+  }
+  table.append(body);
+  card.append(table);
+  card.append(element('p', { class: 'small muted' },
+    'Taking a unit back frees its square and its points, and is the same as '
+    + 'never having deployed it. Once you commit, your units are published '
+    + 'and this is no longer offered.'));
+  return card;
 }
 
 /**
@@ -222,7 +273,7 @@ function renderAdminSetup(game) {
   // you were not using threw away the one you were. Nothing held means
   // whatever the board already is
   const bindSize = (label, key, sized) => {
-    const made = field(label, 'number');
+    const made = field(label, 'number', undefined, { min: 2, max: 10 });
     made.input.value = state.boardSize[key] || sized;
     made.input.addEventListener('input', () => {
       state.boardSize[key] = made.input.value;
@@ -287,8 +338,10 @@ function renderAdminSetup(game) {
     card.append(table);
   }
 
-  const number = field('Seat number (1–999)', 'number');
-  const budget = field('Budget (default 100)', 'number');
+  const number = field('Seat number (1–999)', 'number', undefined,
+                      { min: 1, max: 999 });
+  const budget = field('Budget (default 100)', 'number', undefined,
+                       { min: 1, max: 1000 });
   const form = element('form', { class: 'row' });
   form.append(element('div', { class: 'grow' }, number.label),
               element('div', { class: 'grow' }, budget.label),
@@ -359,8 +412,8 @@ function renderDesigner(game) {
   // every input reads its value from `state.design` and writes back on the
   // way through, so a redraw - a refusal, a reload of the views - finds the
   // design where it left it
-  const bind = (label, type, key) => {
-    const made = field(label, type);
+  const bind = (label, type, key, limits) => {
+    const made = field(label, type, undefined, limits);
     made.input.value = state.design[key];
     made.input.addEventListener('input', () => {
       state.design[key] = made.input.value;
@@ -369,9 +422,15 @@ function renderDesigner(game) {
   };
   const name = bind('Name', 'text', 'name');
   const symbol = bind('Symbol (one character)', 'text', 'symbol');
-  const attack = bind('Attack', 'number', 'attack');
-  const health = bind('Health', 'number', 'health');
-  const energy = bind('Energy', 'number', 'energy');
+  // the ranges are the domain's - attack 0 to 10, health 1 to 10, energy 0
+  // to 100 - said here so the field refuses what the server would, rather
+  // than letting a negative through to be told off for it
+  const attack = bind('Attack (0–10)', 'number', 'attack',
+                      { min: 0, max: 10 });
+  const health = bind('Health (1–10)', 'number', 'health',
+                      { min: 1, max: 10 });
+  const energy = bind('Energy (0–100)', 'number', 'energy',
+                      { min: 0, max: 100 });
 
   const cost = element('strong', {}, '3');
   const price = element('p', { class: 'small' }, 'Costs ', cost, ' points — ',
