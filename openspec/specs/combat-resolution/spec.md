@@ -4,8 +4,9 @@
 
 Combat happens wherever more than one unit ends up in the same square, whether by
 attacking a standing unit or by two units moving into the same empty square at
-once. Combat is simultaneous and runs to a decision within the turn: it repeats
-until at most one unit is left standing in the square.
+once. Combat is simultaneous and is one exchange a turn: every unit standing
+strikes every other once, and then it is over. A contest is decided only when a
+strike destroys a unit; otherwise it is undecided and the movers fall back.
 
 ## Requirements
 
@@ -26,28 +27,37 @@ end of the movement phase.
 
 ### Requirement: Simultaneous Attack Exchange
 
-The system SHALL have every unit standing in a contested square at the start of a
-round attack every other unit standing there, with all attacks in a round
-applying regardless of the damage those attacks receive in the same round.
+The system SHALL resolve a contested square as a single exchange: every unit
+standing there attacks every other unit standing there once, with all attacks
+applying at the same instant, regardless of the damage those attacks receive
+in the same exchange. A unit gets one attack in the exchange and no more; to
+attack again it must be ordered into the square again on a later turn.
 
 #### Scenario: Both units strike
 
 - **WHEN** two units contest a square
 - **THEN** each deals its attack value in damage to the other
-- **AND** neither is spared by having been damaged in the same round
+- **AND** neither is spared by having been damaged in the same exchange
 
 #### Scenario: A unit does not attack itself
 
 - **WHEN** attacks are resolved in a contested square
 - **THEN** no unit attacks itself
 
-### Requirement: Attacking Costs Energy
+#### Scenario: A unit strikes once and then stops
 
-The system SHALL charge a unit its attack value in energy once for each round of
-a contest in which it attacks, however many opponents it strikes in that round,
-and SHALL prevent the unit from attacking when it cannot pay. A round SHALL be
-all or nothing: a unit that cannot pay makes no attack at all, so no opponent is
-favoured by where it happens to sit in the square.
+- **WHEN** a unit attacks in a contested square and both units survive the exchange
+- **THEN** it makes no further attack that turn
+- **AND** it must be ordered into the square again to attack on a later turn
+
+### Requirement: An Attack Costs Its Value Once A Turn
+
+The system SHALL charge a unit its attack value in energy once for the exchange
+in which it attacks, however many opponents it strikes, and SHALL prevent the
+unit from attacking when it cannot pay. The exchange SHALL be all or nothing: a
+unit that cannot pay makes no attack at all, so no opponent is favoured by where
+it happens to sit in the square. Because a contest is one exchange a turn, a
+unit never spends more than one attack value on fighting in a single turn.
 
 #### Scenario: Paying to attack
 
@@ -56,9 +66,15 @@ favoured by where it happens to sit in the square.
 
 #### Scenario: Paying once however many opponents there are
 
-- **WHEN** a unit attacks in a round of a contest against two or more opponents
+- **WHEN** a unit attacks in a contest against two or more opponents
 - **THEN** its energy is reduced by its attack value once
 - **AND** it deals its attack value in damage to every one of those opponents
+
+#### Scenario: A whole turn's fighting costs one attack value
+
+- **WHEN** a unit contests a square for a turn
+- **THEN** it is charged its attack value at most once for that turn
+- **AND** pressing the fight over several turns costs its attack value each turn
 
 #### Scenario: Exhausted unit cannot attack
 
@@ -66,17 +82,11 @@ favoured by where it happens to sit in the square.
 - **THEN** it deals no damage
 - **AND** its energy is unchanged
 
-#### Scenario: A round is all or nothing
+#### Scenario: An exchange is all or nothing
 
-- **WHEN** a unit that cannot pay for a round contests a square with two or more opponents
+- **WHEN** a unit that cannot pay contests a square with two or more opponents
 - **THEN** it strikes none of them
 - **AND** which opponents it would have struck does not depend on the order the square holds them in
-
-#### Scenario: Outlasting a crowd
-
-- **WHEN** a unit with energy for N rounds contests a square against several opponents
-- **THEN** it can still attack in N rounds
-- **AND** the number of opponents does not shorten how long it can fight
 
 ### Requirement: Damage And Destruction
 
@@ -99,37 +109,6 @@ unit.
 - **WHEN** a unit's energy falls below what it needs to act
 - **THEN** the unit is not destroyed
 - **AND** it remains on the board holding its square
-
-### Requirement: Combat Runs To A Decision
-
-The system SHALL repeat attack rounds in a contested square until either at most
-one unit remains undestroyed or a round deals no damage, and SHALL terminate
-within the turn in every case.
-
-#### Scenario: Attrition over multiple rounds
-
-- **WHEN** an attacker with attack 3 and health 5 engages a defender with attack 2 and health 4
-- **THEN** rounds repeat until the defender is destroyed
-- **AND** the attacker survives with health 1
-
-#### Scenario: Stronger unit takes the square
-
-- **WHEN** a unit with attack 4 and health 7 contests a square with a unit with attack 3 and health 5
-- **THEN** the weaker unit is destroyed
-- **AND** the stronger unit holds the square
-
-#### Scenario: Undecided when no contestant can attack
-
-- **WHEN** a round begins in which every surviving contestant has less energy than its attack value
-- **THEN** no damage is dealt
-- **AND** combat ends for that square
-- **AND** no unit is destroyed
-
-#### Scenario: Termination is guaranteed
-
-- **WHEN** combat is resolved in any contested square
-- **THEN** resolution completes in a bounded number of rounds
-- **AND** the turn proceeds regardless of whether the contest was decided
 
 ### Requirement: Square Ownership After Combat
 
@@ -234,21 +213,22 @@ that square, without regard to which player owns it.
 - **WHEN** a square is contested by units of more than one player
 - **THEN** each unit attacks every other unit in the square regardless of owner
 
-### Requirement: Attackers Are The Units Standing At The Start Of A Round
+### Requirement: Every Attacker Strikes Once In The Exchange
 
-The system SHALL draw both attackers and targets for a round from the units
-undestroyed when that round begins, so that a unit destroyed during a round
-still lands its own attack for that round and takes no part in later rounds.
+The system SHALL draw both attackers and targets from the units undestroyed
+when the exchange begins, so that a unit destroyed by the exchange still lands
+its own attack in it, and a unit already destroyed before the exchange neither
+attacks nor is attacked.
 
-#### Scenario: A unit destroyed mid-round still strikes
+#### Scenario: A unit destroyed in the exchange still strikes
 
-- **WHEN** a unit is destroyed by an attack during a round
-- **THEN** its own attack for that round is still applied
+- **WHEN** a unit is destroyed by an attack in the exchange
+- **THEN** its own attack in that exchange is still applied
 
-#### Scenario: A destroyed unit takes no part in later rounds
+#### Scenario: An already destroyed unit takes no part
 
-- **WHEN** a round begins after a unit has been destroyed
-- **THEN** that unit neither attacks nor is attacked
+- **WHEN** a unit was destroyed before the exchange began
+- **THEN** it neither attacks nor is attacked
 
 ### Requirement: A Destroyed Unit Never Returns To Play
 

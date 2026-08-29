@@ -153,10 +153,16 @@ def test_inert_unit_can_still_be_destroyed_by_an_opponent_with_energy():
 
 
 def _three_way_board():
-    """Three units converging on one square, resolving over two attack rounds."""
-    strong_type = UnitType('Strong', 'S', 5, 10, 100)
-    medium_type = UnitType('Medium', 'M', 1, 10, 100)
-    weak_type = UnitType('Weak', 'W', 1, 6, 100)
+    """Three units converging on one square, decided in the one exchange.
+
+    The strong unit hits hard enough to destroy both others outright, so that
+    a single exchange leaves it the sole survivor. Two units that merely
+    wounded each other would both be left standing and turned back - a fight
+    is one exchange a turn now, not a grind to the last unit.
+    """
+    strong_type = UnitType('Strong', 'S', 10, 10, 100)
+    medium_type = UnitType('Medium', 'M', 1, 5, 100)
+    weak_type = UnitType('Weak', 'W', 1, 5, 100)
 
     p1 = Player(1)
     p2 = Player(2)
@@ -173,9 +179,8 @@ def _three_way_board():
 
 
 def test_three_way_contest_leaves_the_sole_survivor_holding_the_cell():
-    # the survivor count used to be decremented once per destroyed unit per
-    # round, so by the second round it counted the first casualty again, reached
-    # zero, and emptied the square out from under the unit still standing
+    # one exchange, two casualties: the strong unit outlasts a square it
+    # cleared in a single strike
     board = _three_way_board()
     board.commit()
 
@@ -189,14 +194,15 @@ def test_three_way_contest_leaves_the_sole_survivor_holding_the_cell():
     assert board.getUnitByCoords(1, 1) is strong
 
 
-def test_a_destroyed_unit_does_not_attack_in_later_rounds():
-    # the survivor holds 7 health only if the unit destroyed in the first round
-    # stops attacking in the second
+def test_a_unit_destroyed_in_the_exchange_still_lands_its_blow():
+    # both casualties strike in the same instant they are destroyed, so the
+    # survivor takes a point from each: 10 health, less 1 and 1, is 8. All the
+    # blows of an exchange land together, whoever the exchange destroys
     board = _three_way_board()
     board.commit()
 
     strong = board.getUnitByName('s1')[0]
-    assert strong.health == 7
+    assert strong.health == 8
 
 
 def test_contest_with_no_survivors_empties_the_cell():
@@ -305,8 +311,11 @@ def test_a_rejected_deployment_leaves_no_trace_of_the_unit():
 
 
 def test_moving_onto_an_occupied_square_is_still_allowed():
-    # a move into a held square is combat, not a deployment, and stays legal
-    attacker_type = UnitType('Attacker', 'A', 3, 5, 100)
+    # a move into a held square is combat, not a deployment, and stays legal.
+    # The attacker strikes hard enough to clear the square in the one exchange
+    # a turn now buys - a lighter attacker would leave the defender standing
+    # and be turned back, which the undecided tests below cover
+    attacker_type = UnitType('Attacker', 'A', 4, 5, 100)
     defender_type = UnitType('Defender', 'D', 2, 4, 100)
 
     p1 = Player(1)

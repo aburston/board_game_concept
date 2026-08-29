@@ -46,16 +46,18 @@ def test_a_round_strikes_every_opponent_for_one_charge():
     assert (10 - b.health, 10 - c.health) == (2, 2)
 
 
-def test_a_crowd_does_not_shorten_how_long_a_unit_can_fight():
-    # energy 6, attack 2: three rounds of attacking, whoever it is against
+def test_a_crowd_costs_one_strike_however_many_it_faces():
+    # one exchange a turn: a strikes each opponent once and pays its attack
+    # value exactly once, whether it faces one opponent or three
     for opponents in (1, 2, 3):
-        units = [unit('a', 2, 10, 6)]
-        units += [unit(f'o{i}', 1, 10, 0) for i in range(opponents)]
+        a = unit('a', 2, 10, 6)
+        units = [a] + [unit(f'o{i}', 1, 10, 0) for i in range(opponents)]
         events = []
         exchangeAttacks(units, events)
-        rounds = len([e for e in events if e.kind == 'attacked'
-                      and e.detail['unit'] == 'a']) // opponents
-        assert rounds == 3, (opponents, rounds)
+        struck = [e for e in events if e.kind == 'attacked'
+                  and e.detail['unit'] == 'a']
+        assert len(struck) == opponents, (opponents, len(struck))
+        assert a.energy == 6 - a.attack, opponents
 
 
 def test_a_round_is_all_or_nothing_whatever_order_the_cell_holds():

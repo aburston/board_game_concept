@@ -40,7 +40,9 @@ def test_a_move_is_reported_with_where_it_ended():
 def test_a_contest_reports_every_attack_and_who_held_the_square():
     board = Board(4, 2)
     p1, p2 = Player(1), Player(2)
-    board.add(p1, 0, 0, 'a1', UnitType('Attacker', 'A', 3, 5, 100))
+    # the attacker's one strike is lethal, so the contest is decided in the
+    # single exchange and a1 takes the square
+    board.add(p1, 0, 0, 'a1', UnitType('Attacker', 'A', 4, 5, 100))
     board.add(p2, 1, 0, 'd1', UnitType('Defender', 'D', 2, 4, 100))
     board.commit()
 
@@ -49,7 +51,7 @@ def test_a_contest_reports_every_attack_and_who_held_the_square():
 
     assert 'engaged' in kinds(events)
     assert 'contested' in kinds(events)
-    assert {'unit': 'a1', 'target': 'd1', 'damage': 3} in detail(events, 'attacked')
+    assert {'unit': 'a1', 'target': 'd1', 'damage': 4} in detail(events, 'attacked')
     assert {'unit': 'd1', 'target': 'a1', 'damage': 2} in detail(events, 'attacked')
     assert detail(events, 'destroyed') == [{'unit': 'd1'}]
     assert detail(events, 'held') == [{'unit': 'a1', 'x': 1, 'y': 0}]

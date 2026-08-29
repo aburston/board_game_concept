@@ -142,8 +142,8 @@ order they were written in.
 standing on a square. It can never be ordered to move, because a move costs it
 a quarter of its health in energy (**R4.3**) and it holds none, and never will
 (**R3.9**
-gives nothing back to a type designed with none). It never attacks and never defends itself, so a round in
-which only walls could act lands no attacks and the fight ends (**R5.6**). It
+gives nothing back to a type designed with none). It never attacks and never defends itself, so an exchange in
+which only walls stand lands no attacks and nobody is destroyed (**R5.6**). It
 can be destroyed like anything else, it blocks a square like anything else, and
 it costs its health and nothing else — a wall of 10 health costs 10 points.
 
@@ -327,17 +327,20 @@ been applied, however they got there — one unit stepping onto another, or
 several stepping into the same empty square at once. A head-on collision
 (**R4.9**) is fought on the same terms.
 
-**R5.2 Combat runs in rounds, and it is simultaneous.** In each round, the units
-undestroyed **at the start of the round** each attack **every other** unit
-undestroyed at the start of the round. A unit destroyed part-way through a round
-still lands its own attack for that round. It takes no part in later rounds.
+**R5.2 A fight is one exchange a turn, and it is simultaneous.** The units
+standing in the square each attack **every other** unit standing there, once,
+all at the same instant. A unit destroyed by the exchange still lands its own
+attack in it. Then the exchange is over: nobody strikes twice in a turn. To
+press a fight you order the unit back into the square next turn, and the turn
+after — a defended square is taken over several turns, not ground out in one.
 
-**R5.3 A round of fighting costs the attacker its attack value in energy —
-once**, however many opponents it strikes in that round, and deals that same
-value in damage to each of them. A round is all or nothing: a unit that cannot
-pay strikes nobody, so no opponent is favoured by where it stands in the square.
-Facing three opponents therefore costs no more energy than facing one, though
-you take three attacks in return.
+**R5.3 The exchange costs the attacker its attack value in energy — once**,
+however many opponents it strikes, and deals that same value in damage to each
+of them. It is all or nothing: a unit that cannot pay strikes nobody, so no
+opponent is favoured by where it stands in the square. Facing three opponents
+costs no more energy than facing one, though you take three attacks in return.
+Because there is one exchange a turn, a fight never costs a unit more than its
+attack value in a single turn, whatever it walks into.
 
 **R5.4 A unit that cannot pay for an attack simply does not make it.** It deals
 no damage and spends nothing. It is not destroyed for it.
@@ -346,9 +349,11 @@ no damage and spends nothing. It is not destroyed for it.
 Health is the only thing that destroys a unit — running out of energy never
 does.
 
-**R5.6 Rounds repeat until either at most one unit is left undestroyed, or a
-round lands no attacks at all** (because nobody left can pay). Combat always
-terminates inside the turn.
+**R5.6 The exchange happens once, and that is the fight for the turn.** There
+is no repeat: whoever is left standing after the one exchange is left standing.
+If that is more than one unit the square is undecided (**R5.8**) and the units
+that moved in fall back — a fight that destroys nothing settles nothing, and is
+paid for again only if you order the unit back in.
 
 **R5.7 Friendly fire is total.** Every unit in the square attacks every other
 unit in it, regardless of who owns it. Two of your own units meeting on a square
@@ -380,13 +385,16 @@ kind of unit that does not keep its owner in the game (**R7.1**).
 
 **R5.11 Two consequences worth spelling out, because they decide how the game
 plays:**
-- **Identical units always destroy each other.** All attacks in a round land
-  regardless of damage taken in that round, so a mirror match is mutual
-  annihilation, never a win.
-  See **Q2** — this is a design choice, not an accident.
-- **A fight is decided entirely by `ceil(health ÷ attack)`** — how many rounds
-  each side needs to kill the other. Equal counts kill both. Energy only decides
-  whether a unit can fight at all.
+- **A strike kills only if it is lethal on its own.** One exchange deals the
+  attack value once, so a unit is destroyed this turn only if that single
+  strike takes it to zero health. Anything it does not kill survives, and the
+  contest is undecided — the movers fall back and you pay again next turn to
+  press it. Wearing a unit down takes as many turns as `ceil(health ÷ attack)`
+  strikes, one strike a turn.
+- **Identical units no longer destroy each other in a turn.** Two matched units
+  each take one strike and both live, unless that one strike is lethal (attack
+  at least the other's health). A mirror match is a stand-off that has to be
+  fought out over turns, not a mutual annihilation in one. See **Q2**.
 
 ---
 
@@ -545,9 +553,9 @@ because it rounds up.
 | A head-on collision | **the fare, from both units**, though neither moves | **R4.9** |
 | A move nobody can pay for | **nothing** — the unit stays put, and the order is consumed | **R4.5** |
 | A move off the board | **nothing** — the unit stays at the edge, and the order is consumed | **R4.6** |
-| A round of combat | **the attacker's `attack` value**, charged once for the round however many opponents it strikes in it | **R5.3** |
-| — a round it cannot afford in full | **nothing** — it strikes nobody rather than striking some | **R5.4** |
-| — a round fought by a wall | **nothing** — a wall never attacks | **R2.10** |
+| A turn's fight in a square | **the attacker's `attack` value**, charged once for the one exchange however many opponents it strikes | **R5.3** |
+| — an exchange it cannot afford in full | **nothing** — it strikes nobody rather than striking some | **R5.4** |
+| — an exchange fought by a wall | **nothing** — a wall never attacks | **R2.10** |
 | Being attacked | **nothing in energy**; damage comes off health | **R5.5** |
 | A turn in which a unit did nothing | **gains 1 energy**, never above the energy its type was designed with | **R3.9** |
 | — a turn in which it was given any order | **gains nothing**, even if the order cost it nothing | **R3.9** |
@@ -556,17 +564,21 @@ Three things follow from the table that are worth stating out loud, because
 they decide how the game is played and none of them is obvious from any single
 row:
 
-**A kill costs about the victim's health, whatever your attack is.** Killing a
-unit of health `h` takes `ceil(h ÷ a)` rounds at `a` energy each, so the bill
-is `a × ceil(h ÷ a)` — always at least `h`, and exactly `h` when `a` divides
-it. Attack 10 and attack 1 pay the same 10 energy to kill a ten-health unit;
-attack 10 pays ten times over for a one-health one. What a high attack buys is
-not efficiency, it is **speed**: the same energy spent in one round rather than
-ten, which is what decides a duel (**R5.11**).
+**A kill costs about the victim's health, whatever your attack is, but it
+costs it over turns.** Killing a unit of health `h` takes `ceil(h ÷ a)` strikes
+at `a` energy each — one strike a turn — so the bill is `a × ceil(h ÷ a)`
+energy, always at least `h` and exactly `h` when `a` divides it, spread across
+`ceil(h ÷ a)` turns. Attack 10 and attack 1 pay the same 10 energy to kill a
+ten-health unit; attack 10 pays ten times over for a one-health one. What a
+high attack buys is not efficiency, it is **speed**: attack `h` or more kills
+in a single turn, where a low attack has to hold the square and strike again
+turn after turn (**R5.11**), giving the enemy every turn between to reinforce
+or retreat.
 
 **Health is paid for three times.** Once at the till, in points. Again every
 square the unit walks, because the fare is a quarter of its health. And a third
-time by the enemy, who must spend about the whole of it in energy to kill it.
+time by the enemy, who must spend about the whole of it in energy to kill it,
+over as many turns as it takes to land `ceil(health ÷ attack)` strikes.
 A unit's `energy ÷ fare` is simply the number of squares it has left in it, so
 armour and mobility are the same dial turned in opposite directions.
 
@@ -636,17 +648,19 @@ at all.
 
 ## Q2. Identical units always destroy each other
 
-**What happens.** Every attack in a round lands regardless of the damage its
-attacker takes in that same round (**R5.2**), so two identical units always
-destroy each other, and in a three-way fight between identical units all three
-die. With attack and health both capped at 1–10, a fight is decided purely by
-`ceil(health ÷ attack)` and a tie kills everyone.
+**What happens.** A fight is one exchange a turn (**R5.2**), so two identical
+units each take one strike and both survive — unless that single strike is
+lethal, meaning attack is at least health. Below that they stand off, undecided,
+and have to be ordered back into the square turn after turn; a kill takes
+`ceil(health ÷ attack)` strikes, one a turn. Only when a single strike already
+finishes the other do identical units annihilate together, and a three-way of
+those dies to the last unit at once.
 
 **Why it is still here.** It is deliberate, and it is what makes a contest's
 outcome independent of which unit is listed first — the same property the
 movement phase was rewritten to get (**R3.4**), and now an invariant of the game
-(**R1.2**). Giving one side priority within a round would put an ordering rule
-back into a place that no longer has one, so any initiative rule has to decide
+(**R1.2**). Giving one side priority within the exchange would put an ordering
+rule back into a place that no longer has one, so any initiative rule has to decide
 the order from the units themselves rather than from where they stand in a
 list.
 

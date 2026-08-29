@@ -210,10 +210,15 @@ def test_a_collision_only_one_side_can_pay_is_not_a_collision():
             for e in events if e.kind == 'refused'] == [
         ('b', 'not enough energy to move')]
 
-    assert at(board, 'a') == (1, 0), 'a paid its own fare and arrived'
-    assert fare_paid(board, 'a', 50, events) == 1
+    # a walked into the square b was standing in and a contest was fought
+    # there - not a head-on collision, which is the thing this is about
+    assert fare_paid(board, 'a', 50, events) == 1, 'a paid its own fare'
     assert any(e.kind == 'contested' for e in events)
-    assert not any(e.kind == 'undecided' for e in events), 'no head-on was fought'
+    assert not any(e.kind == 'collided' for e in events), 'no head-on'
+    # neither could finish the other in the one exchange a turn buys, so the
+    # square is undecided and a, which moved in, is turned back
+    assert at(board, 'a') == (0, 0)
+    assert any(e.kind == 'undecided' for e in events)
 
 
 # --- what health now buys, and costs
