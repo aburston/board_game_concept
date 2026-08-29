@@ -518,17 +518,16 @@ def resolve(game):
             repository.write_view(number, views[number])
 
         # what the turn did, and what each seat may be told it did. Written
-        # here because this is where what each seat could see is still known:
-        # a sighting lasts one turn, so deciding it later would be deciding it
-        # from somebody else's visibility
+        # here rather than when it is read, because the board this names is
+        # the board the turn was resolved on: a unit destroyed this turn is
+        # still standing in it, and is what tells a seat the fight was its own
         feed = turn_feed.entries(events)
         repository.write_turn_events(turn_number, feed)
         for number, player in game.players.items():
             owned = [unit.name for unit in game.board.units
                      if unit.player.number == number]
-            visible = [unit['name'] for unit in views[number]['units'] or []]
             repository.write_events(number, turn_number,
-                                    turn_feed.for_seat(feed, owned, visible))
+                                    turn_feed.for_seat(feed, owned))
             _remember_types(repository, number, views[number], turn_number)
 
         # --- and only now, the turn is over

@@ -310,6 +310,21 @@ function typeOf(game, unit) {
 }
 
 /**
+ * What this unit's type was designed with, from what this seat may know.
+ *
+ * Its own types are its own; an enemy's is known only where contact has
+ * disclosed the design, which is what `seen` holds. A seat that has not met a
+ * design is told nothing about it here rather than being handed a maximum it
+ * is not entitled to - so a unit whose type is unknown is drawn plainly.
+ */
+function designOf(game, unit) {
+  const own = typeOf(game, unit);
+  if (own) return own;
+  return (game.seen || []).find(
+    (type) => type.name === unit.type && type.player === unit.player) || null;
+}
+
+/**
  * What moving costs this unit: a quarter of the health its type was designed
  * with, rounded up.
  *
@@ -371,6 +386,14 @@ function renderBoardCard(game) {
       return type ? { now: Number(unit.health), full: Number(type.health) }
                   : { now: Number(unit.health), full: null };
     },
+    // and with what it can still pay for, drawn round its ring. An enemy's
+    // maximum is only known where contact has disclosed the design
+    energyOf: (unit) => {
+      const design = designOf(game, unit);
+      return design ? { now: Number(unit.energy),
+                        full: Number(design.energy) }
+                    : null;
+    },
     onUnit: watching ? null : (unit) => {
       set({ selected: unit.name, cursor: { x: unit.x, y: unit.y } });
     },
@@ -422,6 +445,18 @@ function renderBoardCard(game) {
       + 'fought on. The number is what it cost you, and ',
       element('span', { class: 'clash-key' }, '☠'),
       ' is where a unit fell.'));
+  }
+
+  // the controls that order a unit belong with the board they act on:
+  // choosing a unit, ordering it and seeing the arrow drawn are one action,
+  // and they used to be a card's width apart
+  if (!watching && !game.outcome && !isOut(game)) {
+    const chosen = state.selected
+      && standing(game).find((unit) => unit.name === state.selected);
+    card.append(chosen
+      ? renderDirections(game, standing(game))
+      : element('p', { class: 'small muted' },
+                'Choose one of your units to order it.'));
   }
   return card;
 }
@@ -543,13 +578,6 @@ function renderOrders(game) {
     `${spend} energy will be spent this turn. A unit given no order recovers `
     + 'a point, so holding is a choice.'));
 
-  if (state.selected) {
-    card.append(renderDirections(game, units));
-  } else {
-    card.append(element('p', { class: 'small muted' },
-      'Choose one of your units to order it.'));
-  }
-
   card.append(renderBarrier(game));
   card.append(renderCommit(game));
   return card;
@@ -602,22 +630,51 @@ function health(game, unit) {
   return cell;
 }
 
+/**
+ * The five things a unit can be told, laid out as a compass.
+ *
+ * Four headings around a centre that means "stay where you are". Words in a
+ * row had to be read to be used - and read again, because "north" beside
+ * "east" is not a direction until you have parsed it. Arrows in the shape of
+ * the thing they do are read at a glance, and the centre is where a hand
+ * expects "none of these".
+ *
+ * The centre is always offered, not only for a unit under orders. Holding is
+ * a choice a player makes - a unit given no order recovers a point - and it
+ * is the same button whether it is choosing to stay or taking back an order
+ * given a moment ago.
+ */
 function renderDirections(game, units) {
   const unit = units.find((each) => each.name === state.selected);
   if (!unit) return element('span', {});
-  const row = element('p', {});
-  row.append(element('strong', {}, unit.name), ' ');
+  const wrap = element('div', { class: 'compass-wrap' });
+  wrap.append(element('p', { class: 'small' },
+    element('strong', {}, unit.name),
+    unit.direction ? ` — ordered ${unit.direction}` : ' — holding'));
+
+  const compass = element('div', { class: 'compass' });
+  const at = {};
   for (const direction of api.DIRECTIONS) {
-    row.append(button(`${direction.arrow} ${direction.word}`,
-                      () => order(game, unit, direction)), ' ');
+    at[direction.word] = button(direction.arrow,
+                                () => order(game, unit, direction),
+                                { class: 'point',
+                                  title: `move ${direction.word}`,
+                                  'aria-label': `move ${direction.word}` });
   }
-  // only for a unit that has one to take back: a button that does nothing is
-  // a button somebody presses to find out that it does nothing
-  if (unit.direction) {
-    row.append(button('✕ clear order', () => clearOrder(game, unit),
-                      { class: 'danger small' }), ' ');
-  }
-  return row;
+  const hold = button('•', () => clearOrder(game, unit), {
+    class: 'point hold' + (unit.direction ? ' undoes' : ''),
+    title: unit.direction ? 'take the order back and hold'
+                          : 'hold: stay and recover a point',
+    'aria-label': unit.direction ? 'take the order back and hold'
+                                 : 'hold, staying where it is',
+  });
+  // laid out as the compass it is: the grid places each one, so the arrows
+  // sit where the squares they point at are
+  compass.append(element('span', {}), at.north, element('span', {}),
+                 at.west, hold, at.east,
+                 element('span', {}), at.south, element('span', {}));
+  wrap.append(compass);
+  return wrap;
 }
 
 function renderCommit(game) {

@@ -226,6 +226,26 @@ def test_the_board_size_fields_are_read_and_written_through_the_state():
     assert "made.input.addEventListener('input'" in armoury
 
 
+def test_the_ordering_controls_are_in_the_board_pane():
+    """Choosing a unit, ordering it and seeing the arrow are one action."""
+    play = _module('play.js')
+    board_card = play[play.index('function renderBoardCard'):
+                      play.index('function reachableFrom')]
+    assert 'renderDirections(game' in board_card
+    assert 'Choose one of your units to order it.' in board_card
+
+
+def test_a_units_ring_shows_the_energy_it_has_left():
+    board, play = _module('board.js'), _module('play.js')
+    # drawn as a share of the ring's circumference, from the top
+    assert "class: 'energy'" in board or "'energy'" in board
+    assert 'stroke-dasharray' in board
+    assert 'energyOf' in board and 'energyOf:' in play
+    # and an enemy design nobody has met is not drawn as a proportion
+    assert 'designOf' in play
+    assert '.unit .energy' in _stylesheet()
+
+
 def test_the_number_fields_refuse_what_the_domain_would():
     """A negative attack was typed, sent, and refused only by the server."""
     app_js, armoury = _module('app.js'), _module('armoury.js')
@@ -242,7 +262,20 @@ def test_an_order_can_be_taken_back_from_the_board():
     assert 'clearOrder' in play
     assert 'api.hold(' in play
     assert "event.key === 'Backspace' || event.key === 'Delete'" in play
-    assert 'clear order' in play, 'and a button for a hand on a mouse'
+    # and the centre of the compass, for a hand on a mouse
+    assert "class: 'point hold'" in play.replace("'point hold' +", "'point hold'")
+
+
+def test_the_five_orders_are_laid_out_as_a_compass():
+    """Four headings around a centre that means stay where you are."""
+    play, sheet = _module('play.js'), _stylesheet()
+    # placed in the shape of what they do, and named for a reader that
+    # cannot see an arrow
+    assert 'at.north' in play and 'at.south' in play
+    assert 'at.west' in play and 'at.east' in play
+    assert "'aria-label': `move ${direction.word}`" in play
+    assert re.search(r'\.compass\s*\{[^}]*grid-template-columns', sheet)
+    assert '.compass .point.hold' in sheet
 
 
 def test_the_armoury_offers_to_take_a_deployed_unit_back():
