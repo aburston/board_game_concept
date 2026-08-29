@@ -11,7 +11,7 @@ source of truth for intended behaviour.
 | `unit-types` | Unit type definition, statistic ranges, energy against health, state and direction constants |
 | `board-model` | Board creation, unit placement, name uniqueness, lookup, rendering |
 | `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, the energy a move costs |
-| `combat-resolution` | Contested squares, simultaneous attack rounds, damage, destruction is final |
+| `combat-resolution` | Contested squares, one simultaneous strike a turn, damage, destruction is final |
 | `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
 | `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given |
 | `game-persistence` | On-disk game layout, YAML formats, orders as transport |
@@ -956,7 +956,7 @@ would have drawn.
 
 `src/board_game_concept/test_suite.py`, run as
 `python -m board_game_concept.test_suite`, is a hand-rolled harness covering the same ground as
-`tests/test_basic.py`. It was not updated when `fix-combat-stalemate-hang` made
-combat multi-round attrition, so its attack test still expected one round of
-damage and had been failing 9/10 since. The expectation has been corrected.
+`tests/test_basic.py`. Its combat expectations track the engine: the `single-strike-combat` change
+made a fight one exchange a turn, and the harness's two attack tests were
+updated to a lethal single strike alongside `tests/test_basic.py`.
 Whether the harness is worth keeping alongside pytest at all is open.

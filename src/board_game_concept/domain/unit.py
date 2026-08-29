@@ -306,61 +306,61 @@ def _isOut(unit, out):
 
 
 def exchangeAttacks(contestants, events=None, out=()):
-    """Fight until the contest is decided or nobody can pay. Returns survivors.
+    """Fight one exchange in a contested square. Returns the survivors.
 
-    `out` is the players whose flag has fallen. Their units contest the square
-    they stand on and land no attack: an army without its flag is terrain.
+    Every unit standing gets **one** attack, if it can pay for it, and no
+    more. That attack costs its attack value in energy, once, and lands that
+    value on every other unit in the square at the same instant - an enemy, a
+    friend, whoever is there. Then the exchange is over, whoever is left.
+
+    It used to run in rounds, repeating until one unit was left or nobody
+    could pay, so a single order bought as many strikes as a unit could
+    afford - which drained a full unit dry in one turn and killed anything it
+    outnumbered before the turn was out. One exchange a turn is the rule now:
+    to press a fight you have to be ordered back into it, turn after turn.
+
+    All the strikes land together, so a unit destroyed by this exchange has
+    already dealt its own. `out` is the players whose flag has fallen; their
+    units hold the square and strike nothing - an army without its flag is
+    terrain - but are struck and destroyed like anything else.
     """
-    while True:
-        # recount the survivors afresh each round, rather than decrementing
-        # a running total that counts the same casualty again every round
-        standing = [unit for unit in contestants if not unit.destroyed]
-        if len(standing) < 2:
-            break
-        attacked = False
-        # attackers and targets are the units standing at the start of the
-        # round, so a unit destroyed mid-round still lands its own attack
+    standing = [unit for unit in contestants if not unit.destroyed]
+    if len(standing) >= 2:
+        # who is going to strike, and what it will land, is decided against
+        # the square as the exchange begins - so charging one unit cannot
+        # spare another, and destroying one cannot stop its own blow. The
+        # attacks are gathered before any damage is applied
+        blows = []
         for unit in standing:
-            # one swing, one charge. The cost used to sit inside the loop
-            # below, so a unit paid once per opponent and a crowd drained it at
-            # a rate decided by how many happened to be standing there - and a
-            # unit that could afford some but not all of its attacks struck
-            # whichever opponents came first in the list, which is a rule
-            # decided by list position rather than by the rules
             if unit.attack <= 0:
-                # a wall does not fight. Without this it would pay nothing,
-                # deal nothing, and still count as an attack landed, and a
-                # round that lands an attack is a round that repeats (R5.6)
+                # a wall does not fight: no attack to pay with, none to land
                 continue
             if _isOut(unit, out):
-                # its player's flag has fallen: the unit holds its square and
-                # strikes nothing. It is still struck, and still destroyed -
-                # clearing it is how the square is taken
+                # its player's flag has fallen: it holds its square and
+                # strikes nothing, though it is still struck and destroyed
                 continue
             if unit.energy < unit.attack:
-                # too spent to attack: inert, but not destroyed. The round is
-                # all or nothing, so there is no half-paid round to hand out
+                # too spent to strike: inert, not destroyed. All or nothing,
+                # so there is no half-paid attack to hand out
                 continue
             unit.energy = unit.energy - unit.attack
             for target in standing:
                 if unit is target:
                     continue
-                if events is not None:
-                    events.append(Event(
-                        'attacked', unit=unit.name, target=target.name,
-                        damage=unit.attack))
-                target.incomingAttack(unit.attack, events)
-                # populate seen_by, recording each contestant once however
-                # many rounds of attacks the contest takes: a unit listed
-                # twice is reported twice to the players who saw it
+                blows.append((unit, target))
+                # each contestant is seen by every other it shared the square
+                # with, recorded once: a unit listed twice is a unit reported
+                # twice to the players who saw it
                 if target not in unit.seen_by:
                     unit.seen_by.append(target)
                 if unit not in target.seen_by:
                     target.seen_by.append(unit)
-                attacked = True
-        if not attacked:
-            # no contestant can pay for an attack, so the contest is over
-            break
+        for unit, target in blows:
+            if events is not None:
+                events.append(Event(
+                    'attacked', unit=unit.name, target=target.name,
+                    damage=unit.attack))
+            target.incomingAttack(unit.attack, events)
 
     for unit in contestants:
         if unit.destroyed:

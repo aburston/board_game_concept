@@ -211,7 +211,9 @@ def test_attack_on_entering_occupied_cell():
     """Test attack resolution when a unit moves into an occupied square"""
     print("\n[TEST 9] Attack on Occupied Square")
     try:
-        attacker_type = UnitType('Attacker', 'A', 3, 5, 100)
+        # one strike a turn: the attacker's is lethal (4 on health 4), so it
+        # clears the square in the single exchange a turn allows
+        attacker_type = UnitType('Attacker', 'A', 4, 5, 100)
         defender_type = UnitType('Defender', 'D', 2, 4, 100)
 
         p1 = Player(1)
@@ -230,9 +232,8 @@ def test_attack_on_entering_occupied_cell():
         assert type(square) is UnitType
         assert square.name == 'a1'
         assert square.player == p1
-        # combat is multi-round attrition, so the attacker takes two rounds of
-        # the defender's attack before the defender falls
-        assert square.health == 1
+        # the defender lands its one strike of 2 before it falls
+        assert square.health == 3
         assert defender.destroyed is True
 
         print('✓ Combat on entry resolved and victor occupies the target square')
@@ -246,7 +247,8 @@ def test_simultaneous_move_to_same_cell_attack():
     """Test attack resolution when two units move into the same empty square"""
     print("\n[TEST 10] Simultaneous Move into Same Square")
     try:
-        red_type = UnitType('Red', 'R', 4, 7, 100)
+        # red's one strike destroys blue outright (5 on health 5)
+        red_type = UnitType('Red', 'R', 5, 7, 100)
         blue_type = UnitType('Blue', 'B', 3, 5, 100)
 
         p1 = Player(1)

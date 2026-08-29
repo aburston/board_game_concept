@@ -116,7 +116,10 @@ def test_unit_type_state_constants():
 
 
 def test_attack_on_entering_occupied_cell():
-    attacker_type = UnitType('Attacker', 'A', 3, 5, 100)
+    # the attacker's one strike is lethal (attack 4 on health 4), so it clears
+    # the square in the single exchange a turn allows; a lighter strike would
+    # leave the defender standing and turn the attacker back
+    attacker_type = UnitType('Attacker', 'A', 4, 5, 100)
     defender_type = UnitType('Defender', 'D', 2, 4, 100)
 
     p1 = Player(1)
@@ -135,12 +138,14 @@ def test_attack_on_entering_occupied_cell():
     assert isinstance(square, UnitType)
     assert square.name == 'a1'
     assert square.player == p1
-    assert square.health == 1
+    assert square.health == 3, 'it took the defender\'s one strike of 2'
     assert defender.destroyed is True
 
 
 def test_simultaneous_move_to_same_cell_attack():
-    red_type = UnitType('Red', 'R', 4, 7, 100)
+    # red's one strike destroys blue outright (attack 5 on health 5), so red
+    # is the sole survivor and holds the square they both moved into
+    red_type = UnitType('Red', 'R', 5, 7, 100)
     blue_type = UnitType('Blue', 'B', 3, 5, 100)
 
     p1 = Player(1)
