@@ -226,6 +226,32 @@ def test_the_board_size_fields_are_read_and_written_through_the_state():
     assert "made.input.addEventListener('input'" in armoury
 
 
+def test_the_number_fields_refuse_what_the_domain_would():
+    """A negative attack was typed, sent, and refused only by the server."""
+    app_js, armoury = _module('app.js'), _module('armoury.js')
+    assert 'min' in app_js and 'max' in app_js, 'the field carries limits'
+    # the ranges the domain enforces: attack 0-10, health 1-10, energy 0-100
+    assert re.search(r'\{ min: 0, max: 10 \}', armoury)
+    assert re.search(r'\{ min: 1, max: 10 \}', armoury)
+    assert re.search(r'\{ min: 0, max: 100 \}', armoury)
+
+
+def test_an_order_can_be_taken_back_from_the_board():
+    """Nothing is final until the turn is committed, the keyboard included."""
+    play = _module('play.js')
+    assert 'clearOrder' in play
+    assert 'api.hold(' in play
+    assert "event.key === 'Backspace' || event.key === 'Delete'" in play
+    assert 'clear order' in play, 'and a button for a hand on a mouse'
+
+
+def test_the_armoury_offers_to_take_a_deployed_unit_back():
+    armoury = _module('armoury.js')
+    assert 'renderDeployed' in armoury
+    assert 'api.removeUnit(' in armoury
+    assert 'take back' in armoury
+
+
 def test_the_deploy_board_greys_where_a_seat_may_not_place():
     """The limit is drawn from the contract, not worked out in the browser."""
     app_js, armoury, board = (_module('app.js'), _module('armoury.js'),

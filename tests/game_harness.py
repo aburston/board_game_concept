@@ -15,6 +15,7 @@ from board_game_concept import Game, YamlGameRepository
 from board_game_concept.service import games
 from board_game_concept.service.commands import (
     AddPlayer, AddType, AddUnit, Move, SetBoard, SetFlag)
+from board_game_concept.storage.serialise import units_document
 
 # "the first unit deployed", told apart from `None`, which means no flag at all
 _FIRST = object()
@@ -108,6 +109,45 @@ class GameHarness:
         # up the player who never turns up
         if commit:
             assert client.clientSave()
+        return client
+
+    def publish_setup(self, player_number, types, units, flag=_FIRST):
+        """Publish a setup straight to the repository, past the commit.
+
+        A commit refuses a setup that deploys onto a square another player has
+        already committed a unit to, so a clash cannot be got through the
+        front door any more. What can still reach the server is a loaded
+        player file, or orders written by something that is not a client -
+        and that is what the resolution's own refusals exist for. This is
+        that route: the same writes `publish` makes, without the checks it
+        makes first.
+        """
+        client = self.session(player_number)
+        for name, symbol, attack, health, energy in types:
+            games.define_type(client, AddType(
+                name=name, symbol=symbol, attack=attack, health=health,
+                energy=energy))
+        for type_name, unit_name, x, y in units:
+            games.deploy_unit(client, AddUnit(
+                type_name=type_name, name=unit_name, x=x, y=y))
+        carrier = (units[0][1] if units else None) if flag is _FIRST else flag
+        if carrier is not None:
+            games.perform(client, SetFlag(unit=carrier))
+
+        repository = self.repository()
+        player = client.getPlayers()[player_number]
+        repository.write_player(
+            player_number,
+            {name: {key: value for key, value in design.items()
+                    if key != 'obj'}
+             for name, design in player['types'].items()},
+            client.getPlayerObj(player_number).budget)
+        repository.write_orders(
+            player_number,
+            units_document(client.getBoard(),
+                           client.getPlayerObj(player_number),
+                           in_play_only=True))
+        repository.mark_committed(player_number, client.getTurnNumber())
         return client
 
     # --- playing it

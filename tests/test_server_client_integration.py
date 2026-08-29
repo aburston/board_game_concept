@@ -310,25 +310,26 @@ class TestServerClientIntegration(unittest.TestCase):
     def test_two_players_deploying_onto_the_same_square(self):
         # issue #1: on the first turn no player can see another's units, so
         # two may claim the same square. The server used to die on an
-        # assertion; it now refuses both deployments and resolves the turn.
+        # assertion, and then refused both deployments when the turn resolved
+        # - which left each player having lost a unit and unable to do
+        # anything about it, because their setup was committed and closed.
         #
-        # Three players, because two cannot ask for one square any more:
-        # `placement-zones` gives each of two players their own half of the
-        # board, and the halves do not overlap. Three or more are unrestricted
+        # The clashing commit is refused now, at the prompt, and the setup
+        # stays open: take the unit back and put it somewhere else. Three
+        # players, because two cannot ask for one square any more - each of
+        # two is given their own half of the board
         server = self.start_server(['-g', 'test-01'])
         server.read_until('bgcserver> ')
 
         server.send_line('set board 3 3')
         server.read_until('bgcserver> ')
-        server.send_line('add player 1')
-        server.read_until('bgcserver> ')
-        server.send_line('add player 2')
-        server.read_until('bgcserver> ')
-        server.send_line('add player 3')
-        server.read_until('bgcserver> ')
+        for number in (1, 2, 3):
+            server.send_line(f'add player {number}')
+            self.read_until_count(server, 'bgcserver> ', number + 1)
         server.send_line('commit')
         server.read_until('wait for player commit')
 
+        # player 1 gets (1, 1), because they commit first
         client1 = self.start_client('test-01', 1)
         client1.read_until('bgcclient> ')
         client1.send_line('add type Cross X 1 1 10')
@@ -339,13 +340,24 @@ class TestServerClientIntegration(unittest.TestCase):
         client1.send_line('commit')
         client1.read_until('waiting for turn to complete...')
 
+        # player 2 asks for it too, and is told at the prompt
         client2 = self.start_client('test-01', 2)
         client2.read_until('bgcclient> ')
         client2.send_line('add type Naught O 1 1 10')
         client2.read_until('bgcclient> ')
         client2.send_line('add unit Naught o1 1 1')
         client2.send_line('set flag o1')
-        client2.read_until('bgcclient> ')
+        self.read_until_count(client2, 'bgcclient> ', 3)
+        client2.send_line('commit')
+        client2.read_until('already committed a unit to')
+
+        # nothing of theirs was published, so the setup is still theirs: take
+        # the unit back, put it somewhere free, and commit
+        client2.send_line('remove unit o1')
+        self.read_until_count(client2, 'bgcclient> ', 5)
+        client2.send_line('add unit Naught o1 0 0')
+        client2.send_line('set flag o1')
+        self.read_until_count(client2, 'bgcclient> ', 6)
         client2.send_line('commit')
         client2.read_until('waiting for turn to complete...')
 
@@ -353,45 +365,27 @@ class TestServerClientIntegration(unittest.TestCase):
         client3.read_until('bgcclient> ')
         client3.send_line('add type Star S 1 1 10')
         client3.read_until('bgcclient> ')
-        client3.send_line('add unit Star s1 1 1')
+        client3.send_line('add unit Star s1 2 2')
         client3.send_line('set flag s1')
         client3.read_until('bgcclient> ')
         client3.send_line('commit')
         client3.read_until('waiting for turn to complete...')
 
-        # the turn resolves rather than taking the server down
+        # the turn resolves, and every army is on the board: nothing was lost
+        # to the clash, because it was never committed
         self.read_until_count(server, 'commit complete', 2)
 
         units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
         units = yaml.safe_load(units_file.read_text())['units']
+        placed = {unit['name']: (unit['x'], unit['y']) for unit in units}
+        self.assertEqual(placed, {'x1': (1, 1), 'o1': (0, 0), 's1': (2, 2)})
 
-        # neither deployment was accepted. Letting the first through made
-        # the winner whichever player the server read first, which is player
-        # number order, in a race neither of them could see they were in
-        self.assertEqual(units, 'None')
-
-        # and every player is told, by name and square
+        # and nobody was told anything was refused, because nothing was
         players_dir = GAMES_DIR / '_test-01' / 'players'
-        for number, unit_name in ((1, 'x1'), (2, 'o1'), (3, 's1')):
+        for number in (1, 2, 3):
             refused = yaml.safe_load(
                 (players_dir / f'{number}_rejected.yaml').read_text())['rejected']
-            self.assertEqual(len(refused), 1)
-            self.assertEqual(refused[0]['unit'], unit_name)
-            self.assertEqual((refused[0]['x'], refused[0]['y']), (1, 1))
-            self.assertIn('both were refused', refused[0]['reason'])
-
-        # and each sees it when they next log in - along with the end of the
-        # game, because a first turn that refuses every deployment leaves
-        # every player with nothing standing. It used to leave them holding
-        # an empty board they could neither add to nor finish
-        for number, unit_name in ((1, 'x1'), (2, 'o1'), (3, 's1')):
-            client = self.start_client('test-01', number)
-            client.read_until('bgcclient> ')
-            self.assertIn('rejected last turn', client.output)
-            self.assertIn(unit_name, client.output)
-            self.assertIn('game over: a draw on turn 1', client.output)
-            client.send_line('commit')
-            client.read_until('the game is over')
+            self.assertEqual(refused, [])
 
     def test_an_order_with_an_invalid_state_is_rejected_not_fatal(self):
         # game-persistence requires the server to reject an order whose state

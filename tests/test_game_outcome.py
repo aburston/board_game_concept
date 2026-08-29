@@ -159,8 +159,8 @@ def test_a_first_turn_that_refuses_every_deployment_is_decided(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(6, 4, [1, 2, 3], budget=Player.MAX_BUDGET)
     for number, symbol in ((1, 'X'), (2, 'O'), (3, 'T')):
-        harness.deploy(number, [(symbol, symbol, 1, 5, 50)],
-                       [(symbol, f'{symbol.lower()}1', 0, 0)])
+        harness.publish_setup(number, [(symbol, symbol, 1, 5, 50)],
+                              [(symbol, f'{symbol.lower()}1', 0, 0)])
     harness.resolve()
 
     assert harness.units() == {}, 'every deployment was refused'
@@ -174,9 +174,9 @@ def test_one_army_refused_leaves_the_other_the_winner(tmp_path):
     harness.create(6, 4, [1, 2, 3], budget=Player.MAX_BUDGET)
     # players 1 and 2 both ask for (0, 0) and lose everything to it; only
     # player 3 has anything anywhere else, their flag among it
-    harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
-    harness.deploy(2, [('O', 'O', 1, 5, 50)], [('O', 'o1', 0, 0)])
-    harness.deploy(3, [('T', 'T', 1, 5, 50)], [('T', 't1', 2, 0)])
+    harness.publish_setup(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
+    harness.publish_setup(2, [('O', 'O', 1, 5, 50)], [('O', 'o1', 0, 0)])
+    harness.publish_setup(3, [('T', 'T', 1, 5, 50)], [('T', 't1', 2, 0)])
     harness.resolve()
 
     assert sorted(harness.units()) == ['t1']
@@ -194,15 +194,15 @@ def test_an_army_whose_flag_never_arrived_is_out(tmp_path):
     """
     harness = GameHarness(tmp_path)
     harness.create(6, 4, [1, 2, 3], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', 1, 5, 50)],
-                   [('X', 'x1', 0, 0), ('X', 'x2', 4, 0)], flag='x2')
+    harness.publish_setup(1, [('X', 'X', 1, 5, 50)],
+                          [('X', 'x1', 0, 0), ('X', 'x2', 4, 0)], flag='x2')
     # player 2's carrier is the one that collides, and the rest of their army
     # takes the field without it
-    harness.deploy(2, [('O', 'O', 1, 5, 50)],
-                   [('O', 'o1', 0, 0), ('O', 'o2', 2, 0)], flag='o1')
+    harness.publish_setup(2, [('O', 'O', 1, 5, 50)],
+                          [('O', 'o1', 0, 0), ('O', 'o2', 2, 0)], flag='o1')
     # and player 3 loses everything to the same square, so that exactly one
     # player is left standing and the game is decided
-    harness.deploy(3, [('T', 'T', 1, 5, 50)], [('T', 't1', 0, 0)])
+    harness.publish_setup(3, [('T', 'T', 1, 5, 50)], [('T', 't1', 0, 0)])
     harness.resolve()
 
     assert sorted(harness.units()) == ['o2', 'x2']

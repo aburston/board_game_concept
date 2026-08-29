@@ -127,6 +127,11 @@ class AddUnit(Node):
     fields = ('type_name', 'name', 'x', 'y')
 
 
+class RemoveUnit(Node):
+    kind = 'remove_unit'
+    fields = ('name',)
+
+
 class LoadBoard(Node):
     kind = 'load_board'
     fields = ('path',)
@@ -140,6 +145,11 @@ class LoadPlayer(Node):
 class Move(Node):
     kind = 'move'
     fields = ('unit', 'direction')
+
+
+class Hold(Node):
+    kind = 'hold'
+    fields = ('unit',)
 
 
 class SetNewGame(Node):

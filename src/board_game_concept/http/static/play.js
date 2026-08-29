@@ -444,6 +444,25 @@ async function order(game, unit, direction) {
   }
 }
 
+/**
+ * Take back the order a unit was given, while the turn is still being decided.
+ *
+ * An order was final the moment it was given: a unit ordered north was
+ * ordered north, and the only way out was to commit the turn and let it
+ * happen. Nothing is final until the turn is committed, so this puts the unit
+ * back to having no order at all - which is holding, and rests it.
+ */
+async function clearOrder(game, unit) {
+  try {
+    await api.perform(game.gameno, game.number, api.hold(unit.name));
+    await loadSeat(game.gameno, game.number);
+    say(`${unit.name} holds.`);
+  } catch (error) {
+    say(error.message);
+  }
+  set({});
+}
+
 // --- the orders tray
 
 function renderOrders(game) {
@@ -591,6 +610,12 @@ function renderDirections(game, units) {
   for (const direction of api.DIRECTIONS) {
     row.append(button(`${direction.arrow} ${direction.word}`,
                       () => order(game, unit, direction)), ' ');
+  }
+  // only for a unit that has one to take back: a button that does nothing is
+  // a button somebody presses to find out that it does nothing
+  if (unit.direction) {
+    row.append(button('✕ clear order', () => clearOrder(game, unit),
+                      { class: 'danger small' }), ' ');
   }
   return row;
 }
@@ -919,9 +944,11 @@ function renderKeys() {
     element('kbd', {}, '← ↑ → ↓'), ' move about the board · ',
     element('kbd', {}, 'Enter'), ' select the unit under the cursor · ',
     element('kbd', {}, 'Esc'), ' clear the selection · ',
+    element('kbd', {}, 'Del'), ' take back its order · ',
     element('kbd', {}, 'C'), ' commit'));
   card.append(element('p', { class: 'small muted' },
-    'With a unit selected, an arrow key orders it that way.'));
+    'With a unit selected, an arrow key orders it that way, and '
+    + 'Delete takes the order back until the turn is committed.'));
   return card;
 }
 
@@ -955,6 +982,16 @@ export function handleKey(event) {
     const here = standing(game).find(
       (unit) => unit.x === state.cursor.x && unit.y === state.cursor.y);
     return set({ selected: here ? here.name : null });
+  }
+
+  // Backspace and Delete take back the order the selected unit was given,
+  // which is where a hand already is after the arrow keys that gave it
+  if (event.key === 'Backspace' || event.key === 'Delete') {
+    event.preventDefault();
+    const chosen = standing(game).find(
+      (unit) => unit.name === state.selected);
+    if (chosen && chosen.direction) return clearOrder(game, chosen);
+    return undefined;
   }
 
   if (event.key === 'Escape') return set({ selected: null });

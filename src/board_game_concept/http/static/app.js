@@ -389,8 +389,18 @@ export function button(text, onClick, attributes) {
   return node;
 }
 
-export function field(labelText, type, autocomplete) {
-  const input = element('input', { type, autocomplete: autocomplete || 'off' });
+export function field(labelText, type, autocomplete, limits) {
+  // `limits` are `{min, max}` for a number, which the browser then refuses
+  // to submit outside of. Without them a number field took anything at all,
+  // including a negative attack, and the only thing that said no was the
+  // server - after the form had been sent and the answer read
+  const input = element('input', {
+    type,
+    autocomplete: autocomplete || 'off',
+    ...(limits && limits.min !== undefined ? { min: limits.min } : {}),
+    ...(limits && limits.max !== undefined ? { max: limits.max } : {}),
+    ...(type === 'number' ? { step: 1 } : {}),
+  });
   const label = element('label', {}, labelText, input);
   return { label, input };
 }
