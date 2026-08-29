@@ -43,6 +43,11 @@ PLACED = ('deployed', 'moved', 'joined', 'engaged', 'refused', 'retreated',
 # is whichever was fought last, and that is somebody else's square
 INSIDE = ('attacked', 'destroyed')
 
+# what a square came to rather than what one player did to another. These are
+# told to everyone who was in the fight, whoever they name: a unit falling is
+# the square's outcome, and a seat that struck it is entitled to know it fell
+OUTCOMES = ('destroyed', 'removed')
+
 
 def entries(events):
     """Every event as a plain record, with the square it happened on.
@@ -84,31 +89,44 @@ def names_in(entry):
     return found
 
 
-def for_seat(made, owned, visible):
+def for_seat(made, owned):
     """The entries one seat may read, in the order they happened.
 
-    `owned` is the names of that seat's own units and `visible` the names of
-    every unit its published view holds - which is what it may be told about,
-    decided where `visibility` decides it rather than again here.
+    `owned` is the names of that seat's own units, and it is the whole of the
+    rule: an entry reaches a seat where one of its own units is named in it.
+
+    It used to reach a seat where every unit named was one that seat could
+    see, which meant a player standing beside a contest they took no part in
+    read every blow struck in it. Being able to see two units is not being in
+    their fight, and what they did to each other is theirs. A seat in a
+    three-way contest is told what it struck and what struck it, and not what
+    the other two did to one another.
     """
     owned = set(owned or ())
-    visible = set(visible or ()) | owned
     kept = []
     squares = set()
     for index, entry in enumerate(made):
         named = names_in(entry)
         if not named:
             continue                       # square-only, decided below
-        if not (named & owned or named <= visible):
+        if entry['kind'] in OUTCOMES:
+            continue                       # the square's, decided below too
+        if not named & owned:
             continue
         kept.append(index)
         square = _square(entry)
         if square is not None:
             squares.add(square)
 
-    # the square-only entries, kept where the seat can already see the fight
+    # what the square itself came to, kept where the seat was in the fight: a
+    # square it had a unit in is one it may be told was contested, and one
+    # where it may be told a unit fell. A unit falling in front of you is not
+    # a thing that can be kept from you, and being told you killed something
+    # is the whole point of having struck it - `destroyed` names the unit that
+    # fell and nobody else, so the rule above would otherwise withhold a
+    # player's own kill from them
     for index, entry in enumerate(made):
-        if names_in(entry):
+        if names_in(entry) and entry['kind'] not in OUTCOMES:
             continue
         square = _square(entry)
         if square is not None and square in squares:

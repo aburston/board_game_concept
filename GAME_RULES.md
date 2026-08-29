@@ -471,6 +471,19 @@ listed for you, marked destroyed and off the board, so you can see what you have
 lost. They are never drawn on a square. An enemy unit you destroyed appears in
 your view for that turn only, and drops out like any other contact (**R6.3**).
 
+**R6.8 You are told what a turn did to your own units, and nothing of what
+other players did to each other.** A fight is told to the people in it: if one
+of your units struck, was struck, moved or fell, you are told, by name and
+square. If two other players fight, you are told nothing of it — not the
+blows, not the square, not that it happened — even where you could see both of
+them. Being able to see two units is not being in their fight, and an account
+of a turn is a way of learning where somebody is.
+
+What a square **came to** is told to everyone who was in it: a unit falling in
+front of you is not something that can be kept from you, and being told you
+killed something is the point of having struck it. The observer reads the
+whole log (**R6.6**).
+
 ---
 
 ## R7. Ending the game

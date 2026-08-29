@@ -202,6 +202,27 @@ export function renderBoard(board, units, options) {
       cy: SQUARE / 2,
       r: RING,
     }));
+
+    // the energy the unit has left, drawn as the share of its own ring it
+    // can still pay for. Energy is what decides whether a unit can move,
+    // whether it can strike, and whether it is inert - the thing to know
+    // before ordering it - and it was a number in a table while the board a
+    // player is looking at drew a spent unit and a fresh one identically
+    const power = settings.energyOf ? settings.energyOf(unit) : null;
+    if (power && Number.isFinite(power.now) && power.full > 0) {
+      const round = 2 * Math.PI * RING;
+      const share = Math.max(0, Math.min(1, power.now / power.full));
+      group.append(svg('circle', {
+        class: 'energy' + (share <= 0.25 ? ' spent' : ''),
+        cx: SQUARE / 2,
+        cy: SQUARE / 2,
+        r: RING,
+        // drawn from the top, clockwise, so it reads like a dial rather than
+        // starting at three o'clock where SVG would put it
+        transform: `rotate(-90 ${SQUARE / 2} ${SQUARE / 2})`,
+        'stroke-dasharray': `${round * share} ${round}`,
+      }));
+    }
     const text = svg('text', {
       x: SQUARE / 2,
       y: SQUARE / 2 + 5,

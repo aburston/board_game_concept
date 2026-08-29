@@ -100,7 +100,7 @@ def test_a_unit_taken_off_the_board_is_not_placed_at_the_last_fight():
 
 def test_a_seat_is_told_what_happened_to_its_own_units():
     made = entries_of(Event('attacked', unit='o1', target='x1', damage=3))
-    mine = turn_feed.for_seat(made, owned=['x1'], visible=[])
+    mine = turn_feed.for_seat(made, owned=['x1'])
     assert kinds(mine) == ['attacked']
 
 
@@ -111,39 +111,73 @@ def test_a_seat_is_not_told_about_a_fight_between_units_it_cannot_see():
     somebody is somewhere, and that it is worth going to look.
     """
     made = entries_of(Event('attacked', unit='o1', target='p1', damage=3))
-    mine = turn_feed.for_seat(made, owned=['x1'], visible=['x1'])
+    mine = turn_feed.for_seat(made, owned=['x1'])
     assert mine == []
 
 
-def test_a_seat_is_told_about_other_units_it_can_see():
-    made = entries_of(Event('attacked', unit='o1', target='p1', damage=3))
-    mine = turn_feed.for_seat(made, owned=['x1'], visible=['x1', 'o1', 'p1'])
-    assert kinds(mine) == ['attacked']
+def test_a_seat_is_not_told_about_a_fight_it_can_see_but_is_not_in():
+    """Seeing two units is not being in their fight.
 
-
-def test_a_seat_that_can_see_one_of_two_fighters_is_not_told():
-    """Half a fight is a position, and a position is what is being withheld."""
+    A seat standing beside a contest it took no part in used to read every
+    blow struck in it, because it could see both fighters. What they did to
+    each other is theirs.
+    """
     made = entries_of(Event('attacked', unit='o1', target='p1', damage=3))
-    mine = turn_feed.for_seat(made, owned=['x1'], visible=['x1', 'o1'])
+    mine = turn_feed.for_seat(made, owned=['x1'])
     assert mine == []
 
 
-def test_the_square_a_seat_can_see_a_fight_on_comes_with_it():
+def test_a_seat_is_told_of_the_kill_it_made():
+    """`destroyed` names the unit that fell and nobody else."""
+    made = entries_of(
+        Event('contested', x=2, y=1, units=2),
+        Event('attacked', unit='x1', target='o1', damage=5),
+        Event('destroyed', unit='o1'))
+    mine = turn_feed.for_seat(made, owned=['x1'])
+    assert kinds(mine) == ['contested', 'attacked', 'destroyed']
+
+
+def test_a_kill_in_a_fight_the_seat_was_not_in_is_not_told():
+    made = entries_of(
+        Event('contested', x=9, y=9, units=2),
+        Event('attacked', unit='o1', target='p1', damage=5),
+        Event('destroyed', unit='p1'))
+    assert turn_feed.for_seat(made, owned=['x1']) == []
+
+
+def test_a_seat_in_a_three_way_reads_its_own_blows_and_no_others():
+    made = entries_of(
+        Event('contested', x=2, y=1, units=3),
+        Event('attacked', unit='o1', target='x1', damage=3),
+        Event('attacked', unit='x1', target='o1', damage=2),
+        Event('attacked', unit='o1', target='p1', damage=3),
+        Event('attacked', unit='p1', target='o1', damage=1))
+    mine = turn_feed.for_seat(made, owned=['x1'])
+    struck = [(e['detail']['unit'], e['detail']['target']) for e in mine
+              if e['kind'] == 'attacked']
+    assert struck == [('o1', 'x1'), ('x1', 'o1')]
+    # and the square it was in, as context for the marks on its board
+    assert 'contested' in kinds(mine)
+    # but nothing of what the other two did to one another
+    assert not any(e['detail'].get('target') == 'p1' for e in mine)
+
+
+def test_the_square_of_a_fight_the_seat_was_in_comes_with_it():
     """`contested` and `emptied` name nobody, and are context for the fight."""
     made = entries_of(
         Event('contested', x=2, y=1, units=2),
         Event('attacked', unit='o1', target='x1', damage=3),
         Event('emptied', x=2, y=1))
-    mine = turn_feed.for_seat(made, owned=['x1'], visible=['x1', 'o1'])
+    mine = turn_feed.for_seat(made, owned=['x1'])
     assert kinds(mine) == ['contested', 'attacked', 'emptied']
 
 
-def test_a_square_from_a_fight_a_seat_cannot_see_is_not_named():
+def test_a_square_from_a_fight_the_seat_was_not_in_is_not_named():
     made = entries_of(
         Event('contested', x=9, y=9, units=2),
         Event('attacked', unit='o1', target='p1', damage=3),
         Event('emptied', x=9, y=9))
-    assert turn_feed.for_seat(made, owned=['x1'], visible=['x1']) == []
+    assert turn_feed.for_seat(made, owned=['x1']) == []
 
 
 def test_the_order_events_happened_in_is_the_order_they_are_read_in():
@@ -154,7 +188,7 @@ def test_the_order_events_happened_in_is_the_order_they_are_read_in():
         Event('attacked', unit='x1', target='o1', damage=5),
         Event('destroyed', unit='o1'),
         Event('held', unit='x1', x=2, y=1))
-    mine = turn_feed.for_seat(made, owned=['x1'], visible=['x1', 'o1'])
+    mine = turn_feed.for_seat(made, owned=['x1'])
     assert kinds(mine) == ['engaged', 'contested', 'attacked', 'destroyed',
                            'held']
 
