@@ -7,7 +7,7 @@ is asked who has committed; what that means is decided here.
 
 import sys
 
-from ..domain import UnitType, budget
+from ..domain import UnitType, budget, placement
 from ..storage.serialise import units_document
 from . import identity
 from . import turn_feed
@@ -159,21 +159,33 @@ def _unaffordable_deployments(game, deployments):
 def _refused_deployments(game, orders):
     """Every deployment this turn will not carry out, and why.
 
-    Both reasons a deployment can be refused before it is even attempted are
-    decided here, against the board as the turn began: two players asking for
-    one square, and an owner whose points will not pay for it. Judged up front
-    rather than as the loop reaches each order, so that what one player is
-    refused cannot depend on how far through the list the loop happens to be.
+    Every reason a deployment can be refused before it is even attempted is
+    decided here, against the board as the turn began: a square that is not
+    the player's to deploy in, two players asking for one square, and an owner
+    whose points will not pay for it. Judged up front rather than as the loop
+    reaches each order, so that what one player is refused cannot depend on
+    how far through the list the loop happens to be.
 
     Keyed by `(player, unit name)`, which is what the loop has in hand.
     """
     refusals = {}
     contended = _contended_squares(game, orders)
+    numbers = list(game.players.keys())
     standing = []
     for p_number, unit in orders:
         if not _is_deployment(game, p_number, unit):
             continue
         square = (int(unit['x']), int(unit['y']))
+        # where this player may deploy at all. Asked here as well as at the
+        # client because an order file is written by hand or loaded from disk
+        # and never passed through one. A game that is not two-player allows
+        # the whole board, so this refuses nothing it did not refuse before
+        outside = placement.refusal(
+            p_number, numbers, square[0], square[1],
+            game.board.size_x, game.board.size_y)
+        if outside is not None:
+            refusals[(p_number, str(unit['name']))] = outside
+            continue
         if square in contended:
             refusals[(p_number, str(unit['name']))] = (
                 f"two units were deployed at {square}, so both were refused")

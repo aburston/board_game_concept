@@ -11,7 +11,7 @@ holding only the part that is genuinely theirs - what to say, and to whom.
 
 import yaml
 
-from ..domain import Board, Player, UnitType, budget
+from ..domain import Board, Player, UnitType, budget, placement
 from . import identity
 from .errors import GameError
 
@@ -164,6 +164,16 @@ def deploy_unit(data, command):
                      ['types'][command.type_name]['obj'])
     except Exception as e:
         raise GameError(f"error creating new unit {e}") from e
+
+    # where a player may deploy at all, asked before what they can afford:
+    # a square that is not theirs to use is refused whatever it would cost.
+    # Every game asks - a game that is not two-player is told the whole board
+    # is available, which is the same answer it gave before this rule existed
+    refusal = placement.refusal(
+        data.player_number, data.getPlayers().keys(),
+        command.x, command.y, board.size_x, board.size_y)
+    if refusal is not None:
+        raise GameError(refusal)
 
     # what the budget will not pay for is refused before anything is placed,
     # so a refusal leaves the game exactly as it was and `perform` records

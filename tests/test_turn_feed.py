@@ -163,11 +163,16 @@ def test_the_order_events_happened_in_is_the_order_they_are_read_in():
 
 
 def a_contested_game(tmp_path, stats=(5, 5, 50), enemy=(3, 6, 50)):
-    """Two units a square apart, so ordering one east starts a fight."""
+    """Two units a square apart, so ordering one south starts a fight.
+
+    Four rows: a two-player board is halved by rows, so the two cannot stand
+    side by side in one row. Player 1 owns rows 0 and 1 and player 2 rows 2
+    and 3, and they face each other across the line the halves meet on.
+    """
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.create(4, 4, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', *stats)], [('X', 'x1', 1, 1)])
-    harness.deploy(2, [('O', 'O', *enemy)], [('O', 'o1', 2, 1)])
+    harness.deploy(2, [('O', 'O', *enemy)], [('O', 'o1', 1, 2)])
     harness.resolve()
     return harness
 
@@ -178,7 +183,7 @@ def feed(harness, number):
 
 def test_a_resolution_records_what_each_seat_may_read(tmp_path):
     harness = a_contested_game(tmp_path)
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
 
     for number in (1, 2):
         told = feed(harness, number)
@@ -189,14 +194,14 @@ def test_a_resolution_records_what_each_seat_may_read(tmp_path):
 
 def test_a_seat_is_told_the_damage_and_the_square(tmp_path):
     harness = a_contested_game(tmp_path)
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
 
     attacks = [entry for entry in feed(harness, 1)
                if entry['kind'] == 'attacked']
     assert attacks, 'no attack was recorded'
     for attack in attacks:
         assert attack['detail']['damage'] > 0
-        assert (attack['detail']['x'], attack['detail']['y']) == (2, 1)
+        assert (attack['detail']['x'], attack['detail']['y']) == (1, 2)
 
 
 def test_a_seat_is_not_told_about_a_deployment_it_could_not_see(tmp_path):
@@ -211,7 +216,7 @@ def test_a_seat_is_not_told_about_a_deployment_it_could_not_see(tmp_path):
 def test_the_whole_log_is_kept_for_a_session_entitled_to_it(tmp_path):
     """The observer and the administrator see the game, so they see the log."""
     harness = a_contested_game(tmp_path)
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
 
     log = harness.repository().read_turn_events()
     deployed = {entry['detail']['unit'] for entry in log
@@ -222,9 +227,9 @@ def test_the_whole_log_is_kept_for_a_session_entitled_to_it(tmp_path):
 def a_march(tmp_path):
     """Two turns of moving, out of contact, so each turn has something to say."""
     harness = GameHarness(tmp_path)
-    harness.create(4, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.create(4, 4, [1, 2], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', 1, 4, 50)], [('X', 'x1', 0, 0)])
-    harness.deploy(2, [('O', 'O', 1, 4, 50)], [('O', 'o1', 3, 2)])
+    harness.deploy(2, [('O', 'O', 1, 4, 50)], [('O', 'o1', 3, 3)])
     harness.resolve()
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})

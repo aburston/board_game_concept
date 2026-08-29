@@ -12,11 +12,20 @@ from game_harness import GameHarness
 
 
 def duel(tmp_path, mine=(5, 5, 50), theirs=None, my_units=None, their_units=None):
+    """Two players facing each other across the line their halves meet on.
+
+    A two-player setup gives each player half the board by rows, so the two
+    cannot be deployed side by side in one row any more. Four rows makes the
+    halves meet - player 1 owns rows 0 and 1, player 2 rows 2 and 3, and no row
+    is neutral - so `x1` at (0, 1) and `o1` at (0, 2) are still neighbours, one
+    square apart across the divide. They engage by moving south and north
+    rather than east and west.
+    """
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', *mine)], my_units or [('X', 'x1', 0, 0)])
+    harness.create(6, 4, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', *mine)], my_units or [('X', 'x1', 0, 1)])
     harness.deploy(2, [('O', 'O', *(theirs or mine))],
-                   their_units or [('O', 'o1', 1, 0)])
+                   their_units or [('O', 'o1', 0, 2)])
     harness.resolve()
     return harness
 
@@ -71,7 +80,7 @@ def test_published_records_name_their_turn(tmp_path):
 
 def test_a_player_who_loses_their_last_unit_is_eliminated(tmp_path):
     harness = duel(tmp_path, mine=(10, 10, 50), theirs=(1, 1, 50))
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     assert harness.session(0).getEliminated() == [2]
     assert harness.session(0).isEliminated(2)
     assert not harness.session(0).isEliminated(1)
@@ -108,15 +117,15 @@ def test_a_player_left_holding_only_walls_is_eliminated(tmp_path):
     # a wall was designed with no energy, so resting gives it nothing and it
     # can never act. Nothing that can play is nothing at all
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', 5, 10, 50)], [('X', 'x1', 0, 0)])
+    harness.create(6, 4, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', 5, 10, 50)], [('X', 'x1', 0, 1)])
     harness.deploy(2, [('W', 'W', 0, 1, 0), ('O', 'O', 1, 1, 10)],
-                   [('W', 'w1', 5, 2), ('O', 'o1', 1, 0)])
+                   [('W', 'w1', 5, 3), ('O', 'o1', 0, 2)])
     harness.resolve()
     assert harness.session(0).getEliminated() == []
 
     # x1 destroys o1, and what player 2 has left is a wall
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     units = harness.units()
     assert units['o1'].destroyed
     assert units['w1'].on_board and not units['w1'].destroyed
@@ -126,9 +135,9 @@ def test_a_player_left_holding_only_walls_is_eliminated(tmp_path):
 
 def test_both_players_losing_their_last_playable_unit_is_a_draw(tmp_path):
     harness = duel(tmp_path, mine=(1, 1, 10), theirs=(1, 1, 10),
-                   my_units=[('X', 'x1', 0, 0)],
-                   their_units=[('O', 'o1', 1, 0)])
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+                   my_units=[('X', 'x1', 0, 1)],
+                   their_units=[('O', 'o1', 0, 2)])
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     assert harness.session(0).getEliminated() == [1, 2]
     assert outcome(harness)['winner'] is None
 
@@ -136,37 +145,43 @@ def test_both_players_losing_their_last_playable_unit_is_a_draw(tmp_path):
 def test_a_first_turn_that_refuses_every_deployment_is_decided(tmp_path):
     """The game used to be left where it could be neither played nor left.
 
-    Two armies deployed onto the same squares are both refused for it, so the
+    Armies deployed onto the same square are all refused for it, so the
     resolution that ends setup puts nothing on the board. The game judged
     "not started" from the empty board, eliminated nobody and decided nothing
-    - while setup was over for both players, so no more units could ever be
+    - while setup was over for every player, so no more units could ever be
     added. This is the game that was found in that state.
+
+    Three players, because two cannot contest a deployment square any more:
+    `placement-zones` gives each of two players their own half, and the halves
+    do not overlap. Three or more players are unrestricted, so a square can
+    still be asked for twice.
     """
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
-    harness.deploy(2, [('O', 'O', 1, 5, 50)], [('O', 'o1', 0, 0)])
+    harness.create(6, 4, [1, 2, 3], budget=Player.MAX_BUDGET)
+    for number, symbol in ((1, 'X'), (2, 'O'), (3, 'T')):
+        harness.deploy(number, [(symbol, symbol, 1, 5, 50)],
+                       [(symbol, f'{symbol.lower()}1', 0, 0)])
     harness.resolve()
 
-    assert harness.units() == {}, 'both deployments were refused'
+    assert harness.units() == {}, 'every deployment was refused'
     assert harness.session(0).getTurnNumber() == 1
-    assert harness.session(0).getEliminated() == [1, 2]
+    assert harness.session(0).getEliminated() == [1, 2, 3]
     assert outcome(harness) == {'decided': True, 'winner': None, 'turn': 1}
 
 
 def test_one_army_refused_leaves_the_other_the_winner(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
-    # both ask for (0, 0), and only player 2 has anything anywhere else -
-    # their flag among it, so what they are left with is still a game
+    harness.create(6, 4, [1, 2, 3], budget=Player.MAX_BUDGET)
+    # players 1 and 2 both ask for (0, 0) and lose everything to it; only
+    # player 3 has anything anywhere else, their flag among it
     harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
-    harness.deploy(2, [('O', 'O', 1, 5, 50)],
-                   [('O', 'o1', 0, 0), ('O', 'o2', 2, 0)], flag='o2')
+    harness.deploy(2, [('O', 'O', 1, 5, 50)], [('O', 'o1', 0, 0)])
+    harness.deploy(3, [('T', 'T', 1, 5, 50)], [('T', 't1', 2, 0)])
     harness.resolve()
 
-    assert sorted(harness.units()) == ['o2']
-    assert harness.session(0).getEliminated() == [1]
-    assert outcome(harness) == {'decided': True, 'winner': 2, 'turn': 1}
+    assert sorted(harness.units()) == ['t1']
+    assert harness.session(0).getEliminated() == [1, 2]
+    assert outcome(harness) == {'decided': True, 'winner': 3, 'turn': 1}
 
 
 def test_an_army_whose_flag_never_arrived_is_out(tmp_path):
@@ -178,24 +193,28 @@ def test_an_army_whose_flag_never_arrived_is_out(tmp_path):
     would be playing a different game from everybody else.
     """
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.create(6, 4, [1, 2, 3], budget=Player.MAX_BUDGET)
     harness.deploy(1, [('X', 'X', 1, 5, 50)],
                    [('X', 'x1', 0, 0), ('X', 'x2', 4, 0)], flag='x2')
     # player 2's carrier is the one that collides, and the rest of their army
     # takes the field without it
     harness.deploy(2, [('O', 'O', 1, 5, 50)],
                    [('O', 'o1', 0, 0), ('O', 'o2', 2, 0)], flag='o1')
+    # and player 3 loses everything to the same square, so that exactly one
+    # player is left standing and the game is decided
+    harness.deploy(3, [('T', 'T', 1, 5, 50)], [('T', 't1', 0, 0)])
     harness.resolve()
 
     assert sorted(harness.units()) == ['o2', 'x2']
-    assert harness.session(0).getEliminated() == [2]
+    assert harness.session(0).getEliminated() == [2, 3]
     assert outcome(harness) == {'decided': True, 'winner': 1, 'turn': 1}
 
     # and the record every player reads says so, rather than saying nothing
     # about the player whose flag never arrived
     assert harness.repository().read_flags() == [
         {'player': 1, 'x': 4, 'y': 0, 'standing': True},
-        {'player': 2, 'x': None, 'y': None, 'standing': False}]
+        {'player': 2, 'x': None, 'y': None, 'standing': False},
+        {'player': 3, 'x': None, 'y': None, 'standing': False}]
 
 
 def test_a_setup_commit_before_any_player_has_committed_starts_nothing(
@@ -216,8 +235,8 @@ def test_a_setup_commit_before_any_player_has_committed_starts_nothing(
 
 def test_a_player_who_deployed_nothing_is_eliminated(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 0)])
+    harness.create(6, 4, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'x1', 0, 1)])
     # deployed nothing, so there is nothing to carry their flag and nothing
     # to commit: the administrator resolves the turn without them
     harness.deploy(2, [('O', 'O', 1, 5, 50)], [], commit=False)
@@ -230,13 +249,13 @@ def test_a_player_who_deployed_nothing_is_eliminated(tmp_path):
 
 def test_the_last_player_standing_wins(tmp_path):
     harness = duel(tmp_path, mine=(10, 10, 50), theirs=(1, 1, 50))
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     assert outcome(harness) == {'decided': True, 'winner': 1, 'turn': 2}
 
 
 def test_mutual_destruction_is_a_draw(tmp_path):
     harness = duel(tmp_path)
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     assert outcome(harness) == {'decided': True, 'winner': None, 'turn': 2}
 
 
@@ -260,7 +279,7 @@ def test_a_one_player_game_is_never_decided(tmp_path):
 
 def test_every_role_reads_the_same_outcome(tmp_path):
     harness = duel(tmp_path, mine=(10, 10, 50), theirs=(1, 1, 50))
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     results = {number: harness.session(number).getOutcome()
                for number in (0, 1, 2)}
     assert results[0] == results[1] == results[2]
@@ -269,7 +288,7 @@ def test_every_role_reads_the_same_outcome(tmp_path):
 
 def test_a_decided_game_resolves_no_further_turns(tmp_path):
     harness = duel(tmp_path, mine=(10, 10, 50), theirs=(1, 1, 50))
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     decided_on = harness.session(0).getTurnNumber()
 
     assert harness.session(0).serverSave() is False
@@ -283,8 +302,8 @@ def test_an_eliminated_player_is_not_waited_for(tmp_path):
     from board_game_concept.service.turn import _awaited_players
 
     harness = duel(tmp_path, mine=(10, 10, 50), theirs=(1, 1, 50),
-                   my_units=[('X', 'x1', 0, 0), ('X', 'x2', 0, 2)])
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+                   my_units=[('X', 'x1', 0, 1), ('X', 'x2', 1, 1)])
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
 
     server = harness.session(0)
     assert server.getEliminated() == [2]

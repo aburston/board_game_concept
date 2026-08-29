@@ -152,11 +152,18 @@ class DefiningUnitTypes(ClientTestCase):
         client.read_until(
             'error adding unit type: attack must be a value from 0 to 10')
 
-    def test_a_wall_needs_both_zeroes(self):
+    def test_a_type_with_no_energy_can_have_no_attack(self):
         client = self.player_client()
-        client.send_line('add type Half H 0 10 5')
-        client.read_until('error adding unit type: a type with no attack must '
-                          'have no energy')
+        client.send_line('add type Half H 3 10 0')
+        client.read_until('error adding unit type: a type with no energy can '
+                          'have no attack')
+
+    def test_a_type_with_no_attack_may_have_energy(self):
+        # a scout: it goes where it likes and strikes nothing
+        client = self.player_client()
+        client.send_line('add type Scout S 0 4 6')
+        client.read_until_count(CLIENT_PROMPT, 2)
+        self.assertNotIn('error adding unit type', client.output)
 
     def test_a_type_that_cannot_afford_a_move_is_refused(self):
         client = self.player_client()

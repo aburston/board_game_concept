@@ -14,18 +14,24 @@ from game_harness import GameHarness
 
 
 def two_players(tmp_path, stats=(5, 5, 50), enemy=None):
-    """A game with two units each: a duellist on the top row, and a reserve."""
+    """A game with two units each: a duellist facing the other, and a reserve.
+
+    Four rows, because a two-player board is halved by rows: player 1 owns
+    rows 0 and 1 and player 2 rows 2 and 3. The duellists start two squares
+    apart on the same column, so one walks into the gap and the other walks
+    into it after them.
+    """
     harness = GameHarness(tmp_path)
-    harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
+    harness.create(6, 4, [1, 2], budget=Player.MAX_BUDGET)
     attack, health, energy = stats
     # the flag goes to the unit that stays out of the fighting below: these
     # are tests about what a destroyed unit does next, and a carrier dying
     # would end the game before they got there
     harness.deploy(1, [('X', 'X', attack, health, energy)],
-                   [('X', 'x1', 0, 0), ('X', 'x2', 0, 2)], flag='x2')
+                   [('X', 'x1', 0, 0), ('X', 'x2', 5, 0)], flag='x2')
     e_attack, e_health, e_energy = enemy or stats
     harness.deploy(2, [('O', 'O', e_attack, e_health, e_energy)],
-                   [('O', 'o1', 2, 0), ('O', 'o2', 5, 2)], flag='o2')
+                   [('O', 'o1', 0, 2), ('O', 'o2', 5, 3)], flag='o2')
     harness.resolve()
     return harness
 
@@ -33,8 +39,8 @@ def two_players(tmp_path, stats=(5, 5, 50), enemy=None):
 def test_a_destroyed_unit_does_not_come_back(tmp_path):
     # equal units annihilate each other, leaving the square they died on empty
     harness = two_players(tmp_path)
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
-    harness.turn({1: [], 2: [('o1', UnitType.WEST)]})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
+    harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
 
     units = harness.units()
     assert units['x1'].destroyed
@@ -57,8 +63,8 @@ def test_a_destroyed_unit_does_not_come_back(tmp_path):
 
 def test_a_destroyed_unit_is_not_reported_every_turn(tmp_path):
     harness = two_players(tmp_path)
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
-    harness.turn({1: [], 2: [('o1', UnitType.WEST)]})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
+    harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
     assert harness.units()['x1'].destroyed
 
     harness.turn({1: [], 2: []})
@@ -70,8 +76,8 @@ def test_a_destroyed_unit_is_not_reported_every_turn(tmp_path):
 def test_a_survivor_can_take_the_cell_a_unit_died_on(tmp_path):
     # x1 is strong enough to win outright, then walks off the square and back
     harness = two_players(tmp_path, stats=(10, 10, 50), enemy=(1, 1, 50))
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
-    harness.turn({1: [('x1', UnitType.EAST)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
+    harness.turn({1: [('x1', UnitType.SOUTH)], 2: []})
     assert harness.units()['o1'].destroyed
 
     # step off the square o1 died on, leaving it empty for a turn
@@ -83,6 +89,6 @@ def test_a_survivor_can_take_the_cell_a_unit_died_on(tmp_path):
     # and step back onto it
     harness.turn({1: [('x1', UnitType.WEST)], 2: []})
     units = harness.units()
-    assert (units['x1'].x, units['x1'].y) == (2, 0)
+    assert (units['x1'].x, units['x1'].y) == (0, 2)
     assert units['o1'].destroyed
     assert not units['o1'].on_board

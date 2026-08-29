@@ -187,10 +187,11 @@ class TestServerClientIntegration(unittest.TestCase):
 
         client1.send_line('add type Cross X 1 1 10')
         client1.read_until('bgcclient> ')
+        # rows 0 and 1 are player 1's half of a four-row board
         client1.send_line('add unit Cross x1 0 0')
-        client1.send_line('add unit Cross x2 0 1')
-        client1.send_line('add unit Cross x3 0 2')
-        client1.send_line('add unit Cross x4 0 3')
+        client1.send_line('add unit Cross x2 1 0')
+        client1.send_line('add unit Cross x3 0 1')
+        client1.send_line('add unit Cross x4 1 1')
         client1.send_line('set flag x1')
         client1.read_until('bgcclient> ')
 
@@ -202,9 +203,10 @@ class TestServerClientIntegration(unittest.TestCase):
 
         client2.send_line('add type Naught O 1 1 10')
         client2.read_until('bgcclient> ')
-        client2.send_line('add unit Naught o1 3 0')
-        client2.send_line('add unit Naught o2 3 1')
-        client2.send_line('add unit Naught o3 3 2')
+        # and rows 2 and 3 are player 2's
+        client2.send_line('add unit Naught o1 2 2')
+        client2.send_line('add unit Naught o2 3 2')
+        client2.send_line('add unit Naught o3 2 3')
         client2.send_line('add unit Naught o4 3 3')
         client2.send_line('set flag o1')
         client2.read_until('bgcclient> ')
@@ -242,7 +244,7 @@ class TestServerClientIntegration(unittest.TestCase):
         server = self.start_server(['-g', 'test-01'])
         server.read_until('bgcserver> ')
 
-        server.send_line('set board 3 3')
+        server.send_line('set board 3 4')
         server.read_until('bgcserver> ')
         server.send_line('add player 1')
         server.read_until('bgcserver> ')
@@ -257,7 +259,7 @@ class TestServerClientIntegration(unittest.TestCase):
         client1.read_until('bgcclient> ')
         client1.send_line('add type Spent S 5 1 1')
         client1.read_until('bgcclient> ')
-        client1.send_line('add unit Spent s1 0 1')
+        client1.send_line('add unit Spent s1 0 0')
         client1.send_line('set flag s1')
         client1.read_until('bgcclient> ')
         client1.send_line('commit')
@@ -267,7 +269,7 @@ class TestServerClientIntegration(unittest.TestCase):
         client2.read_until('bgcclient> ')
         client2.send_line('add type Spent T 5 1 1')
         client2.read_until('bgcclient> ')
-        client2.send_line('add unit Spent t1 2 1')
+        client2.send_line('add unit Spent t1 0 2')
         client2.send_line('set flag t1')
         client2.read_until('bgcclient> ')
         client2.send_line('commit')
@@ -279,14 +281,14 @@ class TestServerClientIntegration(unittest.TestCase):
         # now order both units onto the middle square
         client1b = self.start_client('test-01', 1)
         client1b.read_until('bgcclient> ')
-        client1b.send_line('move s1 east')
+        client1b.send_line('move s1 south')
         client1b.read_until('bgcclient> ')
         client1b.send_line('commit')
         client1b.read_until('waiting for turn to complete...')
 
         client2b = self.start_client('test-01', 2)
         client2b.read_until('bgcclient> ')
-        client2b.send_line('move t1 west')
+        client2b.send_line('move t1 north')
         client2b.read_until('bgcclient> ')
         client2b.send_line('commit')
         client2b.read_until('waiting for turn to complete...')
@@ -300,15 +302,19 @@ class TestServerClientIntegration(unittest.TestCase):
         units = yaml.safe_load(units_file.read_text())['units']
         by_name = {unit['name']: unit for unit in units}
 
-        self.assertEqual((by_name['s1']['x'], by_name['s1']['y']), (0, 1))
-        self.assertEqual((by_name['t1']['x'], by_name['t1']['y']), (2, 1))
+        self.assertEqual((by_name['s1']['x'], by_name['s1']['y']), (0, 0))
+        self.assertEqual((by_name['t1']['x'], by_name['t1']['y']), (0, 2))
         self.assertFalse(by_name['s1']['destroyed'])
         self.assertFalse(by_name['t1']['destroyed'])
 
     def test_two_players_deploying_onto_the_same_square(self):
-        # issue #1: on the first turn neither player can see the other's units,
-        # so both may claim the same square. The server used to die on an
-        # assertion; it now refuses the second deployment and resolves the turn
+        # issue #1: on the first turn no player can see another's units, so
+        # two may claim the same square. The server used to die on an
+        # assertion; it now refuses both deployments and resolves the turn.
+        #
+        # Three players, because two cannot ask for one square any more:
+        # `placement-zones` gives each of two players their own half of the
+        # board, and the halves do not overlap. Three or more are unrestricted
         server = self.start_server(['-g', 'test-01'])
         server.read_until('bgcserver> ')
 
@@ -317,6 +323,8 @@ class TestServerClientIntegration(unittest.TestCase):
         server.send_line('add player 1')
         server.read_until('bgcserver> ')
         server.send_line('add player 2')
+        server.read_until('bgcserver> ')
+        server.send_line('add player 3')
         server.read_until('bgcserver> ')
         server.send_line('commit')
         server.read_until('wait for player commit')
@@ -341,6 +349,16 @@ class TestServerClientIntegration(unittest.TestCase):
         client2.send_line('commit')
         client2.read_until('waiting for turn to complete...')
 
+        client3 = self.start_client('test-01', 3)
+        client3.read_until('bgcclient> ')
+        client3.send_line('add type Star S 1 1 10')
+        client3.read_until('bgcclient> ')
+        client3.send_line('add unit Star s1 1 1')
+        client3.send_line('set flag s1')
+        client3.read_until('bgcclient> ')
+        client3.send_line('commit')
+        client3.read_until('waiting for turn to complete...')
+
         # the turn resolves rather than taking the server down
         self.read_until_count(server, 'commit complete', 2)
 
@@ -352,9 +370,9 @@ class TestServerClientIntegration(unittest.TestCase):
         # number order, in a race neither of them could see they were in
         self.assertEqual(units, 'None')
 
-        # and both players are told, by name and square
+        # and every player is told, by name and square
         players_dir = GAMES_DIR / '_test-01' / 'players'
-        for number, unit_name in ((1, 'x1'), (2, 'o1')):
+        for number, unit_name in ((1, 'x1'), (2, 'o1'), (3, 's1')):
             refused = yaml.safe_load(
                 (players_dir / f'{number}_rejected.yaml').read_text())['rejected']
             self.assertEqual(len(refused), 1)
@@ -364,9 +382,9 @@ class TestServerClientIntegration(unittest.TestCase):
 
         # and each sees it when they next log in - along with the end of the
         # game, because a first turn that refuses every deployment leaves
-        # both players with nothing standing. It used to leave them holding
+        # every player with nothing standing. It used to leave them holding
         # an empty board they could neither add to nor finish
-        for number, unit_name in ((1, 'x1'), (2, 'o1')):
+        for number, unit_name in ((1, 'x1'), (2, 'o1'), (3, 's1')):
             client = self.start_client('test-01', number)
             client.read_until('bgcclient> ')
             self.assertIn('rejected last turn', client.output)
@@ -470,7 +488,7 @@ class TestServerClientIntegration(unittest.TestCase):
         server = self.start_server(['-g', 'test-01'])
         server.read_until('bgcserver> ')
 
-        server.send_line('set board 3 3')
+        server.send_line('set board 3 4')
         server.read_until('bgcserver> ')
         # the top budget: the types below cost 111 and 104, and what is
         # under test here is a view of a unit fought over several rounds
@@ -487,7 +505,7 @@ class TestServerClientIntegration(unittest.TestCase):
         client1.read_until('bgcclient> ')
         client1.send_line('add type Cross X 1 10 100')
         client1.read_until('bgcclient> ')
-        client1.send_line('add unit Cross x1 0 1')
+        client1.send_line('add unit Cross x1 0 0')
         client1.send_line('set flag x1')
         client1.read_until('bgcclient> ')
         client1.send_line('commit')
@@ -497,7 +515,7 @@ class TestServerClientIntegration(unittest.TestCase):
         client2.read_until('bgcclient> ')
         client2.send_line('add type Naught O 1 3 100')
         client2.read_until('bgcclient> ')
-        client2.send_line('add unit Naught o1 2 1')
+        client2.send_line('add unit Naught o1 0 2')
         client2.send_line('set flag o1')
         client2.read_until('bgcclient> ')
         client2.send_line('commit')
@@ -509,14 +527,14 @@ class TestServerClientIntegration(unittest.TestCase):
         # order the units into the same square, so that they fight
         client1b = self.start_client('test-01', 1)
         client1b.read_until('bgcclient> ')
-        client1b.send_line('move x1 east')
+        client1b.send_line('move x1 south')
         client1b.read_until('bgcclient> ')
         client1b.send_line('commit')
         client1b.read_until('waiting for turn to complete...')
 
         client2b = self.start_client('test-01', 2)
         client2b.read_until('bgcclient> ')
-        client2b.send_line('move o1 west')
+        client2b.send_line('move o1 north')
         client2b.read_until('bgcclient> ')
         client2b.send_line('commit')
         client2b.read_until('waiting for turn to complete...')

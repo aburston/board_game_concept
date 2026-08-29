@@ -168,7 +168,7 @@ export async function loadSeat(gameno, number) {
   // what the armoury needs before a board exists.
   const absent = (error) => (error.status === 404 ? null : Promise.reject(error));
   const [seatState, board, units, types, players, pending, seen, flags,
-         events, barrier] = await Promise.all([
+         placement, events, barrier] = await Promise.all([
     api.readState(gameno, number),
     api.readView(gameno, number, 'board').catch(absent),
     api.readView(gameno, number, 'units').catch(absent),
@@ -184,6 +184,10 @@ export async function loadSeat(gameno, number) {
     // every flag in the game, whoever it belongs to: the one thing shown
     // without contact, so it does not travel inside this seat's own view
     api.readView(gameno, number, 'flags').catch(absent),
+    // where this seat may deploy during setup. Read from the contract rather
+    // than worked out here: the rule is the server's, and a board that greyed
+    // squares by its own arithmetic could grey ones the server would accept
+    api.readView(gameno, number, 'placement').catch(absent),
     // the feed is a history rather than a snapshot, so it is fetched with
     // everything else: a screen that has to ask for it separately is a
     // screen that draws a board and then changes its mind about it
@@ -209,6 +213,7 @@ export async function loadSeat(gameno, number) {
     pending: (pending && pending.pending) || [],
     seen: (seen && seen.designs) || [],
     flags: (flags && flags.flags) || [],
+    placement: (placement && placement.placement) || null,
   };
 }
 

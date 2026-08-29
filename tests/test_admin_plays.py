@@ -29,7 +29,7 @@ from board_game_concept.http.app import create_app        # noqa: E402
 SUBJECTS = ('board', 'types', 'units', 'players', 'pending', 'events',
             'designs', 'flags')
 
-EAST, WEST = 2, 4
+EAST, SOUTH, WEST = 2, 3, 4
 
 BUDGET = 100
 
@@ -394,8 +394,10 @@ def test_one_account_plays_a_game_to_an_outcome(app):
     assert held[2].perform({'kind': 'add_type', 'name': 'T2', 'symbol': 'O',
                             'attack': 1, 'health': 5,
                             'energy': 20}).status_code == 204
+    # row 2 is seat 2's: a two-player board is halved by rows, so the two
+    # face each other down a column rather than along a row
     assert held[2].perform({'kind': 'add_unit', 'type_name': 'T2',
-                            'name': 'u2', 'x': 1, 'y': 0}).status_code == 204
+                            'name': 'u2', 'x': 0, 'y': 2}).status_code == 204
     assert held[2].perform({'kind': 'set_flag',
                             'unit': 'u2'}).status_code == 204
     assert held[1].commit().status_code == 202
@@ -404,7 +406,7 @@ def test_one_account_plays_a_game_to_an_outcome(app):
     # seat 1 walks onto seat 2's square; seat 2 stands its ground
     outcome = None
     for _ in range(10):
-        held[1].perform({'kind': 'move', 'unit': 'u1', 'direction': EAST})
+        held[1].perform({'kind': 'move', 'unit': 'u1', 'direction': SOUTH})
         held[1].commit()
         last = held[2].commit()
         outcome = last.get_json().get('outcome')

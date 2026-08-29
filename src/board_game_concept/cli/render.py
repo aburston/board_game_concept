@@ -204,6 +204,32 @@ def print_flags(entries):
         nothing='no flags yet')
 
 
+def print_placement(view):
+    """Where this session may deploy during setup, row by row.
+
+    A row rather than a square is the unit of the answer, because a half is
+    the full width of the board: only the row decides. A game that is not
+    two-player is every row, which is what it always was, and it says so
+    rather than leaving a reader to count.
+    """
+    view = view or {}
+    allowed = set(view.get('rows') or [])
+    neutral = view.get('neutral_row')
+    _print_table(
+        [{'row': y,
+          'open': 'yes' if y in allowed else 'no',
+          'why': ('yours' if y in allowed
+                  else 'neutral' if y == neutral
+                  else "the other player's half")}
+         for y in range(int(view.get('size_y') or 0))],
+        headers=('ROW', 'OPEN', 'WHY'),
+        keys=('row', 'open', 'why'),
+        numeric=('ROW',),
+        nothing='no board yet')
+    if not view.get('restricted'):
+        print('the whole board is open for placement')
+
+
 def print_board_view(view):
     """The grid, and what the symbols on it stand for.
 

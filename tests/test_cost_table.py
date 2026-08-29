@@ -70,11 +70,15 @@ def test_the_fare_table_in_the_rules_is_the_one_the_game_charges(rules):
 
 def test_a_type_that_could_never_move_is_refused(cost_table):
     # the table says so in the row about defining a type
-    assert 'at least its movement cost in energy' in cost_table
+    assert 'at least its movement cost in' in cost_table
     with pytest.raises(AssertionError):
         UnitType('Stuck', 'S', 3, 6, 1)
     UnitType('Legal', 'L', 3, 6, 2)          # exactly enough is enough
-    UnitType('Wall', 'W', 0, 10, 0)          # a wall is exempt
+    UnitType('Wall', 'W', 0, 10, 0)          # no energy at all is exempt
+    with pytest.raises(AssertionError):
+        # a scout means to move, so it is held to the fare like anything else
+        UnitType('Scout', 'S', 0, 6, 1)
+    UnitType('Scout', 'S', 0, 6, 2)
 
 
 def test_the_rest_gain_is_the_one_the_game_gives(cost_table):

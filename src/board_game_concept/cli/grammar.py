@@ -25,7 +25,7 @@ DIRECTIONS = {
 }
 
 SHOW_SUBJECTS = ('board', 'types', 'units', 'players', 'pending',
-                 'events', 'designs', 'flags')
+                 'events', 'designs', 'flags', 'placement')
 
 # the one word a `show` may end in, asking for the answer as JSON rather than
 # as a table
@@ -139,6 +139,7 @@ USAGES = (
     _show('designs',
           'show the enemy designs you have met, which outlive contact'),
     _show('flags', 'show where every flag is, whoever it belongs to'),
+    _show('placement', 'show where you may deploy units during setup'),
     Usage('move', ('move', Slot('unit', UNIT),
                    Slot('|'.join(DIRECTIONS), DIRECTION)),
           'order one of your units to move'),

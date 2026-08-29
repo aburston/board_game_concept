@@ -493,11 +493,25 @@ function renderDeploy(game) {
   card.append(element('div', { class: 'row' },
     element('div', { class: 'grow' }, element('label', {}, 'Type', chooser)),
     element('div', { class: 'grow' }, unitName.label)));
+  // the rows this seat may deploy in, as the server publishes them. The rest
+  // of the board is greyed and takes no click: a limit that only refuses
+  // after the fact is one you learn by being told off
+  const area = game.placement;
+  const placeable = area && area.restricted ? area.rows : null;
   card.append(element('p', { class: 'small muted' },
     'Then choose a square on the board.'));
+  if (placeable) {
+    const neutral = area.neutral_row;
+    card.append(element('p', { class: 'small muted' },
+      'You deploy in your own half of the board — the greyed squares are '
+      + (neutral === null || neutral === undefined
+        ? 'the other player\'s.'
+        : 'the other player\'s, and the middle row, which is neutral.')));
+  }
 
   card.append(renderBoard(game.board, game.units, {
     mine: game.number,
+    placeable,
     onSquare: async (x, y) => {
       const name = unitName.input.value.trim()
         || `${chooser.value}-${(game.units || []).length + 1}`;

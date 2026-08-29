@@ -27,6 +27,7 @@ source of truth for intended behaviour.
 | `game-registry` | Which games exist, what state each is in, and the seats a lobby lists |
 | `cli-output` | One view behind a table and a JSON form, the columns each subject shows, and that a prompt can read everything a browser can |
 | `cli-installation` | The console scripts an install puts on the path, and what a wheel has to carry beside the code |
+| `placement-zones` | Where a player may deploy during setup: the two-player halves, the neutral row, and the area published per seat |
 | `web-interface` | Playing in a browser: a client of the same contract, what it must make visible, and what it must not remember |
 
 Validate them with:

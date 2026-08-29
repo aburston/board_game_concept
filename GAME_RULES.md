@@ -76,17 +76,22 @@ registration: nothing in play raises or lowers it. A player file may carry a
 | `health` | integer, **1 to 10** |
 | `energy` | integer, **0 to 100** |
 
-**Attack 0 and energy 0 go together, and make a wall (R2.10).** A type with one
-of them at zero and the other above it is refused.
+**Attack 0 is allowed, with or without energy.** With no energy it is a wall
+(**R2.10**): health standing on a square. With energy it is a **scout** — it
+goes where it likes and strikes nothing, and it is priced accordingly, since
+what it costs is `attack + health + energy` (**R2.9**) and its attack is
+nothing. What is refused is **energy 0 with an attack above it**: an attack
+the type could never pay for is a wall that was charged for a weapon.
 
-**A type that is not a wall must hold at least its movement cost in energy.** A
+**A type with any energy must hold at least its movement cost in it.** A
 move costs a unit a quarter of its health, rounded up (**R4.3**), and rest gives
 back 1 a turn (**R3.9**), so a type with less energy than that could never
 afford a single move at any point in its life. `add type Heavy H 3 6 1` is
 refused, because health 6 costs 2 to move; `add type Heavy H 3 6 2` is a unit
-that can cross one square and must then stand still for two turns. A wall is
-exempt: its 0 energy against a fare it can never pay is the whole point of it
-(**R2.10**).
+that can cross one square and must then stand still for two turns. A scout is
+held to this like anything else that means to move. Only a type with **no
+energy at all** is exempt: 0 energy against a fare it can never pay is the
+whole point of a wall (**R2.10**).
 
 A type is rejected at the moment it is defined, not later during play. Types are
 private to the player who defined them: an opponent learns of one only by
@@ -138,8 +143,13 @@ deployments arrive in one turn than the budget can pay for, they are charged in
 order of unit name, so which ones survive is decided by the rules and not by the
 order they were written in.
 
-**R2.10 Walls.** A type with **attack 0 and energy 0** is a wall: health
-standing on a square. It can never be ordered to move, because a move costs it
+**R2.10 Walls and scouts.** A type with **attack 0 and energy 0** is a wall:
+health standing on a square. A type with **attack 0 and energy above it** is a
+**scout**: it moves like anything else and lands nothing when it arrives,
+taking whatever is dealt to it. A scout is a unit like any other for every
+other rule - it blocks a square, it can carry the flag (**R2.11**), and its
+energy means it can act, so it **does** keep its owner in the game where a
+wall does not (**R7.1**). It can never be ordered to move, because a move costs it
 a quarter of its health in energy (**R4.3**) and it holds none, and never will
 (**R3.9**
 gives nothing back to a type designed with none). It never attacks and never defends itself, so an exchange in
@@ -545,7 +555,7 @@ because it rounds up.
 
 | What | What it costs | Rule |
 |---|---|---|
-| Defining a type | nothing — but a type that is not a wall must be designed holding at least its movement cost in energy, or it could never afford one move | **R2.4** |
+| Defining a type | nothing — but a type with any energy must be designed holding at least its movement cost in it, or it could never afford one move | **R2.4** |
 | Deploying a unit | **points**: `attack + health + energy`, its type's price | **R2.9** |
 | — a unit that is destroyed | nothing back; there are no refunds | **R2.9** |
 | A move onto an empty square | **a quarter of the unit's maximum health, rounded up**, in energy | **R4.3** |
