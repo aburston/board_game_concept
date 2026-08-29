@@ -112,6 +112,31 @@ export function committedArmy(game) {
     }));
 }
 
+/**
+ * Which way each committed-but-unresolved move points, by unit name.
+ *
+ * While a player is giving orders the board draws an arrow for each unit
+ * under one, read from the `direction` the server replays out of the draft.
+ * Committing publishes the draft as orders and clears it, so on the next load
+ * the units carry no direction and the arrows vanish - the board snaps back to
+ * before anything was ordered, which is exactly what a player who has just
+ * committed their plan does not want to see. The orders are not lost: the
+ * pending view carries every one, published as the word `move north` and the
+ * like, and these read the heading back out so the board can draw the arrow it
+ * drew before the commit. Only for a turn past setup - before the first turn a
+ * committed army is drawn from pending whole, by `committedArmy`.
+ */
+export function committedHeadings(game) {
+  const headings = {};
+  if (!game.unprocessed_moves || !game.turn_number) return headings;
+  for (const entry of game.pending || []) {
+    if (entry.player !== game.number) continue;
+    const match = /^move (north|east|south|west)$/.exec(entry.order || '');
+    if (match) headings[entry.unit] = match[1];
+  }
+  return headings;
+}
+
 // --- the forces: what you have, and what you have met
 //
 // A player deciding whether to attack is comparing two designs, and until
@@ -314,7 +339,13 @@ function renderBoardCard(game) {
   const selected = state.selected
     && standing(game).find((unit) => unit.name === state.selected);
   const waiting = committedArmy(game);
-  const drawn = (game.units || []).concat(waiting);
+  // a committed move leaves its unit standing where it was with its heading
+  // cleared, so the arrow is put back from the orders the commit published
+  const headings = committedHeadings(game);
+  const drawn = (game.units || []).map((unit) => (
+    headings[unit.name]
+      ? { ...unit, direction: headings[unit.name] }
+      : unit)).concat(waiting);
 
   // who is mine is read off the feed's own names against this seat's units,
   // including units that were destroyed and are no longer on the board
@@ -368,6 +399,11 @@ function renderBoardCard(game) {
       `Your ${waiting.length === 1 ? 'unit is' : 'units are'} drawn where you `
       + 'deployed them and are not on the board yet: a committed setup takes '
       + 'the field when the first turn resolves.'));
+  }
+  if (Object.keys(headings).length) {
+    card.append(element('p', { class: 'small muted' },
+      'These are the orders you committed. They cannot be changed, and they '
+      + 'resolve when every seat has committed this turn.'));
   }
   const flags = (game.flags || []).filter((flag) => flag.standing);
   if (flags.length) {
