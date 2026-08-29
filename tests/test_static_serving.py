@@ -226,6 +226,16 @@ def test_the_board_size_fields_are_read_and_written_through_the_state():
     assert "made.input.addEventListener('input'" in armoury
 
 
+def test_the_play_screen_keeps_committed_orders_drawn():
+    """The board reset to before the orders on commit; it overlays them now."""
+    play = _module('play.js')
+    assert 'committedHeadings' in play
+    # the committed headings are read from the pending view and laid over the
+    # units the board draws, so board.js draws the arrows again
+    assert 'game.pending' in play
+    assert re.search(r"direction:\s*headings\[unit\.name\]", play)
+
+
 def test_the_armoury_offers_nothing_to_a_seat_whose_setup_is_over():
     """`unprocessed_moves` stops being true the moment the turn resolves."""
     armoury = _module('armoury.js')

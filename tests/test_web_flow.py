@@ -216,6 +216,55 @@ def test_a_whole_game_through_the_pages_own_calls(app, base_path):
     assert playing['turn_number'] == 1
 
 
+def test_a_committed_move_is_still_readable_from_the_pending_view(app):
+    """What the board draws its committed arrows from, once the turn is locked.
+
+    While a player is ordering, the order rides on the units view: the server
+    replays their draft, so a unit ordered east reads back `direction: east`
+    and the board draws an arrow. Committing publishes the draft and clears
+    it, and the units view is the resolved board of last turn - so it carries
+    no unresolved order, and the arrows would vanish. The committed orders are
+    in the pending view, which is where the board reads them back to keep
+    drawing them.
+    """
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)                       # the first turn resolves
+
+    # a second turn: ada orders u1 east. Before committing, the order is on
+    # the units view, which is what draws the arrow in flight
+    assert ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1',
+                                 'direction': EAST}).status_code == 204
+    before = [unit for unit
+              in ada.read_view(GAME, 1, 'units').get_json()['units']
+              if unit['name'] == 'u1'][0]
+    assert before['direction'] == 'east'
+
+    # ada commits; bob has not, so the turn is committed and unresolved
+    assert ada.commit(GAME, 1).status_code == 202
+
+    # the units view has let the order go - it is the resolved board, and the
+    # move has not resolved - so the arrow would vanish from a board drawn
+    # from it alone
+    after = [unit for unit
+             in ada.read_view(GAME, 1, 'units').get_json()['units']
+             if unit['name'] == 'u1'][0]
+    assert after['direction'] is None
+
+    # but the pending view still carries the committed move, from the square
+    # the unit still stands on: this is what the board draws the arrow from
+    pending = ada.read_view(GAME, 1, 'pending').get_json()['pending']
+    mine = [entry for entry in pending if entry['unit'] == 'u1'][0]
+    assert mine['order'] == 'move east'
+    assert (mine['x'], mine['y']) == (0, 0)
+
+
 def test_each_seat_is_shown_only_what_it_may_see(app):
     admin = _administrator(app)
     _set_up(admin)
