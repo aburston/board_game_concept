@@ -21,6 +21,10 @@ it, so one table describes both players and neither the board's size nor which
 half a seat holds has to appear in it. Columns are not mirrored, as in chess:
 the two arrays are reflections and each player faces their own layout.
 
+Both players hold units of the same names, which the rules allow - a name has
+only to be unique within one player's own units - and which nothing above this
+needs to tell apart, because an event says whose units it names.
+
 Slow units stand at depth 1 and fast ones at depth 0, which inverts chess. A
 unit's reach is its energy divided by its move fare, and a Heavy has five
 moves in it while a strike costs five more: deployed at the back of a half it
@@ -85,20 +89,6 @@ ARRAY = (
 # the unit the flag is set on. The Keep is the least mobile thing in the array
 # and stands behind two Heavies, which is where a flag wants to be
 FLAG_UNIT = 'keep'
-
-
-def unit_name(player_number, name):
-    """What this player's copy of an array unit is called.
-
-    Both players are given the same array, so without this both would hold a
-    unit called `keep`. A name only has to be unique within one player's own
-    units (`unit-types`), and the rules have always allowed two players to
-    choose the same one - but the turn feed decides what a seat may read by
-    matching the names it owns against the names an entry mentions, so two
-    seats holding one name read each other's entries. Numbering them keeps
-    the default army clear of a defect it would otherwise meet every game.
-    """
-    return f'{int(player_number)}-{name}'
 
 
 def types():
@@ -186,5 +176,5 @@ def placements(player_number, player_numbers, size_x, size_y):
     if not fits(player_number, player_numbers, size_x, size_y):
         return []
     rows = rows_for(player_number, player_numbers, size_y)
-    return [(type_name, unit_name(player_number, name), x, rows[depth])
+    return [(type_name, name, x, rows[depth])
             for depth, x, type_name, name in ARRAY]

@@ -274,7 +274,6 @@ class Game:
             # record is past its setup whatever the record says
             self.new_game = progress is None and not turn.has_started(self)
 
-
     def _replay_draft(self):
         """Put back what this session had done and not committed.
 
@@ -391,9 +390,7 @@ class Game:
                 for type_name, name, x, y in placements:
                     games.perform(self, commands.AddUnit(
                         type_name=type_name, name=name, x=x, y=y))
-                games.perform(self, commands.SetFlag(
-                    unit=army.unit_name(self.player_number,
-                                        army.FLAG_UNIT)))
+                games.perform(self, commands.SetFlag(unit=army.FLAG_UNIT))
         except GameDataError:
             # the game is busy, which here means somebody else is seeding it.
             # Reading a screen is not the place to insist on it, but what was

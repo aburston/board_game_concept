@@ -13,7 +13,7 @@ source of truth for intended behaviour.
 | `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, the energy a move costs |
 | `combat-resolution` | Contested squares, one simultaneous strike a turn, damage, destruction is final |
 | `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
-| `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given |
+| `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given, and an account of a turn bounded by whose units were in it |
 | `game-persistence` | On-disk game layout, YAML formats, orders as transport |
 | `player-client` | The `bgcclient` command surface |
 | `game-server` | The `bgcserver` command surface and unattended turn cycle |

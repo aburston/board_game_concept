@@ -99,20 +99,6 @@ def test_the_flag_stands_on_a_unit_the_array_deploys():
     assert army.FLAG_UNIT in names
 
 
-def test_the_two_players_units_are_named_apart():
-    """Both are given one array, so the names have to be told apart.
-
-    A name only has to be unique within one player's units, but the turn feed
-    decides what a seat may read by matching names, so two seats holding one
-    name would read each other's entries.
-    """
-    mine = {name for _type, name, _x, _y in army.placements(1, [1, 2], 8, 8)}
-    theirs = {name for _type, name, _x, _y in army.placements(2, [1, 2], 8, 8)}
-
-    assert not (mine & theirs)
-    assert army.unit_name(1, 'keep') in mine
-    assert army.unit_name(2, 'keep') in theirs
-
 
 def test_the_array_shows_a_player_every_type_they_were_given():
     """The point of a default catalogue is teaching what the rules allow."""
@@ -133,9 +119,9 @@ def test_the_other_player_starts_at_the_last_row():
 
 def test_the_two_arrays_are_reflections_of_each_other():
     """Same columns, mirrored rows, as in chess."""
-    mine = {(name.split('-', 1)[1], x, y) for _type, name, x, y
+    mine = {(name, x, y) for _type, name, x, y
             in army.placements(1, [1, 2], 8, 8)}
-    theirs = {(name.split('-', 1)[1], x, 7 - y) for _type, name, x, y
+    theirs = {(name, x, 7 - y) for _type, name, x, y
               in army.placements(2, [1, 2], 8, 8)}
     assert mine == theirs
 

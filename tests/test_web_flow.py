@@ -1162,13 +1162,11 @@ def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
     assert state['new_game'] is False, 'and setup is behind them'
 
     # and a first order can be given, on a board holding both armies
-    assert ada.perform(GAME, 1, {'kind': 'move',
-                                 'unit': army.unit_name(1, 'pawn1'),
+    assert ada.perform(GAME, 1, {'kind': 'move', 'unit': 'pawn1',
                                  'direction': 3}).status_code == 204
 
-    # and the feed is this seat's own: the other army's deployments are not
-    # in it, which they would be if both seats named their units alike
+    # and the feed is this seat's own. Both armies are the same array, named
+    # alike, so this is only true because an event says whose units it names
     feed = ada.read_view(GAME, 1, 'events').get_json()['events']
-    mentioned = {entry['detail'].get('unit') for entry in feed}
-    assert not any(name and name.startswith('2-') for name in mentioned)
-    assert any(name and name.startswith('1-') for name in mentioned)
+    assert len(feed) == 15, 'fifteen placements, and not the other fifteen'
+    assert all(entry['detail'].get('players') == '1' for entry in feed)

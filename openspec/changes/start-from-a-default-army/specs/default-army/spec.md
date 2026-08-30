@@ -97,12 +97,6 @@ the row in front of it. Columns SHALL be the same for both players.
 
 The array SHALL cost 232 points, and SHALL use only types the catalogue holds.
 
-Each player's units SHALL be named with that player's number, so that no two
-players of one game hold a unit of the same name. A name need only be unique
-within one player's units, but what a seat is told about a turn is decided by
-the names it owns, so two seats holding one name would read each other's
-entries.
-
 Every unit in the array SHALL fall inside the placement area the player is
 allowed to deploy in, so that the array can be committed as it stands.
 
@@ -117,12 +111,6 @@ allowed to deploy in, so that the array can be committed as it stands.
 
 - **WHEN** a player is given the default array
 - **THEN** every unit of it stands inside that player's placement area
-
-#### Scenario: The two players' units are named apart
-
-- **WHEN** both players of a two-player game are given the array
-- **THEN** no unit name is held by both of them
-- **AND** each name carries the number of the player who holds it
 
 #### Scenario: A player is told only about their own army
 

@@ -130,7 +130,10 @@ The area you may deploy in is published, so a client can show it to you.
 
 **R2.7 Unit names.** A name must be unique **within one player's** units. Two
 different players may both have a unit called `scout`; an order is always
-resolved against the units the ordering player owns.
+resolved against the units the ordering player owns, and so is what each
+player is told a turn did (**R6.8**). The default army (**R2.13**) hands both
+players the same fifteen names, so this is the ordinary case rather than an
+awkward one.
 
 **R2.8 Setup ends at your first commit.** Before your first `commit` you may
 define types and deploy units but may not order movement. After it you may order
@@ -230,10 +233,6 @@ can start further back.
 is: a game of exactly two players, on a board with room for it inside your own
 half, and a budget that covers it. Otherwise you are given the catalogue and
 you deploy by hand, as you always could.
-
-*Names.* Your units are numbered with your seat - `1-keep`, `2-keep` - because
-both players are given the same array and a feed that named them alike would
-be ambiguous.
 
 *Changing it.* Take a unit back with `remove unit <name>` (**R2.12**) and its
 points come back with it. Take the whole array back and it stays gone - it is
@@ -554,6 +553,10 @@ What a square **came to** is told to everyone who was in it: a unit falling in
 front of you is not something that can be kept from you, and being told you
 killed something is the point of having struck it. The observer reads the
 whole log (**R6.6**).
+
+Whose units an entry is about is what decides this, not the names in it. Two
+players may hold a unit of one name (**R2.7**) - the default army gives them
+fifteen - and each is told only about their own.
 
 ---
 

@@ -118,7 +118,7 @@ def test_a_seat_opened_holds_the_array(tmp_path):
 
     assert len(units_of(session)) == 15
     assert sorted(units_of(session)) == sorted(
-        army.unit_name(1, name) for _depth, _x, _type, name in army.ARRAY)
+        name for _depth, _x, _type, name in army.ARRAY)
 
 
 def test_the_keep_carries_the_flag(tmp_path):
@@ -128,8 +128,7 @@ def test_the_keep_carries_the_flag(tmp_path):
 
     carrier = session.getBoard().flagOf(1)
     assert carrier is not None
-    keep = session.getBoard().getUnitByName(
-        army.unit_name(1, army.FLAG_UNIT))[0]
+    keep = session.getBoard().getUnitByName(army.FLAG_UNIT)[0]
     assert keep.flag is True
 
 
@@ -157,8 +156,6 @@ def test_the_seeded_setup_commits_as_it_stands(tmp_path):
     # counted from the board rather than from the harness's name-keyed view
     standing = server.getBoard().units
     assert len(standing) == 30, 'both armies reached the board'
-    assert len({unit.name for unit in standing}) == 30, (
-        'and the two armies are named apart')
     assert len([unit for unit in standing if unit.player.number == 1]) == 15
 
 
@@ -176,7 +173,7 @@ def test_a_unit_taken_back_returns_its_points(tmp_path):
     session = harness.session(1)
     before = left(session)
 
-    games.perform(session, RemoveUnit(name=army.unit_name(1, 'heavy1')))
+    games.perform(session, RemoveUnit(name='heavy1'))
 
     assert left(session) == before + 30
 
@@ -196,14 +193,14 @@ def test_opening_the_seat_again_does_not_deploy_it_twice(tmp_path):
 def test_an_edited_array_is_left_alone(tmp_path):
     harness = a_default_game(tmp_path)
     session = harness.session(1)
-    games.perform(session, RemoveUnit(name=army.unit_name(1, 'heavy1')))
+    games.perform(session, RemoveUnit(name='heavy1'))
     games.perform(session, AddUnit(type_name='Line', name='line3', x=3, y=1))
 
     reopened = harness.session(1)
 
     names = units_of(reopened)
     assert 'line3' in names
-    assert army.unit_name(1, 'heavy1') not in names, 'nothing was restored'
+    assert 'heavy1' not in names, 'nothing was restored'
     assert len(names) == 15
 
 

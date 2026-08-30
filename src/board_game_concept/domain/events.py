@@ -28,6 +28,32 @@ class Event:
         return DESCRIPTIONS.get(self.kind, _fallback)(self.detail)
 
 
+def owners(*units):
+    """The players whose units an event names, as the event carries them.
+
+    An event used to name a unit and not say whose it was, and a name only has
+    to be unique within one player's own units - so two players who both
+    called a unit `scout` were indistinguishable to anything reading the
+    events back. What each seat is allowed to read is decided from this.
+
+    A comma-joined string of the numbers, sorted, the way `units` already
+    carries a list of names: a detail travels through JSON and YAML on its way
+    to a client, and a string arrives as the string it left as.
+    """
+    return ','.join(sorted(
+        {str(unit.player.number) for unit in units
+         if unit is not None and getattr(unit, 'player', None) is not None},
+        key=int))
+
+
+def players_in(detail):
+    """The player numbers an event's detail says it involves."""
+    listed = (detail or {}).get('players')
+    if not listed:
+        return set()
+    return {int(number) for number in str(listed).split(',') if number}
+
+
 def _fallback(d):
     return d.get('kind', '') or ', '.join(f'{k}: {v}' for k, v in sorted(d.items()))
 

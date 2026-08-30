@@ -1,7 +1,7 @@
 import copy
 
 from .square import Empty
-from .events import Event
+from .events import Event, owners
 from .unit import (UnitType, resolveCollision, resolveContest)
 
 
@@ -350,7 +350,8 @@ class Board:
         for number, carrier in self.flagBearers().items():
             if carrier.destroyed and number not in self.out:
                 events.append(Event('flag_fallen', unit=carrier.name,
-                                    player=number))
+                                    player=number,
+                                    players=owners(carrier)))
 
     def _rest(self, events, resting):
         """Give a point of energy back to every unit that did nothing.
@@ -376,7 +377,8 @@ class Board:
             unit.energy = min(unit.type_energy,
                               unit.energy + UnitType.REST_GAIN)
             events.append(Event('rested', unit=unit.name,
-                                energy=unit.energy))
+                                energy=unit.energy,
+                                players=owners(unit)))
 
     def _deploy(self, events):
         """Place the units waiting to be put on the board."""
@@ -385,7 +387,8 @@ class Board:
                 unit.occupy(unit.x, unit.y)
                 unit.state = UnitType.NOP
                 events.append(Event(
-                    'deployed', unit=unit.name, x=unit.x, y=unit.y))
+                    'deployed', unit=unit.name, x=unit.x, y=unit.y,
+                    players=owners(unit)))
 
     def _move(self, events):
         """Plan every move against the board as the turn began, then apply them.
@@ -410,7 +413,7 @@ class Board:
             if refusal is not None:
                 events.append(Event(
                     'refused', unit=unit.name, x=unit.x, y=unit.y,
-                    reason=refusal))
+                    reason=refusal, players=owners(unit)))
             if destination is not None:
                 plans.append([unit, (unit.x, unit.y), destination])
             # the order is consumed whether or not it was carried out
@@ -471,13 +474,14 @@ class Board:
             unit.occupy(*destination)
             held_by = standing.get(destination)
             if held_by is not None and id(held_by) not in leaving:
-                detail = {'target': held_by.name}
+                detail = {'target': held_by.name,
+                          'players': owners(unit, held_by)}
                 kind = 'engaged'
             elif arrivals[destination] > 1:
-                detail = {}
+                detail = {'players': owners(unit)}
                 kind = 'joined'
             else:
-                detail = {}
+                detail = {'players': owners(unit)}
                 kind = 'moved'
             events.append(Event(
                 kind, unit=unit.name, x=destination[0], y=destination[1],
@@ -512,4 +516,5 @@ class Board:
             if unit.destroyed and unit.on_board:
                 unit.vacate()
                 unit.on_board = False
-                events.append(Event('removed', unit=unit.name))
+                events.append(Event('removed', unit=unit.name,
+                                    players=owners(unit)))

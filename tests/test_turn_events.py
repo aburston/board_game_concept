@@ -12,6 +12,23 @@ def detail(events, kind):
     return [event.detail for event in events if event.kind == kind]
 
 
+def owned(events, kind):
+    """Which players each event of this kind says its units belong to.
+
+    An event names a unit and says whose it is, because a name only has to be
+    unique within one player's own units - see `visibility`.
+    """
+    return [event.detail.get('players') for event in events
+            if event.kind == kind]
+
+
+def without_owners(events, kind):
+    """The detail of each event of this kind, less whose units it names."""
+    return [{key: value for key, value in event.detail.items()
+             if key != 'players'}
+            for event in events if event.kind == kind]
+
+
 def test_a_quiet_turn_reports_nothing():
     board = Board(3, 3)
     assert board.commit() == []
@@ -23,7 +40,9 @@ def test_a_deployment_is_reported():
     board.add(p1, 0, 0, 'a1', UnitType('Attacker', 'A', 1, 5, 100))
     events = board.commit()
     assert kinds(events) == ['deployed']
-    assert detail(events, 'deployed') == [{'unit': 'a1', 'x': 0, 'y': 0}]
+    assert without_owners(events, 'deployed') == [
+        {'unit': 'a1', 'x': 0, 'y': 0}]
+    assert owned(events, 'deployed') == ['1']
 
 
 def test_a_move_is_reported_with_where_it_ended():
@@ -34,7 +53,8 @@ def test_a_move_is_reported_with_where_it_ended():
 
     board.getUnitByName('a1')[0].move(UnitType.EAST)
     events = board.commit()
-    assert detail(events, 'moved') == [{'unit': 'a1', 'x': 1, 'y': 0}]
+    assert without_owners(events, 'moved') == [{'unit': 'a1', 'x': 1, 'y': 0}]
+    assert owned(events, 'moved') == ['1']
 
 
 def test_a_contest_reports_every_attack_and_who_held_the_square():
@@ -51,10 +71,16 @@ def test_a_contest_reports_every_attack_and_who_held_the_square():
 
     assert 'engaged' in kinds(events)
     assert 'contested' in kinds(events)
-    assert {'unit': 'a1', 'target': 'd1', 'damage': 4} in detail(events, 'attacked')
-    assert {'unit': 'd1', 'target': 'a1', 'damage': 2} in detail(events, 'attacked')
-    assert detail(events, 'destroyed') == [{'unit': 'd1'}]
-    assert detail(events, 'held') == [{'unit': 'a1', 'x': 1, 'y': 0}]
+    assert {'unit': 'a1', 'target': 'd1', 'damage': 4} in without_owners(
+        events, 'attacked')
+    assert owned(events, 'attacked') == ['1,2', '1,2'], (
+        'an attack is both players\' business')
+    assert {'unit': 'd1', 'target': 'a1', 'damage': 2} in without_owners(
+        events, 'attacked')
+    assert without_owners(events, 'destroyed') == [{'unit': 'd1'}]
+    assert owned(events, 'destroyed') == ['2'], 'the unit that fell was theirs'
+    assert without_owners(events, 'held') == [{'unit': 'a1', 'x': 1, 'y': 0}]
+    assert owned(events, 'held') == ['1']
 
 
 def test_an_undecided_contest_reports_the_retreat():
