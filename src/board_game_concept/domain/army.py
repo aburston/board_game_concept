@@ -52,7 +52,9 @@ DEFAULT_SIZE_Y = 8
 # and nobody builds - attack 0 with no energy, and attack 0 with energy - and
 # a default catalogue is the cheapest way to teach that they exist
 CATALOGUE = (
-    ('Wall',   '#', 0, 10,  0),
+    # not `#`: that is the glyph an empty square is drawn with, and a wall
+    # drawn as one is a wall a player cannot see on their own board
+    ('Wall',   'W', 0, 10,  0),
     ('Scout',  'o', 0,  2, 12),
     ('Pawn',   'p', 1,  4,  2),
     ('Runner', 'r', 2,  4, 10),
@@ -63,10 +65,18 @@ CATALOGUE = (
 )
 
 
-# the fifteen units, as (depth, column, type name, unit name). Depth 1 is the
+# the sixteen units, as (depth, column, type name, unit name). Depth 1 is the
 # row in front of the player's own edge and takes the units that cannot afford
 # to travel; depth 0 is the edge itself and takes the ones that can, and the
-# Keep that carries the flag
+# Keep that carries the flag.
+#
+# Both rows are **symmetric about the middle of the board**: what stands in
+# column x stands in column 7 - x as well. A lopsided army reads as a mistake,
+# and there is no reason for one flank to be stronger than the other before
+# anybody has moved. That is what puts a pair of Keeps in the middle - eight
+# columns leave no middle square for one - and it is why the Lance is in the
+# catalogue but not in the opening array: four pairs a row is eight pairs, and
+# eight pairs of eight different types come to 268 points
 ARRAY = (
     (1, 0, 'Pawn', 'pawn1'),
     (1, 1, 'Pawn', 'pawn2'),
@@ -77,18 +87,22 @@ ARRAY = (
     (1, 6, 'Pawn', 'pawn3'),
     (1, 7, 'Pawn', 'pawn4'),
     (0, 0, 'Runner', 'runner1'),
-    (0, 1, 'Line', 'line1'),
-    (0, 2, 'Scout', 'scout1'),
-    (0, 3, 'Keep', 'keep'),
-    (0, 4, 'Lance', 'lance1'),
+    (0, 1, 'Scout', 'scout1'),
+    (0, 2, 'Line', 'line1'),
+    (0, 3, 'Keep', 'keep1'),
+    (0, 4, 'Keep', 'keep2'),
     (0, 5, 'Line', 'line2'),
-    (0, 6, 'Runner', 'runner2'),
+    (0, 6, 'Scout', 'scout2'),
+    (0, 7, 'Runner', 'runner2'),
 )
 
 
-# the unit the flag is set on. The Keep is the least mobile thing in the array
-# and stands behind two Heavies, which is where a flag wants to be
-FLAG_UNIT = 'keep'
+# the unit the flag is set on. The Keeps are the least mobile things in the
+# array and stand behind the Heavies, which is where a flag wants to be. There
+# are two because the array is symmetric and an eight-wide row has no middle
+# square for a single one; the left of the pair carries it, so which does is
+# the rules' to say rather than an accident of how a list is held
+FLAG_UNIT = 'keep1'
 
 
 def types():

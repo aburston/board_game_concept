@@ -189,6 +189,10 @@ export function renderBoard(board, units, options) {
         + (unit.pending ? ' pending' : ''),
       transform: `translate(${PAD + unit.x * SQUARE}, ${PAD + unit.y * SQUARE})`,
     });
+    // where it stands, said rather than left to be read back out of the
+    // transform. The squares under it carry theirs for the same reason
+    group.dataset.x = unit.x;
+    group.dataset.y = unit.y;
     // an invisible target covering the square. The ring is 23px across on a
     // phone and a finger is about 44: what somebody aims at is the square
     group.append(svg('rect', {

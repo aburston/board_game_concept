@@ -147,8 +147,15 @@ export const waitForCommit = (gameno, number, budget) =>
 export const setBoard = (sizeX, sizeY) =>
   ({ kind: 'set_board', size_x: sizeX, size_y: sizeY });
 
-export const addPlayer = (number, budget) =>
-  ({ kind: 'add_player', number, budget });
+// a budget of `undefined` is a budget the administrator did not choose, and
+// is left out so the server applies its own default. The page used to send a
+// number of its own when the field was blank, which is a second copy of a
+// rule the domain already states - and it went stale the moment the default
+// changed, registering everybody on the old one
+export const addPlayer = (number, budget) => (
+  budget === undefined
+    ? { kind: 'add_player', number }
+    : { kind: 'add_player', number, budget });
 
 export const removePlayer = (number) =>
   ({ kind: 'remove_player', number });

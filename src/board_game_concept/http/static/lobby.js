@@ -75,8 +75,8 @@ function renderGame(game) {
   }
   if (state.account.kind === 'admin' && game.state === 'setting up') {
     heading.append(' ', element('span', { class: 'tag' },
-                                game.size_x ? 'setup committed'
-                                            : 'not set up yet'));
+                                game.setup_committed ? 'setup committed'
+                                                     : 'not set up yet'));
   }
   card.append(heading);
 
@@ -102,7 +102,7 @@ function renderGame(game) {
       `${game.open_seats} of ${game.seats.length} seats still open.`));
   }
   if (state.account.kind === 'admin' && game.state === 'setting up'
-      && game.size_x) {
+      && game.setup_committed) {
     card.append(element('p', { class: 'small muted' },
       'This game is set up: the board is published and the seats are fixed. '
       + 'It starts when every seat is held and every player has committed.'));
@@ -114,11 +114,15 @@ function renderGame(game) {
       + 'The first turn resolves when they have.'));
   }
 
-  // a game whose board has been published is a game whose setup was
-  // committed: the board is stored by that commit and by nothing else. Until
-  // then there is a setup to do; after it, every command that screen could
-  // send would be refused, and offering it was offering a dead end
-  if (state.account.kind === 'admin' && !game.size_x) {
+  // until the administrator's commit ends it there is a setup to do; after
+  // it, every command that screen could send would be refused, and offering
+  // it was offering a dead end.
+  //
+  // This used to ask whether the game had a board, because a board was stored
+  // by that commit and by nothing else. A created game is given one now, so
+  // that question answered "committed" for every new game and the setup
+  // screen could not be reached at all
+  if (state.account.kind === 'admin' && !game.setup_committed) {
     card.append(element('p', {},
       link('Set this game up', `#/setup/${encodeURIComponent(game.gameno)}/0`,
            { class: 'small' })));

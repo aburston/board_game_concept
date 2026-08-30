@@ -202,7 +202,7 @@ not want.
 
 | Name | Symbol | Attack | Health | Energy | Cost | Move fare |
 |---|---|---|---|---|---|---|
-| Wall | `#` | 0 | 10 | 0 | 10 | 3 |
+| Wall | `W` | 0 | 10 | 0 | 10 | 3 |
 | Scout | `o` | 0 | 2 | 12 | 14 | 1 |
 | Pawn | `p` | 1 | 4 | 2 | 7 | 1 |
 | Runner | `r` | 2 | 4 | 10 | 16 | 1 |
@@ -212,15 +212,22 @@ not want.
 | Heavy | `H` | 5 | 10 | 15 | 30 | 3 |
 
 *The array.* In a **two-player** game each player also opens their seat with
-fifteen of those units already deployed in their own half (**R2.6a**), and
-their flag (**R2.11**) already on the Keep. It costs **232** of the 250-point
-budget. Both players get the same layout, mirrored, reading from each player's
-own edge inwards:
+sixteen of those units already deployed in their own half (**R2.6a**), and
+their flag (**R2.11**) already on the left-hand Keep. It costs **242** of the
+250-point budget. Both players get the same layout, mirrored, reading from
+each player's own edge inwards:
 
 ```
-    depth 1   p  p  #  H  H  #  p  p      the slow rank, nearest the enemy
-    depth 0   r  L  o  K  !  L  r  .      the fast rank, and the flag
+    depth 1   p  p  W  H  H  W  p  p      the slow rank, nearest the enemy
+    depth 0   r  o  L  K  K  L  o  r      the fast rank, and the flag
 ```
+
+Both rows are **symmetric about the middle of the board**: what stands in one
+column stands in its mirror. There is no reason for one flank to be stronger
+than the other before anybody has moved. It is why there are two Keeps —
+eight columns leave no middle square for one — and why the Lance is in the
+catalogue but not in the opening array: four pairs a row is eight pairs, and
+eight pairs of eight different types come to 268 points.
 
 The slow units stand in **front**, which is the opposite of chess, because a
 unit's reach is its energy divided by its move fare (**R4.3**). A Heavy has
@@ -235,7 +242,8 @@ half, and a budget that covers it. Otherwise you are given the catalogue and
 you deploy by hand, as you always could.
 
 *Changing it.* Take a unit back with `remove unit <name>` (**R2.12**) and its
-points come back with it. Take the whole array back and it stays gone - it is
+points come back with it. In a browser, clicking a unit you have placed takes
+it back; clicking an empty square in your own half deploys there. Take the whole array back and it stays gone - it is
 not deployed again when you next open your seat.
 
 *A note on the administrator.* The board and the number of players can still

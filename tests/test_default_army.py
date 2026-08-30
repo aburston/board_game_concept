@@ -57,6 +57,24 @@ def test_each_type_pays_the_move_fare_published_for_it():
         assert fare == math.ceil(health / 4), name
 
 
+def test_no_catalogue_type_is_drawn_as_an_empty_square():
+    """A wall drawn as `#` is a wall its owner cannot see on their board.
+
+    The Wall was `#` to begin with, which is the glyph `Empty` draws itself
+    with, so `show board` rendered a wall and a bare square identically.
+    """
+    from board_game_concept.domain.square import Empty
+
+    drawn = {record['symbol'] for record in army.types().values()}
+
+    assert str(Empty()) not in drawn
+
+
+def test_no_two_catalogue_types_share_a_symbol():
+    drawn = [record['symbol'] for record in army.types().values()]
+    assert sorted(drawn) == sorted(set(drawn))
+
+
 def test_a_type_with_energy_can_afford_to_move():
     """The wall is the exception, and is meant to be: it cannot move at all."""
     for name, record in army.types().items():
@@ -70,12 +88,12 @@ def test_a_type_with_energy_can_afford_to_move():
 # --- the array
 
 
-def test_the_array_holds_fifteen_units():
-    assert len(army.ARRAY) == 15
+def test_the_array_holds_sixteen_units():
+    assert len(army.ARRAY) == 16
 
 
 def test_the_array_costs_what_is_published():
-    assert army.cost() == 232
+    assert army.cost() == 242
 
 
 def test_the_array_uses_only_catalogue_types():
@@ -99,11 +117,38 @@ def test_the_flag_stands_on_a_unit_the_array_deploys():
     assert army.FLAG_UNIT in names
 
 
+def test_the_array_is_symmetric_about_the_middle_of_the_board():
+    """Whatever stands in column x stands in column 7 - x as well.
 
-def test_the_array_shows_a_player_every_type_they_were_given():
-    """The point of a default catalogue is teaching what the rules allow."""
+    A lopsided army reads as a mistake, and there is no reason for one flank
+    to be stronger than the other before anybody has moved.
+    """
+    width = 8
+    by_square = {(depth, x): type_name
+                 for depth, x, type_name, _name in army.ARRAY}
+
+    for (depth, x), type_name in by_square.items():
+        mirrored = by_square.get((depth, width - 1 - x))
+        assert mirrored == type_name, (depth, x, type_name, mirrored)
+
+
+def test_the_array_fills_every_column_of_both_its_rows():
+    """An army that leaves a column bare is not symmetric on the board."""
+    for depth in (0, 1):
+        columns = sorted(x for d, x, _t, _n in army.ARRAY if d == depth)
+        assert columns == list(range(8)), depth
+
+
+def test_the_array_shows_all_but_one_of_the_types_a_player_is_given():
+    """Eight pairs of eight types cost 268, which no budget was covering.
+
+    The Lance is the one left out: it is in the catalogue and a player may
+    deploy as many as they like, but the opening array cannot hold one
+    without giving up something and staying symmetric.
+    """
     deployed = {type_name for _depth, _x, type_name, _name in army.ARRAY}
-    assert deployed == set(army.types())
+
+    assert deployed == set(army.types()) - {'Lance'}
 
 
 # --- where it stands
