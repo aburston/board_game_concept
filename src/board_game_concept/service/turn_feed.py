@@ -27,7 +27,7 @@ what a player wants to know is where they were hit, and "somewhere" is not an
 answer a board can draw.
 """
 
-from ..domain.events import Event, record
+from ..domain.events import Event, players_in, record
 
 # the kinds that open a fight at a square. Everything reported until the next
 # one of these belongs to that square
@@ -89,11 +89,11 @@ def names_in(entry):
     return found
 
 
-def for_seat(made, owned):
+def for_seat(made, number):
     """The entries one seat may read, in the order they happened.
 
-    `owned` is the names of that seat's own units, and it is the whole of the
-    rule: an entry reaches a seat where one of its own units is named in it.
+    `number` is that seat's player number, and it is the whole of the rule: an
+    entry reaches a seat where one of its own units is named in it.
 
     It used to reach a seat where every unit named was one that seat could
     see, which meant a player standing beside a contest they took no part in
@@ -101,8 +101,15 @@ def for_seat(made, owned):
     their fight, and what they did to each other is theirs. A seat in a
     three-way contest is told what it struck and what struck it, and not what
     the other two did to one another.
+
+    Whose units an entry names is read from the entry rather than matched
+    against a list of names. It used to be matched: a seat held the names of
+    its own units and kept an entry that mentioned one of them. A name only
+    has to be unique within one player's own units, though, so two players who
+    both called a unit `scout` each read the other's entries about it - and
+    two players handed the same default army did it every game.
     """
-    owned = set(owned or ())
+    number = int(number)
     kept = []
     squares = set()
     for index, entry in enumerate(made):
@@ -111,7 +118,7 @@ def for_seat(made, owned):
             continue                       # square-only, decided below
         if entry['kind'] in OUTCOMES:
             continue                       # the square's, decided below too
-        if not named & owned:
+        if number not in players_in(entry.get('detail')):
             continue
         kept.append(index)
         square = _square(entry)

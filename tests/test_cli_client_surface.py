@@ -139,7 +139,10 @@ class DefiningUnitTypes(ClientTestCase):
         client.send_line('add type Cross X 1 1 10')
         client.read_until_count(CLIENT_PROMPT, 2)
         lines = self.shown_table(client, CLIENT_PROMPT, 'types')
-        assert lines[1].split() == ['1', 'Cross', 'X', '1', '1', '10', '12']
+        # the table also lists the catalogue this player was registered with,
+        # so the type just defined is looked for rather than counted to
+        rows = [line.split() for line in lines[1:]]
+        assert ['1', 'Cross', 'X', '1', '1', '10', '12'] in rows
 
     def test_wrong_argument_count(self):
         client = self.player_client()
@@ -315,7 +318,10 @@ class ClientDisplayCommands(ClientTestCase):
         lines = self.shown_table(client, CLIENT_PROMPT, 'types')
         assert lines[0].split() == [
             'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY', 'COST']
-        assert lines[1].split() == ['1', 'Cross', 'X', '1', '1', '10', '12']
+        rows = [line.split() for line in lines[1:]]
+        assert ['1', 'Cross', 'X', '1', '1', '10', '12'] in rows
+        assert ['1', 'Heavy', 'H', '5', '10', '15', '30'] in rows, (
+            'the catalogue is listed alongside it')
 
     def test_showing_units(self):
         client = self.with_a_unit()
@@ -339,7 +345,7 @@ class ClientDisplayCommands(ClientTestCase):
             'PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT']
         # a player reads their own points, and a `-` where another player's
         # record was never theirs to read
-        assert ['1', 'active', '100', '0', '100'] in [
+        assert ['1', 'active', '250', '0', '250'] in [
             line.split() for line in lines[1:]]
 
     def test_another_players_points_are_not_shown(self):

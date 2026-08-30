@@ -14,6 +14,7 @@ answer is a cache with the directory as its source of truth, not a table.
 
 import os
 
+from ..domain import army
 from ..cli import session as session_module
 from .errors import GameError
 
@@ -126,7 +127,14 @@ def exists(gameno, base_path=None):
 
 
 def create(gameno, backend=None, base_path=None):
-    """Make a new, empty game: no board, no players, nothing played.
+    """Make a new game: a default board, no players, nothing played.
+
+    The board is the one concession to a game being playable rather than
+    empty. A game used to be created with no board at all, so the first thing
+    anybody had to do was size one, and the size they chose was a guess. It is
+    given `army.DEFAULT_SIZE_X` by `army.DEFAULT_SIZE_Y` instead - a board
+    like any other, which the administrator can resize, and resize again,
+    until setup is committed.
 
     Refuses a number a game already has, leaving the existing game untouched.
     """
@@ -137,4 +145,5 @@ def create(gameno, backend=None, base_path=None):
     repository = session_module.make_repository(
         gameno, backend=backend, base_path=base_path)
     repository.ensure()
+    repository.write_board(army.DEFAULT_SIZE_X, army.DEFAULT_SIZE_Y)
     return describe(gameno, backend=backend, base_path=base_path)

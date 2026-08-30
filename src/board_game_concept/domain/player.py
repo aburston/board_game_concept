@@ -29,7 +29,13 @@ class Player:
     # eight of the dearest; the bottom buys nothing at all, deliberately, since
     # a player set up with nothing to deploy is the administrator's to decide
     # and not the rules' to refuse
-    DEFAULT_BUDGET = 100
+    #
+    # The default is what the default army needs. `domain/army.py` gives every
+    # player of a two-player game an array costing 232, and a budget that only
+    # just covered it would leave nothing to edit with: every change a player
+    # wanted to make would have to begin by taking something back. 250 leaves
+    # 18 points spare, which is a unit or two
+    DEFAULT_BUDGET = 250
     MIN_BUDGET = 1
     MAX_BUDGET = 1000
 

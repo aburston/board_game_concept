@@ -21,10 +21,11 @@ import json
 import os
 import re
 import sqlite3
+import time
 
 from ..domain.events import record as event_record
 from ..service.errors import UnreadableGame
-from .lock import GameIsBusy
+from .lock import RETRY_INTERVAL, TIMEOUT, GameIsBusy
 from .repository import GameRepository
 
 
@@ -113,17 +114,33 @@ class SqliteGameRepository(GameRepository):
     # same one
     def _enter(self, read):
         if self._depth == 0:
+            self._begin(read)
+        self._depth += 1
+
+    def _begin(self, read):
+        """Open the transaction, waiting for it as the file lock does.
+
+        The connection is opened with `timeout=0`, so SQLite gives up on a
+        held lock at once. That is right for the statement level and wrong
+        here: the YAML backend's lock waits up to `TIMEOUT` before it calls a
+        game busy, and two backends that disagree about how long "in use"
+        lasts are two different games. A browser opening a screen asks for
+        several views at once, and the first of them to write would otherwise
+        make the rest fail rather than queue.
+        """
+        statement = 'BEGIN DEFERRED' if read else 'BEGIN IMMEDIATE'
+        deadline = time.monotonic() + TIMEOUT
+        while True:
             try:
-                if read:
-                    self._connection.execute('BEGIN DEFERRED')
-                else:
-                    self._connection.execute('BEGIN IMMEDIATE')
+                self._connection.execute(statement)
+                return
             except sqlite3.OperationalError as error:
-                if 'locked' in str(error) or 'busy' in str(error):
+                if not ('locked' in str(error) or 'busy' in str(error)):
+                    raise
+                if time.monotonic() >= deadline:
                     raise GameIsBusy(
                         f"the game at {self.data_path} is in use") from error
-                raise
-        self._depth += 1
+                time.sleep(RETRY_INTERVAL)
 
     def _leave(self, failed):
         self._depth -= 1
@@ -181,10 +198,11 @@ class SqliteGameRepository(GameRepository):
             'SELECT turn_no, outcome FROM games WHERE id=1').fetchone()
         if row is None:
             return None
-        # a game with no turns resolved has never had its progress written;
-        # returning None matches what the YAML backend did
-        if row['turn_no'] == 0 and row['outcome'] is None and \
-                self._eliminated() == []:
+        # a game whose progress has never been written has no progress record,
+        # which is what the YAML backend answers by having no file. The two
+        # must agree, because a session reads the absence of a record as a
+        # setup that has not been committed
+        if row['turn_no'] is None:
             return None
         progress = {
             'turn': row['turn_no'] or 0,

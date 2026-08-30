@@ -1,5 +1,5 @@
 from .square import Empty
-from .events import Event
+from .events import Event, owners
 from .player import Player
 
 
@@ -215,7 +215,8 @@ class UnitType:
         if self.health <= 0:
             self.destroyed = True
             if events is not None:
-                events.append(Event('destroyed', unit=self.name))
+                events.append(Event('destroyed', unit=self.name,
+                                    players=owners(self)))
 
     # where this unit would like to go, decided against the board as the turn
     # began. Nothing is written: the board plans every move before it applies
@@ -299,7 +300,8 @@ class UnitType:
         self.moved_from = None
         if events is not None:
             events.append(Event(
-                'retreated', unit=self.name, x=from_x, y=from_y))
+                'retreated', unit=self.name, x=from_x, y=from_y,
+                players=owners(self)))
         return True
 
     def __str__(self):
@@ -375,7 +377,7 @@ def exchangeAttacks(contestants, events=None, out=()):
             if events is not None:
                 events.append(Event(
                     'attacked', unit=unit.name, target=target.name,
-                    damage=unit.attack))
+                    damage=unit.attack, players=owners(unit, target)))
             target.incomingAttack(unit.attack, events)
 
     for unit in contestants:
@@ -401,7 +403,8 @@ def resolveContest(board, x, y, contestants, free, events=None, out=()):
         if events is not None:
             events.append(Event(
                 'undecided', x=x, y=y,
-                units=','.join(sorted(unit.name for unit in survivors))))
+                units=','.join(sorted(unit.name for unit in survivors)),
+                players=owners(*survivors)))
         survivors = [unit for unit in survivors
                      if not unit.retreat(free, events)]
 
@@ -413,7 +416,8 @@ def resolveContest(board, x, y, contestants, free, events=None, out=()):
         board[x, y] = survivors[0]
         if events is not None:
             events.append(Event(
-                'held', unit=survivors[0].name, x=x, y=y))
+                'held', unit=survivors[0].name, x=x, y=y,
+                players=owners(survivors[0])))
     else:
         # no survivor could fall back, so they share the square
         board[x, y] = survivors
@@ -438,7 +442,8 @@ def resolveCollision(first, second, events=None, out=()):
                            key=lambda u: (u.player.number, u.name))
         events.append(Event(
             'collided', unit=near.name, target=far.name,
-            x=near.x, y=near.y, to_x=far.x, to_y=far.y))
+            x=near.x, y=near.y, to_x=far.x, to_y=far.y,
+            players=owners(near, far)))
     survivors = exchangeAttacks([first, second], events, out)
 
     for unit in (first, second):
@@ -453,9 +458,11 @@ def resolveCollision(first, second, events=None, out=()):
         survivor.occupy(target_x, target_y)
         if events is not None:
             events.append(Event(
-                'held', unit=survivor.name, x=target_x, y=target_y))
+                'held', unit=survivor.name, x=target_x, y=target_y,
+                players=owners(survivor)))
     elif len(survivors) == 2 and events is not None:
         # neither could decide it, so both stay where the turn found them
         events.append(Event(
             'undecided', x=first.x, y=first.y,
-            units=','.join(sorted(unit.name for unit in survivors))))
+            units=','.join(sorted(unit.name for unit in survivors)),
+            players=owners(*survivors)))

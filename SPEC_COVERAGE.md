@@ -13,7 +13,7 @@ source of truth for intended behaviour.
 | `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, the energy a move costs |
 | `combat-resolution` | Contested squares, one simultaneous strike a turn, damage, destruction is final |
 | `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
-| `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given |
+| `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given, and an account of a turn bounded by whose units were in it |
 | `game-persistence` | On-disk game layout, YAML formats, orders as transport |
 | `player-client` | The `bgcclient` command surface |
 | `game-server` | The `bgcserver` command surface and unattended turn cycle |
@@ -28,6 +28,7 @@ source of truth for intended behaviour.
 | `cli-output` | One view behind a table and a JSON form, the columns each subject shows, and that a prompt can read everything a browser can |
 | `cli-installation` | The console scripts an install puts on the path, and what a wheel has to carry beside the code |
 | `placement-zones` | Where a player may deploy during setup: the two-player halves, the neutral row, and the area published per seat |
+| `default-army` | What a new game and a newly registered player start with: the default board, the catalogue of eight types, the fifteen-unit array, and when each is given |
 | `web-interface` | Playing in a browser: a client of the same contract, what it must make visible, and what it must not remember |
 
 Validate them with:

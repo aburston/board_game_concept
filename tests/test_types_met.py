@@ -10,7 +10,7 @@ What is kept is the design and the turn it was met on. Where it was is not
 kept, then or ever: a memory of a design is not a memory of a position.
 """
 
-from board_game_concept.domain import Player, UnitType
+from board_game_concept.domain import Player, UnitType, army
 
 from game_harness import GameHarness
 
@@ -32,11 +32,19 @@ def met(harness, number):
 
 
 def types_in_contact(harness, number):
-    """What `show types` lists: the types this session is in contact with."""
+    """What `show types` lists, less the catalogue every player is given.
+
+    These tests are about what contact teaches a player, and the default
+    catalogue teaches them nothing: they were registered with it. It is left
+    out here so that the designs in this game - which are named for it, `X`
+    and `O` - are what the assertions are about.
+    """
     session = harness.session(number)
+    catalogue = set(army.types())
     return sorted(
         name for player in session.getPlayers().values()
-        for name in player.get('types', {}))
+        for name in player.get('types', {})
+        if name not in catalogue)
 
 
 def test_nothing_is_known_before_contact(tmp_path):

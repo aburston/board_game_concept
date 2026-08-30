@@ -44,10 +44,11 @@ or in a draw when the last players are wiped out together. See **R7**.
 
 ## R2. Setting up
 
-**R2.1 The board.** The administrator sizes the board once, with
-`set board <size_x> <size_y>` or `load board <file>`. Each dimension must be an
-**integer from 2 to 10** inclusive. A board that already exists cannot be
-resized.
+**R2.1 The board.** A game is created with a board of **8 x 8** already on it,
+so a game that nobody sets up further is still a game that can be played. The
+administrator may resize it with `set board <size_x> <size_y>` or
+`load board <file>`, and may resize it again, until the setup is committed.
+Each dimension must be an **integer from 2 to 10** inclusive.
 
 **R2.2 Coordinates.** A square is `(x, y)`. `x` runs left to right, `y` runs
 **top to bottom**, both from 0. `(0, 0)` is the top-left square. `show board`
@@ -60,7 +61,9 @@ added once the game has started.
 
 **R2.3.1 The point budget.** Each player is registered with a **point budget**,
 which is what bounds the army they may deploy (**R2.9**). It is an integer from
-**1 to 1000**, and is **100** where the administrator does not name one. Two
+**1 to 1000**, and is **250** where the administrator does not name one - what
+the default army (**R2.13**) costs, and 18 points over, so that a player can
+change what they were given without first taking something back. Two
 players of the same game may be given different budgets. A budget is fixed at
 registration: nothing in play raises or lowers it. A player file may carry a
 `budget:` key; one that does not gets the default.
@@ -114,9 +117,23 @@ copy of one of your own types, at those coordinates. It is refused if:
   deployed this turn, or
 - your point budget will not pay for it (**R2.9**).
 
+**R2.6a Where you may deploy.** In a game of **exactly two players** the board
+is halved by rows during setup: the **lower-numbered** player deploys in the
+rows nearer row 0 and the other in the rows nearer the last. Columns are never
+restricted, so a half is the full width of the board. Where the number of rows
+is **odd**, the single middle row is **neutral** and belongs to neither player.
+
+Every other number of players - one, three, more - may deploy anywhere on the
+board. The same rule is applied; it just does not divide anything.
+
+The area you may deploy in is published, so a client can show it to you.
+
 **R2.7 Unit names.** A name must be unique **within one player's** units. Two
 different players may both have a unit called `scout`; an order is always
-resolved against the units the ordering player owns.
+resolved against the units the ordering player owns, and so is what each
+player is told a turn did (**R6.8**). The default army (**R2.13**) hands both
+players the same fifteen names, so this is the ordinary case rather than an
+awkward one.
 
 **R2.8 Setup ends at your first commit.** Before your first `commit` you may
 define types and deploy units but may not order movement. After it you may order
@@ -173,6 +190,59 @@ the table — and a player who deployed nothing therefore cannot commit at all.
 This rule is a **break**: a game set up before flags existed cannot be played
 on, because its units carry none and nothing will read a flag that is not
 there. Finish such a game by starting a new one.
+
+**R2.13 A game comes with an army.** Nothing below is a rule you have to obey.
+It is what a game hands you so that you can play one without inventing one
+first, and every piece of it is an ordinary setup decision you may change.
+
+*The catalogue.* Every player is registered holding these eight types. They
+cost nothing until you deploy one (**R2.9**), you may redefine any of them
+under its own name, add your own alongside, and never deploy the ones you do
+not want.
+
+| Name | Symbol | Attack | Health | Energy | Cost | Move fare |
+|---|---|---|---|---|---|---|
+| Wall | `#` | 0 | 10 | 0 | 10 | 3 |
+| Scout | `o` | 0 | 2 | 12 | 14 | 1 |
+| Pawn | `p` | 1 | 4 | 2 | 7 | 1 |
+| Runner | `r` | 2 | 4 | 10 | 16 | 1 |
+| Line | `L` | 3 | 6 | 12 | 21 | 2 |
+| Lance | `!` | 8 | 2 | 10 | 20 | 1 |
+| Keep | `K` | 1 | 10 | 5 | 16 | 3 |
+| Heavy | `H` | 5 | 10 | 15 | 30 | 3 |
+
+*The array.* In a **two-player** game each player also opens their seat with
+fifteen of those units already deployed in their own half (**R2.6a**), and
+their flag (**R2.11**) already on the Keep. It costs **232** of the 250-point
+budget. Both players get the same layout, mirrored, reading from each player's
+own edge inwards:
+
+```
+    depth 1   p  p  #  H  H  #  p  p      the slow rank, nearest the enemy
+    depth 0   r  L  o  K  !  L  r  .      the fast rank, and the flag
+```
+
+The slow units stand in **front**, which is the opposite of chess, because a
+unit's reach is its energy divided by its move fare (**R4.3**). A Heavy has
+five moves in it and a strike costs five more, so one deployed at the back of
+your half arrives at the fighting line with nothing left to fight with. A
+Runner has ten moves. The units that can afford to travel are the ones that
+can start further back.
+
+*When you get no army.* The array is deployed only where it can stand as it
+is: a game of exactly two players, on a board with room for it inside your own
+half, and a budget that covers it. Otherwise you are given the catalogue and
+you deploy by hand, as you always could.
+
+*Changing it.* Take a unit back with `remove unit <name>` (**R2.12**) and its
+points come back with it. Take the whole array back and it stays gone - it is
+not deployed again when you next open your seat.
+
+*A note on the administrator.* The board and the number of players can still
+be changed after you have been given an army. If the board is resized under
+you, or a third player registered, your array may no longer be somewhere you
+are allowed to stand - your commit is refused, saying so, and you take the
+units back and place them again (**R3.5a**).
 
 **R2.12 You can take back a unit you have not committed.** `remove unit
 <name>` puts it back in your hand: the square falls free, the points are
@@ -483,6 +553,10 @@ What a square **came to** is told to everyone who was in it: a unit falling in
 front of you is not something that can be kept from you, and being told you
 killed something is the point of having struck it. The observer reads the
 whole log (**R6.6**).
+
+Whose units an entry is about is what decides this, not the names in it. Two
+players may hold a unit of one name (**R2.7**) - the default army gives them
+fifteen - and each is told only about their own.
 
 ---
 

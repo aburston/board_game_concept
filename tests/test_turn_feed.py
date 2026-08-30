@@ -19,6 +19,23 @@ from board_game_concept.service import turn_feed
 from game_harness import GameHarness
 
 
+# who owns a unit in these hand-built events, by the letter it is named with:
+# `x1` is player 1's, `o1` player 2's, `p1` player 3's. The engine puts this
+# on every event it reports; here it is written out, because these events are
+# built by hand rather than resolved
+OWNERS = {'x': 1, 'o': 2, 'p': 3}
+
+
+def owned_by(*names):
+    """The `players` an event carries, for the units it names.
+
+    A name the convention says nothing about belongs to player 1, which is
+    what a test about something other than who owns what wants.
+    """
+    return ','.join(sorted(
+        {str(OWNERS.get(name[0], 1)) for name in names}, key=int))
+
+
 def entries_of(*events):
     return turn_feed.entries(list(events))
 
@@ -42,16 +59,19 @@ def test_an_entry_carries_the_domain_s_own_wording():
     browser: the CLI, the feed and a log all read the same event the same way
     because they all ask the domain.
     """
-    made = entries_of(Event('moved', unit='x1', x=1, y=2))
+    made = entries_of(
+        Event('moved', unit='x1', x=1, y=2, players=owned_by('x1')))
     assert made[0]['text'] == 'x1 moves to (1, 2)'
     assert made[0]['kind'] == 'moved'
-    assert made[0]['detail'] == {'unit': 'x1', 'x': 1, 'y': 2}
+    assert made[0]['detail'] == {'unit': 'x1', 'x': 1, 'y': 2,
+                                 'players': '1'}
 
 
 def test_a_blow_is_marked_as_one():
     """The board marks fighting, and what counts as fighting is not its call."""
-    fought = entries_of(Event('attacked', unit='x1', target='o1', damage=3))
-    quiet = entries_of(Event('rested', unit='x1', energy=4))
+    fought = entries_of(Event('attacked', unit='x1', target='o1',
+                              damage=3, players=owned_by('x1', 'o1')))
+    quiet = entries_of(Event('rested', unit='x1', energy=4, players=owned_by('x1')))
     assert fought[0]['fighting'] is True
     assert quiet[0]['fighting'] is False
 
@@ -67,8 +87,8 @@ def test_an_attack_is_given_the_square_of_the_contest_it_was_thrown_in():
     """
     made = entries_of(
         Event('contested', x=2, y=1, units=2),
-        Event('attacked', unit='o1', target='x1', damage=3),
-        Event('destroyed', unit='x1'))
+        Event('attacked', unit='o1', target='x1', damage=3, players=owned_by('o1', 'x1')),
+        Event('destroyed', unit='x1', players=owned_by('x1')))
     assert squares(made, 'attacked') == [(2, 1)]
     assert squares(made, 'destroyed') == [(2, 1)]
 
@@ -77,7 +97,7 @@ def test_a_unit_resting_elsewhere_is_not_given_the_square_of_a_fight():
     """Resting happens where the unit is standing, which is nowhere near."""
     made = entries_of(
         Event('contested', x=2, y=1, units=2),
-        Event('rested', unit='far-away', energy=5))
+        Event('rested', unit='far-away', energy=5, players=owned_by('far-away')))
     assert squares(made, 'rested') == [(None, None)]
 
 
@@ -89,9 +109,9 @@ def test_a_unit_taken_off_the_board_is_not_placed_at_the_last_fight():
     """
     made = entries_of(
         Event('contested', x=0, y=0, units=2),
-        Event('destroyed', unit='a1'),
+        Event('destroyed', unit='a1', players=owned_by('a1')),
         Event('contested', x=9, y=9, units=2),
-        Event('removed', unit='a1'))
+        Event('removed', unit='a1', players=owned_by('a1')))
     assert squares(made, 'removed') == [(None, None)]
 
 
@@ -99,8 +119,9 @@ def test_a_unit_taken_off_the_board_is_not_placed_at_the_last_fight():
 
 
 def test_a_seat_is_told_what_happened_to_its_own_units():
-    made = entries_of(Event('attacked', unit='o1', target='x1', damage=3))
-    mine = turn_feed.for_seat(made, owned=['x1'])
+    made = entries_of(Event('attacked', unit='o1', target='x1', damage=3,
+                            players=owned_by('o1', 'x1')))
+    mine = turn_feed.for_seat(made, 1)
     assert kinds(mine) == ['attacked']
 
 
@@ -110,8 +131,9 @@ def test_a_seat_is_not_told_about_a_fight_between_units_it_cannot_see():
     Being told would hand a player the one thing `visibility` withholds: that
     somebody is somewhere, and that it is worth going to look.
     """
-    made = entries_of(Event('attacked', unit='o1', target='p1', damage=3))
-    mine = turn_feed.for_seat(made, owned=['x1'])
+    made = entries_of(Event('attacked', unit='o1', target='p1', damage=3,
+                            players=owned_by('o1', 'p1')))
+    mine = turn_feed.for_seat(made, 1)
     assert mine == []
 
 
@@ -122,8 +144,9 @@ def test_a_seat_is_not_told_about_a_fight_it_can_see_but_is_not_in():
     blow struck in it, because it could see both fighters. What they did to
     each other is theirs.
     """
-    made = entries_of(Event('attacked', unit='o1', target='p1', damage=3))
-    mine = turn_feed.for_seat(made, owned=['x1'])
+    made = entries_of(Event('attacked', unit='o1', target='p1', damage=3,
+                            players=owned_by('o1', 'p1')))
+    mine = turn_feed.for_seat(made, 1)
     assert mine == []
 
 
@@ -131,28 +154,28 @@ def test_a_seat_is_told_of_the_kill_it_made():
     """`destroyed` names the unit that fell and nobody else."""
     made = entries_of(
         Event('contested', x=2, y=1, units=2),
-        Event('attacked', unit='x1', target='o1', damage=5),
-        Event('destroyed', unit='o1'))
-    mine = turn_feed.for_seat(made, owned=['x1'])
+        Event('attacked', unit='x1', target='o1', damage=5, players=owned_by('x1', 'o1')),
+        Event('destroyed', unit='o1', players=owned_by('o1')))
+    mine = turn_feed.for_seat(made, 1)
     assert kinds(mine) == ['contested', 'attacked', 'destroyed']
 
 
 def test_a_kill_in_a_fight_the_seat_was_not_in_is_not_told():
     made = entries_of(
         Event('contested', x=9, y=9, units=2),
-        Event('attacked', unit='o1', target='p1', damage=5),
-        Event('destroyed', unit='p1'))
-    assert turn_feed.for_seat(made, owned=['x1']) == []
+        Event('attacked', unit='o1', target='p1', damage=5, players=owned_by('o1', 'p1')),
+        Event('destroyed', unit='p1', players=owned_by('p1')))
+    assert turn_feed.for_seat(made, 1) == []
 
 
 def test_a_seat_in_a_three_way_reads_its_own_blows_and_no_others():
     made = entries_of(
         Event('contested', x=2, y=1, units=3),
-        Event('attacked', unit='o1', target='x1', damage=3),
-        Event('attacked', unit='x1', target='o1', damage=2),
-        Event('attacked', unit='o1', target='p1', damage=3),
-        Event('attacked', unit='p1', target='o1', damage=1))
-    mine = turn_feed.for_seat(made, owned=['x1'])
+        Event('attacked', unit='o1', target='x1', damage=3, players=owned_by('o1', 'x1')),
+        Event('attacked', unit='x1', target='o1', damage=2, players=owned_by('x1', 'o1')),
+        Event('attacked', unit='o1', target='p1', damage=3, players=owned_by('o1', 'p1')),
+        Event('attacked', unit='p1', target='o1', damage=1, players=owned_by('p1', 'o1')))
+    mine = turn_feed.for_seat(made, 1)
     struck = [(e['detail']['unit'], e['detail']['target']) for e in mine
               if e['kind'] == 'attacked']
     assert struck == [('o1', 'x1'), ('x1', 'o1')]
@@ -166,29 +189,29 @@ def test_the_square_of_a_fight_the_seat_was_in_comes_with_it():
     """`contested` and `emptied` name nobody, and are context for the fight."""
     made = entries_of(
         Event('contested', x=2, y=1, units=2),
-        Event('attacked', unit='o1', target='x1', damage=3),
+        Event('attacked', unit='o1', target='x1', damage=3, players=owned_by('o1', 'x1')),
         Event('emptied', x=2, y=1))
-    mine = turn_feed.for_seat(made, owned=['x1'])
+    mine = turn_feed.for_seat(made, 1)
     assert kinds(mine) == ['contested', 'attacked', 'emptied']
 
 
 def test_a_square_from_a_fight_the_seat_was_not_in_is_not_named():
     made = entries_of(
         Event('contested', x=9, y=9, units=2),
-        Event('attacked', unit='o1', target='p1', damage=3),
+        Event('attacked', unit='o1', target='p1', damage=3, players=owned_by('o1', 'p1')),
         Event('emptied', x=9, y=9))
-    assert turn_feed.for_seat(made, owned=['x1']) == []
+    assert turn_feed.for_seat(made, 1) == []
 
 
 def test_the_order_events_happened_in_is_the_order_they_are_read_in():
     """A fight read out of order is a different fight."""
     made = entries_of(
-        Event('engaged', unit='x1', target='o1', x=2, y=1),
+        Event('engaged', unit='x1', target='o1', x=2, y=1, players=owned_by('x1', 'o1')),
         Event('contested', x=2, y=1, units=2),
-        Event('attacked', unit='x1', target='o1', damage=5),
-        Event('destroyed', unit='o1'),
-        Event('held', unit='x1', x=2, y=1))
-    mine = turn_feed.for_seat(made, owned=['x1'])
+        Event('attacked', unit='x1', target='o1', damage=5, players=owned_by('x1', 'o1')),
+        Event('destroyed', unit='o1', players=owned_by('o1')),
+        Event('held', unit='x1', x=2, y=1, players=owned_by('x1')))
+    mine = turn_feed.for_seat(made, 1)
     assert kinds(mine) == ['engaged', 'contested', 'attacked', 'destroyed',
                            'held']
 
@@ -291,3 +314,61 @@ def test_a_feed_can_be_read_from_a_turn_onwards(tmp_path):
     since = harness.repository().read_events(1, since=last)
     assert since, f'nothing was kept for turn {last}'
     assert all(entry['turn'] >= last for entry in since)
+
+
+# --- two players who chose the same name
+
+
+def a_game_with_one_name(tmp_path):
+    """Both players call their unit `scout`, which the rules allow.
+
+    A name has only to be unique within one player's own units (`R2.7`), and
+    two players setting up in secret cannot avoid choosing alike - the default
+    army hands them the same names on purpose.
+    """
+    harness = GameHarness(tmp_path)
+    harness.create(4, 4, [1, 2], budget=Player.MAX_BUDGET)
+    harness.deploy(1, [('X', 'X', 5, 5, 50)], [('X', 'scout', 1, 1)])
+    harness.deploy(2, [('O', 'O', 3, 6, 50)], [('O', 'scout', 1, 2)])
+    harness.resolve()
+    return harness
+
+
+def test_a_seat_is_not_told_where_the_other_players_unit_was_placed(tmp_path):
+    """The leak this was: both entries named `scout`, so both were kept."""
+    harness = a_game_with_one_name(tmp_path)
+
+    mine = feed(harness, 1)
+
+    placed = [entry for entry in mine if entry['kind'] == 'deployed']
+    assert len(placed) == 1, 'their own, and not the other player\'s'
+    assert placed[0]['detail']['x'], placed[0]['detail']['y'] == (1, 1)
+
+
+def test_each_seat_reads_only_its_own_half_of_a_fight(tmp_path):
+    """Ordering one into the other starts a fight both are entitled to."""
+    harness = a_game_with_one_name(tmp_path)
+    harness.turn({1: [('scout', UnitType.SOUTH)], 2: []})
+
+    for number in (1, 2):
+        read = feed(harness, number)
+        assert read, f'seat {number} was told about its own fight'
+        for entry in read:
+            told = entry['detail'].get('players')
+            if told is None:
+                continue                   # square-only context
+            assert str(number) in told.split(','), (number, entry)
+
+
+def test_an_event_says_whose_units_it_names(tmp_path):
+    """Which is what makes the two rules above possible."""
+    harness = a_game_with_one_name(tmp_path)
+    harness.turn({1: [('scout', UnitType.SOUTH)], 2: []})
+
+    struck = [entry for entry in harness.repository().read_turn_events()
+              if entry['kind'] == 'attacked']
+
+    assert struck, 'they fought'
+    for entry in struck:
+        assert entry['detail']['players'] == '1,2', (
+            'an attack involves the two players whose units traded it')

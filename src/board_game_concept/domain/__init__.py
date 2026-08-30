@@ -7,6 +7,7 @@ from .account import Account, Kind
 from . import account
 from . import budget
 from . import placement
+from . import army
 
 __all__ = ['Empty', 'Event', 'Player', 'UnitType', 'Board', 'Account', 'Kind',
-           'account', 'budget', 'placement', 'describe']
+           'account', 'army', 'budget', 'placement', 'describe']

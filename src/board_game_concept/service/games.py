@@ -11,7 +11,7 @@ holding only the part that is genuinely theirs - what to say, and to whom.
 
 import yaml
 
-from ..domain import Board, Player, UnitType, budget, placement
+from ..domain import Board, Player, UnitType, army, budget, placement
 from . import identity
 from .errors import GameError
 
@@ -67,13 +67,30 @@ def _player(number, points=Player.DEFAULT_BUDGET):
 
 
 def add_player(data, command):
-    """Register a player, with their point budget, before the game starts."""
+    """Register a player, with their point budget and the default catalogue.
+
+    A player used to be registered with nothing designed, so the first thing
+    they had to do was invent a set of unit types - well, from nothing, before
+    they had played a game. They are given `army`'s catalogue instead.
+
+    The catalogue is seeded here rather than with the default array, because
+    the two depend on different things. A type is legal on any board, in any
+    game, at any player count, so it can be given the moment a player is
+    registered. Where the array may stand depends on the board's size and on
+    how many players there turn out to be, neither of which is settled yet -
+    that is seeded at the seat, in `Game.load`.
+
+    Defining a type spends nothing, so this costs the player nothing until
+    they deploy a unit of one of these types. The catalogue is theirs from
+    here on: they may redefine any of it, define types of their own alongside
+    it, and never deploy the ones they do not want.
+    """
     if data.getNewGame() is False:
         raise GameError("can't add players to an existing game")
     player = _player(command.number, command.budget)
     data.getPlayers()[command.number] = {
         'obj': player,
-        'types': {},
+        'types': army.types(),
     }
 
 

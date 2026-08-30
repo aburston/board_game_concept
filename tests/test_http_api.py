@@ -7,6 +7,7 @@ The end-to-end observer coverage lives in `test_observer_over_http.py`.
 
 import pytest
 
+from board_game_concept.domain import army
 from board_game_concept import Game
 from board_game_concept.domain import Board, Player, UnitType
 from board_game_concept.http.app import create_app
@@ -100,12 +101,15 @@ def test_views_return_the_same_json_the_show_command_renders(tmp_path):
     assert [u['name'] for u in units['units']] == ['x1']
 
     types = client.get('/games/one/players/1/views/types').get_json()
-    assert [t['name'] for t in types['types']] == ['Cross']
+    named = {t['name'] for t in types['types']}
+    assert 'Cross' in named, 'their own design'
+    assert set(army.types()) <= named, 'and the catalogue they were given'
 
     players = client.get('/games/one/players/1/views/players').get_json()
     assert players['players'] == [
         {'player': 1, 'status': 'active',
-         'budget': Player.DEFAULT_BUDGET, 'spent': 16, 'left': 84}]
+         'budget': Player.DEFAULT_BUDGET, 'spent': 16,
+         'left': Player.DEFAULT_BUDGET - 16}]
 
 
 def test_a_missing_game_is_404(tmp_path):

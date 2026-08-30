@@ -4,6 +4,7 @@ The views are the one place the table and the JSON both read from, so what is
 asserted here is asserted about both formats at once.
 """
 
+from board_game_concept.domain import army
 from board_game_concept import Board, Player, UnitType
 from board_game_concept.cli import views
 from board_game_concept.service import games
@@ -95,11 +96,12 @@ def test_players_view_marks_the_eliminated(tmp_path):
                                  board=session.getBoard())
 
     # the administrator reads every record, so every player's points are known
+    budget = Player.DEFAULT_BUDGET
     assert entries == [
         {'player': 1, 'status': 'active',
-         'budget': 100, 'spent': 18, 'left': 82},
+         'budget': budget, 'spent': 18, 'left': budget - 18},
         {'player': 2, 'status': 'eliminated',
-         'budget': 100, 'spent': 13, 'left': 87}]
+         'budget': budget, 'spent': 13, 'left': budget - 13}]
 
 
 def test_players_view_leaves_another_players_points_unknown(tmp_path):
@@ -109,7 +111,7 @@ def test_players_view_leaves_another_players_points_unknown(tmp_path):
                                  board=session.getBoard())
 
     by_number = {entry['player']: entry for entry in entries}
-    assert by_number[1]['budget'] == 100
+    assert by_number[1]['budget'] == Player.DEFAULT_BUDGET
     assert by_number[1]['spent'] == 18
     assert (by_number[2]['budget'], by_number[2]['spent'],
             by_number[2]['left']) == (None, None, None)
@@ -158,10 +160,14 @@ def test_board_view_of_an_empty_board_has_no_legend(tmp_path):
     assert view['rows'] == [['#'] * 3] * 3
 
 
-def test_types_view_is_empty_before_a_type_is_defined(tmp_path):
+def test_types_view_holds_the_catalogue_before_a_type_is_defined(tmp_path):
+    """A player is registered with the default catalogue, and nothing else."""
     harness = GameHarness(tmp_path)
     harness.create(3, 3, [1])
     session = harness.session(0)
 
-    assert views.types_view(session.getPlayers()) == []
-    assert views.units_view(session.getBoard()) == []
+    listed = views.types_view(session.getPlayers())
+
+    assert sorted(entry['name'] for entry in listed) == sorted(army.types())
+    assert all(entry['player'] == 1 for entry in listed)
+    assert views.units_view(session.getBoard()) == [], 'and nothing deployed'

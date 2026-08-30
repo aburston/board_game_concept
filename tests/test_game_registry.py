@@ -11,6 +11,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+from board_game_concept.domain import army                    # noqa: E402
 from game_harness import GameHarness, DEFAULT_BACKEND       # noqa: E402
 from board_game_concept.service import games as game_ops    # noqa: E402
 from board_game_concept.service import registry             # noqa: E402
@@ -58,15 +59,31 @@ def test_a_game_made_by_a_role_is_listed_without_registration(tmp_path):
     assert listed[0]['players'] == [1, 2]
 
 
-def test_a_game_with_no_board_reports_no_size(tmp_path):
+def test_a_created_game_reports_the_default_board(tmp_path):
+    """A game is created ready to play, so it has a board from the start."""
     registry.create('fresh', DEFAULT_BACKEND, str(tmp_path))
 
     record = _find(registry.games(DEFAULT_BACKEND, str(tmp_path)), 'fresh')
 
     assert record['state'] == registry.SETTING_UP
+    assert record['size_x'] == army.DEFAULT_SIZE_X
+    assert record['size_y'] == army.DEFAULT_SIZE_Y
+    assert record['players'] == []
+
+
+def test_a_game_with_no_board_reports_no_size(tmp_path):
+    """A game written by hand, or made before games were given a board.
+
+    Built by making the store and nothing else, because `create` gives a game
+    a board now and there is no command that takes one away.
+    """
+    _harness(tmp_path, 'by-hand').repository().ensure()
+
+    record = _find(registry.games(DEFAULT_BACKEND, str(tmp_path)), 'by-hand')
+
+    assert record['state'] == registry.SETTING_UP
     assert record['size_x'] is None
     assert record['size_y'] is None
-    assert record['players'] == []
 
 
 def test_a_game_being_set_up_says_so(tmp_path):
@@ -152,7 +169,8 @@ def test_creating_a_game(tmp_path):
 
     assert record['gameno'] == 'new-one'
     assert record['state'] == registry.SETTING_UP
-    assert record['size_x'] is None
+    assert record['size_x'] == army.DEFAULT_SIZE_X
+    assert record['size_y'] == army.DEFAULT_SIZE_Y
     assert record['players'] == []
     assert registry.exists('new-one', str(tmp_path))
 

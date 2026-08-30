@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from game_harness import GameHarness, DEFAULT_BACKEND       # noqa: E402
 from board_game_concept.http.app import create_app          # noqa: E402
+from board_game_concept.domain import army
 from board_game_concept.service import registry             # noqa: E402
 
 
@@ -190,7 +191,8 @@ def test_the_administrator_creates_a_game(client, base_path):
     body = response.get_json()
     assert body['gameno'] == 'new-one'
     assert body['state'] == registry.SETTING_UP
-    assert body['size_x'] is None
+    assert body['size_x'] == army.DEFAULT_SIZE_X
+    assert body['size_y'] == army.DEFAULT_SIZE_Y
     assert body['seats'] == []
     assert registry.exists('new-one', str(base_path))
 
@@ -249,7 +251,7 @@ def test_the_lobby_shows_what_is_committed_and_not_what_is_drafted(client):
                 headers=admin)
 
     listed = _find(client.get('/games', headers=admin).get_json(), 'new-one')
-    assert listed['size_x'] is None
+    assert listed['size_x'] == army.DEFAULT_SIZE_X, 'the board it was created with, not the one being drafted'
 
     client.post('/games/new-one/players/0/commit', headers=admin)
 

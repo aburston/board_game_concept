@@ -524,10 +524,8 @@ def resolve(game):
         feed = turn_feed.entries(events)
         repository.write_turn_events(turn_number, feed)
         for number, player in game.players.items():
-            owned = [unit.name for unit in game.board.units
-                     if unit.player.number == number]
             repository.write_events(number, turn_number,
-                                    turn_feed.for_seat(feed, owned))
+                                    turn_feed.for_seat(feed, number))
             _remember_types(repository, number, views[number], turn_number)
 
         # --- and only now, the turn is over

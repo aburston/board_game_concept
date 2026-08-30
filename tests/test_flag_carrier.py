@@ -127,7 +127,7 @@ def test_a_flag_falling_is_reported():
 
     assert 'flag_fallen' in kinds(events)
     fallen = [event for event in events if event.kind == 'flag_fallen'][0]
-    assert fallen.detail == {'unit': 'carrier', 'player': 1}
+    assert fallen.detail == {'unit': 'carrier', 'player': 1, 'players': '1'}
     assert 'flag' in describe(events)
 
 
