@@ -18,7 +18,6 @@ from board_game_concept.service import games
 from board_game_concept.service.commands import (AddType, AddUnit, LoadPlayer,
                                                  RemoveUnit, SetBoard,
                                                  SetFlag)
-from board_game_concept.service.errors import GameError
 
 from game_harness import GameHarness
 
@@ -116,7 +115,7 @@ def test_a_seat_opened_holds_the_array(tmp_path):
 
     session = harness.session(1)
 
-    assert len(units_of(session)) == 15
+    assert len(units_of(session)) == 16
     assert sorted(units_of(session)) == sorted(
         name for _depth, _x, _type, name in army.ARRAY)
 
@@ -155,8 +154,8 @@ def test_the_seeded_setup_commits_as_it_stands(tmp_path):
     assert server.getTurnNumber() == 1
     # counted from the board rather than from the harness's name-keyed view
     standing = server.getBoard().units
-    assert len(standing) == 30, 'both armies reached the board'
-    assert len([unit for unit in standing if unit.player.number == 1]) == 15
+    assert len(standing) == 32, 'both armies reached the board'
+    assert len([unit for unit in standing if unit.player.number == 1]) == 16
 
 
 def test_the_array_is_charged_like_any_deployment(tmp_path):
@@ -165,7 +164,7 @@ def test_the_array_is_charged_like_any_deployment(tmp_path):
     session = harness.session(1)
 
     assert left(session) == Player.DEFAULT_BUDGET - army.cost()
-    assert left(session) == 18
+    assert left(session) == 8
 
 
 def test_a_unit_taken_back_returns_its_points(tmp_path):
@@ -187,7 +186,7 @@ def test_opening_the_seat_again_does_not_deploy_it_twice(tmp_path):
 
     reopened = harness.session(1)
 
-    assert len(units_of(reopened)) == 15
+    assert len(units_of(reopened)) == 16
 
 
 def test_an_edited_array_is_left_alone(tmp_path):
@@ -201,7 +200,7 @@ def test_an_edited_array_is_left_alone(tmp_path):
     names = units_of(reopened)
     assert 'line3' in names
     assert 'heavy1' not in names, 'nothing was restored'
-    assert len(names) == 15
+    assert len(names) == 16
 
 
 def test_taking_the_whole_array_back_leaves_a_player_with_nothing(tmp_path):

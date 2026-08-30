@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from game_harness import DEFAULT_BACKEND                    # noqa: E402
 from board_game_concept.http.app import create_app          # noqa: E402
-from board_game_concept.domain import army
+from board_game_concept.domain import Player, army
 from board_game_concept.service import registry             # noqa: E402
 
 
@@ -701,12 +701,18 @@ def test_committing_a_setup_without_sizing_a_board_goes_through(app):
 
 
 def test_the_lobby_says_whether_a_game_has_been_set_up(app):
-    """The board is published by the setup commit and by nothing else.
+    """A game with a setup still to do, told from one whose setup is done.
 
-    That is how the lobby tells a game with a setup still to do from one
-    whose setup is committed - they are both "setting up" until a turn
-    resolves, so it offered the administrator a setup screen for both, and
-    every command that screen could send on a committed game is refused.
+    They are both "setting up" until a turn resolves, so the lobby offered
+    the administrator a setup screen for both - and every command that screen
+    could send on a committed game is refused.
+
+    It used to tell them apart by the board: a game with none had not been
+    set up, because the board was stored by that commit and by nothing else.
+    A created game is given one now, so that question answers "committed" for
+    every new game - which took the setup screen away from the administrator
+    altogether. What the commit writes and nothing else does is the progress
+    record, and that is what this reads.
     """
     admin = _administrator(app)
     assert admin.create_game(GAME).status_code == 201
@@ -715,19 +721,46 @@ def test_the_lobby_says_whether_a_game_has_been_set_up(app):
         return [entry for entry in admin.list_games().get_json()['games']
                 if entry['gameno'] == GAME][0]
 
+    assert listed()['setup_committed'] is False, 'there is a setup to do'
     assert listed()['size_x'] == army.DEFAULT_SIZE_X, (
-        'the board the game was created with')
+        'on the board the game was created with')
 
     admin.perform(GAME, 0, {'kind': 'set_board', 'size_x': 4, 'size_y': 4})
     admin.perform(GAME, 0, {'kind': 'add_player', 'number': 1, 'budget': 100})
+    assert listed()['setup_committed'] is False, 'and it is not done yet'
     assert listed()['size_x'] == army.DEFAULT_SIZE_X, (
         'a resize that has not been committed is not published')
 
     admin.commit(GAME, 0)
 
+    assert listed()['setup_committed'] is True
     assert listed()['size_x'] == 4
     assert listed()['state'] == registry.SETTING_UP, (
         'the game is still being set up by its players')
+
+
+def test_a_created_game_still_has_a_setup_to_do(app):
+    """The defect this guards: a created game the administrator cannot set up.
+
+    Giving every created game a board made it look, to a lobby that read the
+    board, exactly like a game whose setup had been committed - so the "Set
+    this game up" link was withheld from every new game and the screen could
+    not be reached.
+    """
+    admin = _administrator(app)
+    admin.create_game(GAME)
+
+    listed = [entry for entry in admin.list_games().get_json()['games']
+              if entry['gameno'] == GAME][0]
+
+    assert listed['setup_committed'] is False
+    # and the screen it leads to works: the board can be sized and a player
+    # registered, which is the whole of what it is for
+    assert admin.perform(GAME, 0, {'kind': 'set_board', 'size_x': 6,
+                                   'size_y': 6}).status_code == 204
+    assert admin.perform(GAME, 0, {'kind': 'add_player',
+                                   'number': 1}).status_code == 204
+    assert admin.commit(GAME, 0).status_code == 200
 
 
 def test_an_administrator_cannot_set_up_a_committed_game(app):
@@ -1112,6 +1145,31 @@ def test_the_administrators_own_ways_in_are_offered_beside_its_seat(app):
 # --- 12. a game played from the defaults, through the browser's own calls
 
 
+def test_a_seat_registered_without_a_budget_gets_the_default(app):
+    """The page must not restate the default, because it goes stale.
+
+    It sent 100 of its own when the field was left blank - the default of the
+    day it was written - so every seat added in a browser was registered on a
+    budget too small for the default army, and no army was seeded at all.
+    """
+    admin = _administrator(app)
+    admin.create_game(GAME)
+    for number in (1, 2):
+        assert admin.perform(GAME, 0, {'kind': 'add_player',
+                                       'number': number}).status_code == 204
+    admin.commit(GAME, 0)
+
+    ada = _player(app, 'ada')
+    ada.claim_seat(GAME, 1)
+
+    mine = [entry for entry
+            in ada.read_view(GAME, 1, 'players').get_json()['players']
+            if entry['player'] == 1][0]
+    assert mine['budget'] == Player.DEFAULT_BUDGET == 250
+    assert mine['spent'] == army.cost(), 'and it paid for the default army'
+    assert len(ada.read_view(GAME, 1, 'units').get_json()['units']) == 16
+
+
 def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
     """Create, claim two seats, commit twice, and the game is under way.
 
@@ -1136,7 +1194,7 @@ def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
 
     # and the board reads this: fifteen units, in this player's own half
     units = ada.read_view(GAME, 1, 'units').get_json()['units']
-    assert len(units) == 15
+    assert len(units) == 16
     assert {unit['y'] for unit in units} == {0, 1}
     assert [unit['flag'] for unit in units].count(True) == 1
 
@@ -1149,7 +1207,7 @@ def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
     # what the tray shows: the budget, and what the army left of it
     players = ada.read_view(GAME, 1, 'players').get_json()['players']
     mine = [entry for entry in players if entry['player'] == 1][0]
-    assert (mine['spent'], mine['left']) == (army.cost(), 18)
+    assert (mine['spent'], mine['left']) == (army.cost(), 250 - army.cost())
 
     # press commit, both seats. The first is accepted and waits; the second
     # is the one the turn resolves on
@@ -1168,5 +1226,5 @@ def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
     # and the feed is this seat's own. Both armies are the same array, named
     # alike, so this is only true because an event says whose units it names
     feed = ada.read_view(GAME, 1, 'events').get_json()['events']
-    assert len(feed) == 15, 'fifteen placements, and not the other fifteen'
+    assert len(feed) == 16, 'their own placements, and not the other sixteen'
     assert all(entry['detail'].get('players') == '1' for entry in feed)

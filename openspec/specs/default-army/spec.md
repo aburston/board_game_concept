@@ -40,11 +40,15 @@ The system SHALL give every player registered in a game a catalogue of eight
 unit types. Each SHALL be a type as any other, and SHALL cost the sum of its
 statistics like any other.
 
+No type in the catalogue SHALL be drawn with the glyph an empty square is
+drawn with, because a unit a player cannot tell from a bare square is a unit
+they cannot see on their own board.
+
 The catalogue SHALL be:
 
 | Name   | Symbol | Attack | Health | Energy | Cost | Move fare |
 |--------|--------|--------|--------|--------|------|-----------|
-| Wall   | `#`    | 0      | 10     | 0      | 10   | 3         |
+| Wall   | `W`    | 0      | 10     | 0      | 10   | 3         |
 | Scout  | `o`    | 0      | 2      | 12     | 14   | 1         |
 | Pawn   | `p`    | 1      | 4      | 2      | 7    | 1         |
 | Runner | `r`    | 2      | 4      | 10     | 16   | 1         |
@@ -84,20 +88,29 @@ and never deploy the ones they do not want.
 
 ### Requirement: A Two-Player Game Is Given A Default Deployment
 
-The system SHALL deploy a default array of fifteen units for each player of a
-two-player game, and SHALL set that player's flag on the Keep.
+The system SHALL deploy a default array of sixteen units for each player of a
+two-player game, and SHALL set that player's flag on one of its Keeps.
+
+The array SHALL be symmetric about the middle of the board: whatever stands in
+a column SHALL stand in that column's mirror. An army that is stronger on one
+flank than the other before anybody has moved is an accident rather than a
+design, and it is what forces a pair of Keeps - an eight-column row has no
+middle square to stand a single one on. Which of the pair carries the flag
+SHALL be fixed by the rules rather than left to the order a list is held in.
 
 The array SHALL be described by depth from the player's own edge of the board,
 and SHALL be laid out the same way for both players, so that each faces a
 mirror of the other. Depth 0 is the row at the player's own edge; depth 1 is
 the row in front of it. Columns SHALL be the same for both players.
 
-| Depth | c0     | c1   | c2    | c3    | c4    | c5   | c6     | c7   |
-|-------|--------|------|-------|-------|-------|------|--------|------|
-| 1     | Pawn   | Pawn | Wall  | Heavy | Heavy | Wall | Pawn   | Pawn |
-| 0     | Runner | Line | Scout | Keep  | Lance | Line | Runner | -    |
+| Depth | c0     | c1    | c2   | c3   | c4   | c5   | c6    | c7     |
+|-------|--------|-------|------|------|------|------|-------|--------|
+| 1     | Pawn   | Pawn  | Wall | Heavy| Heavy| Wall | Pawn  | Pawn   |
+| 0     | Runner | Scout | Line | Keep | Keep | Line | Scout | Runner |
 
-The array SHALL cost 232 points, and SHALL use only types the catalogue holds.
+The array SHALL cost 242 points, and SHALL use only types the catalogue holds.
+It SHALL NOT be required to use every one of them: eight pairs of eight
+different types cost more than the default budget covers.
 
 Every unit in the array SHALL fall inside the placement area the player is
 allowed to deploy in, so that the array can be committed as it stands.
@@ -105,7 +118,7 @@ allowed to deploy in, so that the array can be committed as it stands.
 #### Scenario: Both players are given the array
 
 - **WHEN** a two-player game has been created and both players registered
-- **THEN** each player holds fifteen units laid out as above
+- **THEN** each player holds sixteen units laid out as above
 - **AND** the lower-numbered player's depth 0 is the board's first row
 - **AND** the other player's depth 0 is the board's last row
 
@@ -119,10 +132,17 @@ allowed to deploy in, so that the array can be committed as it stands.
 - **WHEN** a turn is resolved and each player reads what it did
 - **THEN** neither is told where the other's units were placed
 
-#### Scenario: The Keep carries the flag
+#### Scenario: The array is a mirror of itself
 
 - **WHEN** a player is given the default array
-- **THEN** their flag stands on the Keep
+- **THEN** the type standing in each column is the type standing in that
+  column's mirror
+
+#### Scenario: A Keep carries the flag
+
+- **WHEN** a player is given the default array
+- **THEN** their flag stands on one of its Keeps
+- **AND** which one is the same in every game
 - **AND** the setup can be committed without any further decision
 
 #### Scenario: The array is committed as it stands
@@ -158,7 +178,7 @@ their place, by the commands that take back any deployment.
 
 - **WHEN** a player who was given the array opens their seat repeatedly before
   committing
-- **THEN** they hold fifteen units, not thirty
+- **THEN** they hold sixteen units, not thirty-two
 
 ### Requirement: The Default Deployment Is Given Only Where It Fits
 
@@ -202,14 +222,14 @@ The system SHALL charge the default array against the player's budget by the
 rules that charge any deployment. What the player has spent SHALL be derived
 from the board, so a default unit taken back SHALL return its points.
 
-A player given the default budget and the default array SHALL hold 18 points
+A player given the default budget and the default array SHALL hold 8 points
 they have not spent.
 
 #### Scenario: What the array costs
 
 - **WHEN** a player is given the default array on the default budget
-- **THEN** they have spent 232 points
-- **AND** 18 points remain
+- **THEN** they have spent 242 points
+- **AND** 8 points remain
 
 #### Scenario: Taking a default unit back returns its points
 

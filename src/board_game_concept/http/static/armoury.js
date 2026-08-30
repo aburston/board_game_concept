@@ -340,8 +340,8 @@ function renderAdminSetup(game) {
 
   const number = field('Seat number (1–999)', 'number', undefined,
                       { min: 1, max: 999 });
-  const budget = field('Budget (default 100)', 'number', undefined,
-                       { min: 1, max: 1000 });
+  const budget = field('Budget (leave blank for the default)', 'number',
+                       undefined, { min: 1, max: 1000 });
   const form = element('form', { class: 'row' });
   form.append(element('div', { class: 'grow' }, number.label),
               element('div', { class: 'grow' }, budget.label),
@@ -349,7 +349,7 @@ function renderAdminSetup(game) {
                                        'Add seat')));
   form.addEventListener('submit', send(game, () => api.addPlayer(
     Number(number.input.value),
-    budget.input.value === '' ? 100 : Number(budget.input.value))));
+    budget.input.value === '' ? undefined : Number(budget.input.value))));
   card.append(form);
 
   card.append(element('h2', {}, 'Finish setup'));
@@ -558,7 +558,8 @@ function renderDeploy(game) {
   const area = game.placement;
   const placeable = area && area.restricted ? area.rows : null;
   card.append(element('p', { class: 'small muted' },
-    'Then choose a square on the board.'));
+    'Then choose a square on the board. Clicking a unit you have already '
+    + 'placed takes it back, and its points with it.'));
   if (placeable) {
     const neutral = area.neutral_row;
     card.append(element('p', { class: 'small muted' },
@@ -572,6 +573,24 @@ function renderDeploy(game) {
     mine: game.number,
     placeable,
     onSquare: async (x, y) => {
+      // a square this seat has already used is a unit to take back rather
+      // than a square to deploy on. Deploying there is refused anyway - the
+      // square is held - so the click had nothing else it could mean, and
+      // hunting the name down in the list below to undo a misplaced unit was
+      // work the board could do for you
+      const standing = (game.units || []).find(
+        (unit) => unit.player === game.number && unit.x === x && unit.y === y);
+      if (standing) {
+        try {
+          await api.perform(game.gameno, game.number,
+                            api.removeUnit(standing.name));
+          await loadSeat(game.gameno, game.number);
+          say(`${standing.name} taken back from (${x}, ${y}).`);
+        } catch (error) {
+          say(error.message);
+        }
+        return;
+      }
       const name = unitName.input.value.trim()
         || `${chooser.value}-${(game.units || []).length + 1}`;
       try {

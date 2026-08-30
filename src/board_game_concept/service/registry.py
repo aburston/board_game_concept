@@ -56,7 +56,8 @@ def describe(gameno, backend=None, base_path=None):
         repository = session_module.make_repository(
             gameno, backend=backend, base_path=base_path)
         size = repository.read_board()
-        progress = repository.read_progress() or {}
+        recorded = repository.read_progress()
+        progress = recorded or {}
         numbers = repository.player_numbers()
     except Exception as error:            # pylint: disable=broad-except
         return {
@@ -68,6 +69,7 @@ def describe(gameno, backend=None, base_path=None):
             'turn_number': 0,
             'outcome': None,
             'players': [],
+            'setup_committed': False,
         }
 
     turn_number = int(progress.get('turn') or 0)
@@ -86,6 +88,13 @@ def describe(gameno, backend=None, base_path=None):
         # has committed back to the setup screen - where every command is
         # refused - is what that looked like from the lobby
         'committed': sorted(_committed(repository, turn_number)),
+        # whether the administrator's commit that ends setup has happened.
+        # A lobby used to read this off the board - a game with no board had
+        # not been set up - which stopped being true when a created game was
+        # given one, and left the administrator with no way to reach the
+        # setup screen at all. A progress record is written by a resolution
+        # and by nothing else, so its absence is the question being asked
+        'setup_committed': recorded is not None,
     }
 
 
