@@ -491,7 +491,15 @@ falls back from an undecided contest often finds the square it came from
 taken — the unit behind it stepped into it as it advanced. It does not stop
 and it does not pass through: the two **crash**, and that is a fight on the
 ordinary terms (**R5.2**) — one exchange, simultaneous, so a unit that is hit
-hits back even when the blow that lands on it destroys it. Friendly fire is
+hits back even when the blow that lands on it destroys it.
+
+**Being forced back is free.** You pay for the move you ordered, and that one
+payment covers being shoved out of it again: no fare to go back, and no
+energy for the blow you land on your way. A unit still has to be able to
+fight to land one — energy says whether a unit can strike at all (**R5.10**),
+paid for or not — but being shoved does not drain it. This is only about the
+turn you were pushed in: next turn everything resets, and walking back into
+that square is an ordinary move at the ordinary fare (**R4.4**). Friendly fire is
 total (**R5.7**), so a column walking into something it cannot shift piles
 into itself and every unit in it pays for the pile-up.
 

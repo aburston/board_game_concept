@@ -181,3 +181,99 @@ def test_a_unit_killed_in_the_pile_up_frees_the_square_for_the_one_behind():
     assert 'a2' not in standing, 'a1 crashed into it and it did not survive'
     assert standing['a1'] == (1, 1), 'and a1 took the square it emptied'
     assert max(squares(board).values()) == 1, squares(board)
+
+
+# --- what being forced back costs, which is nothing
+
+
+def test_being_forced_back_costs_no_energy():
+    """You pay for the move you ordered, and that covers being shoved out.
+
+    The unit behind pays its fare and nothing else: it crashed into nobody by
+    choice. Charging for the pile-up made a unit pay twice for one order.
+    """
+    board = Board(3, 5)
+    one, two = Player(1), Player(2)
+    board.add(two, 1, 0, 'wall', a_type(health=10))
+    board.add(one, 1, 1, 'lead', a_type(attack=5, health=10, energy=15))
+    board.add(one, 1, 2, 'back', a_type(attack=5, health=10, energy=15))
+    board.commit()
+
+    board.getUnitByName('lead', one)[0].move(UnitType.NORTH)
+    board.getUnitByName('back', one)[0].move(UnitType.NORTH)
+    board.commit()
+
+    energy = {unit.name: unit.energy for unit in board.units}
+    assert energy['lead'] == 15 - 3 - 5, 'its fare, and the strike it ordered'
+    assert energy['back'] == 15 - 3, 'its fare, and nothing for the pile-up'
+
+
+def test_a_free_blow_still_needs_a_unit_that_can_fight():
+    """Energy says whether a unit can strike at all, paid for or not."""
+    board = Board(3, 5)
+    one, two = Player(1), Player(2)
+    board.add(two, 1, 0, 'holder', a_type(health=10))
+    # enough to pay its fare, strike, and still be able to fight in the pile-up
+    board.add(one, 1, 1, 'lead', a_type(attack=5, health=10, energy=15))
+    # too spent to strike: 1 energy left after its fare, against attack 5
+    board.add(one, 1, 2, 'back', a_type(attack=5, health=4, energy=2))
+    board.commit()
+
+    board.getUnitByName('lead', one)[0].move(UnitType.NORTH)
+    board.getUnitByName('back', one)[0].move(UnitType.NORTH)
+    events = board.commit()
+
+    blows = [(e.detail['unit'], e.detail['target'])
+             for e in events if e.kind == 'attacked']
+    assert ('lead', 'back') in blows, 'the lead could still afford to fight'
+    assert ('back', 'lead') not in blows, 'and the spent one could not'
+
+
+def test_two_attackers_together_break_what_one_never_could():
+    """A wall is not indestructible: it takes concentration, and that costs.
+
+    One unit can never finish a ten-health defender - it pays its fare again
+    every turn to walk back in, and regains a point a turn only when given no
+    order. Two in the same turn land two blows at once, and pay for it by
+    striking each other: friendly fire is total.
+    """
+    from board_game_concept.domain import army
+    catalogue = army.types()
+
+    board = Board(3, 3)
+    one, two = Player(1), Player(2)
+    board.add(two, 1, 1, 'w', catalogue['Wall']['obj'])
+    board.add(one, 0, 1, 'h1', catalogue['Heavy']['obj'])
+    board.add(one, 2, 1, 'h2', catalogue['Heavy']['obj'])
+    board.commit()
+
+    board.getUnitByName('h1', one)[0].move(UnitType.EAST)
+    board.getUnitByName('h2', one)[0].move(UnitType.WEST)
+    board.commit()
+
+    wall = board.getUnitByName('w', two)[0]
+    assert wall.destroyed is True, 'two Heavies deal 10 to a 10-health wall'
+    for name in ('h1', 'h2'):
+        heavy = board.getUnitByName(name, one)[0]
+        assert heavy.destroyed is False
+        assert heavy.health == 5, 'and each took the other blow doing it'
+
+
+def test_a_wall_never_strikes_back():
+    """Attack 0 is the whole of what makes it a wall."""
+    from board_game_concept.domain import army
+    catalogue = army.types()
+
+    board = Board(3, 3)
+    one, two = Player(1), Player(2)
+    board.add(two, 1, 0, 'w', catalogue['Wall']['obj'])
+    board.add(one, 1, 1, 'h', catalogue['Heavy']['obj'])
+    board.commit()
+
+    board.getUnitByName('h', one)[0].move(UnitType.NORTH)
+    events = board.commit()
+
+    blows = [(e.detail['unit'], e.detail['target'])
+             for e in events if e.kind == 'attacked']
+    assert blows == [('h', 'w')], 'struck, and nothing came back'
+    assert board.getUnitByName('w', two)[0].health == 5, 'and it took damage'
