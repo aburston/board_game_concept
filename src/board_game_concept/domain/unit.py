@@ -332,7 +332,8 @@ def _mark(unit):
     return (unit.player.number if unit.player is not None else None, unit.name)
 
 
-def exchangeAttacks(contestants, events=None, out=(), struck=None):
+def exchangeAttacks(contestants, events=None, out=(), struck=None,
+                    charge=True):
     """Fight one exchange in a contested square. Returns the survivors.
 
     Every unit standing gets **one** attack, if it can pay for it, and no
@@ -358,6 +359,13 @@ def exchangeAttacks(contestants, events=None, out=(), struck=None):
     met the same opponent twice - in the contest and then in the pile-up
     behind it - would strike it twice, which is the repeat this rule exists to
     forbid.
+
+    `charge` is false for the pile-up behind a contest nobody won. A unit pays
+    for the move it was ordered to make, and that one payment covers being
+    forced back out of it again: it did not choose to crash into whoever was
+    behind it, so it pays nothing for the blow it lands there. It still has to
+    be able to fight - energy says whether a unit can strike at all, paid for
+    or not - but being shoved does not drain it.
     """
     struck = struck if struck is not None else set()
     standing = [unit for unit in contestants if not unit.destroyed]
@@ -377,7 +385,9 @@ def exchangeAttacks(contestants, events=None, out=(), struck=None):
                 continue
             if unit.energy < unit.attack:
                 # too spent to strike: inert, not destroyed. All or nothing,
-                # so there is no half-paid attack to hand out
+                # so there is no half-paid attack to hand out. Energy is what
+                # says whether a unit can fight, and that holds for a blow it
+                # is not paying for as much as for one it is
                 continue
             landing = [target for target in standing
                        if target is not unit
@@ -386,7 +396,8 @@ def exchangeAttacks(contestants, events=None, out=(), struck=None):
                 # it has already met every one of them this turn, so there is
                 # nothing here for it to strike and nothing to pay for
                 continue
-            unit.energy = unit.energy - unit.attack
+            if charge:
+                unit.energy = unit.energy - unit.attack
             for target in standing:
                 if unit is target:
                     continue
@@ -468,7 +479,7 @@ def _fall_back(unit, board, free, events, out=(), struck=None,
             'collided', unit=unit.name, target=occupant.name,
             x=unit.x, y=unit.y, to_x=target[0], to_y=target[1],
             players=owners(unit, occupant)))
-    exchangeAttacks([unit, occupant], events, out, struck)
+    exchangeAttacks([unit, occupant], events, out, struck, charge=False)
     if unit.destroyed:
         unit.vacate()
         return True

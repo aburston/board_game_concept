@@ -16,6 +16,11 @@ even when the blow destroys it. Where both survive the crash, the unit in the
 way SHALL give ground and fall back in its turn, crashing into whoever is
 behind it, for as long as the column runs.
 
+Being forced back SHALL cost nothing. The fare paid for the move that was
+ordered covers being put back out of it, and a unit SHALL NOT be charged
+energy for a blow it lands in the pile-up. It SHALL still have to be able to
+strike to land one.
+
 #### Scenario: One survivor
 
 - **WHEN** combat leaves exactly one undestroyed unit in a square
@@ -59,6 +64,17 @@ behind it, for as long as the column runs.
 - **WHEN** a unit is struck by what it moved into and then crashes into the
   unit that took the square behind it
 - **THEN** it takes damage from both
+
+#### Scenario: Being forced back costs nothing
+
+- **WHEN** a unit is forced back and crashes into the unit behind it
+- **THEN** it pays no energy for that blow
+- **AND** the unit it crashes into pays nothing for its own
+
+#### Scenario: A unit too spent to fight lands nothing, paid for or not
+
+- **WHEN** a unit with less energy than its attack is crashed into
+- **THEN** it lands no blow
 
 #### Scenario: A crash that clears the way
 
