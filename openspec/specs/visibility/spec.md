@@ -156,7 +156,13 @@ point it is displayed is not sufficient.
 
 The system SHALL tell a seat what a turn did to and by its own units, and
 SHALL NOT tell it what other players' units did to each other. An entry SHALL
-reach a seat only where one of that seat's own units is named in it.
+reach a seat only where one of that seat's own units was in it.
+
+Every entry that names a unit SHALL say which players' units it names, and
+whether an entry reaches a seat SHALL be decided from that. It SHALL NOT be
+decided by matching the names a seat owns against the names an entry mentions:
+a name has only to be unique within one player's own units, so two players who
+chose the same name would each read the other's entries about it.
 
 An account of a turn is a way of learning where somebody is, and what two
 other players did to each other is theirs. Being able to see both of them is
@@ -177,6 +183,19 @@ above would otherwise withhold from a player the kill they had just made.
 
 - **WHEN** a seat's unit strikes, is struck, moves or is destroyed
 - **THEN** that seat is told, and told which unit did it
+
+#### Scenario: Two players who chose the same unit name
+
+- **WHEN** two players each hold a unit called `scout` and one of them is
+  placed, moved or struck
+- **THEN** only that unit's own player is told of it
+- **AND** the other is told nothing, though the name is one they hold too
+
+#### Scenario: A fight between units of the same name
+
+- **WHEN** two players' units, both called `scout`, fight each other
+- **THEN** each player is told what its own unit struck and what struck it
+- **AND** neither is told anything the other's unit did to a third player
 
 #### Scenario: Two enemies fighting in sight
 

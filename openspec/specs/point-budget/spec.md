@@ -24,7 +24,11 @@ few strong ones - becomes the decision setup is about.
 
 The system SHALL give every player a point budget when they are registered,
 and SHALL fix it for the life of the game. The budget SHALL be an integer from
-1 to 1000. Where the administrator does not name one, the budget SHALL be 100.
+1 to 1000. Where the administrator does not name one, the budget SHALL be 250.
+
+The default is 250 because a player is given a default army that costs 232,
+and a budget that only just covers it would leave nothing to edit with: every
+change would have to begin by taking something back.
 
 The budget SHALL be a property of the player rather than of the game, so two
 players of one game may be registered with different budgets. Nothing in play
@@ -34,7 +38,7 @@ lowers it, and resolving a turn does not.
 #### Scenario: Registering with the default budget
 
 - **WHEN** a player is registered without a budget being named
-- **THEN** that player's budget is 100
+- **THEN** that player's budget is 250
 
 #### Scenario: Registering with a budget
 

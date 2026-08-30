@@ -80,7 +80,8 @@ reason.
 
 The system SHALL let the administrator create a game over the served
 interface, and SHALL refuse to create one to any other identity. A created
-game SHALL be new: no board, no registered players, and nothing played.
+game SHALL be new: a board of the default size, no registered players, and
+nothing played.
 
 Creating a game SHALL be refused where a game of that number already exists,
 and SHALL leave the existing game untouched.
@@ -89,7 +90,7 @@ and SHALL leave the existing game untouched.
 
 - **WHEN** the administrator asks for a new game
 - **THEN** the game exists and is listed
-- **AND** it has no board and no registered players
+- **AND** it has a board of the default size and no registered players
 
 #### Scenario: A player tries to create a game
 
@@ -106,5 +107,6 @@ and SHALL leave the existing game untouched.
 #### Scenario: A created game is set up as any other
 
 - **WHEN** a game created this way is set up
-- **THEN** its board is sized and its players registered by the same commands
-  as a game created any other way
+- **THEN** its board is resized and its players registered by the same
+  commands as a game created any other way
+
