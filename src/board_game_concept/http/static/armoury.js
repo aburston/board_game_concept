@@ -569,26 +569,37 @@ function renderDeploy(game) {
         : 'the other player\'s, and the middle row, which is neutral.')));
   }
 
+  // a unit this seat has already placed is a unit to take back rather than a
+  // square to deploy on. Deploying there is refused anyway - the square is
+  // held - so the click had nothing else it could mean, and hunting the name
+  // down in the list below to undo a misplaced unit was work the board could
+  // do for you.
+  //
+  // It has to be `onUnit` and not the square underneath: a unit draws an
+  // invisible target across its whole square, so a click on a deployed unit
+  // lands on the unit and never reaches the square below it
+  const takeBack = async (unit) => {
+    try {
+      await api.perform(game.gameno, game.number, api.removeUnit(unit.name));
+      await loadSeat(game.gameno, game.number);
+      say(`${unit.name} taken back from (${unit.x}, ${unit.y}).`);
+    } catch (error) {
+      say(error.message);
+    }
+  };
+
   card.append(renderBoard(game.board, game.units, {
     mine: game.number,
     placeable,
+    onUnit: takeBack,
     onSquare: async (x, y) => {
-      // a square this seat has already used is a unit to take back rather
-      // than a square to deploy on. Deploying there is refused anyway - the
-      // square is held - so the click had nothing else it could mean, and
-      // hunting the name down in the list below to undo a misplaced unit was
-      // work the board could do for you
+      // an enemy unit is never on this board during setup, but a square that
+      // somehow holds one of this seat's units takes the same route as a
+      // click on the unit itself, so the two cannot come apart
       const standing = (game.units || []).find(
         (unit) => unit.player === game.number && unit.x === x && unit.y === y);
       if (standing) {
-        try {
-          await api.perform(game.gameno, game.number,
-                            api.removeUnit(standing.name));
-          await loadSeat(game.gameno, game.number);
-          say(`${standing.name} taken back from (${x}, ${y}).`);
-        } catch (error) {
-          say(error.message);
-        }
+        await takeBack(standing);
         return;
       }
       const name = unitName.input.value.trim()
