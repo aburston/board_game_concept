@@ -317,9 +317,15 @@ class Board:
         self.out = {number for number in self._playerNumbers()
                     if self.flagFallen(number)}
 
+        # who has struck whom, for the whole turn rather than for one square.
+        # A unit strikes each other unit once a turn, and a turn holds more
+        # than one exchange now: a contest nobody won sends its movers back
+        # into whoever took the square behind them, which is a second fight
+        struck = set()
+
         self._deploy(events)
         pairs, free = self._move(events)
-        self._fight(events, pairs, free)
+        self._fight(events, pairs, free, struck)
         self._rest(events, resting)
         self._reportFallenFlags(events)
         return events
@@ -491,7 +497,7 @@ class Board:
                 if type(self.board[x, y]) is Empty}
         return pairs, free
 
-    def _fight(self, events, pairs, free):
+    def _fight(self, events, pairs, free, struck):
         """Fight out every square more than one unit finished the turn in."""
         for x in range(self.size_x):
             for y in range(self.size_y):
@@ -500,7 +506,7 @@ class Board:
                     continue
                 if len(square) > 1:
                     resolveContest(self.board, x, y, list(square), free,
-                                   events, self.out)
+                                   events, self.out, struck)
                 else:
                     self.board[x, y] = square[0]
 
@@ -509,7 +515,7 @@ class Board:
         for first, second in pairs:
             if first.destroyed or second.destroyed:
                 continue
-            resolveCollision(first, second, events, self.out)
+            resolveCollision(first, second, events, self.out, struck)
 
         # a destroyed unit holds no square
         for unit in self.units:

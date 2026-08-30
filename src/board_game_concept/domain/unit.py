@@ -323,7 +323,16 @@ def _isOut(unit, out):
     return unit.player is not None and unit.player.number in out
 
 
-def exchangeAttacks(contestants, events=None, out=()):
+def _mark(unit):
+    """How a unit is named in the record of who has struck whom this turn.
+
+    By player and name rather than by the object, because nothing in the
+    resolution of the rules may turn on an object's identity.
+    """
+    return (unit.player.number if unit.player is not None else None, unit.name)
+
+
+def exchangeAttacks(contestants, events=None, out=(), struck=None):
     """Fight one exchange in a contested square. Returns the survivors.
 
     Every unit standing gets **one** attack, if it can pay for it, and no
@@ -341,7 +350,16 @@ def exchangeAttacks(contestants, events=None, out=()):
     already dealt its own. `out` is the players whose flag has fallen; their
     units hold the square and strike nothing - an army without its flag is
     terrain - but are struck and destroyed like anything else.
+
+    `struck` is what has already been landed this turn, as pairs. A unit may
+    strike each other unit **once a turn**, and a turn now holds more than one
+    exchange: a contest nobody won sends its movers back into whoever took the
+    square behind them, and that is a second fight. Without this a unit that
+    met the same opponent twice - in the contest and then in the pile-up
+    behind it - would strike it twice, which is the repeat this rule exists to
+    forbid.
     """
+    struck = struck if struck is not None else set()
     standing = [unit for unit in contestants if not unit.destroyed]
     if len(standing) >= 2:
         # who is going to strike, and what it will land, is decided against
@@ -361,10 +379,20 @@ def exchangeAttacks(contestants, events=None, out=()):
                 # too spent to strike: inert, not destroyed. All or nothing,
                 # so there is no half-paid attack to hand out
                 continue
+            landing = [target for target in standing
+                       if target is not unit
+                       and (_mark(unit), _mark(target)) not in struck]
+            if not landing:
+                # it has already met every one of them this turn, so there is
+                # nothing here for it to strike and nothing to pay for
+                continue
             unit.energy = unit.energy - unit.attack
             for target in standing:
                 if unit is target:
                     continue
+                if (_mark(unit), _mark(target)) in struck:
+                    continue
+                struck.add((_mark(unit), _mark(target)))
                 blows.append((unit, target))
                 # each contestant is seen by every other it shared the square
                 # with, recorded once: a unit listed twice is a unit reported
@@ -386,12 +414,86 @@ def exchangeAttacks(contestants, events=None, out=()):
     return [unit for unit in contestants if not unit.destroyed]
 
 
-def resolveContest(board, x, y, contestants, free, events=None, out=()):
+def _fall_back(unit, board, free, events, out=(), struck=None,
+               crashing=frozenset()):
+    """Put a unit back where it came from, fighting for it if it has to.
+
+    A unit that moved into a contest nobody won goes back where it came from.
+    Its old square is sometimes gone - another unit moved into it during the
+    same turn, usually one of its own following it forward - and the unit used
+    to stay where it stood, which is how two units came to share one square,
+    and how a player's own two units came to stand on top of each other with
+    no way to separate.
+
+    It crashes into whoever took the square instead. That is a fight on the
+    ordinary terms (`R5.2`): one exchange, simultaneous, everybody in it
+    striking everybody else, so a unit that is hit hits back even when the
+    blow it takes destroys it. Friendly fire is total (`R5.7`), and a column
+    that walks into a wall it cannot shift piles into itself.
+
+    What follows the crash:
+
+      - the falling unit died - it holds nothing, and the square it was
+        fighting over is one unit emptier;
+      - the unit in the way died - the square is free and the falling unit
+        takes it;
+      - both stood - the one in the way gives ground and goes back where *it*
+        came from, crashing into whoever is behind it in its turn, so the
+        whole column pays for the pile-up and everybody ends where they
+        started, the worse for it.
+
+    Answers whether the unit is no longer standing on the square it fell back
+    from - because it got home, or because it did not survive the attempt.
+    """
+    if unit.moved_from is None:
+        # it was already standing here, or was deployed onto this square this
+        # turn: there is nowhere it came from
+        return False
+    target = unit.moved_from
+    if target in free:
+        return unit.retreat(free, events)
+    occupant = board[target]
+    if type(occupant) is list:
+        # a contest of its own, still being fought: not one unit to crash into
+        return False
+    if type(occupant) is not UnitType:
+        # empty, but emptied after the free squares were judged - by a contest
+        # that killed everyone in it, or by a crash like this one
+        free.add(target)
+        return unit.retreat(free, events)
+    if id(unit) in crashing:
+        return False                       # already fighting its way home
+    if events is not None:
+        events.append(Event(
+            'collided', unit=unit.name, target=occupant.name,
+            x=unit.x, y=unit.y, to_x=target[0], to_y=target[1],
+            players=owners(unit, occupant)))
+    exchangeAttacks([unit, occupant], events, out, struck)
+    if unit.destroyed:
+        unit.vacate()
+        return True
+    if occupant.destroyed:
+        occupant.vacate()
+        free.add(target)
+        return unit.retreat(free, events)
+    # both stood. The one in the way gives ground - it is going back where it
+    # came from too, crashing into whoever is behind it in its turn, so a
+    # column that walks into something it cannot shift piles into itself and
+    # every unit in it pays for the pile-up
+    if not _fall_back(occupant, board, free, events, out, struck,
+                      crashing | {id(unit)}):
+        return False
+    free.add(target)
+    return unit.retreat(free, events)
+
+
+def resolveContest(board, x, y, contestants, free, events=None, out=(),
+                   struck=None):
     """Fight out one square and decide who is left holding it."""
     if events is not None:
         events.append(Event(
             'contested', x=x, y=y, units=len(contestants)))
-    survivors = exchangeAttacks(contestants, events, out)
+    survivors = exchangeAttacks(contestants, events, out, struck)
 
     for unit in contestants:
         if unit.destroyed:
@@ -405,8 +507,35 @@ def resolveContest(board, x, y, contestants, free, events=None, out=()):
                 'undecided', x=x, y=y,
                 units=','.join(sorted(unit.name for unit in survivors)),
                 players=owners(*survivors)))
-        survivors = [unit for unit in survivors
-                     if not unit.retreat(free, events)]
+        # in a settled order, because pushing one survivor back can free the
+        # square another was going to fall back to: which of them is put back
+        # first is the rules' to say rather than the order a list holds them
+        survivors = [unit for unit in
+                     sorted(survivors, key=lambda u: (u.player.number, u.name))
+                     if not _fall_back(unit, board, free, events, out,
+                                       struck)]
+
+    if len(survivors) > 1:
+        # a ring: every one of them moved in, and every square any of them
+        # could go back to is held by another of them, round to the square
+        # being fought over. There is no arrangement of them that this pass
+        # can find, and a square holds one unit - so the one with the best
+        # claim keeps it and the rest are lost with it.
+        #
+        # The best claim is standing there already; a unit that moved in has
+        # none. Which of two movers keeps it is settled by number and name,
+        # as everything else here is, rather than by the order a list holds
+        # them in
+        keeping = next((unit for unit in survivors
+                        if unit.moved_from is None), survivors[0])
+        for unit in survivors:
+            if unit is keeping:
+                continue
+            unit.destroyed = True
+            if events is not None:
+                events.append(Event('destroyed', unit=unit.name,
+                                    players=owners(unit)))
+        survivors = [keeping]
 
     if not survivors:
         board[x, y] = Empty()
@@ -418,15 +547,9 @@ def resolveContest(board, x, y, contestants, free, events=None, out=()):
             events.append(Event(
                 'held', unit=survivors[0].name, x=x, y=y,
                 players=owners(survivors[0])))
-    else:
-        # no survivor could fall back, so they share the square
-        board[x, y] = survivors
-        if events is not None:
-            events.append(Event(
-                'shared', x=x, y=y, units=len(survivors)))
 
 
-def resolveCollision(first, second, events=None, out=()):
+def resolveCollision(first, second, events=None, out=(), struck=None):
     """Fight out a head-on exchange, in which neither unit moved.
 
     Two units ordered into each other's squares used to pass straight through
@@ -444,7 +567,7 @@ def resolveCollision(first, second, events=None, out=()):
             'collided', unit=near.name, target=far.name,
             x=near.x, y=near.y, to_x=far.x, to_y=far.y,
             players=owners(near, far)))
-    survivors = exchangeAttacks([first, second], events, out)
+    survivors = exchangeAttacks([first, second], events, out, struck)
 
     for unit in (first, second):
         if unit.destroyed:

@@ -433,7 +433,8 @@ fight where they stand:
 - both survive → each stays in the square it started the turn in.
 
 **R4.10 There is no way to stack with your own units.** Two of your own units on
-one square fight each other (**R5.7**).
+one square fight each other (**R5.7**), and a square never ends a turn holding
+two units (**R5.8a**).
 
 ---
 
@@ -483,7 +484,37 @@ will kill each other on exactly the same terms as enemies.
 | Exactly one survivor | It alone holds the square. |
 | No survivors | The square is empty. |
 | More than one survivor (**undecided**) | Every survivor that *moved in* this turn goes back to the square it came from. A survivor that was already standing there keeps the square. |
-| A survivor whose old square was taken during the turn | It stays on the contested square, on the board, and that square counts as occupied to anyone entering it. |
+| A survivor whose old square was taken during the turn | It **crashes into** whoever took it (**R5.8a**). |
+
+**R5.8a A unit forced back crashes into whoever is behind it.** A unit that
+falls back from an undecided contest often finds the square it came from
+taken — the unit behind it stepped into it as it advanced. It does not stop
+and it does not pass through: the two **crash**, and that is a fight on the
+ordinary terms (**R5.2**) — one exchange, simultaneous, so a unit that is hit
+hits back even when the blow that lands on it destroys it. Friendly fire is
+total (**R5.7**), so a column walking into something it cannot shift piles
+into itself and every unit in it pays for the pile-up.
+
+Then:
+- the unit falling back died → it holds nothing;
+- the unit in the way died → the square is free and the one falling back
+  takes it;
+- both stood → the one in the way gives ground and falls back in its own
+  turn, crashing into whoever is behind *it*, down the column.
+
+So a unit can be damaged **twice in one turn**: once by what it moved into,
+and again by being forced back into its own. What it cannot do is strike the
+same unit twice — see **R5.2a**.
+
+**R5.2a One strike per pair per turn.** A unit strikes each *other* unit at
+most once a turn, however many exchanges the turn holds. Meeting the same
+opponent in a contest and again in the pile-up behind it lands one blow, not
+two, and a unit with nothing new to strike pays nothing.
+
+**No square ever holds two units at the end of a turn.** That is what all of
+this is for. Two units sharing a square could not fight their way apart and
+could not step apart, and two of your own could end up stacked, which
+**R4.10** says cannot happen.
 
 **R5.9 Destruction is final.** A destroyed unit is marked off-board and taken
 out of its square without disturbing anyone still standing in it. It takes no

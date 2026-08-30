@@ -334,12 +334,13 @@ def test_moving_onto_an_occupied_square_is_still_allowed():
     assert board.getUnitByCoords(1, 0) is attacker
 
 
-def _shared_cell_board():
-    """A square two units share because neither of them can fall back.
+def _chained_fall_back_board():
+    """A contest nobody won, where neither survivor's own square is free.
 
-    Deployment onto a taken square is illegal, so the only way a square ends up
-    holding more than one unit is a contest nobody won in which every survivor
-    found the square it came from already taken.
+    Both of them moved in, and behind each is a unit that stepped into the
+    square it left. They used to stay where they stood, sharing the contested
+    square; each is put back now, and the unit behind it is pushed back in
+    turn.
     """
     # light enough to afford the fare twice over, and hitting far harder than
     # it can pay for: each arrives holding less than its attack value, so the
@@ -368,20 +369,29 @@ def _shared_cell_board():
     return board, p1, p2
 
 
-def test_units_that_cannot_fall_back_share_the_square():
-    board, _, _ = _shared_cell_board()
-    square = board.getUnitByCoords(1, 0)
+def test_a_contest_nobody_won_puts_everybody_back():
+    """Both movers go back, and the units behind them are pushed back too."""
+    board, _, _ = _chained_fall_back_board()
 
-    assert isinstance(square, list)
-    assert sorted(unit.name for unit in square) == ['a1', 'b1']
-    assert all(unit.destroyed is False for unit in square)
-    assert all(unit.on_board is True for unit in square)
+    where = {unit.name: (unit.x, unit.y) for unit in board.units}
+    assert where == {'a1': (0, 0), 'b1': (2, 0), 'c1': (0, 1), 'd1': (2, 1)}
+    assert isinstance(board.getUnitByCoords(1, 0), Empty), (
+        'the square they fought over is left empty')
+    assert all(unit.destroyed is False for unit in board.units)
 
 
-def test_shared_square_renders_without_failing():
+def test_no_square_ends_a_turn_holding_two_units():
+    board, _, _ = _chained_fall_back_board()
+
+    for x in range(board.size_x):
+        for y in range(board.size_y):
+            assert not isinstance(board.getUnitByCoords(x, y), list), (x, y)
+
+
+def test_the_board_renders_after_a_chain_falls_back():
     from board_game_concept.cli.render import render_board
 
-    board, p1, p2 = _shared_cell_board()
+    board, p1, p2 = _chained_fall_back_board()
 
     full = render_board(board)
     assert 'object at' not in full
@@ -402,11 +412,11 @@ def test_shared_square_renders_without_failing():
     assert 'C' not in for_p2
 
 
-def test_shared_square_survives_a_save_and_load_round_trip():
+def test_a_fallen_back_board_survives_a_save_and_load_round_trip():
     # reload a game the way GameData does: read back the units it wrote with
     # units_document and replay them onto a fresh board. Restoring is not a
     # deployment, so the occupancy rule does not refuse the shared square
-    board, _, _ = _shared_cell_board()
+    board, _, _ = _chained_fall_back_board()
     saved = units_document(board)
 
     players = {}
@@ -429,31 +439,32 @@ def test_shared_square_survives_a_save_and_load_round_trip():
             restoring=True)
     reloaded.commit()
 
-    square = reloaded.getUnitByCoords(1, 0)
-    assert isinstance(square, list)
-    assert sorted(unit.name for unit in square) == ['a1', 'b1']
-    assert all(unit.destroyed is False for unit in square)
+    where = {unit.name: (unit.x, unit.y) for unit in reloaded.units}
+    assert where == {'a1': (0, 0), 'b1': (2, 0), 'c1': (0, 1), 'd1': (2, 1)}
+    assert isinstance(reloaded.getUnitByCoords(1, 0), Empty)
+    assert all(unit.destroyed is False for unit in reloaded.units)
 
 
-def test_a_move_order_applies_to_the_named_unit_on_a_shared_square():
-    # getUnitByCoords returns a list for a shared square and has no move
-    # method, so the server resolves an order against the unit it names
-    board, p1, p2 = _shared_cell_board()
-    assert isinstance(board.getUnitByCoords(1, 0), list)
+def test_an_order_applies_to_the_unit_it_names():
+    """Two players may hold a unit of one name, so a name alone is not enough.
+
+    This was written when the two contestants shared a square and
+    `getUnitByCoords` handed back a list with no move method; a square holds
+    one unit now, and an order is still resolved against the unit its own
+    player owns.
+    """
+    board, p1, p2 = _chained_fall_back_board()
 
     a1 = board.getUnitByName('a1', p1)[0]
     b1 = board.getUnitByName('b1', p2)[0]
     assert a1.name == 'a1' and a1.player is p1
     assert b1.name == 'b1' and b1.player is p2
 
-    # a1 still has the energy to pay for one move
-    a1.move(UnitType.SOUTH)
+    a1.move(UnitType.EAST)          # into the square they fought over, now free
     board.commit()
 
-    assert (a1.x, a1.y) == (1, 1)
-    assert board.getUnitByCoords(1, 1) is a1
-    # the unit left behind is unaffected and now holds the square alone
-    assert board.getUnitByCoords(1, 0) is b1
-    assert (b1.x, b1.y) == (1, 0)
+    assert (a1.x, a1.y) == (1, 0), 'it moved, and nothing else did'
+    assert board.getUnitByCoords(1, 0) is a1
+    assert (b1.x, b1.y) == (2, 0)
     assert b1.destroyed is False
     assert b1.on_board is True
