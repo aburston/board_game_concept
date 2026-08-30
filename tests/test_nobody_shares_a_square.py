@@ -277,3 +277,60 @@ def test_a_wall_never_strikes_back():
              for e in events if e.kind == 'attacked']
     assert blows == [('h', 'w')], 'struck, and nothing came back'
     assert board.getUnitByName('w', two)[0].health == 5, 'and it took damage'
+
+
+def test_one_unit_destroys_a_wall_over_time_if_it_has_the_energy():
+    """One attack a turn, for as long as it can pay for one.
+
+    A unit ordered in every turn cannot: it is forced back out, walks in again
+    at the ordinary fare, and a unit given an order does not rest (`R3.9`), so
+    it grinds down to nothing having landed one blow. Left alone between
+    attacks it recovers, and a wall comes down.
+    """
+    from board_game_concept.domain import army
+    catalogue = army.types()
+
+    board = Board(3, 3)
+    one, two = Player(1), Player(2)
+    board.add(two, 1, 0, 'w', catalogue['Wall']['obj'])
+    board.add(one, 1, 1, 'h', catalogue['Heavy']['obj'])
+    board.commit()
+    heavy = board.getUnitByName('h', one)[0]
+    wall = board.getUnitByName('w', two)[0]
+    afford = heavy.move_cost + heavy.attack
+
+    turns = 0
+    while not wall.destroyed and turns < 30:
+        if heavy.energy >= afford:
+            heavy.move(UnitType.NORTH)
+        board.commit()
+        turns += 1
+
+    assert wall.destroyed is True
+    assert turns == 3, 'strike, rest, strike'
+
+
+def test_a_unit_ordered_in_every_turn_cannot_keep_it_up():
+    """Which is why the walls in a played game were untouched at full health.
+
+    Ordering it in again the moment it is forced back spends the fare and
+    stops it resting, so it never affords a second blow.
+    """
+    from board_game_concept.domain import army
+    catalogue = army.types()
+
+    board = Board(3, 3)
+    one, two = Player(1), Player(2)
+    board.add(two, 1, 0, 'w', catalogue['Wall']['obj'])
+    board.add(one, 1, 1, 'h', catalogue['Heavy']['obj'])
+    board.commit()
+    heavy = board.getUnitByName('h', one)[0]
+    wall = board.getUnitByName('w', two)[0]
+
+    for _turn in range(8):
+        heavy.move(UnitType.NORTH)
+        board.commit()
+
+    assert wall.destroyed is False
+    assert wall.health == 5, 'one blow landed, and never a second'
+    assert heavy.energy < heavy.attack, 'it spent itself walking back in'
