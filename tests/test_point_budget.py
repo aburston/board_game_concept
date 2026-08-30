@@ -60,7 +60,7 @@ def test_a_worn_unit_costs_what_its_type_cost():
 def test_a_player_who_has_deployed_nothing_has_spent_nothing():
     board, player = a_board(), Player(1)
     assert budget.spent(board, player) == 0
-    assert budget.remaining(board, player) == 100
+    assert budget.remaining(board, player) == Player.DEFAULT_BUDGET
 
 
 def test_spend_is_the_sum_of_what_is_deployed():
@@ -68,7 +68,7 @@ def test_spend_is_the_sum_of_what_is_deployed():
     for index in range(3):
         deploy(board, player, a_type(), f'o{index}', index, 0)
     assert budget.spent(board, player) == 63
-    assert budget.remaining(board, player) == 37
+    assert budget.remaining(board, player) == Player.DEFAULT_BUDGET - 63
 
 
 def test_a_destroyed_unit_is_not_refunded():
@@ -78,7 +78,7 @@ def test_a_destroyed_unit_is_not_refunded():
     board.units[0].setDestroyed(True)
     board.units[0].setOnBoard(False)
     assert budget.spent(board, player) == before
-    assert budget.remaining(board, player) == 100 - before
+    assert budget.remaining(board, player) == Player.DEFAULT_BUDGET - before
 
 
 def test_one_player_does_not_spend_another_player_budget():
@@ -310,10 +310,14 @@ def _publish_deployments(harness, number, type_stats, units):
     for name, x, y in units:
         board.add(client.getPlayerObj(number), x, y, name, unit_type)
     board.commit()
+    # the record is written by hand, so it must carry every type the units
+    # being published were made from - the catalogue this player was
+    # registered with as well as the one this helper defines
+    written = {name: {key: value for key, value in record.items()
+                      if key != 'obj'}
+               for name, record in client.getPlayers()[number]['types'].items()}
     harness.repository().write_player(
-        number, {'Cross': {'name': 'Cross', 'symbol': 'X', 'attack': attack,
-                           'health': health, 'energy': energy}},
-        client.getPlayerObj(number).budget)
+        number, written, client.getPlayerObj(number).budget)
     harness.repository().write_orders(
         number, units_document(board, client.getPlayerObj(number),
                                in_play_only=True))
@@ -338,7 +342,7 @@ def test_an_over_budget_deployment_is_rejected_at_resolution(tmp_path):
 
 def test_the_players_other_orders_still_stand(tmp_path):
     harness = GameHarness(tmp_path)
-    harness.create(10, 10, [(1, 50), (2, 1000)])
+    harness.create(10, 10, [(1, 50), (2, 1000)], default_army=False)
     _publish_deployments(harness, 1, (1, 10, 10),
                          [('alpha', 0, 0), ('beta', 1, 0), ('gamma', 2, 0)])
     _publish_deployments(harness, 2, (1, 10, 10), [('other', 9, 9)])
@@ -469,7 +473,7 @@ def test_a_deployment_refused_for_its_square_is_not_charged(tmp_path):
     player's other deployment over a budget it actually fits inside.
     """
     harness = GameHarness(tmp_path)
-    harness.create(10, 10, [(1, 42), (2, 1000)])
+    harness.create(10, 10, [(1, 42), (2, 1000)], default_army=False)
     # player 1 asks for (0, 0) - which player 2 also asks for - and (1, 0).
     # 42 points buys exactly two units of a 21-point type, so if the refused
     # one were charged, `beta` would be refused for cost as well

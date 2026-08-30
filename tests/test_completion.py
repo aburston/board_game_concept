@@ -19,6 +19,7 @@ import pytest
 from board_game_concept.cli import roles
 from board_game_concept.cli.complete import GameNames, candidates, install
 from board_game_concept.cli.help import usages_for
+from board_game_concept.domain import army
 from board_game_concept.service import games
 from board_game_concept.service.commands import AddType, AddUnit
 
@@ -121,8 +122,10 @@ class TestNamesFromTheGame:
             'able', 'alpha']
 
     def test_add_unit_offers_the_players_own_types(self, tmp_path):
-        assert candidates('add unit ', roles.CLIENT, names(tmp_path)) == [
-            'scout', 'tank']
+        offered = candidates('add unit ', roles.CLIENT, names(tmp_path))
+
+        assert 'scout' in offered and 'tank' in offered, 'their own designs'
+        assert set(army.types()) <= set(offered), 'and the catalogue'
 
     def test_another_players_unit_of_a_similar_name_is_not_offered(self,
                                                                   tmp_path):
@@ -153,8 +156,9 @@ class TestNamesFromTheGame:
         games.define_type(session, AddType(name='tank', symbol='T', attack=3,
                                            health=5, energy=10))
 
-        assert before == []
-        assert candidates('add unit ', roles.CLIENT, source) == ['tank']
+        assert 'tank' not in before
+        assert set(army.types()) == set(before), 'only the catalogue, at first'
+        assert 'tank' in candidates('add unit ', roles.CLIENT, source)
 
     def test_a_unit_deployed_this_session_is_offered(self, tmp_path):
         harness = GameHarness(tmp_path)
@@ -171,13 +175,16 @@ class TestNamesFromTheGame:
         assert before == []
         assert candidates('move ', roles.CLIENT, source) == ['bravo']
 
-    def test_nothing_is_offered_when_the_player_has_nothing(self, tmp_path):
+    def test_only_the_catalogue_is_offered_before_anything_is_built(
+            self, tmp_path):
+        """A 4x4 board is too small to seed an army, so nothing is deployed."""
         harness = GameHarness(tmp_path)
         harness.create(4, 4, [1, 2])
         source = GameNames(harness.session(1), 1)
 
         assert candidates('move ', roles.CLIENT, source) == []
-        assert candidates('add unit ', roles.CLIENT, source) == []
+        assert set(candidates('add unit ', roles.CLIENT, source)) == set(
+            army.types())
 
     def test_a_name_slot_without_a_source_offers_nothing(self):
         assert candidates('move ', roles.CLIENT) == []

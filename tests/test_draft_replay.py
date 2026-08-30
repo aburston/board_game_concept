@@ -11,6 +11,7 @@ import yaml
 
 from board_game_concept import Game
 from board_game_concept.cli import views
+from board_game_concept.domain import army
 from board_game_concept.service import games
 from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
                                                  Move, SetBoard, SetFlag)
@@ -55,7 +56,10 @@ def test_a_session_that_ended_mid_setup_gets_its_work_back(tmp_path):
                                 [('Cross', 'x1', 0, 0), ('Cross', 'x2', 1, 0)])
 
     reopened = harness.session(1)
-    assert sorted(reopened.getPlayers()[1]['types']) == ['Cross']
+    assert 'Cross' in reopened.getPlayers()[1]['types'], (
+        'the type drafted this session came back')
+    assert set(army.types()) <= set(reopened.getPlayers()[1]['types']), (
+        'alongside the catalogue every player is registered with')
     assert {unit.name: (unit.x, unit.y)
             for unit in reopened.getBoard().units} == {'x1': (0, 0),
                                                        'x2': (1, 0)}

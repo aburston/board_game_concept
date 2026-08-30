@@ -14,7 +14,7 @@ import os
 from board_game_concept import Game, YamlGameRepository
 from board_game_concept.service import games
 from board_game_concept.service.commands import (
-    AddPlayer, AddType, AddUnit, Move, SetBoard, SetFlag)
+    AddPlayer, AddType, AddUnit, Move, RemoveUnit, SetBoard, SetFlag)
 from board_game_concept.storage.serialise import units_document
 
 # "the first unit deployed", told apart from `None`, which means no flag at all
@@ -55,7 +55,8 @@ class GameHarness:
 
     # --- setting a game up
 
-    def create(self, size_x, size_y, player_numbers, budget=None):
+    def create(self, size_x, size_y, player_numbers, budget=None,
+               default_army=True):
         """Size the board and register the players, as the administrator does.
 
         A player is named as a number, or as a `(number, budget)` pair where
@@ -63,6 +64,13 @@ class GameHarness:
         every player named as a bare number - which is what a test about some
         other rule wants, so that a fixture built when deploying was free is
         not quietly turned into a test of the point budget.
+
+        `default_army=False` takes back the array a two-player game seeds, for
+        the same reason: a fixture built before games came with an army should
+        not be quietly turned into a test of the default one. It leaves the
+        player exactly where taking the whole array back by hand leaves them -
+        no units, and a draft that has been touched, so nothing is seeded
+        again when the seat is opened.
         """
         server = self.session(0)
         games.set_board_size(server, SetBoard(size_x=size_x, size_y=size_y))
@@ -78,7 +86,19 @@ class GameHarness:
                                  AddPlayer(number=number,
                                            budget=player_budget))
         assert server.serverSave()
+        if not default_army:
+            self.take_back_default_army(
+                entry[0] if isinstance(entry, tuple) else entry
+                for entry in player_numbers)
         return server
+
+    def take_back_default_army(self, player_numbers):
+        """Take back every unit a player was seeded with, as a player may."""
+        for number in player_numbers:
+            client = self.session(number)
+            for unit in list(client.getBoard().units):
+                if unit.player is not None and unit.player.number == number:
+                    games.perform(client, RemoveUnit(name=unit.name))
 
     def deploy(self, player_number, types, units, flag=_FIRST, commit=True):
         """Define types, deploy units and carry the flag, as a player does.

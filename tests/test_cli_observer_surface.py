@@ -156,8 +156,8 @@ class ObserverDisplayCommands(ObserverTestCase):
             'PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT']
         # the observer reads every record, so every player's points are known
         assert [line.split() for line in lines[1:]] == [
-            ['1', 'active', '100', '0', '100'],
-            ['2', 'active', '100', '0', '100']]
+            ['1', 'active', '250', '0', '250'],
+            ['2', 'active', '250', '0', '250']]
 
     def test_showing_pending_orders(self):
         # a player who has committed while the server still waits for the

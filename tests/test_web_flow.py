@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from game_harness import DEFAULT_BACKEND                    # noqa: E402
 from board_game_concept.http.app import create_app          # noqa: E402
+from board_game_concept.domain import army
 from board_game_concept.service import registry             # noqa: E402
 
 
@@ -672,33 +673,31 @@ def test_a_first_turn_that_refuses_every_deployment_is_shown_as_decided(
     assert [flag['standing'] for flag in flags] == [False, False, False]
 
 
-def test_committing_a_setup_with_no_board_is_refused_and_says_so(app):
-    """The answer used to be 200, and the game was not set up at all.
+def test_committing_a_setup_without_sizing_a_board_goes_through(app):
+    """An administrator who never touches the board is not stranded.
 
-    An administrator who committed a game before sizing its board was told
-    the setup was committed, went back to the lobby, and found the game still
-    asking to be set up - because it was. `resolve` had refused and said so
-    to the server's own output, which nobody reading a browser can see.
+    Committing before sizing a board used to answer 200 while setting nothing
+    up: `resolve` refused for want of a board and said so to the server's own
+    output, which nobody reading a browser can see, so the administrator went
+    back to the lobby and found the game still asking to be set up.
+
+    A created game has a board now, so there is no such state to reach: the
+    commit is real and the board it publishes is the one the game was made
+    with.
     """
     admin = _administrator(app)
     assert admin.create_game(GAME).status_code == 201
     admin.perform(GAME, 0, {'kind': 'add_player', 'number': 1, 'budget': 100})
 
-    refused = admin.commit(GAME, 0)
-
-    assert refused.status_code == 400
-    assert 'board' in refused.get_json()['error']
-
-    listed = [entry for entry in admin.list_games().get_json()['games']
-              if entry['gameno'] == GAME][0]
-    assert listed['size_x'] is None, 'a refused commit published a board'
-
-    # and with a board it goes through
-    admin.perform(GAME, 0, {'kind': 'set_board', 'size_x': 4, 'size_y': 4})
+    # a game is created with a board now, so this is the case that used to
+    # strand an administrator and no longer can: committing without having
+    # sized one goes through, on the board the game was created with
     assert admin.commit(GAME, 0).status_code == 200
+
     listed = [entry for entry in admin.list_games().get_json()['games']
               if entry['gameno'] == GAME][0]
-    assert listed['size_x'] == 4
+    assert listed['size_x'] == army.DEFAULT_SIZE_X
+    assert listed['size_y'] == army.DEFAULT_SIZE_Y
 
 
 def test_the_lobby_says_whether_a_game_has_been_set_up(app):
@@ -716,12 +715,13 @@ def test_the_lobby_says_whether_a_game_has_been_set_up(app):
         return [entry for entry in admin.list_games().get_json()['games']
                 if entry['gameno'] == GAME][0]
 
-    assert listed()['size_x'] is None, 'a game nobody set up has no board'
+    assert listed()['size_x'] == army.DEFAULT_SIZE_X, (
+        'the board the game was created with')
 
     admin.perform(GAME, 0, {'kind': 'set_board', 'size_x': 4, 'size_y': 4})
     admin.perform(GAME, 0, {'kind': 'add_player', 'number': 1, 'budget': 100})
-    assert listed()['size_x'] is None, (
-        'a board that has not been committed is not published')
+    assert listed()['size_x'] == army.DEFAULT_SIZE_X, (
+        'a resize that has not been committed is not published')
 
     admin.commit(GAME, 0)
 
@@ -831,9 +831,11 @@ def test_a_type_met_is_remembered_after_contact_is_lost(app):
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
-    types = ada.read_view(GAME, 1, 'types').get_json()['types']
-    assert [entry['name'] for entry in types] == ['T1'], (
-        'the types view is what is in contact now')
+    types = {entry['name']
+             for entry in ada.read_view(GAME, 1, 'types').get_json()['types']}
+    assert 'T1' in types, 'their own design is theirs whatever is in contact'
+    assert 'T2' not in types, 'the types view is what is in contact now'
+    assert set(army.types()) <= types, 'and the catalogue they were given'
     still = ada.read_view(GAME, 1, 'designs').get_json()['designs']
     assert [entry['name'] for entry in still] == ['T2']
 
@@ -869,7 +871,9 @@ def test_the_observer_is_given_every_type_as_met(app):
     observer.change_password('observer', 'observer-secret')
 
     met = observer.read_view(GAME, 1000, 'designs').get_json()['designs']
-    assert {entry['name'] for entry in met} == {'T1', 'T2'}
+    names = {entry['name'] for entry in met}
+    assert {'T1', 'T2'} <= names, 'both players\' own designs'
+    assert set(army.types()) <= names, 'and the catalogue they were given'
     assert all({'attack', 'health', 'energy', 'cost'} <= set(entry)
                for entry in met)
 
@@ -1103,3 +1107,68 @@ def test_the_administrators_own_ways_in_are_offered_beside_its_seat(app):
     source = _static('lobby.js')
     assert "link('Watch'" in source
     assert "link('Set this game up'" in source
+
+
+# --- 12. a game played from the defaults, through the browser's own calls
+
+
+def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
+    """Create, claim two seats, commit twice, and the game is under way.
+
+    Every call here is one `api.js` issues. Nothing is designed and nothing is
+    deployed: the point of the default army is that a game can be started by
+    pressing the buttons that were already on the page.
+    """
+    admin = _administrator(app)
+    assert admin.create_game(GAME).status_code == 201
+    for number in (1, 2):
+        assert admin.perform(GAME, 0, {'kind': 'add_player',
+                                       'number': number}).status_code == 204
+    assert admin.commit(GAME, 0).status_code == 200
+
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    assert ada.claim_seat(GAME, 1).status_code == 201
+    assert bob.claim_seat(GAME, 2).status_code == 201
+
+    # the armoury reads this: eight types, none of them designed by anybody
+    types = ada.read_view(GAME, 1, 'types').get_json()['types']
+    assert {entry['name'] for entry in types} == set(army.types())
+
+    # and the board reads this: fifteen units, in this player's own half
+    units = ada.read_view(GAME, 1, 'units').get_json()['units']
+    assert len(units) == 15
+    assert {unit['y'] for unit in units} == {0, 1}
+    assert [unit['flag'] for unit in units].count(True) == 1
+
+    # the page greys out what the placement view says is not theirs
+    placement = ada.read_view(GAME, 1, 'placement').get_json()['placement']
+    assert placement['rows'] == [0, 1, 2, 3]
+    assert placement['restricted'] is True
+    assert all(unit['y'] in placement['rows'] for unit in units)
+
+    # what the tray shows: the budget, and what the army left of it
+    players = ada.read_view(GAME, 1, 'players').get_json()['players']
+    mine = [entry for entry in players if entry['player'] == 1][0]
+    assert (mine['spent'], mine['left']) == (army.cost(), 18)
+
+    # press commit, both seats. The first is accepted and waits; the second
+    # is the one the turn resolves on
+    assert ada.commit(GAME, 1).status_code == 202
+    assert bob.commit(GAME, 2).status_code in (200, 202)
+    ada.wait_for_turn(GAME, 1, budget=2)
+
+    state = ada.read_state(GAME, 1).get_json()
+    assert state['turn_number'] == 1, 'the game is under way'
+    assert state['new_game'] is False, 'and setup is behind them'
+
+    # and a first order can be given, on a board holding both armies
+    assert ada.perform(GAME, 1, {'kind': 'move',
+                                 'unit': army.unit_name(1, 'pawn1'),
+                                 'direction': 3}).status_code == 204
+
+    # and the feed is this seat's own: the other army's deployments are not
+    # in it, which they would be if both seats named their units alike
+    feed = ada.read_view(GAME, 1, 'events').get_json()['events']
+    mentioned = {entry['detail'].get('unit') for entry in feed}
+    assert not any(name and name.startswith('2-') for name in mentioned)
+    assert any(name and name.startswith('1-') for name in mentioned)

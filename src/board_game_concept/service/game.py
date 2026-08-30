@@ -8,10 +8,10 @@ Everything a session does to a game beyond reading it lives in `turn.py`,
 which this delegates to so that callers have one thing to talk to.
 """
 
-from ..domain import Board, Player, UnitType
+from ..domain import Board, Player, UnitType, army, budget
 from ..storage.notify import NullNotifier
 from ..storage.serialise import restore_draft, serialise_draft, units_document
-from . import games, identity, turn
+from . import commands, games, identity, turn
 from .errors import (GameDataError, GameError, NoSuchGame, NoSuchPlayer,
                      UnreadableGame)
 
@@ -197,11 +197,19 @@ class Game:
     # --- reading it
 
     def load(self):
+        self.repository.ensure()
+        self._read_and_replay()
+        if self._seed_army():
+            # another session seeded this seat while this one was reading, so
+            # what was read is a board without the army on it. Read it again:
+            # the draft it left is this player's own, and replaying it puts
+            # the units where they are
+            self._read_and_replay()
+
+    def _read_and_replay(self):
         self.unprocessed_moves = False
         self.dropped = []
         self.draft = []
-        self.repository.ensure()
-
         # held for reading while the game's shared state is read, so that
         # nothing here catches a turn part way through being published. Several
         # sessions may read at once; a session resolving a turn excludes them
@@ -217,9 +225,11 @@ class Game:
         size = self.repository.read_board()
         if size is None:
             if self.sees_everything:
-                # nothing has been set up yet. The administrator's session is
-                # the one that sets it up, and the observer is told there is no
-                # board rather than refused the game outright
+                # a game with no board record at all. One created since games
+                # were given a default board always has one, so this is a game
+                # from before that or one written by hand: the administrator's
+                # session is the one that sizes it, and the observer is told
+                # there is no board rather than refused the game outright
                 self.new_game = True
             else:
                 raise NoSuchGame(
@@ -227,7 +237,8 @@ class Game:
         else:
             self.board = Board(*size)
 
-        self.setProgress(self.repository.read_progress())
+        progress = self.repository.read_progress()
+        self.setProgress(progress)
         self._load_players()
         self.rejected = self.repository.read_rejections(self.player_number)
         if self.sees_everything:
@@ -247,6 +258,21 @@ class Game:
         if (identity.is_player(self.player_number)
                 and self.player_number not in self.players):
             raise NoSuchPlayer(f"player {self.player_number} does not exist")
+
+        if self.sees_everything and self.board is not None:
+            # whether setup is still open, for the session that does the
+            # setting up. This used to be read from the board's absence - a
+            # game with no board had not been set up - which stopped being
+            # true when a created game was given a default board.
+            #
+            # A progress record is written by a resolution and by nothing
+            # else, and the administrator's commit that ends setup is a
+            # resolution. So a game with no progress record has never been
+            # committed, which is the question being asked. `has_started` is
+            # consulted as well for a game assembled by hand rather than
+            # played into being: one with units standing and no progress
+            # record is past its setup whatever the record says
+            self.new_game = progress is None and not turn.has_started(self)
 
 
     def _replay_draft(self):
@@ -296,6 +322,101 @@ class Game:
             self.repository.write_draft(
                 self.player_number,
                 serialise_draft(self.draft, self.turn_number))
+
+    def _seed_army(self):
+        """Give this player the default army, if they have not started one.
+
+        Answers whether the game must be read again: true when another
+        session seeded this seat while this one was reading, so that what was
+        read is already out of date.
+
+        The array is seeded here rather than where the catalogue is, because
+        where it may stand depends on the board's size and on how many players
+        there are - and neither is settled when a player is registered. By the
+        time a seat is opened both have been read.
+
+        It is seeded as **ordinary commands**, through the same `perform` a
+        player's own deployment goes through. So it is charged against the
+        budget, refused if it would fall outside the placement area, recorded
+        in the draft, and taken back by `remove unit` like anything else. A
+        default that wrote units straight onto the board would be none of
+        those things, and the first sign of it would be an army nobody could
+        edit.
+
+        Recording in the draft is also what stops it happening twice. A draft
+        holding no commands is what "this player has not touched their setup"
+        means, and seeding fills it, so a player who takes the whole array
+        back does not find it waiting for them when they open the seat again.
+
+        Nothing is seeded where the array does not fit - any player count but
+        two, a board too small, a budget too small. The player is left with
+        the catalogue and sets up by hand, as they always did.
+        """
+        if self.sees_everything or not identity.is_player(self.player_number):
+            return False
+        if not self.new_game or self.draft or self.board is None:
+            return False
+        if self.player_number not in self.players:
+            return False
+        if any(unit.player is not None
+               and unit.player.number == self.player_number
+               for unit in self.board.units):
+            return False
+
+        placements = army.placements(
+            self.player_number, self.players.keys(),
+            self.board.size_x, self.board.size_y)
+        if not placements:
+            return False
+
+        # what the budget will not pay for is not begun. Deploying until one
+        # is refused would leave a player most of their points spent on a
+        # front rank that was never meant to stand alone, and would do it
+        # again every time they opened the seat
+        player = self.players[self.player_number]['obj']
+        if player.budget is None or budget.remaining(
+                self.board, player) < army.cost():
+            return False
+
+        try:
+            # held while it is written, and the draft read again inside the
+            # hold. A browser opening a screen asks for several views at once
+            # and every one of them loads a session: without this they would
+            # all find an empty draft, all decide to seed, and race to write
+            # sixteen commands each. One of them wins the hold and seeds; the
+            # rest wait, find the draft it left, and leave it alone
+            with self.repository.held():
+                if self.repository.read_draft(self.player_number):
+                    return True
+                for type_name, name, x, y in placements:
+                    games.perform(self, commands.AddUnit(
+                        type_name=type_name, name=name, x=x, y=y))
+                games.perform(self, commands.SetFlag(
+                    unit=army.unit_name(self.player_number,
+                                        army.FLAG_UNIT)))
+        except GameDataError:
+            # the game is busy, which here means somebody else is seeding it.
+            # Reading a screen is not the place to insist on it, but what was
+            # read is stale either way, so it is read again
+            return True
+        except GameError:
+            # everything the array needs was asked for above, so this is a
+            # refusal nothing here predicted. Half an army is worse than none,
+            # so what was deployed is taken back and the player sets up by
+            # hand with the catalogue they were given
+            self._unseed(placements)
+            return False
+        return False
+
+    def _unseed(self, placements):
+        """Take back a part-seeded army, leaving the player as they were."""
+        for _type_name, name, _x, _y in placements:
+            try:
+                games.perform(self, commands.RemoveUnit(name=name))
+            except GameError:
+                # it was never deployed, which is why we are here
+                continue
+        self.clearDraft()
 
     def getDropped(self):
         """Drafted commands that could not be put back, and why."""

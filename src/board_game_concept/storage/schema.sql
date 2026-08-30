@@ -9,11 +9,18 @@ PRAGMA foreign_keys = ON;
 
 -- one game per file. `id = 1` is the sentinel row that always exists once
 -- `ensure()` has run; `size_x` and `size_y` are NULL until the board is set.
+--
+-- `turn_no` is NULL until a turn is resolved, and 0 once the administrator's
+-- commit has ended the setup. NULL and 0 are different answers: a game that
+-- has never been resolved is still being set up, and a game resolved into
+-- turn 0 has had its setup committed. It used to default to 0, which made the
+-- two indistinguishable and left this backend unable to say whether a setup
+-- had been committed at all
 CREATE TABLE IF NOT EXISTS games (
     id           INTEGER PRIMARY KEY CHECK (id = 1),
     size_x       INTEGER,
     size_y       INTEGER,
-    turn_no      INTEGER NOT NULL DEFAULT 0,
+    turn_no      INTEGER,
     outcome      TEXT
 );
 

@@ -280,7 +280,7 @@ class ServerDisplayCommands(CliTestCase):
         lines = self.shown_table(server, SERVER_PROMPT, 'players')
         assert lines[0].split() == [
             'PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT']
-        assert lines[1].split() == ['1', 'active', '100', '0', '100']
+        assert lines[1].split() == ['1', 'active', '250', '0', '250']
 
     def test_showing_pending_orders(self):
         server = self._sized()
@@ -293,7 +293,7 @@ class ServerDisplayCommands(CliTestCase):
         server.read_until_count(SERVER_PROMPT, 3)
         assert self.shown_json(server, SERVER_PROMPT, 'players') == {
             'players': [{'player': 1, 'status': 'active',
-                         'budget': 100, 'spent': 0, 'left': 100}]}
+                         'budget': 250, 'spent': 0, 'left': 250}]}
 
     def test_an_empty_subject_as_json_is_an_empty_list(self):
         server = self._sized()
