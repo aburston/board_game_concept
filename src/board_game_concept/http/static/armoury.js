@@ -105,11 +105,58 @@ function renderDeployed(game) {
   }
   table.append(body);
   card.append(table);
+  // and all of them at once. Taking an army back a unit at a time is a
+  // decision per unit to unmake one decision, and a player who has laid out
+  // a dozen units and changed their mind was asked for a dozen of them
+  card.append(element('p', {},
+    button(`Clear board (${mine.length} `
+           + `${mine.length === 1 ? 'unit' : 'units'})`,
+           () => clearBoard(game, mine), { class: 'danger' })));
   card.append(element('p', { class: 'small muted' },
     'Taking a unit back frees its square and its points, and is the same as '
     + 'never having deployed it. Once you commit, your units are published '
     + 'and this is no longer offered.'));
   return card;
+}
+
+/**
+ * Take back every unit this seat has deployed, on one confirmation.
+ *
+ * There is no command for it and there does not need to be: it is the
+ * `remove_unit` the list already sends, once per unit. The screen is redrawn
+ * once at the end rather than after each one, so an army coming off the board
+ * is one change rather than a dozen flickers.
+ *
+ * It stops at the first refusal. A refusal here means the setup is not what
+ * this screen thinks it is - it has been committed from somewhere else, most
+ * likely - and carrying on down the list would be a dozen more of the same
+ * message.
+ */
+async function clearBoard(game, mine) {
+  if (!mine.length) return;
+  if (!window.confirm(
+    `Take back all ${mine.length} of your deployed units? Their squares and `
+    + 'their points come back, and nothing is left deployed.')) return;
+  let taken = 0;
+  let refusal = null;
+  for (const unit of mine) {
+    try {
+      await api.perform(game.gameno, game.number, api.removeUnit(unit.name));
+      taken += 1;
+    } catch (error) {
+      refusal = `${unit.name} could not be taken back: ${error.message}`;
+      break;
+    }
+  }
+  try {
+    await loadSeat(game.gameno, game.number);
+  } catch (error) {
+    say(error.message);
+  }
+  say(refusal
+    || `${taken} ${taken === 1 ? 'unit' : 'units'} taken back. Your whole `
+       + 'budget is yours to spend again.');
+  set({});
 }
 
 /**
@@ -588,10 +635,70 @@ function renderDeploy(game) {
     }
   };
 
+  /**
+   * Move a deployed unit to another square, by dragging it there.
+   *
+   * There is no command for moving one: it is the two decisions a player
+   * would otherwise make by hand, taking it back and putting it down again.
+   * The two are not one call, so the square is checked here first - which
+   * settles the ordinary refusals without asking - and the unit is put back
+   * where it came from if the server refuses the placement anyway.
+   *
+   * Taking a unit back takes its flag with it, so a carrier that has been
+   * moved is designated again.
+   */
+  const replace = async (unit, x, y) => {
+    if (x < 0 || y < 0 || x >= game.board.size_x || y >= game.board.size_y) {
+      return;
+    }
+    if (placeable && !placeable.includes(y)) {
+      say(`You may not deploy in row ${y}.`);
+      return;
+    }
+    if (x === unit.x && y === unit.y) return;
+    const held = (game.units || []).find(
+      (each) => each.x === x && each.y === y);
+    if (held) {
+      say(`${held.name} is already on (${x}, ${y}).`);
+      return;
+    }
+    try {
+      await api.perform(game.gameno, game.number, api.removeUnit(unit.name));
+    } catch (error) {
+      say(error.message);
+      return;
+    }
+    try {
+      await api.perform(game.gameno, game.number,
+                        api.addUnit(unit.type, unit.name, x, y));
+      if (unit.flag) {
+        await api.perform(game.gameno, game.number, api.setFlag(unit.name));
+      }
+      say(`${unit.name} moved to (${x}, ${y}).`);
+    } catch (error) {
+      try {
+        await api.perform(game.gameno, game.number,
+                          api.addUnit(unit.type, unit.name, unit.x, unit.y));
+        if (unit.flag) {
+          await api.perform(game.gameno, game.number, api.setFlag(unit.name));
+        }
+        say(error.message);
+      } catch (lost) {
+        // both refused: the unit is off the board and saying nothing would
+        // leave the player to notice a missing unit for themselves
+        say(`${unit.name} could not be moved to (${x}, ${y}) — `
+          + `${error.message} — and is no longer deployed: ${lost.message}`);
+      }
+    }
+    await loadSeat(game.gameno, game.number);
+    set({});
+  };
+
   card.append(renderBoard(game.board, game.units, {
     mine: game.number,
     placeable,
     onUnit: takeBack,
+    onDrop: replace,
     onSquare: async (x, y) => {
       // an enemy unit is never on this board during setup, but a square that
       // somehow holds one of this seat's units takes the same route as a

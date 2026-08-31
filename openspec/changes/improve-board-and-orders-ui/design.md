@@ -165,7 +165,7 @@ it records why it is still correct.
 Energy becomes `now/full` drawn the way `health()` draws it, from
 `designOf(game, unit)` — a helper shaped after `health()` rather than a second
 copy of its logic. Attack comes off the unit as the Forces table already reads
-it. The tray goes from six columns to eight; wide content already scrolls
+it. The tray goes from six columns to seven; wide content already scrolls
 inside its card on a narrow screen, which is what
 `test_wide_content_scrolls_inside_its_card` holds.
 

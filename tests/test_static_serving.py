@@ -312,3 +312,262 @@ def test_the_armoury_offers_nothing_to_a_seat_whose_setup_is_over():
     """`unprocessed_moves` stops being true the moment the turn resolves."""
     armoury = _module('armoury.js')
     assert 'game.new_game === false || game.unprocessed_moves' in armoury
+
+
+# --- what the orders tray withheld
+#
+# The tray is the table a player reads while deciding what to do, and two of
+# the numbers the decision turns on were not in it: what a unit hits for, and
+# how much of its energy is left of what it was built with.
+
+
+def test_the_tray_shows_energy_against_what_the_type_was_built_with():
+    """`3/5` rather than `3`, the way health is already shown beside it."""
+    play = _module('play.js')
+    assert 'function energy(game, unit)' in play
+    # read off the design rather than restated, as `health` reads the type
+    assert re.search(r'function energy\(game, unit\)\s*\{\s*\n'
+                     r'\s*const design = designOf\(game, unit\);', play)
+    assert '`${now}/${full}`' in play
+    tray = play[play.index('function renderOrders'):
+                play.index('function renderBarrier')]
+    assert 'energy(game, unit)' in tray, 'the tray goes through the helper'
+    assert 'String(unit.energy)' not in tray, 'and not round it'
+    assert '.power.spent' in _stylesheet()
+
+
+def test_the_tray_shows_what_a_unit_hits_for():
+    """Half of every decision to order a unit at an enemy."""
+    play = _module('play.js')
+    tray = play[play.index('function renderOrders'):
+                play.index('function renderBarrier')]
+    assert "element('th', { class: 'number' }, 'Atk')" in tray
+    assert "String(unit.attack)" in tray
+
+
+# --- committing where the orders were given
+
+
+def test_the_board_pane_offers_the_commit_too():
+    """The last order and the commit that publishes it are one thought."""
+    play = _module('play.js')
+    board_card = play[play.index('function renderBoardCard'):
+                      play.index('function reachableFrom')]
+    assert 'renderCommit(game)' in board_card
+    # one definition, so the confirmation and the call cannot diverge
+    assert play.count('function renderCommit') == 1
+
+
+def test_the_boards_commit_is_the_one_the_c_key_finds():
+    """`c` clicks the first primary button, which is the board's."""
+    play = _module('play.js')
+    assert play.index('function renderBoardCard') < play.index(
+        'function renderOrders'), 'the board pane is built first'
+    layout = play[play.index('const layout = element'):
+                  play.index('wrap.append(layout)')]
+    assert layout.index('renderBoardCard') < layout.index('renderOrders'), (
+        'and appended before the tray, so it comes first in the document')
+    assert "document.querySelector('button.primary')" in play
+
+
+def test_neither_pane_offers_to_commit_a_turn_already_committed():
+    play = _module('play.js')
+    commit = play[play.index('function renderCommit'):
+                  play.index('// --- waiting for the others')]
+    assert 'if (game.unprocessed_moves)' in commit
+    assert 'Committed. Waiting for the turn to resolve.' in commit
+
+
+# --- clearing a setup in one action
+
+
+def test_the_armoury_clears_a_whole_deployment():
+    """One control, one confirmation, and the `remove_unit` it already sends."""
+    armoury = _module('armoury.js')
+    assert 'function clearBoard' in armoury
+    assert 'Clear board' in armoury
+    clear = armoury[armoury.index('async function clearBoard'):
+                    armoury.index('function renderFlag')]
+    # it undoes more than a click usually does, so it asks first
+    assert 'window.confirm' in clear
+    # built from the command the list already sends, not a new one
+    assert 'api.removeUnit(unit.name)' in clear
+    # and redrawn once at the end rather than per unit
+    assert clear.count('await loadSeat(') == 1
+
+
+def test_the_clear_is_offered_only_where_there_is_something_to_clear():
+    """And never once the setup is committed, where it would be refused."""
+    armoury = _module('armoury.js')
+    deployed = armoury[armoury.index('function renderDeployed'):
+                       armoury.index('async function clearBoard')]
+    # the card returns before the control where nothing is deployed
+    assert deployed.index('Nothing deployed yet.') < deployed.index(
+        'Clear board')
+    # and the whole screen is withheld from a committed seat
+    assert 'game.new_game === false || game.unprocessed_moves' in armoury
+
+
+def test_clearing_stops_at_a_refusal_and_says_so():
+    armoury = _module('armoury.js')
+    clear = armoury[armoury.index('async function clearBoard'):
+                    armoury.index('function renderFlag')]
+    assert 'refusal =' in clear and 'break;' in clear
+    assert 'say(refusal' in clear
+
+
+# --- picking a unit up
+#
+# The gesture cannot be performed here - there is no browser in this suite -
+# so what is held is that the mechanics a touchscreen depends on are in the
+# file: pointer events rather than HTML5 drag-and-drop, a capture, a threshold
+# and the geometry that turns a drop into a square.
+
+
+def test_a_unit_is_dragged_with_pointer_events():
+    """`dragstart` does not fire for touch, which is the device this is for."""
+    board = _module('board.js')
+    assert 'function makeDraggable' in board
+    for handler in ('pointerdown', 'pointermove', 'pointerup', 'pointercancel'):
+        assert f"addEventListener('{handler}'" in board, handler
+    assert 'setPointerCapture' in board
+    assert 'dragstart' not in board, 'HTML5 drag-and-drop has no touch'
+    # the drop square is mapped through the SVG's own matrix, not by
+    # dividing a bounding rectangle by the square size
+    assert 'getScreenCTM' in board and 'matrixTransform' in board
+    assert re.search(r'Math\.floor\(\(here\.x - PAD\) / SQUARE\)', board)
+
+
+def test_the_board_decides_nothing_about_where_a_unit_lands():
+    """It reports the drop; the screen it is drawn for decides what it means."""
+    board = _module('board.js')
+    assert 'settings.onDrop(unit, x, y)' in board
+    assert 'onDrop' in _module('play.js') and 'onDrop' in _module('armoury.js')
+
+
+def test_a_short_movement_is_still_a_click():
+    """Without a threshold every tap becomes a one-pixel drag."""
+    board = _module('board.js')
+    assert 'const DRAG_THRESHOLD' in board
+    assert re.search(r'Math\.hypot\(dx, dy\) < DRAG_THRESHOLD', board)
+    # and the click the browser fires after a real drag is swallowed once,
+    # so a dropped unit is not also selected or ordered by it
+    assert re.search(r"addEventListener\('click',[\s\S]*?"
+                     r"\{ capture: true, once: true \}", board)
+
+
+def test_a_finger_dragging_a_unit_does_not_scroll_the_page():
+    sheet = _stylesheet()
+    assert re.search(r'\.board \.unit\.draggable\s*\{[^}]*touch-action:\s*none',
+                     sheet)
+    assert re.search(r'\.board \.unit\.draggable\s*\{[^}]*user-select:\s*none',
+                     sheet)
+    # and the transition that animates a turn's moves is off while a hand is
+    # holding the unit, or the piece lags the finger by a third of a second
+    assert re.search(r'\.board \.unit\.dragging\s*\{[^}]*transition:\s*none',
+                     sheet)
+
+
+def test_dragging_is_offered_only_where_the_action_behind_it_is():
+    """The same conditions that withhold the click withhold the drag."""
+    play = _module('play.js')
+    board_card = play[play.index('function renderBoardCard'):
+                      play.index('function reachableFrom')]
+    assert re.search(r'onDrop: watching \|\| game\.outcome', board_card)
+    assert 'game.unprocessed_moves' in board_card
+    # and board.js draws the handles on this seat's own units only
+    assert 'settings.onDrop && own' in _module('board.js')
+
+
+# --- where a dropped unit lands
+
+
+def test_dropping_a_unit_beside_itself_orders_that_move():
+    """A move is one square, so the drop rule is the rule rather than a
+    softer version of it."""
+    play = _module('play.js')
+    board_card = play[play.index('function renderBoardCard'):
+                      play.index('function reachableFrom')]
+    drop = board_card[board_card.index('onDrop:'):]
+    assert 'api.DIRECTIONS.find(' in drop
+    assert 'unit.x + option.dx === x && unit.y + option.dy === y' in drop
+    assert 'order(game, unit, direction)' in drop
+    # and a drop that is not next to the unit changes nothing and says so
+    assert 'if (!direction)' in drop
+    assert 'moves one square at a time' in drop
+
+
+def test_dragging_a_deployed_unit_re_places_it():
+    armoury = _module('armoury.js')
+    replace = armoury[armoury.index('const replace = async'):
+                      armoury.index('card.append(renderBoard(')]
+    # the square is judged before anything is sent: the seat's own rows, and
+    # what is already standing there
+    assert 'placeable && !placeable.includes(y)' in replace
+    assert 'is already on' in replace
+    # then the two decisions it is made of, in that order
+    assert replace.index('api.removeUnit(unit.name)') < replace.index(
+        'api.addUnit(unit.type, unit.name, x, y)')
+    assert 'onDrop: replace' in armoury
+
+
+def test_a_refused_placement_puts_the_unit_back():
+    armoury = _module('armoury.js')
+    replace = armoury[armoury.index('const replace = async'):
+                      armoury.index('card.append(renderBoard(')]
+    assert 'api.addUnit(unit.type, unit.name, unit.x, unit.y)' in replace
+    assert 'is no longer deployed' in replace, 'and says so if that fails too'
+    # the flag goes with the unit that is taken back, so it is designated again
+    assert replace.count('api.setFlag(unit.name)') == 2
+
+
+def test_every_other_way_of_placing_and_ordering_still_works():
+    """The drag is an alternative, not a replacement."""
+    armoury, play = _module('armoury.js'), _module('play.js')
+    assert 'onSquare: async (x, y)' in armoury, 'click to place'
+    assert 'onUnit: takeBack' in armoury, 'click to take back'
+    assert 'renderDirections(game' in play, 'the compass'
+    assert "row.addEventListener('click', choose)" in play, 'the orders rows'
+    assert 'export function handleKey' in play, 'the keyboard'
+
+
+# --- the board and the trays take turns
+
+
+def test_which_pane_is_shown_is_held_in_the_state():
+    """Read back out of the DOM it would not survive the next redraw."""
+    app_js, play = _module('app.js'), _module('play.js')
+    assert "pane: 'board'" in app_js
+    assert 'function renderPaneSwitch' in play
+    switch = play[play.index('function renderPaneSwitch'):
+                  play.index('function committedArmy')]
+    assert "set({ pane })" in switch
+    # it says which pane is being shown, not only what pressing it would do
+    assert 'Board shown' in switch and 'Orders and forces shown' in switch
+    assert "'aria-pressed'" in switch
+    # and says again, out loud, what it switched to
+    assert 'say(' in switch
+
+
+def test_the_panes_take_turns_only_where_they_do_not_fit():
+    sheet = _stylesheet()
+    assert '@media (max-width: 44rem)' in sheet
+    narrow = sheet[sheet.index('@media (max-width: 44rem)'):
+                   sheet.index('@media (max-width: 30rem)')]
+    assert '.panes.pane-board > .tray-pane { display: none; }' in narrow
+    assert '.panes.pane-trays > .board-pane { display: none; }' in narrow
+    # above that width the switch is not offered and neither pane is hidden
+    assert re.search(r'\.pane-switch-wrap\s*\{\s*display:\s*none;\s*\}', sheet)
+    assert '.pane-switch-wrap { display: block' in narrow
+
+
+def test_giving_an_order_does_not_switch_the_view_back():
+    """The choice survives the redraw that every action ends with."""
+    play = _module('play.js')
+    order = play[play.index('async function order(game, unit, direction)'):
+                 play.index('async function clearOrder')]
+    assert 'pane' not in order
+    # and nothing else in the screen resets it either
+    assert play.count('set({ pane })') == 1, 'only the switch sets it'
+    assert not re.search(r'state\.pane\s*=[^=]', play), (
+        'and nothing writes round `set`')

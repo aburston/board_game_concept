@@ -266,6 +266,12 @@ export function renderBoard(board, units, options) {
         settings.onUnit(unit);
       });
     }
+    // and picked up and put down, which is what a person does to a board.
+    // Where the drop leads - a square to deploy on, a square to move to, or
+    // a refusal - is the screen's to decide, exactly as `onUnit` is
+    if (settings.onDrop && own) {
+      makeDraggable(root, group, unit, settings);
+    }
     // what a person gets for hovering: everything the unit is, and - for
     // one of theirs - how to order it. The keyboard is faster than the
     // mouse here and nothing said so anywhere near the board
@@ -283,6 +289,101 @@ export function renderBoard(board, units, options) {
     root.append(group);
   }
   return root;
+}
+
+// --- picking a unit up
+//
+// One code path for a mouse, a pen and a finger: pointer events, a capture so
+// the gesture survives leaving the square it began in, and a threshold below
+// which what happened was a click. HTML5 drag-and-drop would have been less
+// code and does not fire for touch on any phone, which is the device this is
+// most for.
+
+// how far the pointer travels before a click becomes a drag. Without it every
+// tap on a unit is a one-pixel drag, and selecting a unit - the thing done
+// most often - stops working
+const DRAG_THRESHOLD = 4;
+
+/**
+ * Let one unit be dragged to a square, and tell the screen where it landed.
+ *
+ * The transform written here during the gesture is the one place in the page
+ * that changes the DOM outside `render`, and it is deliberate: re-rendering
+ * per pointer move would rebuild the SVG under the pointer, throwing away the
+ * element holding the capture and ending the drag on its first movement.
+ * Nothing else is written - no state, no command - and the drop goes back
+ * through the screen, the contract and a redraw like every other action, so
+ * what is finally drawn still comes from the server.
+ */
+function makeDraggable(root, group, unit, settings) {
+  group.classList.add('draggable');
+  const home = `translate(${PAD + unit.x * SQUARE}, ${PAD + unit.y * SQUARE})`;
+  let gesture = null;
+
+  group.addEventListener('pointerdown', (event) => {
+    // the primary button only: a right-click is a menu, not a move
+    if (event.button) return;
+    gesture = { id: event.pointerId, from: at(root, event), moved: false };
+    group.setPointerCapture(event.pointerId);
+  });
+
+  group.addEventListener('pointermove', (event) => {
+    if (!gesture || event.pointerId !== gesture.id) return;
+    const here = at(root, event);
+    const dx = here.x - gesture.from.x;
+    const dy = here.y - gesture.from.y;
+    if (!gesture.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    gesture.moved = true;
+    group.classList.add('dragging');
+    group.setAttribute('transform',
+      `translate(${PAD + unit.x * SQUARE + dx}, `
+      + `${PAD + unit.y * SQUARE + dy})`);
+  });
+
+  const drop = (event) => {
+    if (!gesture || event.pointerId !== gesture.id) return;
+    const moved = gesture.moved;
+    const here = at(root, event);
+    gesture = null;
+    group.classList.remove('dragging');
+    // put it back where the view says it is. If the drop is accepted the
+    // redraw that follows moves it; if it is refused this is where it belongs
+    group.setAttribute('transform', home);
+    if (!moved) return;
+    // the click the browser fires after a drag would select the unit or
+    // order it a second time, so it is swallowed once
+    group.addEventListener('click', (click) => {
+      click.stopPropagation();
+      click.preventDefault();
+    }, { capture: true, once: true });
+    const x = Math.floor((here.x - PAD) / SQUARE);
+    const y = Math.floor((here.y - PAD) / SQUARE);
+    settings.onDrop(unit, x, y);
+  };
+  group.addEventListener('pointerup', drop);
+  group.addEventListener('pointercancel', (event) => {
+    if (!gesture || event.pointerId !== gesture.id) return;
+    gesture = null;
+    group.classList.remove('dragging');
+    group.setAttribute('transform', home);
+  });
+}
+
+/**
+ * Where a pointer is, in the board's own coordinates.
+ *
+ * Through the SVG's screen matrix rather than by dividing a bounding
+ * rectangle by 44: the board is drawn in a `viewBox` and scaled to fit, so
+ * pixels on the glass and squares on the board are not the same size.
+ */
+function at(root, event) {
+  const matrix = root.getScreenCTM();
+  if (!matrix) return { x: event.clientX, y: event.clientY };
+  const point = root.createSVGPoint();
+  point.x = event.clientX;
+  point.y = event.clientY;
+  const inside = point.matrixTransform(matrix.inverse());
+  return { x: inside.x, y: inside.y };
 }
 
 // which way each order points, in board coordinates
