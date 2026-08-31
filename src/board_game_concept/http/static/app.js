@@ -34,7 +34,13 @@ export const state = {
   unitName: '',
   deployType: '',      // the type being deployed, kept across placements
   boardSize: { x: '', y: '' },   // a size typed and not yet sent
+  seatNumber: '',      // a seat number typed over the one offered
   cursor: { x: 0, y: 0 },
+  // which of the play screen's two panes is being shown where they do not
+  // fit side by side. Held here rather than measured: the stylesheet is the
+  // only thing that knows the width, and this is only what to show if it
+  // decides there is room for one of them
+  pane: 'board',       // or 'trays'
   waiting: null,       // {met, waiting_on} while a commit is outstanding
   watching: false,     // whether a wait loop is already running
   events: [],          // what the turns did, as this seat was told it

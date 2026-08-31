@@ -1228,3 +1228,162 @@ def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
     feed = ada.read_view(GAME, 1, 'events').get_json()['events']
     assert len(feed) == 16, 'their own placements, and not the other sixteen'
     assert all(entry['detail'].get('players') == '1' for entry in feed)
+
+
+# --- clearing a setup, exactly as the armoury clears it
+#
+# There is no bulk command and there does not need to be: the page sends the
+# `remove_unit` it already sends, once per unit. What has to hold is that the
+# end of that loop is a seat with nothing deployed and its whole budget back,
+# and that it reaches nobody else's units.
+
+def _deploy_several(page, gameno, number, squares):
+    """One type and a unit on each square, as the deploy card places them."""
+    assert page.perform(gameno, number, {
+        'kind': 'add_type', 'name': f'T{number}', 'symbol': 'X',
+        'attack': 1, 'health': 8, 'energy': 10}).status_code == 204
+    for index, (x, y) in enumerate(squares):
+        assert page.perform(gameno, number, {
+            'kind': 'add_unit', 'type_name': f'T{number}',
+            'name': f'u{number}-{index}', 'x': x, 'y': y}).status_code == 204
+
+
+def test_clearing_the_board_takes_back_every_unit_and_its_points(app):
+    admin = _administrator(app)
+    _set_up(admin)
+    ada = _player(app, 'ada')
+    bob = _player(app, 'bob')
+    assert ada.claim_seat(GAME, 1).status_code == 201
+    assert bob.claim_seat(GAME, 2).status_code == 201
+
+    _deploy_several(ada, GAME, 1, [(0, 0), (1, 0), (2, 0)])
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+
+    spent = [entry for entry
+             in ada.read_view(GAME, 1, 'players').get_json()['players']
+             if entry['player'] == 1][0]
+    assert spent['left'] == 100 - 3 * 19, 'three units at 1 + 8 + 10 each'
+
+    # what the button does: one `remove_unit` per deployed unit of this seat
+    mine = [unit for unit
+            in ada.read_view(GAME, 1, 'units').get_json()['units']
+            if unit['player'] == 1]
+    for unit in mine:
+        assert ada.perform(GAME, 1, {'kind': 'remove_unit',
+                                     'name': unit['name']}).status_code == 204
+
+    left = ada.read_view(GAME, 1, 'units').get_json()['units']
+    assert [unit for unit in left if unit['player'] == 1] == []
+    cleared = [entry for entry
+               in ada.read_view(GAME, 1, 'players').get_json()['players']
+               if entry['player'] == 1][0]
+    assert cleared['left'] == 100, 'the whole budget is back'
+
+    # and the other seat is untouched: its unit is still deployed
+    theirs = [unit for unit
+              in bob.read_view(GAME, 2, 'units').get_json()['units']
+              if unit['player'] == 2]
+    assert [unit['name'] for unit in theirs] == ['u2']
+
+
+def test_nothing_can_be_taken_back_once_the_setup_is_committed(app):
+    """Which is why the armoury withholds the control from a committed seat."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada = _player(app, 'ada')
+    assert ada.claim_seat(GAME, 1).status_code == 201
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    assert ada.commit(GAME, 1).status_code == 202
+
+    refused = ada.perform(GAME, 1, {'kind': 'remove_unit', 'name': 'u1'})
+
+    assert refused.status_code == 400
+    assert 'setup is committed' in refused.get_json()['error']
+
+
+# --- moving a deployed unit, exactly as a drag moves it
+#
+# There is no command for it either: it is the two decisions the player would
+# otherwise make by hand. What has to hold is that the pair leaves the unit on
+# the new square, and that the flag - which comes off with the unit that
+# carried it - is put back by the `set_flag` the page sends after.
+
+def test_a_deployed_unit_is_moved_by_taking_it_back_and_putting_it_down(app):
+    admin = _administrator(app)
+    _set_up(admin)
+    ada = _player(app, 'ada')
+    assert ada.claim_seat(GAME, 1).status_code == 201
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+
+    carrier = ada.read_view(GAME, 1, 'units').get_json()['units'][0]
+    assert (carrier['x'], carrier['y'], carrier['flag']) == (0, 0, True)
+
+    assert ada.perform(GAME, 1, {'kind': 'remove_unit',
+                                 'name': 'u1'}).status_code == 204
+    # the rows this seat may use, which is what the page checks a drop
+    # against before it sends anything
+    rows = ada.read_view(GAME, 1, 'placement').get_json()['placement']['rows']
+    assert rows == [0, 1]
+    outside = ada.perform(GAME, 1, {
+        'kind': 'add_unit', 'type_name': 'T1', 'name': 'u1', 'x': 1, 'y': 2})
+    assert outside.status_code == 400, 'a drop in the other half is refused'
+    assert ada.perform(GAME, 1, {
+        'kind': 'add_unit', 'type_name': 'T1', 'name': 'u1',
+        'x': 1, 'y': 1}).status_code == 204
+
+    moved = ada.read_view(GAME, 1, 'units').get_json()['units'][0]
+    assert (moved['x'], moved['y']) == (1, 1)
+    assert moved['flag'] is False, 'the flag came off with the unit'
+
+    # which is why the page designates it again after a move it accepted
+    assert ada.perform(GAME, 1, {'kind': 'set_flag',
+                                 'unit': 'u1'}).status_code == 204
+    again = ada.read_view(GAME, 1, 'units').get_json()['units'][0]
+    assert again['flag'] is True
+    # and the setup that could not be committed without one now can be
+    assert ada.commit(GAME, 1).status_code == 202
+
+
+def test_a_placement_the_server_refuses_leaves_the_page_to_put_it_back(app):
+    """The two calls are not one, so the refusal is the page's to undo."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada = _player(app, 'ada')
+    assert ada.claim_seat(GAME, 1).status_code == 201
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+
+    assert ada.perform(GAME, 1, {'kind': 'remove_unit',
+                                 'name': 'u1'}).status_code == 204
+    refused = ada.perform(GAME, 1, {
+        'kind': 'add_unit', 'type_name': 'T1', 'name': 'u1',
+        'x': 99, 'y': 99})
+    assert refused.status_code == 400
+
+    # nothing of theirs is deployed until the page puts it back, which it does
+    assert ada.read_view(GAME, 1, 'units').get_json()['units'] == []
+    assert ada.perform(GAME, 1, {
+        'kind': 'add_unit', 'type_name': 'T1', 'name': 'u1',
+        'x': 0, 'y': 0}).status_code == 204
+    back = ada.read_view(GAME, 1, 'units').get_json()['units'][0]
+    assert (back['x'], back['y']) == (0, 0)
+
+
+def test_a_drop_beside_a_unit_is_the_move_the_compass_sends(app):
+    """The drag is another way to give one order, not another kind of order."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    assert ada.claim_seat(GAME, 1).status_code == 201
+    assert bob.claim_seat(GAME, 2).status_code == 201
+    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    assert ada.commit(GAME, 1).status_code == 202
+    assert bob.commit(GAME, 2).status_code in (200, 202)
+    ada.wait_for_turn(GAME, 1, budget=2)
+
+    # a unit at (0, 0) dropped on (0, 1) is `move south`, which is what the
+    # page works out from the squares before it sends anything
+    assert ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1',
+                                 'direction': SOUTH}).status_code == 204
+    ordered = ada.read_view(GAME, 1, 'units').get_json()['units'][0]
+    assert ordered['direction'] == 'south'

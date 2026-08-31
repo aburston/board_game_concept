@@ -63,9 +63,17 @@ export function renderPlay() {
     return wrap;
   }
 
-  const layout = element('div', { class: 'row' });
-  layout.append(element('div', { class: 'grow' }, renderBoardCard(game)));
-  const side = element('div', { class: 'grow' });
+  // the two panes, and the switch between them. On a phone they are one
+  // column, so reading the tray meant scrolling the board away and ordering
+  // meant scrolling back - to an arrow that had just been drawn off the top
+  // of the screen. Which one is shown is this button's; whether it matters
+  // is the stylesheet's, and above the width where both fit the button is
+  // not there at all and both panes are drawn
+  wrap.append(renderPaneSwitch());
+  const layout = element('div', { class: `row panes pane-${state.pane}` });
+  layout.append(element('div', { class: 'grow board-pane' },
+                        renderBoardCard(game)));
+  const side = element('div', { class: 'grow tray-pane' });
   if (!watching && !game.outcome && !isOut(game)) {
     side.append(renderOrders(game));
   }
@@ -81,6 +89,28 @@ export function renderPlay() {
   wrap.append(renderLastTurn(game));
   if (!watching) wrap.append(renderKeys());
   return wrap;
+}
+
+/**
+ * The one control that swaps the board for the trays beside it.
+ *
+ * It says which pane is being shown rather than only what it would do, and
+ * says the same thing again when it is pressed, for a reader who is not
+ * watching the button change. It is drawn on every screen and hidden by the
+ * stylesheet wherever both panes fit, so nothing here has to know the width.
+ */
+function renderPaneSwitch() {
+  const trays = state.pane === 'trays';
+  return element('p', { class: 'pane-switch-wrap' },
+    button(trays ? 'Orders and forces shown — show the board'
+                 : 'Board shown — show orders and forces',
+           () => {
+             const pane = trays ? 'board' : 'trays';
+             set({ pane });
+             say(pane === 'trays' ? 'Showing the orders and forces.'
+                                  : 'Showing the board.');
+           },
+           { class: 'pane-switch', 'aria-pressed': trays ? 'true' : 'false' }));
 }
 
 /**
@@ -404,6 +434,22 @@ function renderBoardCard(game) {
       if (direction) return order(game, selected, direction);
       return set({ cursor: { x, y } });
     },
+    // dragging a unit onto the square next to it is the order it is: a move
+    // is one square, so a drop further off is not a longer move, it is a
+    // drop that means nothing - and saying so is better than a unit that
+    // slides back with no explanation
+    onDrop: watching || game.outcome || isOut(game) || game.unprocessed_moves
+      ? null
+      : (unit, x, y) => {
+        const direction = api.DIRECTIONS.find(
+          (option) => unit.x + option.dx === x && unit.y + option.dy === y);
+        if (!direction) {
+          set({ selected: unit.name, cursor: { x: unit.x, y: unit.y } });
+          return say(`${unit.name} moves one square at a time — drop it on a `
+            + 'square beside the one it stands on.');
+        }
+        return order(game, unit, direction);
+      },
   }));
 
   // the flag rows of the legend are the grid's way of naming a glyph it drew
@@ -457,6 +503,12 @@ function renderBoardCard(game) {
       ? renderDirections(game, standing(game))
       : element('p', { class: 'small muted' },
                 'Choose one of your units to order it.'));
+    // and the commit, beside the controls that gave the orders: the last
+    // order and the act that publishes it are one thought, and the button
+    // for it was a pane away - past the whole roster on a narrow screen.
+    // The same `renderCommit` the tray uses, so the confirmation, the call
+    // and what is said afterwards cannot come apart between the two
+    card.append(renderCommit(game));
   }
   return card;
 }
@@ -521,6 +573,7 @@ function renderOrders(game) {
   table.append(element('thead', {}, element('tr', {},
     element('th', {}, 'Unit'),
     element('th', {}, 'Order'),
+    element('th', { class: 'number' }, 'Atk'),
     element('th', { class: 'number' }, 'Costs'),
     element('th', { class: 'number' }, 'Health'),
     element('th', { class: 'number' }, 'Energy'),
@@ -562,10 +615,14 @@ function renderOrders(game) {
       ordered
         ? element('span', {}, `move ${unit.direction}`)
         : element('span', {}, 'hold')));
+    // what a unit hits for, where the decision to send it at an enemy is
+    // made. It was in the Forces card, which is a different card and, on a
+    // narrow screen, a different screenful
+    row.append(element('td', { class: 'number' }, String(unit.attack)));
     row.append(element('td', { class: 'number fare' },
       ordered ? String(fare) : '+1 rest'));
     row.append(element('td', { class: 'number' }, health(game, unit)));
-    row.append(element('td', { class: 'number' }, String(unit.energy)));
+    row.append(element('td', { class: 'number' }, energy(game, unit)));
     row.append(element('td', {}, ordered && !affordable
       ? element('span', { class: 'tag warn' }, 'cannot pay')
       : null));
@@ -628,6 +685,27 @@ function health(game, unit) {
     title: share < 1 ? `${full - now} lost of ${full}` : 'unhurt',
   }, `${now}/${full}`);
   return cell;
+}
+
+/**
+ * What a unit has to spend, against what its type was designed with.
+ *
+ * `3/5` rather than `3`, the way health is shown beside it: a unit that has
+ * been spending and one that has not read alike as a bare number, and the
+ * board's ring - which does say - is the thing a player has stopped looking
+ * at by the time they are reading this table.
+ */
+function energy(game, unit) {
+  const design = designOf(game, unit);
+  const now = Math.max(0, Number(unit.energy));
+  if (!design) return element('span', {}, String(now));
+  const full = Number(design.energy);
+  const share = full > 0 ? now / full : 1;
+  return element('span', {
+    class: ['power', share <= 0.25 ? 'critical' : '',
+            share < 1 ? 'spent' : ''].join(' ').trim(),
+    title: share < 1 ? `${full - now} spent of ${full}` : 'unspent',
+  }, `${now}/${full}`);
 }
 
 /**
@@ -1053,6 +1131,12 @@ export function handleKey(event) {
 
   if (event.key === 'Escape') return set({ selected: null });
 
+  // the commit is offered twice now - under the compass and under the
+  // orders tray - and both are the same `renderCommit`, so pressing the
+  // first is pressing either. The board's pane is drawn first, which is
+  // where a hand on `c` is already looking. A third primary button on this
+  // screen would make this the wrong one, so it would need a selector of
+  // its own rather than the first of whatever is there
   if (event.key === 'c' || event.key === 'C') {
     event.preventDefault();
     const commit = document.querySelector('button.primary');

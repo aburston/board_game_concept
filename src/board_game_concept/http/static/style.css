@@ -158,6 +158,23 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) {
   .board .unit { transition: none; }
 }
+
+/* a unit that can be picked up and put down. `touch-action: none` is on the
+   unit rather than the whole board on purpose: a finger dragging a piece must
+   not scroll the page, and a finger dragging anywhere else on a board that
+   fills a phone's screen still has to be able to */
+.board .unit.draggable {
+  touch-action: none;
+  cursor: grab;
+  /* a slow drag over a glyph selected it, which left the board highlighted
+     blue and the gesture looking like a failed copy */
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* while it is being dragged it follows the pointer, so the transition that
+   animates a turn's moves would make it lag a hand by a third of a second */
+.board .unit.dragging { transition: none; cursor: grabbing; }
+.board .unit.dragging .ring { stroke-width: 3; }
 .board .unit text { font-family: var(--mono); font-weight: 700; text-anchor: middle; }
 .board .unit.mine text { fill: var(--mine); }
 .board .unit.theirs text { fill: var(--theirs); }
@@ -253,6 +270,21 @@ kbd {
    scrolls on its own. */
 .card { overflow-x: auto; }
 
+/* The play screen's two panes take turns where they cannot be shown side by
+   side. `.grow` is `flex: 1 1 20rem`, so the pair stops fitting - and the row
+   wraps into one column - a little above 44rem; below that the switch is
+   offered and the pane not chosen is not drawn. Above it the switch is not
+   there and both panes are, whatever the choice happens to be, so a wide
+   screen cannot end up hiding half of itself. */
+.pane-switch-wrap { display: none; }
+
+@media (max-width: 44rem) {
+  .pane-switch-wrap { display: block; margin: 0 0 var(--gap); }
+  .pane-switch { width: 100%; text-align: left; }
+  .panes.pane-board > .tray-pane { display: none; }
+  .panes.pane-trays > .board-pane { display: none; }
+}
+
 @media (max-width: 30rem) {
   /* the board is the thing worth the width: at 1.25rem of page padding plus
      1.1rem of card padding, a 10x10 board had only 298 of 375 pixels */
@@ -335,6 +367,11 @@ kbd {
 /* the same number in the tray, for anybody reading rows rather than squares */
 .health.hurt { color: var(--warn); }
 .health.critical { color: var(--theirs); font-weight: 600; }
+
+/* and energy the same way: the ring on the board says it as a proportion,
+   the tray says it as the pair of numbers the proportion is drawn from */
+.power.spent { color: var(--ink-soft); }
+.power.critical { color: var(--warn); font-weight: 600; }
 
 /* the feed. One line per thing that happened, fighting picked out from
    manoeuvring, because a player scans this for the blows first */
