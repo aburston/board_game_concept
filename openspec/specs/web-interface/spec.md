@@ -187,6 +187,9 @@ A board size that has been typed and not yet sent SHALL be kept while seats are
 registered and removed, and SHALL go back to reading the board once a size has
 been accepted.
 
+A seat number typed over the one the interface offers SHALL be kept the same
+way, and SHALL go back to being offered once a seat has been registered.
+
 #### Scenario: Deploying several units of one type
 
 - **WHEN** a unit is deployed and the screen is drawn again
@@ -207,6 +210,47 @@ been accepted.
 
 - **WHEN** a board size is sent and accepted
 - **THEN** the fields show the size the board now is
+
+#### Scenario: A seat number typed over the one offered
+
+- **WHEN** a seat number is typed and the board is sized before it is sent
+- **THEN** the number is still as it was typed
+
+### Requirement: A New Seat Is Offered The Next Free Number
+
+The system SHALL offer, when a seat is registered, the lowest player number
+that no seat in the game holds, counting from 1, and SHALL offer it again as
+soon as a seat has been registered.
+
+Registering four seats meant typing 1, 2, 3 and 4 — four numbers the screen
+already knew, and four chances to type a number nobody meant to register.
+
+The lowest free number rather than one past the highest: a game a seat has
+been removed from has a gap, and the next seat registered fills it rather than
+leaving the numbering with a hole in it for the rest of the game. The number
+offered SHALL be one a seat may have, so the administrator's own number and
+the observer's are never offered.
+
+#### Scenario: The first seat of a new game
+
+- **WHEN** a game has no seats registered
+- **THEN** the number offered is 1
+
+#### Scenario: One seat after another
+
+- **WHEN** a seat is registered
+- **THEN** the number offered is the next one free
+
+#### Scenario: A gap left by a seat that was removed
+
+- **WHEN** a seat is removed from the middle of the numbering
+- **THEN** the number offered is that seat's, rather than one past the highest
+
+#### Scenario: A number the administrator chose instead
+
+- **WHEN** a number is typed over the one offered and registered
+- **THEN** the seat has the number that was typed
+- **AND** the number offered next is again the lowest that is free
 
 ### Requirement: The Deploy Board Greys Out Where A Seat May Not Place
 

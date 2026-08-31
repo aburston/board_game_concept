@@ -571,3 +571,25 @@ def test_giving_an_order_does_not_switch_the_view_back():
     assert play.count('set({ pane })') == 1, 'only the switch sets it'
     assert not re.search(r'state\.pane\s*=[^=]', play), (
         'and nothing writes round `set`')
+
+
+# --- the seat number the administrator is offered
+
+
+def test_a_new_seat_is_offered_the_next_free_number():
+    """Registering four seats meant typing four numbers the screen knew."""
+    armoury = _module('armoury.js')
+    assert 'function nextSeat(registered)' in armoury
+    # the lowest free number rather than one past the highest, so a seat
+    # that was removed leaves no hole in the numbering
+    assert re.search(r'let number = 1;\s*\n\s*while \(taken\.has\(number\)',
+                     armoury)
+    admin = armoury[armoury.index('function renderAdminSetup'):
+                    armoury.index('function nextSeat')]
+    assert 'String(nextSeat(registered))' in admin
+    # and the administrator's own number survives the redraw, as the board
+    # size beside it does
+    assert "seatNumber: ''" in _module('app.js')
+    assert 'state.seatNumber = number.input.value' in admin
+    assert re.search(r'\(\) => \{ state\.seatNumber = \'\'; \}', admin), (
+        'and the field returns to the next free number once one is taken')

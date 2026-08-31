@@ -385,8 +385,18 @@ function renderAdminSetup(game) {
     card.append(table);
   }
 
+  // the number a seat will have unless the administrator says otherwise:
+  // the lowest one free. Registering four seats meant typing 1, 2, 3, 4 -
+  // four numbers the screen already knew, and each one a chance to type 11
+  // and register a seat nobody meant to have. A number typed over it is
+  // kept in `state` like the board's size, so removing a seat no longer
+  // empties the field being filled in beside it
   const number = field('Seat number (1–999)', 'number', undefined,
                       { min: 1, max: 999 });
+  number.input.value = state.seatNumber || String(nextSeat(registered));
+  number.input.addEventListener('input', () => {
+    state.seatNumber = number.input.value;
+  });
   const budget = field('Budget (leave blank for the default)', 'number',
                        undefined, { min: 1, max: 1000 });
   const form = element('form', { class: 'row' });
@@ -396,7 +406,10 @@ function renderAdminSetup(game) {
                                        'Add seat')));
   form.addEventListener('submit', send(game, () => api.addPlayer(
     Number(number.input.value),
-    budget.input.value === '' ? undefined : Number(budget.input.value))));
+    budget.input.value === '' ? undefined : Number(budget.input.value)),
+    // registered, so the field goes back to offering the next free number
+    // rather than the one that has just been used
+    () => { state.seatNumber = ''; }));
   card.append(form);
 
   card.append(element('h2', {}, 'Finish setup'));
@@ -420,6 +433,24 @@ function renderAdminSetup(game) {
     }
   }, { class: 'primary', disabled: !game.board }));
   return card;
+}
+
+/**
+ * The lowest seat number that is free, from 1 up.
+ *
+ * The lowest rather than one past the highest: a game whose seat 2 was
+ * removed has a gap, and the next seat registered should fill it rather than
+ * leaving the numbering with a hole in it for the rest of the game.
+ *
+ * 0 is the administrator's and 1000 the observer's, and neither is ever
+ * offered: this counts from 1, and the field takes nothing above 999.
+ */
+function nextSeat(registered) {
+  const taken = new Set((registered || []).map(
+    (player) => Number(player.player)));
+  let number = 1;
+  while (taken.has(number) && number < 999) number += 1;
+  return number;
 }
 
 // --- the player's half
