@@ -35,6 +35,7 @@ export const state = {
   deployType: '',      // the type being deployed, kept across placements
   boardSize: { x: '', y: '' },   // a size typed and not yet sent
   seatNumber: '',      // a seat number typed over the one offered
+  newGameno: '',       // a game number typed over the one offered
   cursor: { x: 0, y: 0 },
   // which of the play screen's two panes is being shown where they do not
   // fit side by side. Held here rather than measured: the stylesheet is the

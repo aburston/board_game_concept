@@ -114,6 +114,43 @@ in place of them.
 - **THEN** the game is shown as theirs and the seat may be played
 - **AND** the administrator's own way into that game is offered as well
 
+### Requirement: A New Game Is Offered The Next Free Number
+
+The system SHALL offer, when a game is made, the lowest number no game in the
+lobby has, counting from 1, and SHALL offer it again as soon as a game has
+been made.
+
+It is the offer the setup screen makes for a seat, for the same reason: the
+number of the next game is one the lobby already knows, and typing it was a
+chance to collide with a game that exists — which is refused, after the form
+has been sent. The lowest free rather than one past the highest, so a number
+no game has any longer is offered again rather than left as a gap.
+
+What is offered SHALL be a suggestion and not a limit: a number typed over it
+SHALL be the number the game is made with, and SHALL be kept while the lobby
+is drawn again.
+
+#### Scenario: The first game
+
+- **WHEN** the lobby lists no games
+- **THEN** the number offered is 1
+
+#### Scenario: One game after another
+
+- **WHEN** a game is made
+- **THEN** the number offered is the next one free
+
+#### Scenario: A number the administrator chose instead
+
+- **WHEN** a number is typed over the one offered and the game is made
+- **THEN** the game has the number that was typed
+- **AND** the number offered next is again the lowest that is free
+
+#### Scenario: A number half-typed when the lobby is drawn again
+
+- **WHEN** a number is typed and the lobby is drawn again before it is sent
+- **THEN** the number is still as it was typed
+
 ### Requirement: A Seat Is Carried In The Address
 
 The system SHALL identify which seat the interface is playing by the address
