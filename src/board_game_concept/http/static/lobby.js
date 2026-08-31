@@ -24,9 +24,35 @@ export function renderLobby() {
   return wrap;
 }
 
+/**
+ * The lowest game number that is free, from 1 up.
+ *
+ * The same offer the setup screen makes for a seat, for the same reason: the
+ * number of the next game is one the lobby already knows, and typing it was a
+ * chance to collide with a game that exists - which the server refuses, after
+ * the form has been sent.
+ *
+ * The lowest free rather than one past the highest, so a number that has been
+ * given up is used again rather than left as a gap for ever. A game may be
+ * called anything the server accepts; this only decides what is offered, and
+ * a number typed over it is what gets created.
+ */
+function nextGameno(games) {
+  const taken = new Set((games || []).map((game) => String(game.gameno)));
+  let number = 1;
+  while (taken.has(String(number))) number += 1;
+  return number;
+}
+
 function renderCreate() {
   const card = element('div', { class: 'card' });
   const input = element('input', { type: 'text', placeholder: 'game number' });
+  // held in `state` like every other half-made choice: the lobby is redrawn
+  // whenever a game is listed again, and a number half-typed was lost to it
+  input.value = state.newGameno || String(nextGameno(state.games));
+  input.addEventListener('input', () => {
+    state.newGameno = input.value;
+  });
   const form = element('form', { class: 'row' });
   form.append(element('label', { class: 'grow' }, 'New game', input),
               element('p', {},
@@ -36,6 +62,9 @@ function renderCreate() {
     event.preventDefault();
     try {
       await api.createGame(input.value.trim());
+      // made, so the field goes back to offering the next free number
+      // rather than the one that has just been used
+      state.newGameno = '';
       await load();
     } catch (error) {
       say(error.message);

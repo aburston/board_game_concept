@@ -593,3 +593,19 @@ def test_a_new_seat_is_offered_the_next_free_number():
     assert 'state.seatNumber = number.input.value' in admin
     assert re.search(r'\(\) => \{ state\.seatNumber = \'\'; \}', admin), (
         'and the field returns to the next free number once one is taken')
+
+
+def test_a_new_game_is_offered_the_next_free_number():
+    """The same offer the setup screen makes for a seat."""
+    lobby = _module('lobby.js')
+    assert 'function nextGameno(games)' in lobby
+    assert re.search(r'let number = 1;\s*\n\s*while \(taken\.has\(String\(number\)\)\)',
+                     lobby)
+    create = lobby[lobby.index('function renderCreate'):
+                   lobby.index('function mySeats')]
+    assert 'String(nextGameno(state.games))' in create
+    # and a number typed over it survives the lobby being drawn again
+    assert "newGameno: ''" in _module('app.js')
+    assert 'state.newGameno = input.value' in create
+    assert "state.newGameno = '';" in create, (
+        'and the field returns to the next free number once one is made')
