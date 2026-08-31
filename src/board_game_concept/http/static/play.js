@@ -387,9 +387,11 @@ function renderBoardCard(game) {
   // a committed move leaves its unit standing where it was with its heading
   // cleared, so the arrow is put back from the orders the commit published
   const headings = committedHeadings(game);
+  // an order read back out of the published orders is one that cannot be
+  // changed, and the unit says so itself now that nothing under the board does
   const drawn = (game.units || []).map((unit) => (
     headings[unit.name]
-      ? { ...unit, direction: headings[unit.name] }
+      ? { ...unit, direction: headings[unit.name], committed: true }
       : unit)).concat(waiting);
 
   // who is mine is read off the feed's own names against this seat's units,
@@ -452,46 +454,19 @@ function renderBoardCard(game) {
       },
   }));
 
-  // the flag rows of the legend are the grid's way of naming a glyph it drew
-  // for a text board; this one draws flags itself and says so below, so
-  // repeating them here would name the same thing twice, differently
-  const symbols = (game.board.legend || []).filter(
-    (entry) => entry.type !== 'flag');
-  const legend = element('p', { class: 'small muted' });
-  for (const entry of symbols) {
-    legend.append(element('span', {},
-      `${entry.symbol} = ${entry.type} (player ${entry.player})`), '  ');
-  }
-  if (symbols.length) card.append(legend);
-  if (waiting.length) {
-    card.append(element('p', { class: 'small muted' },
-      `Your ${waiting.length === 1 ? 'unit is' : 'units are'} drawn where you `
-      + 'deployed them and are not on the board yet: a committed setup takes '
-      + 'the field when the first turn resolves.'));
-  }
-  if (Object.keys(headings).length) {
-    card.append(element('p', { class: 'small muted' },
-      'These are the orders you committed. They cannot be changed, and they '
-      + 'resolve when every seat has committed this turn.'));
-  }
-  const flags = (game.flags || []).filter((flag) => flag.standing);
-  if (flags.length) {
-    card.append(element('p', { class: 'small muted' },
-      element('span', { class: 'flag-key' }, '⚑'),
-      ' a flag: '
-      + flags.map((flag) => (flag.player === game.number
-        ? 'yours'
-        : `player ${flag.player}'s`)).join(', ')
-      + '. Every flag is shown to everybody; what carries it is not.'));
-  }
-  if (fought.size) {
-    card.append(element('p', { class: 'small muted' },
-      element('span', { class: 'clash-key' }, '⚔'),
-      ` ${fought.size === 1 ? 'the square' : 'the squares'} last turn was `
-      + 'fought on. The number is what it cost you, and ',
-      element('span', { class: 'clash-key' }, '☠'),
-      ' is where a unit fell.'));
-  }
+  // Nothing is written under the board. There were five paragraphs here - a
+  // legend of symbols, a flag key, a fight key, and notes about a committed
+  // setup and committed orders - and each of them explained a glyph that was
+  // drawn a few pixels above it. A key is read once and read past for the
+  // rest of the game, while holding the room the board should have had.
+  //
+  // What they said is said by the things themselves, where a hand and a
+  // reader both already are: a unit names its type and whose it is, a flag
+  // says whose it is and what its loss costs, a fought square says what was
+  // taken and who fell. Only explanation moved: every statistic, the flag's
+  // carrier, and what the turn did are still written out in the tray, the
+  // roster and the feed, and the waiting card - which is in neither pane -
+  // still says a committed setup takes the field with the first turn.
 
   // the controls that order a unit belong with the board they act on:
   // choosing a unit, ordering it and seeing the arrow drawn are one action,
@@ -499,10 +474,9 @@ function renderBoardCard(game) {
   if (!watching && !game.outcome && !isOut(game)) {
     const chosen = state.selected
       && standing(game).find((unit) => unit.name === state.selected);
-    card.append(chosen
-      ? renderDirections(game, standing(game))
-      : element('p', { class: 'small muted' },
-                'Choose one of your units to order it.'));
+    // and nothing at all where none is chosen: the prompt that used to fill
+    // this space said what each unit says of itself
+    if (chosen) card.append(renderDirections(game, standing(game)));
     // and the commit, beside the controls that gave the orders: the last
     // order and the act that publishes it are one thought, and the button
     // for it was a pane away - past the whole roster on a narrow screen.

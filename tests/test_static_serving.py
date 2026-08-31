@@ -232,7 +232,11 @@ def test_the_ordering_controls_are_in_the_board_pane():
     board_card = play[play.index('function renderBoardCard'):
                       play.index('function reachableFrom')]
     assert 'renderDirections(game' in board_card
-    assert 'Choose one of your units to order it.' in board_card
+    # and nothing where no unit is chosen: what the prompt that used to fill
+    # that space said is said by each unit, over the unit
+    assert 'Choose one of your units to order it.' not in board_card
+    assert re.search(r'if \(chosen\) card\.append\(renderDirections',
+                     board_card)
 
 
 def test_a_units_ring_shows_the_energy_it_has_left():
@@ -609,3 +613,66 @@ def test_a_new_game_is_offered_the_next_free_number():
     assert 'state.newGameno = input.value' in create
     assert "state.newGameno = '';" in create, (
         'and the field returns to the next free number once one is made')
+
+
+# --- the board's pane holds the board
+#
+# There were five paragraphs under it, each explaining a glyph drawn a few
+# pixels above, and the board itself was 44px a square whatever room it had.
+
+
+def test_the_board_is_drawn_at_the_size_of_its_pane():
+    sheet = _stylesheet()
+    board = re.search(r'\.board \{[^}]*\}', sheet).group(0)
+    assert 'width: 100%' in board
+    assert 'height: auto' in board
+    # bounded by the window, which is what runs out on a board with more rows
+    # than columns
+    assert re.search(r'max-height:\s*calc\(100vh', board)
+    # and the drawing still carries its own size, for anything with no layout
+    # to fill: the viewBox is what scales it, so a square stays square
+    assert re.search(r"viewBox: `0 0 \$\{width\} \$\{height\}`", _module('board.js'))
+
+
+def test_nothing_is_written_under_the_board():
+    play = _module('play.js')
+    board_card = play[play.index('function renderBoardCard'):
+                      play.index('function reachableFrom')]
+    for gone in ('= ${entry.type}',                     # the legend
+                 'Every flag is shown to everybody',    # the flag key
+                 'is where a unit fell',                # the fight key
+                 'are not on the board yet',            # the committed setup
+                 'These are the orders you committed'):  # the committed orders
+        assert gone not in board_card, gone
+    # what is left in the pane is the board, the compass and the commit
+    assert 'renderBoard(game.board' in board_card
+    assert 'renderCommit(game)' in board_card
+
+
+def test_a_unit_says_the_two_things_the_notes_said():
+    """Not on the field yet, and an order that has been committed."""
+    board, play = _module('board.js'), _module('play.js')
+    described = board[board.index('export function describeUnit'):]
+    assert 'if (unit.pending)' in described
+    assert 'not on the field yet' in described
+    assert 'unit.committed' in described
+    assert 'cannot be changed until the' in described
+    # marked where the committed headings are laid over the units, which is
+    # the one place that knows an order came from published orders
+    assert re.search(r'direction: headings\[unit\.name\], committed: true',
+                     play)
+
+
+def test_what_must_be_read_without_pointing_is_still_written_out():
+    """Only explanation moved: a hover is no use on a touchscreen."""
+    play = _module('play.js')
+    # the waiting card, which is in neither pane, still says a committed
+    # setup takes the field when the first turn resolves
+    waiting = play[play.index('function renderWaiting'):
+                   play.index('async function watch')]
+    assert 'Your army is published.' in waiting
+    assert 'Your setup is committed' in waiting
+    # and the tables and the feed are untouched
+    assert 'function rosterTable' in play and 'function typesTable' in play
+    assert 'function renderOrders' in play
+    assert 'function renderLastTurn' in play, 'the account of the turn'

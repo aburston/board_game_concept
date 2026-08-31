@@ -454,7 +454,18 @@ export function describeUnit(unit, own, left, hint) {
     `health ${unit.health}${full}`,
     `energy ${unit.energy}`,
   ];
-  if (unit.direction) said.push(`ordered ${unit.direction}`);
+  // the two things about a unit a player cannot read off the drawing, and
+  // which used to be paragraphs under the board
+  if (unit.pending) {
+    said.push('deployed here and not on the field yet: it takes the field '
+      + 'when the first turn resolves');
+  }
+  if (unit.direction) {
+    said.push(unit.committed
+      ? `ordered ${unit.direction}, committed: it cannot be changed until the `
+        + 'turn resolves'
+      : `ordered ${unit.direction}`);
+  }
   const sentence = said.join(', ');
   if (!own || !hint) return sentence;
   return `${sentence}. Click it or press Enter over it, then an arrow key `
