@@ -139,7 +139,19 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
 .meter { height: 0.5rem; background: var(--line); border-radius: 999px; overflow: hidden; }
 .meter > span { display: block; height: 100%; background: var(--mine); }
 
-.board { touch-action: manipulation; max-width: 100%; height: auto; }
+/* the board takes the width it is given rather than the width its squares
+   happen to add up to: a 6x6 board is 276px of a pane three times that, and
+   what a player reads the game from was the smallest thing on the screen.
+   The `viewBox` does the scaling, so a square stays square and every stroke
+   scales with it; the height is bounded by the window, which is the dimension
+   that runs out first on a board with more rows than columns */
+.board {
+  touch-action: manipulation;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 12rem);
+}
 .board .square { fill: var(--card); stroke: var(--line); stroke-width: 1; }
 .board .square.reachable { fill: var(--mine-soft); }
 /* a square this seat may not deploy in, while it is placing units: greyed and
