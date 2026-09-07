@@ -13,13 +13,14 @@ from board_game_concept.cli.backend import LocalSession, HttpSession
 from board_game_concept.storage.serialise import units_document
 from board_game_concept.storage.yaml_repository import dump_units
 from board_game_concept.cli import complete, roles
+from board_game_concept.cli.accounts import handle_account_command
 from board_game_concept.cli.show import perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (add_backend_argument,
                                             add_server_argument,
                                             describe_outcome, load_game,
-                                            make_session, read_command,
-                                            report)
+                                            make_accounts, make_session,
+                                            read_command, report)
 from board_game_concept.service.errors import GameError
 
 ROLE = roles.SERVER
@@ -66,6 +67,9 @@ def main(argv=None):
             print(line, file=sys.stderr)
         sys.exit(1)
 
+    # who this session is, asked of whatever it reached the game through
+    accounts = make_accounts(data, backend=args.backend)
+
     # completion for the setup prompt. The server owns no units and defines no
     # types, so what it gains is the grammar and the paths `load` wants
     complete.install(ROLE, complete.GameNames(data, player_number))
@@ -91,6 +95,11 @@ def main(argv=None):
         while new_game:
             command = read_command(PROGRAM, ROLE)
             if command is None:
+                continue
+
+            # signing in, signing out, who am I, and changing a password are
+            # the same four in every role, handled in one place
+            if handle_account_command(command, accounts):
                 continue
 
             if command.kind == 'help':

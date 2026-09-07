@@ -8,12 +8,13 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept.cli import complete, roles
+from board_game_concept.cli.accounts import handle_account_command
 from board_game_concept.cli.show import perform_show, show_units
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.render import print_dropped
 from board_game_concept.cli.session import (describe_outcome, load_game,
-                                            make_session, read_command,
-                                            report)
+                                            make_accounts, make_session,
+                                            read_command, report)
 from board_game_concept.service import identity
 from board_game_concept.service.errors import GameError
 
@@ -96,6 +97,10 @@ def main(argv=None):
             print(line, file=sys.stderr)
         sys.exit(1)
 
+    # who this session is, asked of whatever it reached the game through:
+    # the server it is talking to, or the account store beside the games
+    accounts = make_accounts(data)
+
     # let a person at a terminal complete what they are typing. The names come
     # from this game object, which is the same one the loop below reloads into,
     # so a unit deployed during the session completes without a reload
@@ -146,6 +151,11 @@ def main(argv=None):
 
             command = read_command(PROGRAM, ROLE)
             if command is None:
+                continue
+
+            # signing in, signing out, who am I, and changing a password are
+            # the same four in every role, handled in one place
+            if handle_account_command(command, accounts):
                 continue
 
             if command.kind == 'help':

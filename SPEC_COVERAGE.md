@@ -74,12 +74,29 @@ answer would fail it whether or not any assertion mentioned that field.
 | `identity-and-accounts` — Claiming A Seat (the observer's refusal) | `test_account_service.py`, for the refusal and for a stored row |
 | `web-interface` — A Person Finds And Joins A Game From A Lobby (who is offered a seat) | `test_web_flow.py` |
 | The client surface, run by the administrator for a seat it holds | `test_admin_client_over_http.py` |
+| `identity-and-accounts` — Every Command-Line Role Offers The Account Commands | `test_cli_account_commands.py`, which walks `login`, `whoami`, `passwd` and `logout` at each of the three prompts; `test_grammar.py` for what each role offers and allows |
+| `identity-and-accounts` — A Command-Line Role Captures A Forced Password Change | `test_cli_account_commands.py` at the prompt; `test_cli_credentials.py` for the handler, including declining it and a new password that is too short; `test_cli_startup_signin.py` for the change captured before a session is opened |
+| `identity-and-accounts` — A Command-Line Role Proves Itself With A Token | `test_cli_startup_signin.py`: a token used without asking, a sign-in where there is a terminal, the refusal where there is not, and a number the account may not act as |
+| `identity-and-accounts` — The Account Commands Answer The Same Under Every Access Method | `test_cli_accounts.py`, which runs one set of assertions against both the local and the served implementation; `test_accounts_every_access_method.py`, which changes a password at a command line with no server running and signs in over HTTP with it, and the other way round |
+| `identity-and-accounts` — A Password Typed At A Command Line Is Not Kept | `test_cli_credentials.py`: `getpass` rather than `input`, the history left alone, and no role taking a password as an argument; `test_cli_account_commands.py` for a role keeping no credential of its own between runs |
+| `identity-and-accounts` — The Local File Flow Needs No Account (the account commands still work) | `test_cli_accounts.py` for the store made on demand and not before; `test_cli_account_commands.py`, which signs in with no server anywhere |
 
 The rule is held at each tier that could break it:
 
 ```
 pytest tests/test_account_service.py tests/test_admin_plays.py \
        tests/test_admin_client_over_http.py tests/test_web_flow.py
+```
+
+What a command line may do about its own account is held the same way, and
+under both backends, because one backend choice drives the games and the
+accounts together:
+
+```
+pytest tests/test_cli_accounts.py tests/test_cli_credentials.py \
+       tests/test_cli_account_commands.py tests/test_cli_startup_signin.py \
+       tests/test_accounts_every_access_method.py
+BOARD_GAME_BACKEND=sqlite pytest tests/test_cli_accounts.py ...
 ```
 
 `test_admin_client_over_http.py` is pinned to the SQLite backend, as the other

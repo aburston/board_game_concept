@@ -283,6 +283,27 @@ administrator can set anybody's password without knowing it
 (`POST /accounts/<name>/password`); an account changes its own by giving the
 one it has now.
 
+**None of this needs a browser, or even a server.** `login` at the prompt of
+any role does the same thing, and against local storage it opens the account
+store beside the games — so the first password can be changed on a machine
+that has never run `bgcapiserver`:
+
+```
+$ bgcserver -g 1
+bgcserver> login admin
+password:
+signed in as admin (admin)
+signing in locally reads and changes an account; playing a local game needs
+no account
+admin must change its password before doing anything else
+new password:
+new password again:
+password changed
+```
+
+The password is typed at a prompt that does not echo it and never as a word on
+the command line, so it reaches no shell history and no process listing.
+
 ## Joining a game
 
 The administrator sets a game up as it always did — `set board`, then
@@ -343,22 +364,52 @@ not a way to play.
 
 ## Playing over HTTP from the command line
 
-A role talking to a server carries a token. Mint one with `POST /tokens` and
-give it to the role:
+A role talking to a server has to say who it is. Started at a terminal with no
+token, it asks:
 
 ```
 $ export BOARD_GAME_SERVER=http://127.0.0.1:45678
+$ bgcclient 1 2
+signing in to http://127.0.0.1:45678
+username: ada
+password:
+signed in as ada (player)
+bgcclient>
+```
+
+An account that must change its password is asked for a new one there, before
+the session is opened. A token skips the asking, which is what a script or a
+bot uses, since it keeps a password out of a shell history:
+
+```
 $ export BOARD_GAME_TOKEN=...        # or bgcclient --token ...
 $ bgcclient 1 2
 ```
 
-A role started against a server with no token says so and exits rather than
-opening a session it cannot act through. A token is also what a script or a
-bot uses, since it keeps a password out of a shell history.
+A role started against a server with **no token and nobody at the terminal** —
+a pipe, a script, `matches/` — says a token is needed and exits rather than
+opening a session it cannot act through.
 
 **Playing locally needs no account at all.** Without `BOARD_GAME_SERVER` the
 roles open the game directory themselves, and there is no server to prove
-anything to.
+anything to. The account commands still work there; they just are not needed
+to play.
+
+### The account commands
+
+Every role offers the same four, whatever else they differ on — who you are is
+not a thing one role may ask and another may not:
+
+| command | what it does |
+| --- | --- |
+| `login [<username>]` | sign in; the password is asked for at a prompt, never typed as an argument |
+| `logout` | end the token this session signed in for |
+| `whoami` | which account this session is signed in as, and its kind |
+| `passwd` | change the password of the account you are signed in as |
+
+A token lives in the process and nowhere else: a session signs in each run, or
+is given a token with `--token` or `$BOARD_GAME_TOKEN`. Nothing writes a
+credential to a file.
 
 ## What the observer sees
 

@@ -79,6 +79,10 @@ class Parser:
             'load': self._parse_load,
             'move': self._parse_move,
             'hold': self._parse_hold,
+            'login': self._parse_login,
+            'logout': self._parse_logout,
+            'whoami': self._parse_whoami,
+            'passwd': self._parse_change_password,
         }
 
     def parse(self):
@@ -222,6 +226,34 @@ class Parser:
         """`hold <unit>`: take back the order it was given this turn."""
         self._arity(1, 'must provide a unit name')
         return commands.Hold(unit=self.tokens.take())
+
+    def _parse_login(self):
+        """`login [<username>]`, and never a password.
+
+        The username may be typed here because it is not a secret. A password
+        is read at a prompt that does not echo it, and is refused here by name
+        so that somebody who tries is told why rather than told `invalid
+        command`.
+        """
+        if self.tokens.remaining() > 1:
+            raise ParseError(
+                'login takes a username and no password; the password is '
+                'asked for at a prompt',
+                self.tokens.position)
+        if self.tokens.at_end():
+            return commands.Login()
+        return commands.Login(username=self.tokens.take())
+
+    def _parse_logout(self):
+        return commands.Logout()
+
+    def _parse_whoami(self):
+        return commands.Whoami()
+
+    def _parse_change_password(self):
+        self._arity(0, 'passwd takes no arguments; the passwords are asked '
+                       'for at a prompt')
+        return commands.ChangePassword()
 
     # --- terminals
 

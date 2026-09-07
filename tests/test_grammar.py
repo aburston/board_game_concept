@@ -41,6 +41,10 @@ USAGE_LINES = [
     'hold <unit>',
     'commit',
     'reload',
+    'login [<username>]',
+    'logout',
+    'whoami',
+    'passwd',
     'help',
     'exit',
 ]
@@ -110,3 +114,42 @@ def test_a_slot_knows_what_it_stands_for():
 
     assert isinstance(unit, Slot) and unit.kind == UNIT
     assert isinstance(direction, Slot) and direction.kind == DIRECTION
+
+
+@pytest.mark.parametrize('role', [roles.SERVER, roles.CLIENT, roles.OBSERVER],
+                         ids=lambda role: role.name)
+@pytest.mark.parametrize('line, kind', [
+    ('login', 'login'),
+    ('login ada', 'login'),
+    ('logout', 'logout'),
+    ('whoami', 'whoami'),
+    ('passwd', 'passwd'),
+], ids=lambda value: value if isinstance(value, str) else value)
+def test_every_role_offers_the_account_commands(role, line, kind):
+    """Who you are is not a thing one role may ask and another may not."""
+    command = parse(line)
+
+    assert command.kind == kind
+    assert role.allows(command)
+    assert any(usage.kind == kind for usage in USAGES if role.offers(usage))
+
+
+def test_a_login_carries_no_password():
+    """A command gets written down; a password that did would be leaked."""
+    from board_game_concept.service.commands import (ChangePassword, Login,
+                                                     Logout, Whoami)
+
+    for node in (Login, Logout, Whoami, ChangePassword):
+        assert 'password' not in node.fields
+    assert parse('login ada').username == 'ada'
+    assert parse('login').username is None
+
+
+@pytest.mark.parametrize('line', ['login ada secret', 'passwd new-secret'])
+def test_a_password_typed_as_an_argument_is_refused_by_name(line):
+    from board_game_concept.cli.parser import ParseError
+
+    with pytest.raises(ParseError) as refused:
+        parse(line)
+
+    assert 'password' in refused.value.message

@@ -44,18 +44,24 @@ class Role:
         return INVALID_COMMAND
 
 
+# who you are is not a thing one role may ask and another may not: all three
+# offer the account commands, in the same words, whatever else they differ on
+ACCOUNT_COMMANDS = ('login', 'logout', 'whoami', 'passwd')
+
+
 SERVER = Role(
     'server',
-    kinds=('help', 'exit', 'commit', 'show',
-           'set_board', 'add_player', 'remove_player',
-           'load_board', 'load_player'),
+    kinds=ACCOUNT_COMMANDS + ('help', 'exit', 'commit', 'show',
+                              'set_board', 'add_player', 'remove_player',
+                              'load_board', 'load_player'),
     show_subjects=('board', 'types', 'units', 'players', 'pending',
                    'events', 'designs', 'flags', 'placement'))
 
 CLIENT = Role(
     'client',
-    kinds=('help', 'exit', 'commit', 'show', 'add_type', 'add_unit',
-           'remove_unit', 'set_flag', 'move', 'hold'),
+    kinds=ACCOUNT_COMMANDS + ('help', 'exit', 'commit', 'show', 'add_type',
+                              'add_unit', 'remove_unit', 'set_flag', 'move',
+                              'hold'),
     # `pending` is this player's own published orders and nobody else's - a
     # session holds only its own - and it is the only way to read back an
     # army that has been committed and not yet deployed. The browser shows
@@ -65,6 +71,6 @@ CLIENT = Role(
 
 OBSERVER = Role(
     'observer',
-    kinds=('help', 'exit', 'reload', 'show'),
+    kinds=ACCOUNT_COMMANDS + ('help', 'exit', 'reload', 'show'),
     show_subjects=('board', 'types', 'units', 'players', 'pending',
                    'events', 'designs', 'flags', 'placement'))

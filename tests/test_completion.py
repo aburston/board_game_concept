@@ -99,7 +99,11 @@ class TestTheRoleDecides:
         assert 'move' not in offered
         assert 'add' not in offered
         assert 'commit' not in offered
-        assert offered == ['exit', 'help', 'reload', 'show']
+        # the account commands change no game: the observer signs in and
+        # changes its own password like anybody else, and still writes
+        # nothing to the game it is watching
+        assert offered == ['exit', 'help', 'login', 'logout', 'passwd',
+                           'reload', 'show', 'whoami']
 
     def test_a_show_subject_a_role_does_not_have_is_not_offered(self):
         assert 'events' in candidates('show ', roles.CLIENT)
