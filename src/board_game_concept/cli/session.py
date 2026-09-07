@@ -12,7 +12,7 @@ import sys
 
 from .. import YamlGameRepository
 from ..service import commands
-from ..service.errors import GameDataError, GameError
+from ..service.errors import AccountError, GameDataError, GameError
 from ..storage.sqlite_repository import SqliteGameRepository
 from .backend import HttpSession, LocalSession
 from .parser import ParseError, parse
@@ -160,22 +160,49 @@ def add_server_argument(parser):
 
 
 def _http_session(url, gameno, player_number, token):
-    """An HTTP session, or a refusal saying a token is needed.
+    """An HTTP session, signed in for if it was not given a token.
 
-    A server knows who is asking, so a role talking to one has to say. The
-    refusal happens here rather than at the first request, so that a role
-    without a credential never opens a session at all and never prints a
-    prompt it cannot act on.
+    A server knows who is asking, so a role talking to one has to say. A token
+    named on the command line or taken from the environment says it without
+    asking anybody anything, which is what anything unattended uses. Where
+    there is no token and there is a person at the terminal, they are asked -
+    and where there is no token and nobody to ask, this refuses before a
+    session is opened, so a role without a credential never prints a prompt it
+    cannot act on.
 
     The local flow does not come through here and needs none of this: there
     is no server to prove anything to.
     """
-    token = token or default_token()
-    if not token:
+    token = token or default_token() or _signed_in_token(url)
+    return HttpSession(url, gameno, player_number, token=token)
+
+
+def _signed_in_token(url):
+    """A token from signing in at the prompt, or a refusal.
+
+    The refusal is the one this has always given, and it is still what a role
+    with no terminal gets - a pipe, a script, one of the bots in `matches/`.
+    Nothing that runs unattended is changed by any of this.
+    """
+    # imported here rather than at the top: the account store reaches back
+    # into this module, and a module-level import would be a cycle
+    import requests
+
+    from .accounts import HttpAccounts, at_a_terminal, sign_in_at_prompt
+
+    if not at_a_terminal():
         raise GameError(
             f'a token is needed to talk to the server at {url}: '
             f'name one with --token or ${TOKEN_ENV}')
-    return HttpSession(url, gameno, player_number, token=token)
+    print(f'signing in to {url}')
+    try:
+        # `strict`: there is no session yet for a gated account to be refused
+        # by, so an account that must change its password and will not is the
+        # end of it rather than something to carry on past
+        return sign_in_at_prompt(HttpAccounts(url), strict=True).token
+    except requests.RequestException as error:
+        raise GameError(
+            f'the server at {url} could not be reached: {error}') from error
 
 
 def make_session(gameno, player_number, server=None, backend=None,
@@ -219,16 +246,44 @@ def make_session(gameno, player_number, server=None, backend=None,
         player_number)
 
 
+def make_accounts(session, backend=None, base_path=None):
+    """Where this session asks about its own account.
+
+    The access method of the game decides the access method of the account:
+    a session reaching a server signs in at that server, and a session
+    opening a game directory signs in against the account store beside it.
+    One decision, made once, so the two can never disagree - which is what
+    keeps a password the same password however it was reached.
+    """
+    # imported here rather than at the top: the account store reaches back
+    # into this module for `default_base_path`, and a module-level import
+    # either way round would be a cycle
+    from .accounts import HttpAccounts, LocalAccounts
+
+    if isinstance(session, HttpSession):
+        return HttpAccounts(session.base_url, on_token=session.use_token,
+                            token=session.token)
+    return LocalAccounts(backend=backend, base_path=base_path)
+
+
 def load_game(data):
     """Read the game, or report why it cannot be read and stop.
 
     A session that cannot open its game has nothing to offer, so this is the
     one place a role still exits. The service layer raises; only here does
     anything die of it.
+
+    A refusal about the account is reported the same way. It used to reach
+    nobody: `AccountError` is not a `GameDataError`, so a role holding a token
+    for a seat its account may not act as, or for an account that must change
+    its password, died of an unhandled exception instead of saying which. It
+    is as fatal as an unreadable game and for the same reason - the session
+    cannot be somebody else - so it is reported and exits rather than
+    traced back.
     """
     try:
         data.load()
-    except GameDataError as error:
+    except (GameDataError, AccountError) as error:
         for line in error.lines():
             print(line, file=sys.stderr)
         sys.exit(1)
@@ -304,8 +359,8 @@ def report(error):
 
 __all__ = ['COMPILED_DEFAULT_BACKEND', 'GameError', 'add_backend_argument',
            'add_server_argument', 'default_backend', 'default_server',
-           'describe_outcome', 'load_game', 'make_repository',
-           'make_session', 'read_command', 'report']
+           'describe_outcome', 'load_game', 'make_accounts',
+           'make_repository', 'make_session', 'read_command', 'report']
 
 
 def describe_outcome(outcome):

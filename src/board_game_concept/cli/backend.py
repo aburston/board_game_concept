@@ -28,7 +28,8 @@ from ..http import views as views_module
 from ..service import games, identity
 from ..service.commands import SetNewGame, as_record
 from ..service.errors import (GameError, NoSuchGame, NoSuchPlayer,
-                              UnreadableGame)
+                              NotAuthenticated, NotAuthorised,
+                              PasswordMustChange, UnreadableGame)
 from ..storage.lock import GameIsBusy
 
 
@@ -246,6 +247,31 @@ class HttpSession(Session):
         self._state = None
         self._board = None
         self._players = None
+
+    @property
+    def token(self):
+        """The token this session proves itself with, or None.
+
+        Read back off the header rather than kept beside it, so that what a
+        caller is told this session carries is what it actually sends.
+        """
+        header = self._session.headers.get('Authorization', '')
+        if not header.startswith('Bearer '):
+            return None
+        return header[len('Bearer '):] or None
+
+    def use_token(self, token):
+        """Send this token from now on, or none at all.
+
+        Signing in at the prompt happens after the session was opened, so the
+        credential every request carries has to be replaceable. One header,
+        set in one place, for the same reason it was set in one place at
+        construction.
+        """
+        if token:
+            self._session.headers['Authorization'] = f'Bearer {token}'
+        else:
+            self._session.headers.pop('Authorization', None)
 
     def load(self):
         # a fresh screen: throw the cached snapshot away and refetch
@@ -465,7 +491,18 @@ def _raise_for(response):
         body = response.json()
         message = body.get('error', response.text)
     except ValueError:
+        body = {}
         message = response.text
+    # a refusal about who is asking, read back as the error a local refusal
+    # would have been raised as. `http/auth.py:error_response` chose the
+    # status; this is the same mapping in the other direction, and it is what
+    # lets a role report "you may not act as that" rather than die of it
+    if response.status_code == 401:
+        raise NotAuthenticated(message)
+    if response.status_code == 403:
+        if body.get('must_change_password'):
+            raise PasswordMustChange(message)
+        raise NotAuthorised(message)
     if response.status_code in (404,):
         # the wire does not distinguish "no game" from "no player" strongly
         # enough to hand the caller different exceptions; the message names

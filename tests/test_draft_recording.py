@@ -17,8 +17,11 @@ from board_game_concept.service.errors import GameError
 from game_harness import GameHarness
 
 # the productions that are the session itself rather than something done to a
-# game: they end it, explain it, read it, or turn the crank
-SESSION_KINDS = {'help', 'exit', 'reload', 'commit', 'show'}
+# game: they end it, explain it, read it, or turn the crank. The account
+# commands are here for the same reason - they say who is asking, change no
+# game, and must never be written into a draft, since a draft is replayed
+SESSION_KINDS = {'help', 'exit', 'reload', 'commit', 'show',
+                 'login', 'logout', 'whoami', 'passwd'}
 
 SLOT_WORDS = {
     'unit': 'x1', 'type': 'Cross', 'path': 'players/1.yaml',
@@ -56,6 +59,12 @@ def test_every_write_production_is_something_the_service_layer_carries_out(usage
 
 def test_reading_a_game_is_not_something_to_carry_out():
     for line in ('show units', 'help', 'exit', 'commit', 'reload'):
+        assert not games.carries_out(parse(line))
+
+
+def test_an_account_command_is_not_something_to_carry_out():
+    """Signing in changes no game, and a draft that held one would replay it."""
+    for line in ('login', 'login ada', 'logout', 'whoami', 'passwd'):
         assert not games.carries_out(parse(line))
 
 

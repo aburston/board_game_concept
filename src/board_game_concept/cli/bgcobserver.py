@@ -9,6 +9,7 @@ if __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from board_game_concept.cli import complete, roles
+from board_game_concept.cli.accounts import handle_account_command
 from board_game_concept.service import identity
 from board_game_concept.service.errors import GameError
 from board_game_concept.cli.show import perform_show
@@ -16,7 +17,8 @@ from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (add_backend_argument,
                                             add_server_argument,
                                             describe_outcome, load_game,
-                                            make_session, read_command)
+                                            make_accounts, make_session,
+                                            read_command)
 
 ROLE = roles.OBSERVER
 
@@ -60,6 +62,9 @@ def main(argv=None):
             print(line, file=sys.stderr)
         sys.exit(1)
 
+    # who this session is, asked of whatever it reached the game through
+    accounts = make_accounts(data, backend=args.backend)
+
     # the observer completes what it may run, which is the reading half of the
     # grammar; `roles.OBSERVER` is what decides that, here as everywhere else
     complete.install(ROLE, complete.GameNames(data, player_number))
@@ -81,6 +86,11 @@ def main(argv=None):
             # that writes
             command = read_command(PROGRAM, ROLE)
             if command is None:
+                continue
+
+            # signing in, signing out, who am I, and changing a password are
+            # the same four in every role, handled in one place
+            if handle_account_command(command, accounts):
                 continue
 
             if command.kind == 'help':

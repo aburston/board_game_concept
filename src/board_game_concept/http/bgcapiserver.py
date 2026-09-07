@@ -74,6 +74,9 @@ def _announce(app, base_path, host, port):
         print('  sign in as admin / admin, or observer / observer - '
               'each must change its password before it can do anything',
               file=sys.stderr)
+        print('  change it here in a browser, or with `login` at the prompt '
+              'of any of bgcserver, bgcclient and bgcobserver',
+              file=sys.stderr)
     print(file=sys.stderr)
 
 

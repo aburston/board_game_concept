@@ -152,6 +152,40 @@ class Hold(Node):
     fields = ('unit',)
 
 
+class Login(Node):
+    """Sign in, so that whoever is asking has said who they are.
+
+    The username is optional because it can be typed at the prompt instead,
+    and there is deliberately no field for a password: a command is a thing
+    that gets written down - into a history file, into a draft - and a
+    password that got written down would be a password leaked.
+    """
+
+    kind = 'login'
+    fields = ('username',)
+
+    def __init__(self, **values):
+        values.setdefault('username', None)
+        super().__init__(**values)
+
+
+class Logout(Node):
+    kind = 'logout'
+
+
+class Whoami(Node):
+    kind = 'whoami'
+
+
+class ChangePassword(Node):
+    """Change the password of the account this session is signed in as.
+
+    Carries nothing, for the reason `Login` carries no password.
+    """
+
+    kind = 'passwd'
+
+
 class SetNewGame(Node):
     """The setter that marks setup done. Only the administrator sends this,
     and only over the HTTP tier - the local flow calls `data.setNewGame`
