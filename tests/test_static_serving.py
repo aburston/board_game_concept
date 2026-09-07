@@ -235,8 +235,8 @@ def test_the_ordering_controls_are_in_the_board_pane():
     # and nothing where no unit is chosen: what the prompt that used to fill
     # that space said is said by each unit, over the unit
     assert 'Choose one of your units to order it.' not in board_card
-    assert re.search(r'if \(chosen\) card\.append\(renderDirections',
-                     board_card)
+    assert re.search(r'if \(selected\.length\) '
+                     r'card\.append\(renderDirections', board_card)
 
 
 def test_a_units_ring_shows_the_energy_it_has_left():
@@ -277,7 +277,9 @@ def test_the_five_orders_are_laid_out_as_a_compass():
     # cannot see an arrow
     assert 'at.north' in play and 'at.south' in play
     assert 'at.west' in play and 'at.east' in play
-    assert "'aria-label': `move ${direction.word}`" in play
+    assert '`move ${direction.word}`' in play
+    assert "'aria-label': said" in play, (
+        'each heading still has to be named for a reader that cannot see it')
     assert re.search(r'\.compass\s*\{[^}]*grid-template-columns', sheet)
     assert '.compass .point.hold' in sheet
 
@@ -298,7 +300,8 @@ def test_the_deploy_board_greys_where_a_seat_may_not_place():
     assert 'placement' in armoury and 'placeable' in armoury
     # the squares outside those rows are greyed and take no click
     assert 'out-of-play' in board
-    assert re.search(r'settings\.onSquare && !isOutOfPlay', board)
+    assert re.search(r'\(settings\.onSquare \|\| settings\.onSquareDouble\)'
+                     r'\s*&& !isOutOfPlay', board)
     assert '.square.out-of-play' in _stylesheet()
 
 
@@ -477,7 +480,12 @@ def test_dragging_is_offered_only_where_the_action_behind_it_is():
     play = _module('play.js')
     board_card = play[play.index('function renderBoardCard'):
                       play.index('function reachableFrom')]
-    assert re.search(r'onDrop: watching \|\| game\.outcome', board_card)
+    # the guard is asked once and shared with the selection box, so the two
+    # gestures cannot come apart
+    assert re.search(r'const ordering = !watching && !game\.outcome\s*'
+                     r'&& !isOut\(game\)\s*&& !game\.unprocessed_moves;',
+                     board_card)
+    assert re.search(r'onDrop: !ordering', board_card)
     assert 'game.unprocessed_moves' in board_card
     # and board.js draws the handles on this seat's own units only
     assert 'settings.onDrop && own' in _module('board.js')
@@ -630,8 +638,15 @@ def test_the_board_is_drawn_at_the_size_of_its_pane():
     # than columns
     assert re.search(r'max-height:\s*calc\(100vh', board)
     # and the drawing still carries its own size, for anything with no layout
-    # to fill: the viewBox is what scales it, so a square stays square
-    assert re.search(r"viewBox: `0 0 \$\{width\} \$\{height\}`", _module('board.js'))
+    # to fill: the viewBox is what scales it, so a square stays square. The
+    # grab margin a box is anchored in is part of both, so the two stay in
+    # proportion and a square is still square
+    board_js = _module('board.js')
+    assert re.search(r"viewBox: `\$\{-grab\} \$\{-grab\} "
+                     r"\$\{width \+ grab \* 2\} \$\{height \+ grab \* 2\}`",
+                     board_js)
+    assert re.search(r"width: width \+ grab \* 2,\s*height: height \+ grab \* 2,",
+                     board_js)
 
 
 def test_nothing_is_written_under_the_board():

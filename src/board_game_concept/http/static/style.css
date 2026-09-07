@@ -165,11 +165,38 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
 .board .cursor { fill: none; stroke: var(--focus); stroke-width: 3; }
 .board .selected { fill: none; stroke: var(--mine); stroke-width: 3; stroke-dasharray: 4 3; }
 
+/* the box being drawn round a group. Dashed and faint: it is a gesture in
+   progress rather than a thing on the board, and it is gone the moment the
+   pointer comes up. `--focus` rather than `--mine`, so it is not mistaken for
+   the outline the units it catches are about to be given - and `--focus` is
+   defined in both colour schemes, so it reads on either.
+   `pointer-events: none` because it is drawn over the squares it is taking
+   and would otherwise swallow the release that ends the gesture */
+.board .selection-box {
+  fill: var(--focus);
+  fill-opacity: 0.12;
+  stroke: var(--focus);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
 /* a unit moves by a change of transform; the transition is the animation */
 .board .unit { transition: transform 320ms ease; }
 @media (prefers-reduced-motion: reduce) {
   .board .unit { transition: none; }
 }
+
+/* a board a box can be drawn on. `pan-x pan-y` leaves one-finger panning to
+   the browser - a board fills a phone's screen, and a player who could not
+   scroll past it would be stranded - while taking pinch-zoom away from it, so
+   that two fingers on the board are a gesture this page can have. It costs
+   pinch-to-zoom over the board, which still works over the rest of the page,
+   and it is the price of having any two-finger gesture at all. Double-tap
+   zoom goes with it, which is wanted: a double-tap is an order.
+   Only where the box is offered: the deploy board has no such gesture, and
+   taking pinch-zoom from it would be a loss that bought nothing */
+.board.boxable { touch-action: pan-x pan-y; }
 
 /* a unit that can be picked up and put down. `touch-action: none` is on the
    unit rather than the whole board on purpose: a finger dragging a piece must

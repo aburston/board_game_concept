@@ -25,7 +25,12 @@ export const state = {
   games: [],
   game: null,          // the seat's own view: board, units, types, state
   previous: null,      // the board as it was last turn, for what changed
-  selected: null,      // the name of the unit being ordered
+  // the names of the units being ordered, held in unit-name order so that
+  // what is sent to the server, and the order refusals are reported in, is a
+  // function of the game rather than of the order somebody clicked things.
+  // Empty is nothing selected; one name is the single unit that used to be
+  // held here, which is now simply the case where the set has one member
+  selected: [],
   // what is half-typed in the armoury. In `state` rather than in the DOM
   // because `render` replaces the whole screen: a refusal redraws, and a
   // form rebuilt from nothing would throw away the design somebody was in

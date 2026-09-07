@@ -376,13 +376,34 @@ function standing(game) {
     (unit) => unit.x !== null && unit.y !== null && unit.state !== 'destroyed');
 }
 
+/**
+ * The units currently selected, in unit-name order.
+ *
+ * Read against `standing` rather than against the names alone, so a unit that
+ * was destroyed by the turn that just resolved falls out of the selection by
+ * itself: there is no bookkeeping to forget, because the selection is
+ * recomputed from the board every time the screen is drawn.
+ *
+ * The order is the game's rather than the order somebody happened to click
+ * things in, which is what makes a group order the same order every time.
+ */
+function selectedUnits(game) {
+  const chosen = new Set(state.selected);
+  return standing(game).filter((unit) => chosen.has(unit.name))
+    .sort((one, other) => one.name.localeCompare(other.name));
+}
+
 // --- the board
 
 function renderBoardCard(game) {
   const card = element('div', { class: 'card' });
   const watching = game.number === 1000;
-  const selected = state.selected
-    && standing(game).find((unit) => unit.name === state.selected);
+  const selected = selectedUnits(game);
+  // whether this seat may give an order at all. It is one question - and the
+  // box, the drag and the double-click all have to answer it the same way,
+  // so it is asked once here rather than three times below
+  const ordering = !watching && !game.outcome && !isOut(game)
+    && !game.unprocessed_moves;
   const waiting = committedArmy(game);
   // a committed move leaves its unit standing where it was with its heading
   // cleared, so the arrow is put back from the orders the commit published
@@ -404,7 +425,10 @@ function renderBoardCard(game) {
     mine: game.number,
     selected: state.selected,
     cursor: watching ? null : state.cursor,
-    reachable: selected ? reachableFrom(game, selected) : null,
+    // the squares a move could reach, drawn only where one unit is chosen:
+    // for a group they are every neighbour of every unit, which is most of
+    // the board and says nothing
+    reachable: selected.length === 1 ? reachableFrom(game, selected[0]) : null,
     marks: fought,
     flags: game.flags || [],
     watching,
@@ -426,27 +450,98 @@ function renderBoardCard(game) {
                         full: Number(design.energy) }
                     : null;
     },
-    onUnit: watching ? null : (unit) => {
-      set({ selected: unit.name, cursor: { x: unit.x, y: unit.y } });
+    // shift edits the selection a unit at a time, and a plain click narrows
+    // it to the one under the pointer. Shift on anything that is not one of
+    // this seat's own standing units never reaches here at all - the board
+    // only offers `onUnit` for a unit that is yours
+    onUnit: watching ? null : (unit, event) => {
+      const cursor = { x: unit.x, y: unit.y };
+      if (!event || !event.shiftKey) {
+        return set({ selected: [unit.name], cursor });
+      }
+      const held = state.selected.includes(unit.name);
+      const selection = held
+        ? state.selected.filter((name) => name !== unit.name)
+        : state.selected.concat([unit.name]).sort();
+      set({ selected: selection, cursor });
+      return say(held ? `${unit.name} taken out of the selection.`
+                      : `${unit.name} added — ${selection.length} selected.`);
     },
-    onSquare: watching ? null : (x, y) => {
-      if (!selected) return set({ cursor: { x, y } });
-      const direction = api.DIRECTIONS.find(
-        (option) => selected.x + option.dx === x && selected.y + option.dy === y);
-      if (direction) return order(game, selected, direction);
-      return set({ cursor: { x, y } });
+    // a single click looks, and never orders. It used to be the order itself,
+    // so a player who clicked a square to see what was on it had moved a unit
+    // into it.
+    //
+    // Clicking anywhere that is not one of your own units puts the selection
+    // down - an empty square or an enemy alike, which is one rule rather than
+    // two. This is only safe because a single click is held to see whether a
+    // second is coming: the first click of a double-click never runs, so
+    // clearing here cannot take away the group the second click is about to
+    // order
+    onSquare: watching ? null : (x, y) => set({ selected: [], cursor: { x, y } }),
+    // and the double-click is the order. It says a direction, not a
+    // destination: a double-click anywhere orders every selected unit one
+    // square towards it. A unit moves one square a turn, so a square further
+    // off is not a longer move - it is the same move, pointed at. Naming the
+    // square next to a unit and nothing else made the gesture unusable the
+    // moment anything stood on that square
+    onSquareDouble: !ordering ? null : (x, y) => {
+      if (!selected.length) return set({ cursor: { x, y } });
+      const direction = directionForGroup(selected, x, y);
+      if (!direction) {
+        set({ cursor: { x, y } });
+        return say(selected.length > 1
+          ? 'That is the middle of the group — double-click to one side of '
+            + 'it to say which way to go.'
+          : 'That is where it already stands — double-click to one side of '
+            + 'it to say which way to go.');
+      }
+      return orderGroup(game, selected, direction);
+    },
+    // a double-click acts on what is selected, never on what happens to lie
+    // under the pointer. Double-clicking one of your own units with a group
+    // chosen says "go that way" - a player ordering a move onto another unit
+    // is pointing at that unit, and a gesture that acted on the unit under
+    // the pointer instead could not give the most ordinary order there is
+    onUnitDouble: !ordering ? null : (unit) => {
+      if (!selected.length) return holdGroup(game, [unit]);
+      const direction = directionForGroup(selected, unit.x, unit.y);
+      // no direction is the centre of the selection - which, where one unit
+      // is selected, is that unit itself. The thing double-clicked twice is
+      // the thing undone
+      if (!direction) return holdGroup(game, selected);
+      return orderGroup(game, selected, direction);
     },
     // dragging a unit onto the square next to it is the order it is: a move
     // is one square, so a drop further off is not a longer move, it is a
     // drop that means nothing - and saying so is better than a unit that
     // slides back with no explanation
-    onDrop: watching || game.outcome || isOut(game) || game.unprocessed_moves
+    // a box drawn across the board takes every one of this seat's units
+    // inside it, and nothing else: an enemy is not something this seat can
+    // order, so catching one would be a selection that cannot be used
+    onBox: !ordering ? null : (fromX, fromY, toX, toY) => {
+      const left = Math.min(fromX, toX);
+      const right = Math.max(fromX, toX);
+      const top = Math.min(fromY, toY);
+      const bottom = Math.max(fromY, toY);
+      const caught = standing(game).filter(
+        (unit) => unit.x >= left && unit.x <= right
+          && unit.y >= top && unit.y <= bottom);
+      // in name order, so a group gives its orders in the game's order
+      // rather than in the order the box happened to sweep them up
+      const names = caught.map((unit) => unit.name).sort();
+      set({ selected: names });
+      say(names.length
+        ? `${names.length} unit${names.length === 1 ? '' : 's'} selected: `
+          + `${names.join(', ')}.`
+        : 'Nothing of yours was in the box.');
+    },
+    onDrop: !ordering
       ? null
       : (unit, x, y) => {
         const direction = api.DIRECTIONS.find(
           (option) => unit.x + option.dx === x && unit.y + option.dy === y);
         if (!direction) {
-          set({ selected: unit.name, cursor: { x: unit.x, y: unit.y } });
+          set({ selected: [unit.name], cursor: { x: unit.x, y: unit.y } });
           return say(`${unit.name} moves one square at a time — drop it on a `
             + 'square beside the one it stands on.');
         }
@@ -472,11 +567,9 @@ function renderBoardCard(game) {
   // choosing a unit, ordering it and seeing the arrow drawn are one action,
   // and they used to be a card's width apart
   if (!watching && !game.outcome && !isOut(game)) {
-    const chosen = state.selected
-      && standing(game).find((unit) => unit.name === state.selected);
     // and nothing at all where none is chosen: the prompt that used to fill
     // this space said what each unit says of itself
-    if (chosen) card.append(renderDirections(game, standing(game)));
+    if (selected.length) card.append(renderDirections(game, selected));
     // and the commit, beside the controls that gave the orders: the last
     // order and the act that publishes it are one thought, and the button
     // for it was a pane away - past the whole roster on a narrow screen.
@@ -494,15 +587,78 @@ function reachableFrom(game, unit) {
       && square.x < game.board.size_x && square.y < game.board.size_y);
 }
 
-async function order(game, unit, direction) {
-  try {
-    await api.perform(game.gameno, game.number,
-                      api.move(unit.name, direction.value));
-    await loadSeat(game.gameno, game.number);
-    set({ selected: null });
-  } catch (error) {
-    say(error.message);
+/**
+ * Which way a double-click at (x, y) is pushing a group.
+ *
+ * The direction is read from where the square lies relative to the centre of
+ * the selection - the mean of the units' squares, which is the centre an eye
+ * estimates - rather than relative to any one unit. Whichever of the two
+ * distances is the greater decides the axis, and `>=` sends the diagonal
+ * east or west, so the same double-click always gives the same order. A
+ * double-click on the centre itself is not pushing anywhere, and says so by
+ * answering with nothing.
+ */
+function directionForGroup(units, x, y) {
+  if (!units.length) return null;
+  const centre = {
+    x: units.reduce((sum, unit) => sum + unit.x, 0) / units.length,
+    y: units.reduce((sum, unit) => sum + unit.y, 0) / units.length,
+  };
+  const dx = x - centre.x;
+  const dy = y - centre.y;
+  if (dx === 0 && dy === 0) return null;
+  const word = Math.abs(dx) >= Math.abs(dy)
+    ? (dx >= 0 ? 'east' : 'west')
+    : (dy >= 0 ? 'south' : 'north');
+  return api.directionByWord(word);
+}
+
+/**
+ * Order every unit in a group to move the same way.
+ *
+ * A group order is not a new kind of order: it is a move for each unit, one
+ * square, at that unit's own cost, sent through the same contract as any
+ * other. They go in unit-name order and one at a time - the seat's draft is
+ * written per command on the server, and the order they arrive in should be
+ * the game's rather than whatever a handful of concurrent requests settle on.
+ *
+ * The seat is re-read once at the end rather than after each. Re-reading per
+ * unit would redraw the board once per unit and make an eight-unit order look
+ * like a stutter.
+ *
+ * Where the rules refuse some of them, the rest still stand: the refusals are
+ * named, and a unit that was refused is left exactly as it was. Nothing here
+ * is final - every order can be taken back until the turn is committed.
+ */
+async function orderGroup(game, units, direction) {
+  if (!units.length) return;
+  const refused = [];
+  for (const unit of units) {
+    try {
+      await api.perform(game.gameno, game.number,
+                        api.move(unit.name, direction.value));
+    } catch (error) {
+      refused.push(`${unit.name} (${error.message})`);
+    }
   }
+  await loadSeat(game.gameno, game.number);
+  // and the selection is cleared, group or not. It is what ordering a single
+  // unit has always done, and the arrow keys depend on it: a selection that
+  // survived its own order would go on being ordered by every arrow key, and
+  // the cursor could never be moved again
+  set({ selected: [] });
+  if (refused.length === units.length) {
+    say(`Not ordered: ${refused.join('; ')}.`);
+  } else if (refused.length) {
+    say(`${units.length - refused.length} ordered ${direction.word}. `
+      + `Not ordered: ${refused.join('; ')}.`);
+  } else if (units.length > 1) {
+    say(`${units.length} units ordered ${direction.word}.`);
+  }
+}
+
+async function order(game, unit, direction) {
+  return orderGroup(game, [unit], direction);
 }
 
 /**
@@ -513,15 +669,42 @@ async function order(game, unit, direction) {
  * happen. Nothing is final until the turn is committed, so this puts the unit
  * back to having no order at all - which is holding, and rests it.
  */
-async function clearOrder(game, unit) {
-  try {
-    await api.perform(game.gameno, game.number, api.hold(unit.name));
-    await loadSeat(game.gameno, game.number);
-    say(`${unit.name} holds.`);
-  } catch (error) {
-    say(error.message);
+/**
+ * Take back the orders a group was given, and leave every one of them holding.
+ *
+ * The same shape as `orderGroup`, and for the same reasons: one command per
+ * unit, in name order, one re-read at the end, refusals named.
+ *
+ * Every unit given is sent, whether or not it had an order. Holding is a
+ * choice a player makes - a unit given no order recovers a point - so the
+ * compass's centre means "stay where you are" as much as it means "take that
+ * back", and a unit that was already holding is simply told so again.
+ */
+async function holdGroup(game, units) {
+  const ordered = units;
+  if (!ordered.length) return;
+  const refused = [];
+  for (const unit of ordered) {
+    try {
+      await api.perform(game.gameno, game.number, api.hold(unit.name));
+    } catch (error) {
+      refused.push(`${unit.name} (${error.message})`);
+    }
   }
+  await loadSeat(game.gameno, game.number);
   set({});
+  const held = ordered.length - refused.length;
+  if (refused.length) {
+    say(`Not taken back: ${refused.join('; ')}.`);
+  } else if (held === 1) {
+    say(`${ordered[0].name} holds.`);
+  } else if (held) {
+    say(`${held} units hold.`);
+  }
+}
+
+async function clearOrder(game, unit) {
+  return holdGroup(game, [unit]);
 }
 
 // --- the orders tray
@@ -564,17 +747,22 @@ function renderOrders(game) {
     const row = element('tr', {
       class: [ordered ? '' : 'rest',
               ordered && !affordable ? 'unaffordable' : '',
-              unit.name === state.selected ? 'chosen' : ''].join(' ').trim(),
+              state.selected.includes(unit.name) ? 'chosen' : '']
+        .join(' ').trim(),
       tabindex: '0',
       role: 'button',
-      'aria-pressed': unit.name === state.selected ? 'true' : 'false',
+      'aria-pressed': state.selected.includes(unit.name) ? 'true' : 'false',
       title: `choose ${unit.name}`,
     });
     // the row selects the unit as well as the board does. On a phone a
     // square is about 32px and a finger is 44, so the tray is the reliable
     // way to choose - and it is where somebody is already reading
     const choose = () => set({
-      selected: state.selected === unit.name ? null : unit.name,
+      // the row selects this unit alone, clearing any group, and clicking
+      // the row of a unit that is the whole selection clears it, as it did
+      // when the selection could only ever be one unit
+      selected: state.selected.length === 1 && state.selected[0] === unit.name
+        ? [] : [unit.name],
       cursor: { x: unit.x, y: unit.y },
     });
     row.addEventListener('click', choose);
@@ -697,28 +885,50 @@ function energy(game, unit) {
  * given a moment ago.
  */
 function renderDirections(game, units) {
-  const unit = units.find((each) => each.name === state.selected);
-  if (!unit) return element('span', {});
+  if (!units.length) return element('span', {});
+  const unit = units[0];
+  const group = units.length > 1;
+  // whether the centre takes something back: for a group, whether any of them
+  // has an order at all
+  const ordered = units.some((each) => each.direction);
   const wrap = element('div', { class: 'compass-wrap' });
+  // a group is named by its size rather than by listing it: the units it
+  // holds are outlined on the board a few pixels above, and a line of eight
+  // names would push the compass off a phone's screen. The count is what a
+  // reader who cannot see the outlines needs - it says what a heading here
+  // is about to order
   wrap.append(element('p', { class: 'small' },
-    element('strong', {}, unit.name),
-    unit.direction ? ` — ordered ${unit.direction}` : ' — holding'));
+    element('strong', {}, group ? `${units.length} units selected`
+                                : unit.name),
+    group
+      ? (ordered ? ` — ${units.filter((each) => each.direction).length} `
+                   + 'under orders'
+                 : ' — holding')
+      : (unit.direction ? ` — ordered ${unit.direction}` : ' — holding')));
 
   const compass = element('div', { class: 'compass' });
   const at = {};
   for (const direction of api.DIRECTIONS) {
+    const said = group ? `move all ${units.length} ${direction.word}`
+                       : `move ${direction.word}`;
     at[direction.word] = button(direction.arrow,
-                                () => order(game, unit, direction),
+                                () => orderGroup(game, units, direction),
                                 { class: 'point',
-                                  title: `move ${direction.word}`,
-                                  'aria-label': `move ${direction.word}` });
+                                  title: said,
+                                  'aria-label': said });
   }
-  const hold = button('•', () => clearOrder(game, unit), {
-    class: 'point hold' + (unit.direction ? ' undoes' : ''),
-    title: unit.direction ? 'take the order back and hold'
-                          : 'hold: stay and recover a point',
-    'aria-label': unit.direction ? 'take the order back and hold'
-                                 : 'hold, staying where it is',
+  const holds = group
+    ? (ordered ? 'take the orders back and hold'
+               : 'hold: stay and recover a point')
+    : (unit.direction ? 'take the order back and hold'
+                      : 'hold: stay and recover a point');
+  const hold = button('•', () => holdGroup(game, units), {
+    class: 'point hold' + (ordered ? ' undoes' : ''),
+    title: holds,
+    'aria-label': group && ordered ? 'take the orders back and hold'
+      : (group ? 'hold, staying where they are'
+               : (unit.direction ? 'take the order back and hold'
+                                 : 'hold, staying where it is')),
   });
   // laid out as the compass it is: the grid places each one, so the arrows
   // sit where the squares they point at are
@@ -745,7 +955,7 @@ function renderCommit(game) {
         // button again and said nothing about waiting: the commit had landed
         // and the only way to find that out was to reload the page
         await loadSeat(game.gameno, game.number);
-        set({ waiting: answer, selected: null });
+        set({ waiting: answer, selected: [] });
         await watch(game);
       } catch (error) {
         say(error.message);
@@ -805,7 +1015,7 @@ async function watch(game) {
     if (answer.resolved) {
       const before = state.game;
       await loadSeat(game.gameno, game.number);
-      set({ waiting: null, previous: before, selected: null, offline: false });
+      set({ waiting: null, previous: before, selected: [], offline: false });
       return;
     }
     try {
@@ -1053,11 +1263,25 @@ function renderKeys() {
     element('kbd', {}, '← ↑ → ↓'), ' move about the board · ',
     element('kbd', {}, 'Enter'), ' select the unit under the cursor · ',
     element('kbd', {}, 'Esc'), ' clear the selection · ',
-    element('kbd', {}, 'Del'), ' take back its order · ',
+    element('kbd', {}, 'Del'), ' take back the order · ',
     element('kbd', {}, 'C'), ' commit'));
   card.append(element('p', { class: 'small muted' },
     'With a unit selected, an arrow key orders it that way, and '
     + 'Delete takes the order back until the turn is committed.'));
+  // the mouse is said here too. It is one line, and it is the only place a
+  // player is told that the click that used to order now takes two - which
+  // is the thing about this board most likely to be discovered by a move
+  // that did not happen
+  card.append(element('p', { class: 'small muted' },
+    'With a mouse: drag across the board to box a group — starting outside it '
+    + 'if you need to — and shift-click a unit to add it or take it out. '
+    + 'Double-click to one side of what is selected to order it that way: a '
+    + 'double-click always acts on the selection, never on whatever is '
+    + 'standing where you clicked, so double-click a unit — theirs or yours — '
+    + 'to move onto it. Everything still moves one square a turn. '
+    + 'Double-click the selection itself to take its orders back. A group is '
+    + 'ordered by the arrow keys too. On a touchscreen, two fingers draw the '
+    + 'box and one still scrolls the page.'));
   return card;
 }
 
@@ -1076,9 +1300,11 @@ export function handleKey(event) {
   if (arrow) {
     event.preventDefault();
     const direction = api.directionByWord(arrow);
-    const selected = standing(game).find(
-      (unit) => unit.name === state.selected);
-    if (selected) return order(game, selected, direction);
+    // whatever is selected is what an arrow key orders, whether that is one
+    // unit chosen with Enter or a group boxed with a pointer: the two ways of
+    // working meet here rather than fork
+    const chosen = selectedUnits(game);
+    if (chosen.length) return orderGroup(game, chosen, direction);
     const x = Math.min(Math.max(state.cursor.x + direction.dx, 0),
                        game.board.size_x - 1);
     const y = Math.min(Math.max(state.cursor.y + direction.dy, 0),
@@ -1090,20 +1316,24 @@ export function handleKey(event) {
     event.preventDefault();
     const here = standing(game).find(
       (unit) => unit.x === state.cursor.x && unit.y === state.cursor.y);
-    return set({ selected: here ? here.name : null });
+    // Enter takes the unit under the cursor, alone. There is no key that adds
+    // one to a selection: a group is built with a pointer, and everything a
+    // group makes quicker is still reachable here one unit at a time
+    return set({ selected: here ? [here.name] : [] });
   }
 
   // Backspace and Delete take back the order the selected unit was given,
   // which is where a hand already is after the arrow keys that gave it
   if (event.key === 'Backspace' || event.key === 'Delete') {
     event.preventDefault();
-    const chosen = standing(game).find(
-      (unit) => unit.name === state.selected);
-    if (chosen && chosen.direction) return clearOrder(game, chosen);
+    const chosen = selectedUnits(game);
+    if (chosen.some((unit) => unit.direction)) {
+      return holdGroup(game, chosen);
+    }
     return undefined;
   }
 
-  if (event.key === 'Escape') return set({ selected: null });
+  if (event.key === 'Escape') return set({ selected: [] });
 
   // the commit is offered twice now - under the compass and under the
   // orders tray - and both are the same `renderCommit`, so pressing the
