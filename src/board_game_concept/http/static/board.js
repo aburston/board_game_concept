@@ -12,6 +12,37 @@
 // on a question that already has an answer.
 
 const NS = 'http://www.w3.org/2000/svg';
+
+
+/**
+ * Give a node a click and a double-click that cannot both happen.
+ *
+ * One gesture, one outcome: a click that turns out to be the first half of a
+ * double-click never also does what a single click does.
+ */
+function makeClickable(node, single, double) {
+  let timer = null;
+  node.addEventListener('click', (event) => {
+    event.stopPropagation();
+    // where nothing is waiting for a second click there is nothing to wait
+    // for: the deploy board places a unit the moment it is asked, as it
+    // always has, and only a board that offers both defers anything
+    if (!double) {
+      if (single) single(event);
+      return;
+    }
+    if (timer) {
+      // the second click of a pair, and the first has not happened yet
+      clearTimeout(timer);
+      timer = null;
+      event.preventDefault();
+      double(event);
+      return;
+    }
+    timer = setTimeout(() => { timer = null; if (single) single(event); },
+                       CLICK_DELAY);
+  });
+}
 const SQUARE = 44;
 const PAD = 6;
 
@@ -24,6 +55,35 @@ const RING = SQUARE / 2 - 11;
 // square. Past the edge on purpose - what it points at is the square it is
 // going to, which is the whole of what the arrow is for
 const REACH = 0.78;
+
+// how far the pointer travels before a click becomes a drag. Without it every
+// tap on a unit is a one-pixel drag, and selecting a unit - the thing done
+// most often - stops working
+const DRAG_THRESHOLD = 4;
+
+// how far it travels before a press on the board becomes a box. Deliberately
+// much further than a drag's: a double-click is two presses in the same place
+// by a hand that is not perfectly still, and a box drawn on that jitter took
+// the selection away - it caught nothing, and nothing is what it then
+// selected - a moment before the second click tried to order it. Half a
+// square is a movement somebody meant to make.
+//
+// In the board's own units, so it is half a square however the board is
+// scaled to its pane: `DRAG_THRESHOLD` is four of those, which on a board
+// scaled up is less than a pixel of glass.
+const BOX_THRESHOLD = SQUARE / 2;
+
+// how long a single click waits to see whether a second is coming. Both mean
+// something here - a click chooses and a double-click orders - so the click's
+// effect is held for this long and dropped if the second arrives.
+//
+// The pair is counted here rather than left to the browser's `dblclick`,
+// because the first click of a pair redraws the board: it moves the cursor,
+// and `render` replaces the whole SVG. The element the browser would have
+// fired `dblclick` at is gone by then. Counting the clicks ourselves means
+// the redraw simply never happens - the first click's effect is still
+// waiting when the second cancels it
+const CLICK_DELAY = 350;
 
 function svg(tag, attributes) {
   const node = document.createElementNS(NS, tag);
@@ -50,32 +110,56 @@ export function emptySymbol(board) {
  * Draw a board.
  *
  * `options` carries what the screen knows and the board does not: whose seat
- * this is, which unit is selected, where the keyboard cursor is, and what to
+ * this is, which units are selected, where the keyboard cursor is, and what to
  * do when a square is chosen.
  */
 export function renderBoard(board, units, options) {
   const settings = options || {};
   const mine = settings.mine;
+  // the selection is a set of names, and every one of them is marked. It
+  // used to be a single name, and a group drawn with one unit outlined would
+  // be a board that disagreed with the order it is about to be given
+  const selected = new Set(settings.selected || []);
   const width = board.size_x * SQUARE + PAD * 2;
   const height = board.size_y * SQUARE + PAD * 2;
+  // room to begin a box outside the grid. Without it a group standing in a
+  // corner cannot be boxed at all: a box has to begin somewhere that is not a
+  // unit, and every square around such a group is either a unit or off the
+  // board. The margin is drawn on nothing and only ever pressed on
+  const grab = settings.onBox ? SQUARE / 2 : 0;
 
   const root = svg('svg', {
     // a watching session owns none of the units, so "yours and theirs" says
     // nothing to it and every unit was drawn as an enemy. It is told to
     // colour by player instead
-    class: 'board' + (settings.watching ? ' watching' : ''),
-    viewBox: `0 0 ${width} ${height}`,
-    width,
-    height,
+    class: 'board' + (settings.watching ? ' watching' : '')
+      + (settings.onBox ? ' boxable' : ''),
+    viewBox: `${-grab} ${-grab} ${width + grab * 2} ${height + grab * 2}`,
+    width: width + grab * 2,
+    height: height + grab * 2,
     role: 'grid',
     'aria-label': `board, ${board.size_x} by ${board.size_y}`,
   });
+
+  // the margin, as something a pointer can land on. An `<svg>` element's own
+  // background is not reliably a target, and a press that hits nothing starts
+  // nothing
+  if (grab) {
+    root.append(svg('rect', {
+      class: 'field',
+      x: -grab,
+      y: -grab,
+      width: width + grab * 2,
+      height: height + grab * 2,
+      fill: 'transparent',
+    }));
+  }
 
   const empty = emptySymbol(board);
   const marks = settings.marks || new Map();
   const flags = (settings.flags || []).filter(
     (flag) => flag.standing && flag.x !== null && flag.y !== null);
-  const squares = svg('g', {});
+  const squares = svg('g', { class: 'squares' });
   for (let y = 0; y < board.size_y; y += 1) {
     for (let x = 0; x < board.size_x; x += 1) {
       const rect = svg('rect', {
@@ -90,8 +174,13 @@ export function renderBoard(board, units, options) {
       });
       rect.dataset.x = x;
       rect.dataset.y = y;
-      if (settings.onSquare && !isOutOfPlay(settings, y)) {
-        rect.addEventListener('click', () => settings.onSquare(x, y));
+      if ((settings.onSquare || settings.onSquareDouble)
+          && !isOutOfPlay(settings, y)) {
+        makeClickable(
+          rect,
+          settings.onSquare && ((event) => settings.onSquare(x, y, event)),
+          settings.onSquareDouble
+            && ((event) => settings.onSquareDouble(x, y, event)));
         rect.style.cursor = 'pointer';
       }
       if (marks.has(`${x},${y}`)) rect.classList.add('fought');
@@ -104,6 +193,12 @@ export function renderBoard(board, units, options) {
     }
   }
   root.append(squares);
+
+  // a drag that begins on a square rather than on a unit draws a box round
+  // the units it crosses. It is put on the squares layer, so which gesture
+  // starts is decided by what is under the pointer when it goes down -
+  // exactly as it is on a table
+  if (settings.onBox) makeBoxable(root, board, settings);
 
   // every flag in the game, on the square it stands on. Drawn for a carrier
   // this seat has never met as well as for one it can see: a flag's square is
@@ -253,18 +348,35 @@ export function renderBoard(board, units, options) {
       }));
     }
 
-    if (own && unit.name === settings.selected) {
+    if (own && selected.has(unit.name)) {
       group.append(svg('rect', {
         class: 'selected',
         x: 2, y: 2, width: SQUARE - 4, height: SQUARE - 4, rx: 3,
       }));
     }
-    if (settings.onUnit && own) {
+    if ((settings.onUnit || settings.onUnitDouble) && own) {
       group.style.cursor = 'pointer';
-      group.addEventListener('click', (event) => {
-        event.stopPropagation();
-        settings.onUnit(unit);
-      });
+      // the event goes with it: whether shift was held is the screen's to
+      // interpret, and the board goes on knowing nothing about what a
+      // selection is
+      makeClickable(
+        group,
+        settings.onUnit && ((event) => settings.onUnit(unit, event)),
+        settings.onUnitDouble && ((event) => settings.onUnitDouble(unit, event)));
+    } else if (settings.onSquare || settings.onSquareDouble) {
+      // a unit that is not this seat's own is standing on a square, and the
+      // square is what a click on it means. Its own drawing covers the
+      // square completely, so without this an enemy swallowed every click
+      // that landed on it - and moving onto an enemy is how you attack, so
+      // the one square a player most wants to order a unit onto was the one
+      // square they could not name
+      group.style.cursor = 'pointer';
+      makeClickable(
+        group,
+        settings.onSquare
+          && ((event) => settings.onSquare(unit.x, unit.y, event)),
+        settings.onSquareDouble
+          && ((event) => settings.onSquareDouble(unit.x, unit.y, event)));
     }
     // and picked up and put down, which is what a person does to a board.
     // Where the drop leads - a square to deploy on, a square to move to, or
@@ -291,6 +403,144 @@ export function renderBoard(board, units, options) {
   return root;
 }
 
+// --- drawing a box round several units
+//
+// The same pointer-event machinery as the drag below, and deliberately the
+// same threshold: a press and release that never travelled is a click, and
+// the click listener already on the square deals with it.
+
+/**
+ * Let a drag across empty squares select the units it encloses.
+ *
+ * The rectangle is written into the DOM during the gesture, which is the same
+ * exception `makeDraggable` makes and for the same reason: re-rendering per
+ * pointer move would rebuild the SVG under the pointer and throw away the
+ * element holding the capture.
+ *
+ * Nothing here decides what a selection is. The two corners go back to the
+ * screen in board coordinates, and which units that catches - whose they are,
+ * whether they are standing - is the screen's to answer.
+ */
+function makeBoxable(root, board, settings) {
+  let gesture = null;
+  let box = null;
+  // the second finger, where there is one. A one-finger drag on a phone is a
+  // page scroll and stays one - the stylesheet leaves panning to the browser
+  // - so the box a finger draws is the rectangle between two of them
+  let second = null;
+
+  // a corner of the box, as a square. A press in the margin is outside the
+  // grid on purpose, so it is clamped to the edge square rather than refused:
+  // what somebody means by starting a box off the corner of the board is the
+  // corner of the board
+  const corner = (point) => ({
+    x: Math.min(Math.max(Math.floor((point.x - PAD) / SQUARE), 0),
+                board.size_x - 1),
+    y: Math.min(Math.max(Math.floor((point.y - PAD) / SQUARE), 0),
+                board.size_y - 1),
+  });
+
+  root.addEventListener('pointerdown', (event) => {
+    if (event.button) return;
+    // a second finger while a first is down: the two are opposite corners of
+    // the box from here on, and the drag threshold does not apply - putting
+    // two fingers down is already deliberate
+    if (gesture && event.pointerId !== gesture.id) {
+      second = { id: event.pointerId, at: at(root, event) };
+      gesture.moved = true;
+      root.setPointerCapture(event.pointerId);
+      draw(gesture.from, second.at);
+      return;
+    }
+    // and no pointer capture yet. A captured pointer makes the browser
+    // dispatch the click at the element holding the capture, so capturing
+    // here delivered every click on the board to the <svg> itself and the
+    // square under the pointer never heard it - which is why a double-click
+    // ordered nothing anywhere except on a unit, whose own pointerdown stops
+    // this one from running at all. It is taken below, once the gesture has
+    // travelled far enough to be a box and there is no click left to lose
+    gesture = { id: event.pointerId, from: at(root, event), moved: false };
+  });
+
+  // where the far corner of the box is: the second finger if there is one,
+  // and otherwise wherever the one pointer has reached
+  const opposite = (here) => (second ? second.at : here);
+
+  const draw = (from, to) => {
+    if (!box) {
+      box = svg('rect', { class: 'selection-box', rx: 2 });
+      root.append(box);
+    }
+    box.setAttribute('x', Math.min(from.x, to.x));
+    box.setAttribute('y', Math.min(from.y, to.y));
+    box.setAttribute('width', Math.abs(to.x - from.x));
+    box.setAttribute('height', Math.abs(to.y - from.y));
+  };
+
+  root.addEventListener('pointermove', (event) => {
+    if (!gesture) return;
+    if (second && event.pointerId === second.id) {
+      second.at = at(root, event);
+      draw(gesture.from, second.at);
+      return;
+    }
+    if (event.pointerId !== gesture.id) return;
+    const here = at(root, event);
+    // the first finger may move too, and where a second is down it is a
+    // corner rather than a drag: no threshold, the box simply follows
+    if (second) {
+      gesture.from = here;
+      draw(here, second.at);
+      return;
+    }
+    if (!gesture.moved
+        && Math.hypot(here.x - gesture.from.x, here.y - gesture.from.y)
+           < BOX_THRESHOLD) return;
+    gesture.moved = true;
+    // now it is a box, so the gesture is followed off the square it began on
+    root.setPointerCapture(event.pointerId);
+    draw(gesture.from, here);
+  });
+
+  const done = (event) => {
+    if (!gesture) return;
+    // either finger ending the gesture takes the box: a player lifting one
+    // of two has finished choosing, and which one they lifted is not a
+    // distinction they were making
+    if (event.pointerId !== gesture.id
+        && !(second && event.pointerId === second.id)) return;
+    const moved = gesture.moved;
+    const from = corner(gesture.from);
+    const to = corner(
+      event.pointerId === gesture.id ? opposite(at(root, event))
+                                     : (second ? second.at : at(root, event)));
+    gesture = null;
+    second = null;
+    if (box) { box.remove(); box = null; }
+    // a press that never travelled is a click, and the square's own click
+    // listener has already dealt with it
+    if (!moved) return;
+    // the click the browser fires after a drag would move the cursor to
+    // wherever the box happened to end, so it is swallowed once
+    root.addEventListener('click', (click) => {
+      click.stopPropagation();
+      click.preventDefault();
+    }, { capture: true, once: true });
+    settings.onBox(from.x, from.y, to.x, to.y);
+  };
+  root.addEventListener('pointerup', done);
+  // a one-finger drag the browser claims for panning arrives here, which is
+  // what keeps the page scrolling and the box from fighting it
+  root.addEventListener('pointercancel', (event) => {
+    if (!gesture) return;
+    if (second && event.pointerId === second.id) { second = null; return; }
+    if (event.pointerId !== gesture.id) return;
+    gesture = null;
+    second = null;
+    if (box) { box.remove(); box = null; }
+  });
+}
+
 // --- picking a unit up
 //
 // One code path for a mouse, a pen and a finger: pointer events, a capture so
@@ -299,10 +549,6 @@ export function renderBoard(board, units, options) {
 // code and does not fire for touch on any phone, which is the device this is
 // most for.
 
-// how far the pointer travels before a click becomes a drag. Without it every
-// tap on a unit is a one-pixel drag, and selecting a unit - the thing done
-// most often - stops working
-const DRAG_THRESHOLD = 4;
 
 /**
  * Let one unit be dragged to a square, and tell the screen where it landed.
@@ -323,6 +569,9 @@ function makeDraggable(root, group, unit, settings) {
   group.addEventListener('pointerdown', (event) => {
     // the primary button only: a right-click is a menu, not a move
     if (event.button) return;
+    // and never a selection box as well: a press that lands on a unit is
+    // picking that unit up, whatever is drawn under it
+    event.stopPropagation();
     gesture = { id: event.pointerId, from: at(root, event), moved: false };
     group.setPointerCapture(event.pointerId);
   });
@@ -469,7 +718,11 @@ export function describeUnit(unit, own, left, hint) {
   const sentence = said.join(', ');
   if (!own || !hint) return sentence;
   return `${sentence}. Click it or press Enter over it, then an arrow key `
-    + 'to order it that way.';
+    + 'to order it that way. Shift-click adds it to a group, and a box drawn '
+    + 'across the board takes every unit in it. Double-click to one side of '
+    + 'what is selected to send it that way — a direction, not a square, and '
+    + 'it acts on the selection whatever is standing there — and double-click '
+    + 'the selection itself to take its orders back.';
 }
 
 function describeFight(mark) {

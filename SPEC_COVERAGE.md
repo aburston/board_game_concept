@@ -87,6 +87,34 @@ suites that serve a role over HTTP are; run it with
 `BOARD_GAME_BACKEND=sqlite`.
 
 
+## Selecting and ordering several units at once
+
+The `box-select-and-move-groups` change gave the ordering board a selection
+that holds more than one unit. The requirements it added and modified are held
+by `tests/test_board_selection.py`.
+
+| Requirement | Held by |
+|---|---|
+| `web-interface` — A Group Of Units Is Selected By Drawing A Box | `test_board_selection.py`, for the gesture, the rectangle drawn while it is dragged, the filter to this seat's own standing units, and the guard that withholds it where ordering is withheld |
+| `web-interface` — Shift And Click Builds And Trims A Selection | `test_board_selection.py`, for both branches and for the plain click that narrows to one |
+| `web-interface` — A Selected Group Is Ordered In One Gesture | `test_board_selection.py`, which runs the shipped `directionForGroup` under `node` for the four headings, the diagonal tie and the centre case, and reads `orderGroup` for one command per unit, one re-read, and refusals named |
+| `web-interface` — Ordering With The Mouse Takes A Deliberate Double-Click | `test_board_selection.py`, for the deferred single click and for a square click that only moves the cursor |
+| `web-interface` — Double-Clicking A Unit Takes Its Orders Back | `test_board_selection.py`, for the group branch and the single-unit branch |
+| `web-interface` — Every Selected Unit Is Shown As Selected | `test_board_selection.py`, for the board's mark and the compass's count |
+| `web-interface` — A Unit Is Moved By Dragging It (a drag from an empty square is a box) | `test_board_selection.py` and `test_static_serving.py`, which hold the drag and the box to one shared guard |
+| `web-interface` — An Order Can Be Taken Back From The Board (a group's orders) | `test_board_selection.py` |
+| `web-interface` — The Controls For Ordering Are In The Board's Pane (the compass acts on a group) | `test_board_selection.py` and `test_static_serving.py` |
+| `web-interface` — The Game Can Be Played From The Keyboard (a group built with a pointer) | `test_board_selection.py`, which also holds that no key builds a group |
+
+These are source-level tests, as the interface's tests have always been: the
+page is served as plain files with no build step, and there is no browser
+harness in this project. What they cannot reach is the gesture itself — that a
+drag really does draw a rectangle, that a double-tap really does order, that
+one finger really does still scroll a phone. Those are checked by hand, and are
+the coverage gap this change leaves behind. `directionForGroup` is the one
+piece of it that is arithmetic rather than wiring, and it is run rather than
+read, so the rule deciding which way a group goes is held by execution.
+
 ## Known divergences
 
 The specs describe intended behaviour. The following are places where the
