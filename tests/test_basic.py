@@ -92,8 +92,10 @@ def test_board_creation():
 
 
 def test_empty_cell_representation():
+    # a blank: the grid's rules say where the squares are, so nothing
+    # printable is spent on a square with nothing standing on it
     empty = Empty()
-    assert str(empty) == '#'
+    assert str(empty) == ' '
 
 
 def test_opening_a_game():

@@ -82,7 +82,7 @@ class SettingBoardSize(CliTestCase):
         server.read_until_count(SERVER_PROMPT, 2)
         self.assertNotIn('invalid', server.since(SERVER_PROMPT))
         server.send_line('show board')
-        server.read_until('#')
+        server.read_until('+-')
 
     def test_resizing_a_board_during_setup(self):
         """Setup is a thing you are still deciding, size included.
@@ -207,7 +207,7 @@ class LoadingConfiguration(CliTestCase):
         server.send_line('load board board.yaml')
         server.read_until_count(SERVER_PROMPT, 2)
         server.send_line('show board')
-        server.read_until('#')
+        server.read_until('+-')
 
     def test_loading_a_player(self):
         server = self.start_server()
@@ -250,7 +250,7 @@ class ServerDisplayCommands(CliTestCase):
     def test_showing_the_board(self):
         server = self._sized()
         server.send_line('show board')
-        server.read_until('#')
+        server.read_until('+-')
 
     def test_showing_the_board_before_one_exists(self):
         server = self.start_server()

@@ -5,7 +5,7 @@ from .player import Player
 
 # Unit
 #   name: One or more character
-#   symbol: One single character
+#   symbol: One single character, and not a blank one
 #   attack: damage per attack
 #   health: total amount of health
 
@@ -39,6 +39,11 @@ class UnitType:
 
         self.symbol = symbol
         assert (len(str(symbol)) == 1), "symbol must be only one character"
+        # an empty square is drawn as a blank, so a unit given a blank for a
+        # symbol would be a unit the board hid. Every other single printable
+        # character is a player's to choose, `#` among them: the board's own
+        # drawing reserves none of them
+        assert (not str(symbol).isspace()), "symbol must not be whitespace"
 
         self.attack = attack
         assert isinstance(attack, int), "attack must be an integer value"

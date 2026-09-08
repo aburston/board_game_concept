@@ -95,7 +95,7 @@ class AdminClientOverHttp(CliTestCase):
 
         assert client.errors == '', f'client errors: {client.errors!r}'
         shown = self.shown(client, CLIENT_PROMPT, 'show board')
-        assert '+' in shown or '#' in shown
+        assert '+' in shown
         assert 'size_x' not in shown, 'the raw JSON leaked through'
 
         players = self.shown(client, CLIENT_PROMPT, 'show players')

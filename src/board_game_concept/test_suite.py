@@ -153,7 +153,7 @@ def test_empty_cell():
     print("\n[TEST 6] Empty Square Representation")
     try:
         empty = Empty()
-        assert str(empty) == "#"
+        assert str(empty) == " "
         print(f"✓ Empty square displays as: '{str(empty)}'")
         return True
     except Exception as e:

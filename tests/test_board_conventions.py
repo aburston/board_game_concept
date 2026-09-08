@@ -42,8 +42,8 @@ def test_x_increases_left_to_right_and_y_top_to_bottom():
     board.commit()
     rows = [line for line in render_board(board).splitlines()
             if line.startswith('|')]
-    assert rows[0] == '|#|A|#|#|'
-    assert rows[2] == '|B|#|#|#|'
+    assert rows[0] == '| |A| | |'
+    assert rows[2] == '|B| | | |'
 
 
 def test_each_direction_moves_the_axis_the_rules_say():

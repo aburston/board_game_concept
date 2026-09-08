@@ -309,7 +309,7 @@ class ClientDisplayCommands(ClientTestCase):
     def test_showing_the_board(self):
         client = self.player_client()
         client.send_line('show board')
-        client.read_until('#')
+        client.read_until('+-')
 
     def test_showing_types(self):
         client = self.player_client()
