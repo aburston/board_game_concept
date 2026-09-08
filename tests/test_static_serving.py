@@ -241,8 +241,11 @@ def test_the_ordering_controls_are_in_the_board_pane():
 
 def test_a_units_ring_shows_the_energy_it_has_left():
     board, play = _module('board.js'), _module('play.js')
-    # drawn as a share of the ring's circumference, from the top
-    assert "class: 'energy'" in board or "'energy'" in board
+    # drawn as a share of a circle's circumference, from the top - outside
+    # the ring rather than along it, so the ring it is drawn beside is left
+    # whole and goes on saying whose the unit is
+    assert 'class: `energy ${band(share)}`' in board
+    assert 'r: ARC,' in board and 'const ARC = RING + 3;' in board
     assert 'stroke-dasharray' in board
     assert 'energyOf' in board and 'energyOf:' in play
     # and an enemy design nobody has met is not drawn as a proportion

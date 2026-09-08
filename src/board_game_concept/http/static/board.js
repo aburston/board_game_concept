@@ -51,6 +51,12 @@ const PAD = 6;
 // the arrow saying where it was going crammed against the edge
 const RING = SQUARE / 2 - 11;
 
+// where the energy arc runs, outside the ring and touching nothing. Stroked
+// at 3, so it occupies 12.5 to 15.5 from the centre of a square: clear of the
+// ring's outer edge at 12, and clear of the health bar, whose lower edge is
+// 16 from the centre. Half a square is 22, so it is well inside its own
+const ARC = RING + 3;
+
 // how far an order's arrow reaches out of the square, as a share of one
 // square. Past the edge on purpose - what it points at is the square it is
 // going to, which is the whole of what the arrow is for
@@ -84,6 +90,24 @@ const BOX_THRESHOLD = SQUARE / 2;
 // the redraw simply never happens - the first click's effect is still
 // waiting when the second cancels it
 const CLICK_DELAY = 350;
+
+/**
+ * Which band a share of something falls in: green, amber or red.
+ *
+ * One function for both of the things drawn round a unit, so energy and
+ * health are read on one scale rather than two. They each had their own
+ * comparison against a quarter, written out twice, which is a pair of
+ * boundaries that could have drifted apart with nothing to notice.
+ *
+ * A boundary belongs to the worse band - a unit at exactly a third is red,
+ * and at exactly two thirds amber - because a player deciding whether to
+ * commit a unit should not be told it is fine when it is on the line.
+ */
+function band(share) {
+  if (share > 2 / 3) return 'full';
+  if (share > 1 / 3) return 'low';
+  return 'spent';
+}
 
 function svg(tag, attributes) {
   const node = document.createElementNS(NS, tag);
@@ -302,20 +326,24 @@ export function renderBoard(board, units, options) {
       r: RING,
     }));
 
-    // the energy the unit has left, drawn as the share of its own ring it
-    // can still pay for. Energy is what decides whether a unit can move,
-    // whether it can strike, and whether it is inert - the thing to know
-    // before ordering it - and it was a number in a table while the board a
-    // player is looking at drew a spent unit and a fresh one identically
+    // the energy the unit has left, drawn as an arc round it. Energy is what
+    // decides whether a unit can move, whether it can strike, and whether it
+    // is inert - the thing to know before ordering it - and it was a number
+    // in a table while the board a player is looking at drew a spent unit
+    // and a fresh one identically.
+    //
+    // Drawn OUTSIDE the ring rather than along it. The ring says whose the
+    // unit is, and an arc painted on the same line hid that - worst on a
+    // unit with most of its energy left, which covered most of its own ring
     const power = settings.energyOf ? settings.energyOf(unit) : null;
     if (power && Number.isFinite(power.now) && power.full > 0) {
-      const round = 2 * Math.PI * RING;
+      const round = 2 * Math.PI * ARC;
       const share = Math.max(0, Math.min(1, power.now / power.full));
       group.append(svg('circle', {
-        class: 'energy' + (share <= 0.25 ? ' spent' : ''),
+        class: `energy ${band(share)}`,
         cx: SQUARE / 2,
         cy: SQUARE / 2,
-        r: RING,
+        r: ARC,
         // drawn from the top, clockwise, so it reads like a dial rather than
         // starting at three o'clock where SVG would put it
         transform: `rotate(-90 ${SQUARE / 2} ${SQUARE / 2})`,
@@ -343,7 +371,9 @@ export function renderBoard(board, units, options) {
         x: 8, y: 3, width, height: 3, rx: 1.5,
       }));
       group.append(svg('rect', {
-        class: 'health-left' + (share <= 0.25 ? ' critical' : ''),
+        // the same three bands as the energy arc above it, from the same
+        // function: a player learns one scale, not two
+        class: `health-left ${band(share)}`,
         x: 8, y: 3, width: Math.max(0, width * share), height: 3, rx: 1.5,
       }));
     }
@@ -650,7 +680,13 @@ const HEADINGS = {
  */
 function orderArrow({ dx, dy }) {
   const middle = SQUARE / 2;
-  const from = { x: middle + dx * (RING + 2), y: middle + dy * (RING + 2) };
+  // outside the energy arc, whose outer edge is 1.5 beyond `ARC`. Started
+  // from the ring as it used to be, an ordered unit had its arrow drawn
+  // across its own energy - the same defect the arc itself had against the
+  // ring, one radius further out. Written against `ARC` rather than as a
+  // number, so moving the arc moves this with it
+  const start = ARC + 3;
+  const from = { x: middle + dx * start, y: middle + dy * start };
   const to = { x: middle + dx * SQUARE * REACH,
                y: middle + dy * SQUARE * REACH };
   const group = svg('g', { class: 'order' });

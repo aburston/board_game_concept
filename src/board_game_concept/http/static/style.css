@@ -25,6 +25,14 @@
      never drawn on the same square anyway */
   --order: #c1272d;
 
+  /* how much of something is left, drawn round a unit: its energy and its
+     health. Not `--mine` / `--warn` / `--theirs`, which say whose a thing is
+     and whether it wants attention - a level is not an owner, and reusing
+     those would make a healthy enemy's bar the same green as one of yours */
+  --level-full: #4c9f5a;
+  --level-low: #c98a15;
+  --level-spent: #c1272d;
+
   --square: 3.25rem;
   --radius: 0.5rem;
   --gap: 1rem;
@@ -50,6 +58,9 @@
     --warn-soft: #2a2417;
     --order: #ff6b6b;
     --focus: #7fb2ff;
+    --level-full: #6fc584;
+    --level-low: #e2b04a;
+    --level-spent: #ff6b6b;
   }
 }
 
@@ -246,17 +257,19 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
   border-color: var(--warn);
 }
 
-/* the share of its ring a unit can still pay for: drawn over the ring, in
-   the owner's colour, so a spent unit reads as spent from the board itself */
+/* what a unit can still pay for, drawn as an arc outside its ring - never
+   over it, because the ring is what says whose the unit is. Coloured by how
+   much is left rather than by whose it is, on the same three bands as health,
+   so the two things drawn round a unit are read on one scale */
 .board .unit .energy {
   fill: none;
-  stroke-width: 4;
+  stroke-width: 3;
   stroke-linecap: butt;
-  opacity: 0.55;
+  opacity: 0.9;
 }
-.board .unit.mine .energy { stroke: var(--mine); }
-.board .unit.theirs .energy { stroke: var(--theirs); }
-.board .unit .energy.spent { stroke: var(--warn); opacity: 0.85; }
+.board .unit .energy.full { stroke: var(--level-full); }
+.board .unit .energy.low { stroke: var(--level-low); }
+.board .unit .energy.spent { stroke: var(--level-spent); }
 .board .unit.mine .ring { stroke: var(--mine); }
 .board .unit.theirs .ring { stroke: var(--theirs); stroke-dasharray: 3 2; }
 
@@ -399,9 +412,12 @@ kbd {
 /* health, under a unit's ring. The track is what it was built with and the
    bar what play has left it, so a shrinking bar is a unit in trouble */
 .board .health-track { fill: var(--line); }
-.board .unit.mine .health-left { fill: var(--mine); }
-.board .unit.theirs .health-left { fill: var(--theirs); }
-.board .health-left.critical { fill: var(--warn); }
+/* coloured by how much is left rather than by whose the unit is, on the same
+   bands as its energy. Whose it is is said by the ring and the glyph, which
+   keep the owner's colour - and which the arc no longer paints over */
+.board .health-left.full { fill: var(--level-full); }
+.board .health-left.low { fill: var(--level-low); }
+.board .health-left.spent { fill: var(--level-spent); }
 
 /* the same number in the tray, for anybody reading rows rather than squares */
 .health.hurt { color: var(--warn); }
@@ -451,27 +467,20 @@ ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: va
 .card h3 { font-size: 0.95rem; margin: 0.7rem 0 0.3rem; }
 
 /* a watched board belongs to nobody, so it is coloured by player rather
-   than by whose it is. Four are named; a fifth falls back to the ink */
+   than by whose it is. Four are named; a fifth falls back to the ink.
+   Health and energy are not among them: they are drawn by how much is left,
+   here as everywhere, and it is the ring and the glyph that say which player
+   a unit belongs to */
 .board.watching .unit .ring { stroke: var(--ink-soft); stroke-dasharray: none; }
 .board.watching .unit text { fill: var(--ink-soft); }
-.board.watching .unit .health-left { fill: var(--ink-soft); }
-.board.watching .unit.player-1 .ring,
-.board.watching .unit.player-1 .health-left { stroke: var(--mine); fill: var(--mine); }
+.board.watching .unit.player-1 .ring { stroke: var(--mine); fill: none; }
 .board.watching .unit.player-1 text { fill: var(--mine); }
-.board.watching .unit.player-1 .ring { fill: none; }
-.board.watching .unit.player-2 .ring,
-.board.watching .unit.player-2 .health-left { stroke: var(--theirs); fill: var(--theirs); }
+.board.watching .unit.player-2 .ring { stroke: var(--theirs); fill: none; }
 .board.watching .unit.player-2 text { fill: var(--theirs); }
-.board.watching .unit.player-2 .ring { fill: none; }
-.board.watching .unit.player-3 .ring,
-.board.watching .unit.player-3 .health-left { stroke: var(--focus); fill: var(--focus); }
+.board.watching .unit.player-3 .ring { stroke: var(--focus); fill: none; }
 .board.watching .unit.player-3 text { fill: var(--focus); }
-.board.watching .unit.player-3 .ring { fill: none; }
-.board.watching .unit.player-4 .ring,
-.board.watching .unit.player-4 .health-left { stroke: var(--warn); fill: var(--warn); }
+.board.watching .unit.player-4 .ring { stroke: var(--warn); fill: none; }
 .board.watching .unit.player-4 text { fill: var(--warn); }
-.board.watching .unit.player-4 .ring { fill: none; }
-.board.watching .unit .health-left.critical { fill: var(--warn); }
 
 /* a unit that has been committed and not yet placed. Drawn where it was
    deployed, faintly, because it is not on the board until the turn resolves
