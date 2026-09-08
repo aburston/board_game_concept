@@ -144,7 +144,7 @@ def test_board_view_holds_the_squares_and_a_legend(tmp_path):
     assert len(view['rows']) == 4 and len(view['rows'][0]) == 4
     assert view['rows'][0][0] == 'T'
     assert view['rows'][3][3] == 'S'
-    assert view['rows'][0][1] == '#'
+    assert view['rows'][0][1] == ' '
     assert view['legend'] == [
         {'symbol': 'S', 'player': 2, 'type': 'scout'},
         {'symbol': 'T', 'player': 1, 'type': 'tank'}]
@@ -157,7 +157,7 @@ def test_board_view_of_an_empty_board_has_no_legend(tmp_path):
     view = views.board_view(harness.session(0).getBoard())
 
     assert view['legend'] == []
-    assert view['rows'] == [['#'] * 3] * 3
+    assert view['rows'] == [[' '] * 3] * 3
 
 
 def test_types_view_holds_the_catalogue_before_a_type_is_defined(tmp_path):

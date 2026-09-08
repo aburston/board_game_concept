@@ -103,7 +103,7 @@ export function emptySymbol(board) {
   for (const row of board.rows) {
     for (const cell of row) if (cell) return cell;
   }
-  return '#';
+  return ' ';
 }
 
 /**

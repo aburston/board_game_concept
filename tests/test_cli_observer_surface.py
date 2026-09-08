@@ -108,7 +108,7 @@ class ObserverDisplayCommands(ObserverTestCase):
     def test_showing_the_board(self):
         observer = self.watching()
         observer.send_line('show board')
-        observer.read_until('#')
+        observer.read_until('+-')
 
     def test_showing_the_board_before_one_exists(self):
         observer = self.start_observer('no-such-game')

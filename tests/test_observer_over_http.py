@@ -95,9 +95,9 @@ class ObserverOverHttp(CliTestCase):
         self.server = self.established_game(players=(1, 2))
         observer = self._start_observer_over_http()
         self._send_and_wait(observer, 'show board', 2)
-        # the grid renders as ASCII rules, so a printed board contains '+' or
-        # '#'; no raw JSON leaks through
-        assert '+' in observer.output or '#' in observer.output
+        # the grid renders as ASCII rules, so a printed board contains a
+        # '+'; no raw JSON leaks through
+        assert '+' in observer.output
         assert 'size_x' not in observer.output, (
             'the raw JSON leaked through: the renderer should have drawn '
             'the grid')

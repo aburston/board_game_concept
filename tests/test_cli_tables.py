@@ -73,11 +73,11 @@ def test_a_table_of_no_rows_is_just_its_header():
 def test_the_board_prints_its_grid_and_a_legend(capsys):
     print_board_view({
         'size_x': 2, 'size_y': 1,
-        'rows': [['T', '#']],
+        'rows': [['T', ' ']],
         'legend': [{'symbol': 'T', 'player': 1, 'type': 'tank'}]})
 
     printed = capsys.readouterr().out.splitlines()
-    assert printed[:3] == ['+-+-+', '|T|#|', '+-+-+']
+    assert printed[:3] == ['+-+-+', '|T| |', '+-+-+']
     assert printed[3] == ''
     assert printed[4].split() == ['SYMBOL', 'PLAYER', 'TYPE']
     assert printed[5].split() == ['T', '1', 'tank']
@@ -85,6 +85,6 @@ def test_the_board_prints_its_grid_and_a_legend(capsys):
 
 def test_a_board_with_nothing_on_it_gets_no_legend(capsys):
     print_board_view({
-        'size_x': 2, 'size_y': 1, 'rows': [['#', '#']], 'legend': []})
+        'size_x': 2, 'size_y': 1, 'rows': [[' ', ' ']], 'legend': []})
 
-    assert capsys.readouterr().out.splitlines() == ['+-+-+', '|#|#|', '+-+-+']
+    assert capsys.readouterr().out.splitlines() == ['+-+-+', '| | |', '+-+-+']

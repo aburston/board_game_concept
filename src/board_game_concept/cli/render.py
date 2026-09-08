@@ -5,12 +5,14 @@ decides how it sits on the page: which columns, in what order, padded to what
 width. Plain ASCII throughout - no colour and no box drawing - so the same
 text reads in a terminal, down a pipe and in a test transcript.
 
-The board is drawn as a grid of single character squares between rules:
+The board is drawn as a grid of single character squares between rules. An
+empty square is a blank, so the rules are what says where the squares are and
+a character inside one always means something is standing there:
 
     +-+-+-+
-    |X|#|#|
+    |X| | |
     +-+-+-+
-    |#|#|#|
+    | | | |
     +-+-+-+
 """
 
