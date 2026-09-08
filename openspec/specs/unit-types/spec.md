@@ -110,6 +110,12 @@ an integer from **0 to 10**, health an integer from **1 to 10**, and energy an
 integer from **0 to 100**; attack and energy are zero only together, as the
 Walls requirement states.
 
+A symbol SHALL be exactly one character and that character SHALL NOT be
+whitespace. A blank square is what the board draws where nothing stands, so a
+unit drawn with a space would be a unit the board hid. Every other single
+printable character is a symbol a player may choose, `#` among them: nothing
+about the board's own drawing reserves one.
+
 The system SHALL further require that a type that is not a wall is designed
 with **energy at least equal to its movement cost** — a quarter of its health,
 rounded up — and SHALL refuse it otherwise. A type with less energy than that
@@ -128,6 +134,19 @@ the one movement charges.
 
 - **WHEN** a type is created with a symbol that is not exactly one character
 - **THEN** creation fails
+
+#### Scenario: Symbol must not be whitespace
+
+- **WHEN** a type is created with a symbol that is a space, a tab, or any other
+  whitespace character
+- **THEN** creation fails, whether the definition arrives from a command line
+  or over HTTP
+
+#### Scenario: A hash is an ordinary symbol
+
+- **WHEN** a type is created with the symbol `#`
+- **THEN** the type is created, and units of it are placed, drawn and named in
+  the legend like units of any other type
 
 #### Scenario: Attack must be 0 to 10
 
