@@ -132,6 +132,30 @@ the coverage gap this change leaves behind. `directionForGroup` is the one
 piece of it that is arithmetic rather than wiring, and it is run rather than
 read, so the rule deciding which way a group goes is held by execution.
 
+## What a unit shows of itself
+
+The `colour-energy-and-health-by-level` change moved the energy arc off the
+ring it was painted over, and gave both the arc and the health bar three
+colours that say how much is left rather than whose the unit is.
+
+| Requirement | Held by |
+|---|---|
+| `web-interface` — A Unit's Ring Shows The Energy It Has Left | `test_unit_levels.py`, for the arc being outside the ring, clear of the health bar and inside its square, and for the three bands; `test_static_serving.py` for the arc being a share of a circumference drawn from the top |
+| `web-interface` — Every Unit's Health Is Shown Against What It Was Built With | `test_unit_levels.py`, for the bar taking its colour from the same function as the arc, for an enemy and a watched board reading the same way, and for length carrying the level as well as colour |
+
+The arithmetic is run rather than read. Where a boundary falls, and whether
+one thing drawn round a unit overlaps the next, are questions a source-level
+grep cannot answer, so `band` and the radii are evaluated under `node` against
+the module's own constants — the ring's outer edge, the arc's two edges, the
+health bar's lower edge, the order arrow's start, and half a square. A change
+to any one of them fails the test that says it must not touch its neighbour.
+
+What is still checked by hand is whether the three colours can be told apart
+on a real screen, in both schemes. Red, amber and green is the worst pairing
+for the commonest colour blindness; the length of the arc and of the bar
+carries the same information, and the figures are in the tray and in every
+unit's description, so hue is a second channel here rather than the only one.
+
 ## Known divergences
 
 The specs describe intended behaviour. The following are places where the
