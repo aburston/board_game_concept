@@ -775,6 +775,31 @@ def test_an_administrator_cannot_set_up_a_committed_game(app):
     assert also.status_code == 400
 
 
+def test_a_player_added_with_a_null_budget_gets_the_default(app):
+    """`{"budget": null}` is a budget not named, not a budget of nothing.
+
+    The command was accepted with 204 and the player was registered with no
+    budget at all, so the administrator's commit - the next thing they did,
+    after telling the room to get ready - was a 500 from the first write.
+    A client that sends every key, or a form with the field left blank, says
+    null; it gets the default, as leaving the key out does.
+    """
+    admin = _administrator(app)
+    assert admin.create_game(GAME).status_code == 201
+    assert admin.perform(GAME, 0, {'kind': 'set_board', 'size_x': 4,
+                                   'size_y': 4}).status_code == 204
+
+    added = admin.perform(GAME, 0, {'kind': 'add_player', 'number': 1,
+                                    'budget': None})
+
+    assert added.status_code == 204
+    assert admin.commit(GAME, 0).status_code == 200, (
+        'the setup could not be committed with the player just added')
+    players = admin.read_view(GAME, 0, 'players').get_json()['players']
+    assert [entry['budget'] for entry in players
+            if entry['player'] == 1] == [Player.DEFAULT_BUDGET]
+
+
 def test_the_lobby_says_which_seats_have_committed(app):
     """So it can send a committed seat to the board rather than the armoury."""
     admin = _administrator(app)
