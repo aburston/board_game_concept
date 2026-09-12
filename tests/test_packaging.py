@@ -151,3 +151,16 @@ def test_the_web_interface_files_are_present_where_the_app_serves_them():
     for reference in re.findall(r'"/static/([\w./]+)"', page):
         assert os.path.isfile(os.path.join(static, reference)), (
             f'index.html asks for {reference} and the install has not got it')
+
+
+def test_the_qr_encoder_the_banner_needs_is_installed():
+    """The banner draws a QR code of the address, and needs `segno` to.
+
+    It is imported by the entry point rather than by the app, so a wheel
+    built without it installs, starts, and falls over at the first
+    `--host 0.0.0.0` - after the operator has told the room to get ready.
+    This is what says the dependency is declared and came with the install.
+    """
+    import segno
+
+    assert segno.make('http://192.168.1.23:45678/').matrix

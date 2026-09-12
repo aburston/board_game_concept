@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "Board game concept library and server/client framework."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["PyYAML", "flask", "requests"]
+# `segno` draws the QR code in `bgcapiserver`'s banner. Pure Python with no
+# dependencies of its own, so a phone under Termux can `pip install` this
+# without a compiler - the case the code is there for
+dependencies = ["PyYAML", "flask", "requests", "segno"]
 authors = [{name = "Rose Burston"}]
 classifiers = [
   "Programming Language :: Python :: 3",
