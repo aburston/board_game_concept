@@ -155,6 +155,7 @@ def test_the_arrow_is_the_same_shape_whichever_way_it_points():
         'west': lambda x, y: (2 * HALF - x, 2 * HALF - y),
         'north': lambda x, y: (y, 2 * HALF - x),
     }
+
     def settled(points):
         return [(round(x, 6), round(y, 6)) for x, y in points]
 
