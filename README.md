@@ -227,6 +227,85 @@ designation the armoury makes with a button, and `remove player` the seat the
 administrator's screen removes with another. A test holds the two to each other, so a view added to
 one and not the other fails the suite.
 
+## Playing in the same room
+
+Everyone on the same Wi-Fi can play from their own phone. Start the server so
+it answers on the network rather than only on the machine it runs on:
+
+```
+$ bgcapiserver --host 0.0.0.0
+bgcapiserver: http://192.168.1.23:45678/
+  games and accounts in /home/you/board-games
+  ...
+
+  █████████████████████████████████
+  ████ ▄▄▄▄▄ █  ▄ ▀ ██▄█ ▄▄▄▄▄ ████
+  ...
+```
+
+The address it prints is the one other devices can reach — not `0.0.0.0`,
+which is what was bound and is not somewhere anybody can type — and the code
+beneath it is that same address, to scan. A guest points their phone's camera
+at your screen, opens the link, taps **Register instead** on the sign-in
+screen, signs in, and takes a seat from the lobby. Nobody installs anything.
+You sign in as `admin`, make the game and add the seats, as in
+[Accounts](#accounts) below.
+
+A home network is the trusted one the [TLS note](#web-service---whats-next)
+exempts: tokens and passwords cross it in clear, which is fine among people
+you would hand your phone to and not fine beyond that. Do not put this on a
+network you do not control without TLS in front of it.
+
+If the machine has several addresses — a VPN, a wired connection alongside
+the Wi-Fi — the banner names the one with the default route, which may not be
+the one your guests are on. Name the right one and it is printed as given:
+
+```
+$ bgcapiserver --host 192.168.1.23
+```
+
+**Guest and public Wi-Fi often stop devices seeing each other** (the router
+calls it client isolation), and then no phone can reach the server however it
+is bound. The way round it is to make the host's phone the network: turn on
+its hotspot, have everyone join that, and name the hotspot's address with
+`--host` — it is under Hotspot in the phone's settings — because the address
+the banner finds on its own is the one facing the mobile network, not the
+one your guests are on.
+
+### Hosting from an Android phone
+
+The server itself runs on a phone. Every dependency is pure Python, so it
+installs without a compiler. Install [Termux](https://termux.dev/) from
+F-Droid — the Play Store build is abandoned and its `pip` no longer works —
+then:
+
+```
+$ pkg install python git
+$ git clone https://github.com/aburston/board_game_concept
+$ cd board_game_concept
+$ pip install .
+$ export BOARD_GAME_HOME=~/board-games
+$ bgcapiserver --host 0.0.0.0
+```
+
+The banner and the code appear on the phone's own screen, and that is what
+the other phones scan. If the code wraps on a narrow terminal, turn the phone
+sideways: a broken code does not scan.
+
+Two things stop Android killing the server in the middle of a turn, and
+without both it will:
+
+ * **Hold a wake lock.** Run `termux-wake-lock` before starting the server,
+   or tap **Acquire wakelock** in the notification Termux shows while it
+   runs. Otherwise the process is suspended as soon as the screen goes off.
+ * **Turn off battery optimisation for Termux**, under Apps in Android's
+   settings. Otherwise Android stops it anyway after a while in the
+   background.
+
+An iPhone cannot host this way — nothing keeps a Python server running in the
+background there — but it joins a laptop or an Android host like any other
+phone.
+
 ## Serving it properly
 
 `bgcapiserver` runs Flask's development server, which is fine for a laptop or
@@ -434,8 +513,10 @@ so the recovery is to recreate the accounts and claim the seats again.
 
 ## Web service - what's next
  * TLS. Tokens and passwords cross the wire in clear, and `bgcapiserver`
-   binds `127.0.0.1` by default. Anything reachable beyond a trusted network
-   wants TLS in front of it, and a real WSGI server rather than Flask's
+   binds `127.0.0.1` by default. A home or club Wi-Fi is a trusted network,
+   and [playing in the same room](#playing-in-the-same-room) on one needs
+   nothing more than `--host 0.0.0.0`; anything reachable beyond one wants
+   TLS in front of it, and a real WSGI server rather than Flask's
    development one.
 
 # Working on the code

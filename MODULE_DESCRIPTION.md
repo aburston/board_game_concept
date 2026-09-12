@@ -163,7 +163,12 @@ not know how it is drawn.
   answers, or the budget runs out and the client's loop asks again.
 - **`bgcapiserver.py`** - the console-script entry point that runs the
   Flask dev server. `--host`, `--port`, `--base-path`, `--backend`; local by
-  default, and a real deployment binds where its operator wants.
+  default, and a real deployment binds where its operator wants. Its banner
+  says where the server can be reached: bound to `0.0.0.0` it finds the
+  machine's network address rather than printing the wildcard, and draws
+  that address as a QR code on the terminal (via `segno`) so a phone across
+  the room scans the host's screen instead of typing an IP. Loopback gets
+  no code, since nothing else could reach it.
 
 ### cli - the three roles
 
