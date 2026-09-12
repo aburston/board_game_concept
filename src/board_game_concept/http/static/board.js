@@ -58,9 +58,13 @@ const RING = SQUARE / 2 - 11;
 const ARC = RING + 3;
 
 // how far an order's arrow reaches out of the square, as a share of one
-// square. Past the edge on purpose - what it points at is the square it is
-// going to, which is the whole of what the arrow is for
-const REACH = 0.78;
+// square, measured from the unit's centre. Past the edge on purpose - what it
+// points at is the square it is going to, which is the whole of what the
+// arrow is for - but only just: 0.70 of 44 is 30.8, which is 8.8 past the
+// edge at 22, inside the next square and short of a unit standing there,
+// whose ring begins 11 from that square's centre and so 11 past the edge. It
+// was 0.78, and a tip 12.3 past the edge lay across the neighbour's ring
+const REACH = 0.70;
 
 // how far the pointer travels before a click becomes a drag. Without it every
 // tap on a unit is a one-pixel drag, and selecting a unit - the thing done
@@ -674,9 +678,13 @@ const HEADINGS = {
 /**
  * The arrow drawn for a unit under orders.
  *
- * A line out of the ring with a head on it, in the square's own coordinates
- * - the unit's group is already translated, so this is drawn as though the
- * unit were at the origin.
+ * One hollow silhouette - shaft and head as a single closed outline, stroked
+ * and unfilled by the stylesheet - in the square's own coordinates: the
+ * unit's group is already translated, so this is drawn as though the unit
+ * were at the origin. An outline rather than a solid, because the arrow lies
+ * across whatever stands in the square it points at, and a solid one covered
+ * it; one shape rather than a hollow shaft under a hollow head, because two
+ * outlines overlapped show a seam where they meet.
  */
 function orderArrow({ dx, dy }) {
   const middle = SQUARE / 2;
@@ -686,24 +694,21 @@ function orderArrow({ dx, dy }) {
   // ring, one radius further out. Written against `ARC` rather than as a
   // number, so moving the arc moves this with it
   const start = ARC + 3;
-  const from = { x: middle + dx * start, y: middle + dy * start };
-  const to = { x: middle + dx * SQUARE * REACH,
-               y: middle + dy * SQUARE * REACH };
-  const group = svg('g', { class: 'order' });
-  group.append(svg('line', {
-    class: 'shaft',
-    x1: from.x, y1: from.y,
-    // stops short of the point, so the head is a head rather than a blob
-    x2: to.x - dx * 7, y2: to.y - dy * 7,
-  }));
-  // the head, as a triangle across the direction of travel
+  const tip = SQUARE * REACH;
+  // the silhouette, as (along the heading, across it): a shaft 4 wide from
+  // the start, and a head 10 wide by 9 long ending at the tip - the same
+  // envelope the solid arrow had, so its footprint is familiar; only the
+  // fill goes
+  const shape = [
+    [start, -2], [tip - 9, -2], [tip - 9, -5], [tip, 0],
+    [tip - 9, 5], [tip - 9, 2], [start, 2],
+  ];
   const across = { x: -dy, y: dx };
-  const head = [
-    `${to.x},${to.y}`,
-    `${to.x - dx * 9 + across.x * 5},${to.y - dy * 9 + across.y * 5}`,
-    `${to.x - dx * 9 - across.x * 5},${to.y - dy * 9 - across.y * 5}`,
-  ].join(' ');
-  group.append(svg('polygon', { class: 'head', points: head }));
+  const points = shape.map(([along, aside]) =>
+    `${middle + dx * along + across.x * aside},`
+    + `${middle + dy * along + across.y * aside}`).join(' ');
+  const group = svg('g', { class: 'order' });
+  group.append(svg('polygon', { class: 'outline', points }));
   return group;
 }
 
