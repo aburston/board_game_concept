@@ -306,6 +306,37 @@ An iPhone cannot host this way — nothing keeps a Python server running in the
 background there — but it joins a laptop or an Android host like any other
 phone.
 
+### If nobody can reach it
+
+Android does not firewall a listening app and Termux has no firewall of its
+own, so "the phone is blocking it" is rarely the answer. Work through these
+on the host phone, in order, with Termux in the foreground; the first one
+to fail names the problem.
+
+ 1. **Check the port.** It is `45678`, five digits, and the banner's first
+    line prints it. A dropped digit gives a "site can't be reached" on every
+    device, which looks exactly like a network problem and is not one. The
+    code exists so that guests never type it; the host, who cannot scan
+    their own screen, is the one who does.
+ 2. **Open `http://127.0.0.1:45678/` in the phone's own browser.** This
+    proves the server is up at all. If it fails, the server is not running,
+    or is on another port.
+ 3. **Open `http://<the banner's address>:45678/` on the same phone.** This
+    proves the phone can reach itself through its Wi-Fi address. If 2 works
+    and this fails, something on the phone is intercepting its own traffic
+    — almost always a VPN, or an ad blocker that works as one (look for a
+    key icon in the status bar). Turn it off while hosting, or exclude
+    Termux in its settings.
+ 4. **Open the same address from another device.** If 3 works and this
+    fails, the problem is between devices: the router is isolating Wi-Fi
+    clients from each other, as guest networks and some extenders do. A
+    laptop on a cable can hide this, because isolation is usually between
+    wireless clients only. The hotspot, above, is the way round it.
+
+Also check the address itself against Settings, Wi-Fi, your network. If the
+banner printed one starting `10.` or `100.`, that is the mobile network's
+address, not the Wi-Fi's; name the Wi-Fi address with `--host` instead.
+
 ## Serving it properly
 
 `bgcapiserver` runs Flask's development server, which is fine for a laptop or
