@@ -103,7 +103,14 @@ class AddPlayer(Node):
     fields = ('number', 'budget')
 
     def __init__(self, **values):
-        values.setdefault('budget', Player.DEFAULT_BUDGET)
+        # `None` is treated as not named, not as a budget of nothing. Over
+        # HTTP a record can carry `"budget": null` - a blank field, a client
+        # that sends every key - and `setdefault` alone let that through as a
+        # player with no budget, which the domain permits for an opponent's
+        # view and which then failed at the first write, as a 500 the
+        # administrator saw only after telling the room to get ready
+        if values.get('budget') is None:
+            values['budget'] = Player.DEFAULT_BUDGET
         super().__init__(**values)
 
 

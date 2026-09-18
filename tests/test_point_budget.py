@@ -163,6 +163,20 @@ def test_a_budget_out_of_range_is_refused_and_registers_nobody(tmp_path):
     assert server.getPlayers() == {}
 
 
+def test_a_budget_of_none_is_the_budget_not_named():
+    """`AddPlayer(number=1, budget=None)` registers with the default.
+
+    The command defaults a budget that was left out. A record read back from
+    a client can name the key and give it `null` - the same thing said the
+    only way JSON can say it - and that used to build a player with no budget
+    at all, which the domain permits for an opponent's view and which then
+    failed at the first write. `None` is not a budget; it is the absence of
+    one, and gets what an absence gets.
+    """
+    assert AddPlayer(number=1, budget=None) == AddPlayer(number=1)
+    assert AddPlayer(number=1, budget=None).budget == Player.DEFAULT_BUDGET
+
+
 def test_a_budget_survives_being_saved_and_opened_again(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [(1, 150)])
