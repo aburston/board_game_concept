@@ -580,6 +580,33 @@ as subprocesses — `tests/test_cli_*_surface.py` and
 what you have just edited. They go green against the code you replaced, which
 looks exactly like passing. `pip install -e` points them at `src/`.
 
+## Playing a series
+
+`matches/` plays games between bots through the real roles - one `bgcserver`
+resolving turns, one `bgcclient` per seat kept open for the whole game, an
+observer read only to write the log - and each bot is handed its own seat's
+view and nothing else. A game is played on the game's own defaults: nothing
+names a board size or a budget, so it is the 8 x 8 board, 250 points a seat,
+and the stock army each seat opens with, which a doctrine may keep or take
+back and rebuild through the ordinary setup commands.
+
+```
+python matches/arena.py --game 221 --p1 matches/bots/flag_hunt.py \
+                        --p2 matches/bots/lancers.py     # one game
+matches/series.sh                                        # games 201-220
+PARALLEL=4 matches/series.sh 205 206                     # some, at once
+```
+
+Each game writes `matches/logs/game_<n>.log` - the orders each turn, the
+board after it, every refusal, the outcome and the final units - beside the
+three roles' transcripts and a turn-by-turn history in JSON. The series are
+written up in `matches/RESULTS-*.md`; the current one is
+`matches/RESULTS-DEFAULT-BOARD.md`, and the earlier ones say at their head
+which rules they were played under. `tests/test_match_harness.py` holds the
+harness to giving a bot only its own view and checks every doctrine's army
+against the game's own rules; `pytest -m slow tests/test_match_harness.py`
+plays two short games through the real roles as well.
+
 # Console scripts
 
 Installing the package puts one command on your path per role:

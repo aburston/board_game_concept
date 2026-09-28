@@ -1,0 +1,311 @@
+=== game 201: p1 Garrison vs p2 Garrison
+  board 8x8, p1: 250 points, rows 0-3, p2: 250 points, rows 4-7
+  p1 Garrison: the stock army as given; no unit is ever ordered
+  p2 Garrison: the stock army as given; no unit is ever ordered
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: keeps the army as given
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: keeps the army as given
+    after turn 1: in play 14 v 14  (walls: 2 v 2)
+  -- turn 2
+    p1: holds
+    p2: holds
+    after turn 2: in play 14 v 14  (walls: 2 v 2)
+  -- turn 3
+    p1: holds
+    p2: holds
+    after turn 3: in play 14 v 14  (walls: 2 v 2)
+  -- turn 4
+    p1: holds
+    p2: holds
+    after turn 4: in play 14 v 14  (walls: 2 v 2)
+  -- turn 5
+    p1: holds
+    p2: holds
+    after turn 5: in play 14 v 14  (walls: 2 v 2)
+  -- turn 6
+    p1: holds
+    p2: holds
+    after turn 6: in play 14 v 14  (walls: 2 v 2)
+  -- turn 7
+    p1: holds
+    p2: holds
+    after turn 7: in play 14 v 14  (walls: 2 v 2)
+  -- turn 8
+    p1: holds
+    p2: holds
+    after turn 8: in play 14 v 14  (walls: 2 v 2)
+  -- turn 9
+    p1: holds
+    p2: holds
+    after turn 9: in play 14 v 14  (walls: 2 v 2)
+  -- turn 10
+    p1: holds
+    p2: holds
+    after turn 10: in play 14 v 14  (walls: 2 v 2)
+  -- turn 11
+    p1: holds
+    p2: holds
+    after turn 11: in play 14 v 14  (walls: 2 v 2)
+  -- turn 12
+    p1: holds
+    p2: holds
+    after turn 12: in play 14 v 14  (walls: 2 v 2)
+  -- turn 13
+    p1: holds
+    p2: holds
+    after turn 13: in play 14 v 14  (walls: 2 v 2)
+  -- turn 14
+    p1: holds
+    p2: holds
+    after turn 14: in play 14 v 14  (walls: 2 v 2)
+  -- turn 15
+    p1: holds
+    p2: holds
+    after turn 15: in play 14 v 14  (walls: 2 v 2)
+  -- turn 16
+    p1: holds
+    p2: holds
+    after turn 16: in play 14 v 14  (walls: 2 v 2)
+  -- turn 17
+    p1: holds
+    p2: holds
+    after turn 17: in play 14 v 14  (walls: 2 v 2)
+  -- turn 18
+    p1: holds
+    p2: holds
+    after turn 18: in play 14 v 14  (walls: 2 v 2)
+  -- turn 19
+    p1: holds
+    p2: holds
+    after turn 19: in play 14 v 14  (walls: 2 v 2)
+  -- turn 20
+    p1: holds
+    p2: holds
+    after turn 20: in play 14 v 14  (walls: 2 v 2)
+  -- turn 21
+    p1: holds
+    p2: holds
+    after turn 21: in play 14 v 14  (walls: 2 v 2)
+  -- turn 22
+    p1: holds
+    p2: holds
+    after turn 22: in play 14 v 14  (walls: 2 v 2)
+  -- turn 23
+    p1: holds
+    p2: holds
+    after turn 23: in play 14 v 14  (walls: 2 v 2)
+  -- turn 24
+    p1: holds
+    p2: holds
+    after turn 24: in play 14 v 14  (walls: 2 v 2)
+  -- turn 25
+    p1: holds
+    p2: holds
+    after turn 25: in play 14 v 14  (walls: 2 v 2)
+  -- turn 26
+    p1: holds
+    p2: holds
+    after turn 26: in play 14 v 14  (walls: 2 v 2)
+  -- turn 27
+    p1: holds
+    p2: holds
+    after turn 27: in play 14 v 14  (walls: 2 v 2)
+  -- turn 28
+    p1: holds
+    p2: holds
+    after turn 28: in play 14 v 14  (walls: 2 v 2)
+  -- turn 29
+    p1: holds
+    p2: holds
+    after turn 29: in play 14 v 14  (walls: 2 v 2)
+  -- turn 30
+    p1: holds
+    p2: holds
+    after turn 30: in play 14 v 14  (walls: 2 v 2)
+  -- turn 31
+    p1: holds
+    p2: holds
+    after turn 31: in play 14 v 14  (walls: 2 v 2)
+  -- turn 32
+    p1: holds
+    p2: holds
+    after turn 32: in play 14 v 14  (walls: 2 v 2)
+  -- turn 33
+    p1: holds
+    p2: holds
+    after turn 33: in play 14 v 14  (walls: 2 v 2)
+  -- turn 34
+    p1: holds
+    p2: holds
+    after turn 34: in play 14 v 14  (walls: 2 v 2)
+  -- turn 35
+    p1: holds
+    p2: holds
+    after turn 35: in play 14 v 14  (walls: 2 v 2)
+  -- turn 36
+    p1: holds
+    p2: holds
+    after turn 36: in play 14 v 14  (walls: 2 v 2)
+  -- turn 37
+    p1: holds
+    p2: holds
+    after turn 37: in play 14 v 14  (walls: 2 v 2)
+  -- turn 38
+    p1: holds
+    p2: holds
+    after turn 38: in play 14 v 14  (walls: 2 v 2)
+  -- turn 39
+    p1: holds
+    p2: holds
+    after turn 39: in play 14 v 14  (walls: 2 v 2)
+  -- turn 40
+    p1: holds
+    p2: holds
+    after turn 40: in play 14 v 14  (walls: 2 v 2)
+  -- turn 41
+    p1: holds
+    p2: holds
+    after turn 41: in play 14 v 14  (walls: 2 v 2)
+  -- turn 42
+    p1: holds
+    p2: holds
+    after turn 42: in play 14 v 14  (walls: 2 v 2)
+  -- turn 43
+    p1: holds
+    p2: holds
+    after turn 43: in play 14 v 14  (walls: 2 v 2)
+  -- turn 44
+    p1: holds
+    p2: holds
+    after turn 44: in play 14 v 14  (walls: 2 v 2)
+  -- turn 45
+    p1: holds
+    p2: holds
+    after turn 45: in play 14 v 14  (walls: 2 v 2)
+  -- turn 46
+    p1: holds
+    p2: holds
+    after turn 46: in play 14 v 14  (walls: 2 v 2)
+  -- turn 47
+    p1: holds
+    p2: holds
+    after turn 47: in play 14 v 14  (walls: 2 v 2)
+  -- turn 48
+    p1: holds
+    p2: holds
+    after turn 48: in play 14 v 14  (walls: 2 v 2)
+  -- turn 49
+    p1: holds
+    p2: holds
+    after turn 49: in play 14 v 14  (walls: 2 v 2)
+  -- turn 50
+    p1: holds
+    p2: holds
+    after turn 50: in play 14 v 14  (walls: 2 v 2)
+  -- turn 51
+    p1: holds
+    p2: holds
+    after turn 51: in play 14 v 14  (walls: 2 v 2)
+  -- turn 52
+    p1: holds
+    p2: holds
+    after turn 52: in play 14 v 14  (walls: 2 v 2)
+  -- turn 53
+    p1: holds
+    p2: holds
+    after turn 53: in play 14 v 14  (walls: 2 v 2)
+  -- turn 54
+    p1: holds
+    p2: holds
+    after turn 54: in play 14 v 14  (walls: 2 v 2)
+  -- turn 55
+    p1: holds
+    p2: holds
+    after turn 55: in play 14 v 14  (walls: 2 v 2)
+  -- turn 56
+    p1: holds
+    p2: holds
+    after turn 56: in play 14 v 14  (walls: 2 v 2)
+  -- turn 57
+    p1: holds
+    p2: holds
+    after turn 57: in play 14 v 14  (walls: 2 v 2)
+  -- turn 58
+    p1: holds
+    p2: holds
+    after turn 58: in play 14 v 14  (walls: 2 v 2)
+  -- turn 59
+    p1: holds
+    p2: holds
+    after turn 59: in play 14 v 14  (walls: 2 v 2)
+  -- turn 60
+    p1: holds
+    p2: holds
+    after turn 60: in play 14 v 14  (walls: 2 v 2)
++-+-+-+-+-+-+-+-+
+|r|o|L|K|K|L|o|r|
++-+-+-+-+-+-+-+-+
+|p|p|W|H|H|W|p|p|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|p|p|W|H|H|W|p|p|
++-+-+-+-+-+-+-+-+
+|r|o|L|K|K|L|o|r|
++-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+H            1  Heavy
+H            2  Heavy
+K            1  Keep
+K            2  Keep
+L            1  Line
+L            2  Line
+W            1  Wall
+W            2  Wall
+o            1  Scout
+o            2  Scout
+p            1  Pawn
+p            2  Pawn
+r            1  Runner
+r            2  Runner
+  undecided after 60 turns
+  final units:
+    p1 heavy1  Heavy   a5 h10 (3,1) hp 10 en 15
+    p1 heavy2  Heavy   a5 h10 (4,1) hp 10 en 15
+    p1 keep1   Keep    a1 h10 (3,0) hp 10 en 5 flag
+    p1 keep2   Keep    a1 h10 (4,0) hp 10 en 5
+    p1 line1   Line    a3 h6 (2,0) hp 6 en 12
+    p1 line2   Line    a3 h6 (5,0) hp 6 en 12
+    p1 pawn1   Pawn    a1 h4 (0,1) hp 4 en 2
+    p1 pawn2   Pawn    a1 h4 (1,1) hp 4 en 2
+    p1 pawn3   Pawn    a1 h4 (6,1) hp 4 en 2
+    p1 pawn4   Pawn    a1 h4 (7,1) hp 4 en 2
+    p1 runner1 Runner  a2 h4 (0,0) hp 4 en 10
+    p1 runner2 Runner  a2 h4 (7,0) hp 4 en 10
+    p1 scout1  Scout   a0 h2 (1,0) hp 2 en 12
+    p1 scout2  Scout   a0 h2 (6,0) hp 2 en 12
+    p1 wall1   Wall    a0 h10 (2,1) hp 10 en 0
+    p1 wall2   Wall    a0 h10 (5,1) hp 10 en 0
+    p2 heavy1  Heavy   a5 h10 (3,6) hp 10 en 15
+    p2 heavy2  Heavy   a5 h10 (4,6) hp 10 en 15
+    p2 keep1   Keep    a1 h10 (3,7) hp 10 en 5 flag
+    p2 keep2   Keep    a1 h10 (4,7) hp 10 en 5
+    p2 line1   Line    a3 h6 (2,7) hp 6 en 12
+    p2 line2   Line    a3 h6 (5,7) hp 6 en 12
+    p2 pawn1   Pawn    a1 h4 (0,6) hp 4 en 2
+    p2 pawn2   Pawn    a1 h4 (1,6) hp 4 en 2
+    p2 pawn3   Pawn    a1 h4 (6,6) hp 4 en 2
+    p2 pawn4   Pawn    a1 h4 (7,6) hp 4 en 2
+    p2 runner1 Runner  a2 h4 (0,7) hp 4 en 10
+    p2 runner2 Runner  a2 h4 (7,7) hp 4 en 10
+    p2 scout1  Scout   a0 h2 (1,7) hp 2 en 12
+    p2 scout2  Scout   a0 h2 (6,7) hp 2 en 12
+    p2 wall1   Wall    a0 h10 (2,6) hp 10 en 0
+    p2 wall2   Wall    a0 h10 (5,6) hp 10 en 0

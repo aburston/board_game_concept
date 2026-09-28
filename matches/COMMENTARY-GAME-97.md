@@ -3,6 +3,16 @@
 *A commentary on game 97 — Bulwark against Drain — and on game 100, where the
 same wall line meets a different attacker.*
 
+> **Played under superseded rules.** Since these games were played the game
+> gained one strike a turn (R5.2) in place of a fight ground out in rounds, a
+> flag every player can see whose fall ends its owner's game (R2.11, R6.5,
+> R7.1a), an 8 x 8 default board, a 250-point budget and a sixteen-unit stock
+> army every seat opens with (R2.1, R2.3.1, R2.13), halves the game itself
+> enforces (R2.6a), and a square that never holds two units at the end of a
+> turn (R5.8a). None of these games would play the same way today, and none
+> of the doctrines in them could be played against the current game without
+> being rewritten. The series played on the game as it stands, on its own
+> defaults, is `matches/RESULTS-DEFAULT-BOARD.md`.
 A hundred points of wall — ten units of ten health, laid across the whole width
 of the board — stopped a hundred-and-ninety-eight-point army dead on turn 2. Not
 "held it up". Stopped it: every attacker spent every point of energy it owned,

@@ -64,6 +64,16 @@ series is needed is that the last five restated defaults the game then
 changed. A future series that wants a different board is a harness change,
 which is the right cost.
 
+*Found in implementation:* `bgcserver -g <n>` on a number nobody has created
+opens an unsized game, and its `commit` is refused with "the board size is
+too small (0, 0)". The default board of `default-army` is given by the
+registry's `create`, which is what the lobby calls. The harness creates its
+game through that same call before launching the server - the one place it
+touches the service layer, and for creation only, never to place, order,
+read or resolve. Typing `set board 8 8` instead would restate the default
+this decision refuses to restate. The difference between the two ways of
+starting a game is recorded in `SPEC_COVERAGE.md` as a divergence.
+
 ### 2. Roles launch through the running interpreter
 
 `[sys.executable, '-m', 'board_game_concept.cli.bgcclient', gameno, player]`
@@ -141,9 +151,18 @@ passed over, as now.
 - **Advance** - the front rank (Pawns and Heavies; the walls cannot) steps
   south or north as a line, resting when its fare would take it below its
   attack; the back rank holds; every contact is pressed next turn.
-- **Flag Hunt** - the Runners and Lines go for the enemy flag square, which
-  is published from turn 1, by the shortest route; the Heavies follow two
-  squares behind; Keeps, Pawns and Scouts hold.
+- **Flag Hunt** - everything but the Keeps and Walls goes for the enemy flag
+  square, which is published from turn 1, by the shortest route it can find
+  round its own units. *Revised in implementation:* the first version sent
+  only the Runners and Lines with the Heavies following, and in game 203
+  the Runners and Lines never left the back rank - the stock array boxes
+  the back rank in until the front rank moves, and a step that merely
+  shortens the distance is a step into a unit of your own. The hunters were
+  given a route search round their own units (`path_step`), the Pawns and
+  Scouts were sent too, and the eight games Flag Hunt is in were replayed
+  before the write-up; the first versions' logs were discarded, since a
+  doctrine that could not do what its docstring says is not evidence about
+  that doctrine.
 - **Screen** - the Scouts (attack 0, fare 1, twelve energy) walk to stand in
   front of the Keeps and the enemy's line of approach, so that whatever comes
   for the flag has to spend a strike on a body that costs 14 points; the rest
