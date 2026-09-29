@@ -1,0 +1,349 @@
+=== game 216: p1 Runners vs p2 Bulwark
+  board 8x8, p1: 250 points, rows 0-3, p2: 250 points, rows 4-7
+  p1 Runners: 14 x Runner (a2 h4 e10) + Keep with the flag; every Runner hunts
+  p2 Bulwark: 8 x Wall across the frontier row + 4 x Heavy behind + Keep with the flag, Runner, Scout; nobody hunts
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Runner r 2 4 10; add unit Runner runner1 0 3; add unit Runner runner2 1 3; add unit Runner runner3 2 3; add unit Runner runner4 3 3; add unit Runner runner5 4 3; add unit Runner runner6 5 3; add unit Runner runner7 6 3; add unit Runner runner8 7 3; add unit Runner runner9 0 2; add unit Runner runner10 1 2; add unit Runner runner11 2 2; add unit Runner runner12 5 2; add unit Runner runner13 6 2; add unit Runner runner14 7 2; add type Keep K 1 10 5; add unit Keep keep1 3 0; set flag keep1
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Wall W 0 10 0; add unit Wall wall1 0 4; add unit Wall wall2 1 4; add unit Wall wall3 2 4; add unit Wall wall4 3 4; add unit Wall wall5 4 4; add unit Wall wall6 5 4; add unit Wall wall7 6 4; add unit Wall wall8 7 4; add type Heavy H 5 10 15; add unit Heavy heavy1 1 5; add unit Heavy heavy2 3 5; add unit Heavy heavy3 4 5; add unit Heavy heavy4 6 5; add type Keep K 1 10 5; add unit Keep keep1 3 7; add type Runner r 2 4 10; add unit Runner runner1 4 7; add type Scout o 0 2 12; add unit Scout scout1 0 7; set flag keep1
+    after turn 1: in play 15 v 7  (walls: 0 v 8)
+  -- turn 2
+    p1: move runner1 south; move runner10 south; move runner11 south; move runner12 south; move runner13 south; move runner14 south; move runner2 south; move runner3 south; move runner4 south; move runner5 south; move runner6 south; move runner7 south; move runner8 south; move runner9 south
+    p2: holds
+    p1: 8 order(s) rejected last turn:
+    p1:   - runner1 at (0,3): the contest at (0, 4) was undecided
+    p1:   - runner2 at (1,3): the contest at (1, 4) was undecided
+    p1:   - runner3 at (2,3): the contest at (2, 4) was undecided
+    p1:   - runner4 at (3,3): the contest at (3, 4) was undecided
+    p1:   - runner5 at (4,3): the contest at (4, 4) was undecided
+    p1:   - runner6 at (5,3): the contest at (5, 4) was undecided
+    p1:   - runner7 at (6,3): the contest at (6, 4) was undecided
+    p1:   - runner8 at (7,3): the contest at (7, 4) was undecided
+    p2: 8 order(s) rejected last turn:
+    p2:   - wall1 at (0,4): the contest at (0, 4) was undecided
+    p2:   - wall2 at (1,4): the contest at (1, 4) was undecided
+    p2:   - wall3 at (2,4): the contest at (2, 4) was undecided
+    p2:   - wall4 at (3,4): the contest at (3, 4) was undecided
+    p2:   - wall5 at (4,4): the contest at (4, 4) was undecided
+    p2:   - wall6 at (5,4): the contest at (5, 4) was undecided
+    p2:   - wall7 at (6,4): the contest at (6, 4) was undecided
+    p2:   - wall8 at (7,4): the contest at (7, 4) was undecided
+    after turn 2: in play 15 v 7  (walls: 0 v 8)
+  -- turn 3
+    p1: move runner1 south; move runner10 south; move runner11 south; move runner12 south; move runner13 south; move runner14 south; move runner2 south; move runner3 south; move runner4 south; move runner5 south; move runner6 south; move runner7 south; move runner8 south; move runner9 south
+    p2: holds
+    p1: 8 order(s) rejected last turn:
+    p1:   - runner1 at (0,4): the contest at (0, 4) was undecided
+    p1:   - runner2 at (1,4): the contest at (1, 4) was undecided
+    p1:   - runner3 at (2,4): the contest at (2, 4) was undecided
+    p1:   - runner4 at (3,3): the contest at (3, 4) was undecided
+    p1:   - runner5 at (4,3): the contest at (4, 4) was undecided
+    p1:   - runner6 at (5,4): the contest at (5, 4) was undecided
+    p1:   - runner7 at (6,4): the contest at (6, 4) was undecided
+    p1:   - runner8 at (7,4): the contest at (7, 4) was undecided
+    p2: 8 order(s) rejected last turn:
+    p2:   - wall1 at (0,4): the contest at (0, 4) was undecided
+    p2:   - wall2 at (1,4): the contest at (1, 4) was undecided
+    p2:   - wall3 at (2,4): the contest at (2, 4) was undecided
+    p2:   - wall4 at (3,4): the contest at (3, 4) was undecided
+    p2:   - wall5 at (4,4): the contest at (4, 4) was undecided
+    p2:   - wall6 at (5,4): the contest at (5, 4) was undecided
+    p2:   - wall7 at (6,4): the contest at (6, 4) was undecided
+    p2:   - wall8 at (7,4): the contest at (7, 4) was undecided
+    after turn 3: in play 3 v 7  (walls: 0 v 8)
+  -- turn 4
+    p1: move runner4 south; move runner5 south
+    p2: holds
+    p1: 2 order(s) rejected last turn:
+    p1:   - runner4 at (3,3): the contest at (3, 4) was undecided
+    p1:   - runner5 at (4,3): the contest at (4, 4) was undecided
+    p2: 2 order(s) rejected last turn:
+    p2:   - wall4 at (3,4): the contest at (3, 4) was undecided
+    p2:   - wall5 at (4,4): the contest at (4, 4) was undecided
+    after turn 4: in play 3 v 7  (walls: 0 v 8)
+  -- turn 5
+    p1: holds
+    p2: holds
+    after turn 5: in play 3 v 7  (walls: 0 v 8)
+  -- turn 6
+    p1: holds
+    p2: holds
+    after turn 6: in play 3 v 7  (walls: 0 v 8)
+  -- turn 7
+    p1: move runner4 south; move runner5 south
+    p2: holds
+    p1: 2 order(s) rejected last turn:
+    p1:   - runner4 at (3,3): the contest at (3, 4) was undecided
+    p1:   - runner5 at (4,3): the contest at (4, 4) was undecided
+    p2: 2 order(s) rejected last turn:
+    p2:   - wall4 at (3,4): the contest at (3, 4) was undecided
+    p2:   - wall5 at (4,4): the contest at (4, 4) was undecided
+    after turn 7: in play 3 v 7  (walls: 0 v 8)
+  -- turn 8
+    p1: holds
+    p2: holds
+    after turn 8: in play 3 v 7  (walls: 0 v 8)
+  -- turn 9
+    p1: holds
+    p2: holds
+    after turn 9: in play 3 v 7  (walls: 0 v 8)
+  -- turn 10
+    p1: holds
+    p2: holds
+    after turn 10: in play 3 v 7  (walls: 0 v 8)
+  -- turn 11
+    p1: move runner4 south; move runner5 south
+    p2: holds
+    after turn 11: in play 3 v 7  (walls: 0 v 6)
+  -- turn 12
+    p1: holds
+    p2: move heavy2 north; move heavy3 north
+    after turn 12: in play 1 v 7  (walls: 0 v 6)
+  -- turn 13
+    p1: holds
+    p2: holds
+    after turn 13: in play 1 v 7  (walls: 0 v 6)
+  -- turn 14
+    p1: holds
+    p2: holds
+    after turn 14: in play 1 v 7  (walls: 0 v 6)
+  -- turn 15
+    p1: holds
+    p2: holds
+    after turn 15: in play 1 v 7  (walls: 0 v 6)
+  -- turn 16
+    p1: holds
+    p2: holds
+    after turn 16: in play 1 v 7  (walls: 0 v 6)
+  -- turn 17
+    p1: holds
+    p2: holds
+    after turn 17: in play 1 v 7  (walls: 0 v 6)
+  -- turn 18
+    p1: holds
+    p2: holds
+    after turn 18: in play 1 v 7  (walls: 0 v 6)
+  -- turn 19
+    p1: holds
+    p2: holds
+    after turn 19: in play 1 v 7  (walls: 0 v 6)
+  -- turn 20
+    p1: holds
+    p2: holds
+    after turn 20: in play 1 v 7  (walls: 0 v 6)
+  -- turn 21
+    p1: holds
+    p2: holds
+    after turn 21: in play 1 v 7  (walls: 0 v 6)
+  -- turn 22
+    p1: holds
+    p2: holds
+    after turn 22: in play 1 v 7  (walls: 0 v 6)
+  -- turn 23
+    p1: holds
+    p2: holds
+    after turn 23: in play 1 v 7  (walls: 0 v 6)
+  -- turn 24
+    p1: holds
+    p2: holds
+    after turn 24: in play 1 v 7  (walls: 0 v 6)
+  -- turn 25
+    p1: holds
+    p2: holds
+    after turn 25: in play 1 v 7  (walls: 0 v 6)
+  -- turn 26
+    p1: holds
+    p2: holds
+    after turn 26: in play 1 v 7  (walls: 0 v 6)
+  -- turn 27
+    p1: holds
+    p2: holds
+    after turn 27: in play 1 v 7  (walls: 0 v 6)
+  -- turn 28
+    p1: holds
+    p2: holds
+    after turn 28: in play 1 v 7  (walls: 0 v 6)
+  -- turn 29
+    p1: holds
+    p2: holds
+    after turn 29: in play 1 v 7  (walls: 0 v 6)
+  -- turn 30
+    p1: holds
+    p2: holds
+    after turn 30: in play 1 v 7  (walls: 0 v 6)
+  -- turn 31
+    p1: holds
+    p2: holds
+    after turn 31: in play 1 v 7  (walls: 0 v 6)
+  -- turn 32
+    p1: holds
+    p2: holds
+    after turn 32: in play 1 v 7  (walls: 0 v 6)
+  -- turn 33
+    p1: holds
+    p2: holds
+    after turn 33: in play 1 v 7  (walls: 0 v 6)
+  -- turn 34
+    p1: holds
+    p2: holds
+    after turn 34: in play 1 v 7  (walls: 0 v 6)
+  -- turn 35
+    p1: holds
+    p2: holds
+    after turn 35: in play 1 v 7  (walls: 0 v 6)
+  -- turn 36
+    p1: holds
+    p2: holds
+    after turn 36: in play 1 v 7  (walls: 0 v 6)
+  -- turn 37
+    p1: holds
+    p2: holds
+    after turn 37: in play 1 v 7  (walls: 0 v 6)
+  -- turn 38
+    p1: holds
+    p2: holds
+    after turn 38: in play 1 v 7  (walls: 0 v 6)
+  -- turn 39
+    p1: holds
+    p2: holds
+    after turn 39: in play 1 v 7  (walls: 0 v 6)
+  -- turn 40
+    p1: holds
+    p2: holds
+    after turn 40: in play 1 v 7  (walls: 0 v 6)
+  -- turn 41
+    p1: holds
+    p2: holds
+    after turn 41: in play 1 v 7  (walls: 0 v 6)
+  -- turn 42
+    p1: holds
+    p2: holds
+    after turn 42: in play 1 v 7  (walls: 0 v 6)
+  -- turn 43
+    p1: holds
+    p2: holds
+    after turn 43: in play 1 v 7  (walls: 0 v 6)
+  -- turn 44
+    p1: holds
+    p2: holds
+    after turn 44: in play 1 v 7  (walls: 0 v 6)
+  -- turn 45
+    p1: holds
+    p2: holds
+    after turn 45: in play 1 v 7  (walls: 0 v 6)
+  -- turn 46
+    p1: holds
+    p2: holds
+    after turn 46: in play 1 v 7  (walls: 0 v 6)
+  -- turn 47
+    p1: holds
+    p2: holds
+    after turn 47: in play 1 v 7  (walls: 0 v 6)
+  -- turn 48
+    p1: holds
+    p2: holds
+    after turn 48: in play 1 v 7  (walls: 0 v 6)
+  -- turn 49
+    p1: holds
+    p2: holds
+    after turn 49: in play 1 v 7  (walls: 0 v 6)
+  -- turn 50
+    p1: holds
+    p2: holds
+    after turn 50: in play 1 v 7  (walls: 0 v 6)
+  -- turn 51
+    p1: holds
+    p2: holds
+    after turn 51: in play 1 v 7  (walls: 0 v 6)
+  -- turn 52
+    p1: holds
+    p2: holds
+    after turn 52: in play 1 v 7  (walls: 0 v 6)
+  -- turn 53
+    p1: holds
+    p2: holds
+    after turn 53: in play 1 v 7  (walls: 0 v 6)
+  -- turn 54
+    p1: holds
+    p2: holds
+    after turn 54: in play 1 v 7  (walls: 0 v 6)
+  -- turn 55
+    p1: holds
+    p2: holds
+    after turn 55: in play 1 v 7  (walls: 0 v 6)
+  -- turn 56
+    p1: holds
+    p2: holds
+    after turn 56: in play 1 v 7  (walls: 0 v 6)
+  -- turn 57
+    p1: holds
+    p2: holds
+    after turn 57: in play 1 v 7  (walls: 0 v 6)
+  -- turn 58
+    p1: holds
+    p2: holds
+    after turn 58: in play 1 v 7  (walls: 0 v 6)
+  -- turn 59
+    p1: holds
+    p2: holds
+    after turn 59: in play 1 v 7  (walls: 0 v 6)
+  -- turn 60
+    p1: holds
+    p2: holds
+    after turn 60: in play 1 v 7  (walls: 0 v 6)
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|W|W|W|H|H|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+H            2  Heavy
+K            1  Keep
+K            2  Keep
+W            2  Wall
+o            2  Scout
+r            2  Runner
+  undecided after 60 turns
+  final units:
+    p1 keep1   Keep    a1 h10 (3,0) hp 10 en 5 flag
+    p1 runner1 Runner  a2 h0 destroyed
+    p1 runner10Runner  a2 h0 destroyed
+    p1 runner11Runner  a2 h0 destroyed
+    p1 runner12Runner  a2 h0 destroyed
+    p1 runner13Runner  a2 h0 destroyed
+    p1 runner14Runner  a2 h0 destroyed
+    p1 runner2 Runner  a2 h0 destroyed
+    p1 runner3 Runner  a2 h0 destroyed
+    p1 runner4 Runner  a2 h-1 destroyed
+    p1 runner5 Runner  a2 h-1 destroyed
+    p1 runner6 Runner  a2 h0 destroyed
+    p1 runner7 Runner  a2 h0 destroyed
+    p1 runner8 Runner  a2 h0 destroyed
+    p1 runner9 Runner  a2 h0 destroyed
+    p2 heavy1  Heavy   a5 h10 (1,5) hp 10 en 15
+    p2 heavy2  Heavy   a5 h10 (3,4) hp 10 en 15
+    p2 heavy3  Heavy   a5 h10 (4,4) hp 10 en 15
+    p2 heavy4  Heavy   a5 h10 (6,5) hp 10 en 15
+    p2 keep1   Keep    a1 h10 (3,7) hp 10 en 5 flag
+    p2 runner1 Runner  a2 h4 (4,7) hp 4 en 10
+    p2 scout1  Scout   a0 h2 (0,7) hp 2 en 12
+    p2 wall1   Wall    a0 h6 (0,4) hp 6 en 0
+    p2 wall2   Wall    a0 h6 (1,4) hp 6 en 0
+    p2 wall3   Wall    a0 h6 (2,4) hp 6 en 0
+    p2 wall4   Wall    a0 h0 destroyed
+    p2 wall5   Wall    a0 h0 destroyed
+    p2 wall6   Wall    a0 h6 (5,4) hp 6 en 0
+    p2 wall7   Wall    a0 h6 (6,4) hp 6 en 0
+    p2 wall8   Wall    a0 h6 (7,4) hp 6 en 0

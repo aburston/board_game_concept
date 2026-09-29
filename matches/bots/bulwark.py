@@ -1,37 +1,45 @@
-"""Bulwark: a wall across the frontier, and two swords behind it.
+"""Bulwark: a wall across the frontier, and four Heavies behind it.
 
-A wall is attack 0 and energy 0 - ten health standing on a square for ten
-points, which can never move, never strike and never rest. Ten of them laid
-along the frontier row close the board: an enemy that wants into this half has
-to break one, and breaking ten health costs about ten energy however it is
-done. That is a tenth of an army's pocket spent before the fighting starts,
-and it is spent in a square the defender chose.
+Eight Walls (attack 0, health 10, energy 0, ten points each) along the row
+against the frontier close the half: nothing gets in without breaking one,
+and under one strike a turn a Wall takes a Line four turns, a Runner five
+and a Heavy two, with the attacker falling back after every strike that
+does not finish it (R5.8). Behind the line, four Heavies wait for whatever
+comes through the hole it makes, and go no further than two squares to meet
+it. A Keep carries the flag at the edge, with a Runner and a Scout beside it.
 
-The other hundred points is two units of attack 2 - enough to win a duel
-against ten health in five rounds rather than ten - waiting behind the line
-for whoever comes through the hole they make.
+246 points. Nobody hunts: this doctrine cannot take a flag, only keep one,
+and what it tests is whether a flag can be kept on this board at all.
 """
 
-from base import Sweeper
+from base import Doctrine
+from common import fares, mine, resolve
 
 
-class Bot(Sweeper):
+class Bot(Doctrine):
     name = 'Bulwark'
-    doctrine = '10 x wall (a0 h10 e0) across the frontier + 2 x (a2 h10 e28)'
-    army = (('W', 'W', 0, 10, 0, [(x, 4) for x in range(10)]),
-            ('K', 'K', 2, 10, 28, [(3, 2), (6, 2)]),
-            ('S', 's', 1, 1, 18, [(0, 0)]))
-
-    reach = 4
-
-    def floor(self, unit):
-        return 2 if unit['type'] == 'K' else 1
-
-    def plan_routes(self, view):
-        """Nobody sweeps. The swords hold their ground until something comes."""
-        return
+    doctrine = ('8 x Wall across the frontier row + 4 x Heavy behind + Keep '
+                'with the flag, Runner, Scout; nobody hunts')
+    army = (('Wall', 'W', 0, 10, 0, [(x, 3) for x in range(8)]),
+            ('Heavy', 'H', 5, 10, 15, [(1, 2), (3, 2), (4, 2), (6, 2)]),
+            ('Keep', 'K', 1, 10, 5, [(3, 0)]),
+            ('Runner', 'r', 2, 4, 10, [(4, 0)]),
+            ('Scout', 'o', 0, 2, 12, [(0, 0)]))
+    flag = 'keep1'
+    reach = 2
 
     def wish(self, view, unit, contacts):
-        remembered = list(self.seen.values())
-        return (self.engage_step(unit, contacts)
-                + self.approach(unit, contacts or remembered))
+        steps = self.engage_step(unit, contacts)
+        if unit['type'] == 'Heavy':
+            steps += self.approach(unit, contacts)
+        return steps
+
+    def orders(self, view):
+        contacts = self.targets(view)
+        fare = fares(view)
+        wishes = {}
+        for unit in mine(view):
+            if unit['energy'] - fare[unit['name']] < self.floor(unit):
+                continue
+            wishes[unit['name']] = self.wish(view, unit, contacts)
+        return resolve(view, wishes, keep_attack=False, together=contacts)

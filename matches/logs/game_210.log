@@ -1,0 +1,211 @@
+=== game 210: p1 Flag Hunt vs p2 Fugitive
+  board 8x8, p1: 250 points, rows 0-3, p2: 250 points, rows 4-7
+  p1 Flag Hunt: the stock army; everything but the Keeps and Walls goes for the enemy flag square by the shortest route round its own
+  p2 Fugitive: the flag on a Runner that walks the back row every turn it can + 11 x Lance (a8 h2 e10) that hunt
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: keeps the army as given
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Lance ! 8 2 10; add unit Lance lance1 0 4; add unit Lance lance2 1 4; add unit Lance lance3 2 4; add unit Lance lance4 3 4; add unit Lance lance5 4 4; add unit Lance lance6 5 4; add unit Lance lance7 6 4; add unit Lance lance8 7 4; add unit Lance lance9 1 5; add unit Lance lance10 4 5; add unit Lance lance11 6 5; add type Runner r 2 4 10; add unit Runner runner1 3 7; set flag runner1
+    after turn 1: in play 14 v 12  (walls: 2 v 0)
+  -- turn 2
+    p1: move heavy1 south; move heavy2 south; move pawn1 south; move pawn2 south; move pawn3 south; move pawn4 south; move runner1 south; move runner2 south; move scout1 south; move scout2 south
+    p2: move lance1 north; move lance10 north; move lance11 north; move lance2 north; move lance3 north; move lance4 north; move lance5 north; move lance6 north; move lance7 north; move lance8 north; move lance9 north; move runner1 east
+    after turn 2: in play 14 v 12  (walls: 2 v 0)
+  -- turn 3
+    p1: move heavy1 south; move heavy2 south
+    p2: move lance1 north; move lance10 north; move lance11 north; move lance2 north; move lance3 north; move lance4 north; move lance5 north; move lance6 north; move lance7 north; move lance8 north; move lance9 north; move runner1 east
+    after turn 3: in play 10 v 9  (walls: 2 v 0)
+  -- turn 4
+    p1: move heavy2 east; move runner1 south; move runner2 south; move scout1 south; move scout2 south
+    p2: move runner1 east
+    p1: 2 order(s) rejected last turn:
+    p1:   - scout1 at (1,1): the contest at (1, 2) was undecided
+    p1:   - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: 2 order(s) rejected last turn:
+    p2:   - lance2 at (1,2): the contest at (1, 2) was undecided
+    p2:   - lance7 at (6,2): the contest at (6, 2) was undecided
+    after turn 4: in play 10 v 6  (walls: 2 v 0)
+  -- turn 5
+    p1: move line2 east; move runner1 east; move runner2 south; move scout2 south
+    p2: move lance11 west; move lance3 north; move lance9 west; move runner1 east
+    p1: 2 order(s) rejected last turn:
+    p1:   - wall1 at (2,1): the contest at (2, 1) was undecided
+    p1:   - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: 2 order(s) rejected last turn:
+    p2:   - lance3 at (2,2): the contest at (2, 1) was undecided
+    p2:   - lance7 at (6,2): the contest at (6, 2) was undecided
+    after turn 5: in play 10 v 5  (walls: 2 v 0)
+  -- turn 6
+    p1: move line1 west; move line2 east; move runner1 east; move runner2 south; move scout1 south; move scout2 south
+    p2: move runner1 west
+    p1: 1 order(s) rejected last turn:
+    p1:   - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - lance7 at (6,2): the contest at (6, 2) was undecided
+    after turn 6: in play 10 v 4  (walls: 2 v 0)
+  -- turn 7
+    p1: move line1 south; move line2 south; move runner2 south; move scout1 south; move scout2 south
+    p2: move lance11 north; move lance9 north; move runner1 west
+    p1: 1 order(s) rejected last turn:
+    p1:   - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - lance7 at (6,2): the contest at (6, 2) was undecided
+    after turn 7: in play 9 v 4  (walls: 2 v 0)
+  -- turn 8
+    p1: move heavy1 east; move line1 south; move line2 south; move runner2 south; move scout1 east; move scout2 south
+    p2: move runner1 west
+    p1: 1 order(s) rejected last turn:
+    p1:   - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - lance7 at (6,2): the contest at (6, 2) was undecided
+    after turn 8: in play 9 v 4  (walls: 2 v 0)
+  -- turn 9
+    p1: move line1 south; move runner1 east; move runner2 south; move scout1 east; move scout2 south
+    p2: move lance9 north; move runner1 west
+    p1: 1 order(s) rejected last turn:
+    p1:   - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - lance7 at (6,2): the contest at (6, 2) was undecided
+    after turn 9: in play 9 v 4  (walls: 2 v 0)
+  -- turn 10
+    p1: move line2 south; move scout1 south; move scout2 south
+    p2: holds
+    p1: 1 order(s) rejected last turn:
+    p1:   - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - lance7 at (6,2): the contest at (6, 2) was undecided
+    after turn 10: in play 9 v 4  (walls: 2 v 0)
+  -- turn 11
+    p1: move line1 east; move runner1 south; move runner2 west; move scout1 south; move scout2 south
+    p2: move lance9 north; move runner1 west
+    p1: 1 order(s) rejected last turn:
+    p1:   - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - lance7 at (6,2): the contest at (6, 2) was undecided
+    after turn 11: in play 9 v 4  (walls: 2 v 0)
+  -- turn 12
+    p1: move heavy1 south; move scout1 south; move scout2 south
+    p2: holds
+    after turn 12: in play 8 v 4  (walls: 2 v 0)
+  -- turn 13
+    p1: move line2 west; move runner1 south; move runner2 west; move scout1 south
+    p2: move lance9 east; move runner1 west
+    after turn 13: in play 8 v 4  (walls: 2 v 0)
+  -- turn 14
+    p1: move line1 south; move scout1 west
+    p2: holds
+    after turn 14: in play 8 v 4  (walls: 2 v 0)
+  -- turn 15
+    p1: move runner1 south; move runner2 north; move scout1 west
+    p2: move lance9 east; move runner1 west
+    after turn 15: in play 8 v 4  (walls: 2 v 0)
+  -- turn 16
+    p1: move heavy1 south; move line2 south; move scout1 west
+    p2: holds
+    after turn 16: in play 7 v 4  (walls: 2 v 0)
+  -- turn 17
+    p1: move line1 south; move runner1 south; move runner2 south
+    p2: move lance11 north; move lance9 east
+    p1: 2 order(s) rejected last turn:
+    p1:   - keep1 at (3,0): the contest at (3, 0) was undecided
+    p1:   - wall2 at (5,1): the contest at (5, 1) was undecided
+    p2: 2 order(s) rejected last turn:
+    p2:   - lance9 at (2,0): the contest at (3, 0) was undecided
+    p2:   - lance11 at (5,2): the contest at (5, 1) was undecided
+    after turn 17: in play 7 v 4  (walls: 2 v 0)
+  -- turn 18
+    p1: move keep1 west
+    p2: holds
+    after turn 18: in play 7 v 3  (walls: 2 v 0)
+  -- turn 19
+    p1: move line2 south; move runner1 south; move runner2 west
+    p2: holds
+    after turn 19: in play 7 v 3  (walls: 2 v 0)
+  -- turn 20
+    p1: move heavy1 south; move line1 south
+    p2: move runner1 east
+    after turn 20: in play 7 v 3  (walls: 2 v 0)
+  -- turn 21
+    p1: move runner1 west; move runner2 east
+    p2: holds
+    after turn 21: in play 7 v 3  (walls: 2 v 0)
+  -- turn 22
+    p1: move line2 west
+    p2: move lance7 north; move runner1 east
+    p1: 2 order(s) rejected last turn:
+    p1:   - runner1 at (2,7): the contest at (2, 7) was undecided
+    p1:   - runner1 at (2,7): the contest at (2, 7) was undecided
+    after turn 22: in play 7 v 3  (walls: 2 v 0)
+  -- turn 23
+    p1: move line1 west; move runner2 west
+    p2: holds
+    after turn 23: in play 7 v 3  (walls: 2 v 0)
+  -- turn 24
+    p1: move heavy1 north
+    p2: move lance7 north
+    after turn 24: in play 7 v 3  (walls: 2 v 0)
+  -- turn 25
+    p1: move line2 north; move runner2 north
+    p2: holds
+    after turn 25: in play 7 v 3  (walls: 2 v 0)
+  -- turn 26
+    p1: move line1 south; move runner1 west
+    p2: move lance7 west; move runner1 east
+    p1: game over: player 1 wins on turn 26
+    p2: game over: player 1 wins on turn 26
+    p2 is eliminated from turn 26
+    after turn 26: in play 7 v 2  (walls: 2 v 0)
++-+-+-+-+-+-+-+-+
+| | |K| |K|!| | |
++-+-+-+-+-+-+-+-+
+| | |W| | |W| | |
++-+-+-+-+-+-+-+-+
+| | | | | |!| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |L| | |
++-+-+-+-+-+-+-+-+
+| | | | |H| | | |
++-+-+-+-+-+-+-+-+
+| | | | |r| | | |
++-+-+-+-+-+-+-+-+
+| |L|r| | | | | |
++-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+!            2  Lance
+H            1  Heavy
+K            1  Keep
+L            1  Line
+W            1  Wall
+r            1  Runner
+  game over: player 1 wins on turn 26
+  final units:
+    p1 heavy1  Heavy   a5 h2 (4,5) hp 2 en 7
+    p1 heavy2  Heavy   a5 h-6 destroyed
+    p1 keep1   Keep    a1 h2 (2,0) hp 2 en 5 flag
+    p1 keep2   Keep    a1 h10 (4,0) hp 10 en 5
+    p1 line1   Line    a3 h4 (1,7) hp 4 en 0
+    p1 line2   Line    a3 h6 (5,4) hp 6 en 4
+    p1 pawn1   Pawn    a1 h-4 destroyed
+    p1 pawn2   Pawn    a1 h-4 destroyed
+    p1 pawn3   Pawn    a1 h-4 destroyed
+    p1 pawn4   Pawn    a1 h-4 destroyed
+    p1 runner1 Runner  a2 h2 (2,7) hp 2 en 2
+    p1 runner2 Runner  a2 h4 (4,6) hp 4 en 3
+    p1 scout1  Scout   a0 h0 destroyed
+    p1 scout2  Scout   a0 h-6 destroyed
+    p1 wall1   Wall    a0 h2 (2,1) hp 2 en 0
+    p1 wall2   Wall    a0 h2 (5,1) hp 2 en 0
+    p2 lance1  Lance   a8 h-1 destroyed
+    p2 lance10 Lance   a8 h-6 destroyed
+    p2 lance11 Lance   a8 h2 (5,2) hp 2 en 9
+    p2 lance2  Lance   a8 h-1 destroyed
+    p2 lance3  Lance   a8 h0 destroyed
+    p2 lance4  Lance   a8 h-3 destroyed
+    p2 lance5  Lance   a8 h-6 destroyed
+    p2 lance6  Lance   a8 h-3 destroyed
+    p2 lance7  Lance   a8 h1 (5,0) hp 1 en 8
+    p2 lance8  Lance   a8 h-1 destroyed
+    p2 lance9  Lance   a8 h0 destroyed
+    p2 runner1 Runner  a2 h-1 destroyed flag

@@ -25,10 +25,19 @@ def pytest_configure(config):
         'markers',
         "backend(name): the storage backend this test is about "
         "('yaml' or 'sqlite'). An unmarked test runs on either backend.")
+    config.addinivalue_line(
+        'markers',
+        "slow: plays a game through the real roles; run with `-m slow`, "
+        "left out of a plain run.")
 
 
 def pytest_collection_modifyitems(config, items):
     import pytest
+    if 'slow' not in (config.getoption('-m') or ''):
+        for item in items:
+            if item.get_closest_marker('slow'):
+                item.add_marker(pytest.mark.skip(
+                    reason='a slow test: run with `pytest -m slow`'))
 
     for item in items:
         marker = item.get_closest_marker('backend')

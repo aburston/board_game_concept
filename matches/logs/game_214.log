@@ -1,0 +1,174 @@
+=== game 214: p1 Heavies vs p2 Runners
+  board 8x8, p1: 250 points, rows 0-3, p2: 250 points, rows 4-7
+  p1 Heavies: 7 x Heavy (a5 h10 e15) + Keep with the flag + Runner; the Heavies hunt
+  p2 Runners: 14 x Runner (a2 h4 e10) + Keep with the flag; every Runner hunts
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Heavy H 5 10 15; add unit Heavy heavy1 1 3; add unit Heavy heavy2 2 3; add unit Heavy heavy3 3 3; add unit Heavy heavy4 4 3; add unit Heavy heavy5 5 3; add unit Heavy heavy6 6 3; add unit Heavy heavy7 4 2; add type Keep K 1 10 5; add unit Keep keep1 3 0; add type Runner r 2 4 10; add unit Runner runner1 4 0; set flag keep1
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Runner r 2 4 10; add unit Runner runner1 0 4; add unit Runner runner2 1 4; add unit Runner runner3 2 4; add unit Runner runner4 3 4; add unit Runner runner5 4 4; add unit Runner runner6 5 4; add unit Runner runner7 6 4; add unit Runner runner8 7 4; add unit Runner runner9 0 5; add unit Runner runner10 1 5; add unit Runner runner11 2 5; add unit Runner runner12 5 5; add unit Runner runner13 6 5; add unit Runner runner14 7 5; add type Keep K 1 10 5; add unit Keep keep1 3 7; set flag keep1
+    after turn 1: in play 9 v 15
+  -- turn 2
+    p1: move heavy1 south; move heavy2 south; move heavy3 south; move heavy4 south; move heavy5 south; move heavy6 south; move heavy7 south
+    p2: move runner1 north; move runner10 north; move runner11 north; move runner12 north; move runner13 north; move runner14 north; move runner2 north; move runner3 north; move runner4 north; move runner5 north; move runner6 north; move runner7 north; move runner8 north; move runner9 north
+    p1: 2 order(s) rejected last turn:
+    p1:   - heavy4 at (4,4): the contest at (4, 3) was undecided
+    p1:   - heavy7 at (4,2): the contest at (4, 3) was undecided
+    p2: 8 order(s) rejected last turn:
+    p2:   - runner10 at (1,5): the contest at (1, 4) was undecided
+    p2:   - runner2 at (1,4): the contest at (1, 4) was undecided
+    p2:   - runner11 at (2,5): the contest at (2, 4) was undecided
+    p2:   - runner3 at (2,4): the contest at (2, 4) was undecided
+    p2:   - runner12 at (5,5): the contest at (5, 4) was undecided
+    p2:   - runner6 at (5,4): the contest at (5, 4) was undecided
+    p2:   - runner13 at (6,5): the contest at (6, 4) was undecided
+    p2:   - runner7 at (6,4): the contest at (6, 4) was undecided
+    after turn 2: in play 9 v 9
+  -- turn 3
+    p1: holds
+    p2: move runner1 east; move runner10 north; move runner11 north; move runner12 north; move runner13 north; move runner14 west; move runner8 west; move runner9 east
+    after turn 3: in play 9 v 3
+  -- turn 4
+    p1: move heavy3 south; move heavy7 south
+    p2: move runner1 south; move runner8 south
+    p1: 3 order(s) rejected last turn:
+    p1:   - heavy1 at (1,4): the contest at (1, 4) was undecided
+    p1:   - runner1 at (4,0): the contest at (1, 4) was undecided
+    p1:   - heavy6 at (6,4): the contest at (6, 4) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - runner8 at (6,3): the contest at (6, 4) was undecided
+    after turn 4: in play 9 v 3
+  -- turn 5
+    p1: holds
+    p2: move runner1 south; move runner8 south
+    after turn 5: in play 7 v 3
+  -- turn 6
+    p1: holds
+    p2: holds
+    after turn 6: in play 7 v 3
+  -- turn 7
+    p1: holds
+    p2: move runner1 north; move runner8 north
+    after turn 7: in play 7 v 3
+  -- turn 8
+    p1: move heavy3 south; move heavy7 west
+    p2: holds
+    after turn 8: in play 7 v 3
+  -- turn 9
+    p1: move heavy4 south
+    p2: move runner1 north; move runner8 west
+    after turn 9: in play 7 v 3
+  -- turn 10
+    p1: move heavy2 south; move heavy5 south
+    p2: holds
+    after turn 10: in play 7 v 3
+  -- turn 11
+    p1: holds
+    p2: move runner1 east; move runner8 north
+    after turn 11: in play 7 v 3
+  -- turn 12
+    p1: move heavy3 south; move heavy7 south
+    p2: holds
+    p1: 2 order(s) rejected last turn:
+    p1:   - heavy3 at (3,6): the contest at (3, 7) was undecided
+    p1:   - keep1 at (3,0): the contest at (3, 7) was undecided
+    after turn 12: in play 7 v 3
+  -- turn 13
+    p1: move heavy4 south
+    p2: move keep1 north; move runner1 north; move runner8 west
+    p1: 2 order(s) rejected last turn:
+    p1:   - heavy3 at (3,6): the contest at (3, 6) was undecided
+    p1:   - keep1 at (3,0): the contest at (3, 6) was undecided
+    after turn 13: in play 7 v 3
+  -- turn 14
+    p1: move heavy2 south; move heavy5 west
+    p2: holds
+    after turn 14: in play 7 v 3
+  -- turn 15
+    p1: holds
+    p2: move runner1 east; move runner8 north
+    after turn 15: in play 7 v 3
+  -- turn 16
+    p1: move heavy7 south
+    p2: holds
+    after turn 16: in play 7 v 3
+  -- turn 17
+    p1: move heavy4 south
+    p2: move runner1 north; move runner8 west
+    p1: 2 order(s) rejected last turn:
+    p1:   - keep1 at (3,0): the contest at (3, 0) was undecided
+    p1:   - runner1 at (4,0): the contest at (3, 0) was undecided
+    after turn 17: in play 7 v 3
+  -- turn 18
+    p1: move heavy2 south; move heavy5 south; move keep1 south
+    p2: holds
+    after turn 18: in play 7 v 2
+  -- turn 19
+    p1: holds
+    p2: move runner8 west
+    p1: 1 order(s) rejected last turn:
+    p1:   - keep1 at (3,1): the contest at (3, 1) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - runner8 at (4,1): the contest at (3, 1) was undecided
+    after turn 19: in play 7 v 2
+  -- turn 20
+    p1: move runner1 south
+    p2: holds
+    p1: 1 order(s) rejected last turn:
+    p1:   - runner1 at (4,0): the contest at (4, 1) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - runner8 at (4,1): the contest at (4, 1) was undecided
+    after turn 20: in play 7 v 2
+  -- turn 21
+    p1: move heavy3 south; move heavy4 west; move heavy7 south; move runner1 south
+    p2: holds
+    p1: game over: player 1 wins on turn 21
+    p2: game over: player 1 wins on turn 21
+    p2 is eliminated from turn 21
+    after turn 21: in play 5 v 0
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K|r| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |H|H| | | |
++-+-+-+-+-+-+-+-+
+| | |H| | | | | |
++-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+H            1  Heavy
+K            1  Keep
+r            1  Runner
+  game over: player 1 wins on turn 21
+  final units:
+    p1 heavy1  Heavy   a5 h0 destroyed
+    p1 heavy2  Heavy   a5 h6 (2,7) hp 6 en 8
+    p1 heavy3  Heavy   a5 h0 destroyed
+    p1 heavy4  Heavy   a5 h-3 destroyed
+    p1 heavy5  Heavy   a5 h6 (4,6) hp 6 en 8
+    p1 heavy6  Heavy   a5 h0 destroyed
+    p1 heavy7  Heavy   a5 h5 (3,6) hp 5 en 6
+    p1 keep1   Keep    a1 h6 (3,1) hp 6 en 3 flag
+    p1 runner1 Runner  a2 h4 (4,1) hp 4 en 4
+    p2 keep1   Keep    a1 h-5 destroyed flag
+    p2 runner1 Runner  a2 h0 destroyed
+    p2 runner10Runner  a2 h-5 destroyed
+    p2 runner11Runner  a2 h-3 destroyed
+    p2 runner12Runner  a2 h-3 destroyed
+    p2 runner13Runner  a2 h-5 destroyed
+    p2 runner14Runner  a2 h-3 destroyed
+    p2 runner2 Runner  a2 h-3 destroyed
+    p2 runner3 Runner  a2 h-3 destroyed
+    p2 runner4 Runner  a2 h-1 destroyed
+    p2 runner5 Runner  a2 h-1 destroyed
+    p2 runner6 Runner  a2 h-3 destroyed
+    p2 runner7 Runner  a2 h-3 destroyed
+    p2 runner8 Runner  a2 h0 destroyed
+    p2 runner9 Runner  a2 h-3 destroyed

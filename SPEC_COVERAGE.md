@@ -30,6 +30,7 @@ source of truth for intended behaviour.
 | `placement-zones` | Where a player may deploy during setup: the two-player halves, the neutral row, and the area published per seat |
 | `default-army` | What a new game and a newly registered player start with: the default board, the catalogue of eight types, the fifteen-unit array, and when each is given |
 | `web-interface` | Playing in a browser: a client of the same contract, what it must make visible, and what it must not remember |
+| `match-series` | How a series of bot-played games is run so that its results are evidence about the rules: through the real roles, each bot given only its own view, on the game's own defaults, recorded turn by turn, and written up saying what it was played under |
 
 Validate them with:
 
@@ -155,6 +156,36 @@ on a real screen, in both schemes. Red, amber and green is the worst pairing
 for the commonest colour blindness; the length of the arc and of the bar
 carries the same information, and the figures are in the tray and in every
 unit's description, so hue is a second channel here rather than the only one.
+
+## A series of games is evidence, and is held to it
+
+The `default-board-series` change played twenty games on the game's own
+defaults (`matches/RESULTS-DEFAULT-BOARD.md`) and stated what a series has to
+keep to count as evidence, as the `match-series` capability.
+
+| Requirement | Held by |
+|---|---|
+| `match-series` — A Game Is Played Through The Real Roles | `matches/arena.py` launches the three roles as subprocesses of the running interpreter and types at their prompts; `test_match_harness.py`'s slow tests play a game that way and read what the roles said |
+| `match-series` — A Bot Is Given Its Own View And Nothing Else | `test_match_harness.py`, for the six subjects a view is assembled from and the error when one is missing; the harness reads the observer only after both seats have ordered, and passes nothing from it to a bot |
+| `match-series` — A Series Is Played On The Game's Defaults | `test_match_harness.py`'s slow test, which plays Garrison against Garrison and reads `8x8`, `250` and the halves back from the log; the harness sends `add player` and `commit` and nothing else |
+| `match-series` — The Outcome Is Read From The Game | `test_match_harness.py`, for status read from the players subject and logged the turn it changes, and for a wall not being counted in play |
+| `match-series` — Every Game Leaves A Record That Can Be Checked | the log, the three transcripts and the history each game writes under `matches/logs/`; the series script skips a game whose log ends in an outcome |
+| `match-series` — A Series Write-Up Says What It Was Played Under | `matches/RESULTS-DEFAULT-BOARD.md` at its head; the five earlier write-ups carry the superseded notice |
+
+The doctrines are held to the game before a game is played: every rebuilt
+army is run through `UnitType`, costed against the budget, placed inside its
+half of an 8 x 8 board with no square twice, and checked for exactly one
+carrier; every doctrine is called twice on one view and must answer the same,
+and nothing under `matches/bots/` may name `random`, `time`, `id(` or
+`hash(`.
+
+One thing the harness could not take from the game: `bgcserver -g <n>` on a
+number nobody has created opens an *unsized* game, and the 8 x 8 default of
+`default-army` is given only where a game is created through the registry,
+which is what the lobby does. The harness creates its game through that same
+call rather than typing `set board 8 8`, so that it restates no default. That
+the two ways of starting a game differ in this is recorded under **Known
+divergences** as number 31.
 
 ## Known divergences
 
@@ -898,6 +929,54 @@ now runs the suite once per backend from a matrix, so a pinned test is executed
 by the job it is pinned to rather than by neither.
 `tests/test_two_player_commit.py` is deliberately unpinned and runs the API on
 whichever backend the run is for.
+
+### 31. A game started at the command line has no board — open
+
+`default-army` says a created game is given a board of 8 by 8, so that a game
+nobody sets up further is still a game that can be played. The registry's
+`create` does that, and the lobby calls it. `bgcserver -g <n>` on a number
+nobody has created does not go through the registry: it opens an unsized
+game, and the administrator's `commit` is refused with "the board size is too
+small (0, 0)" until a board is set. The same person, starting the same game,
+is given a board in a browser and none at a terminal.
+
+Reproduction: `bgcserver -g 500`, then `add player 1`, `add player 2`,
+`commit`.
+
+Found by the `default-board-series` change, whose harness needed the default
+board without restating it, and creates its games through the registry for
+that reason. Not fixed here: the change plays games and changes no rule. The
+fix is for the local flow to create a game the registry's way when the
+number is new, and belongs with `game-server`.
+
+### 32. The rejected-orders list is matched by unit name, not by owner — open
+
+`visibility` says a player is told what a turn did to their own units, and
+nothing of what other players did to each other, and that whose units an
+entry is about decides this, not the names in it (R6.8). The list of orders
+the turn rejected does not keep to that. When a contest is undecided, every
+unit that was in it is reported as rejected - the defender as well as the
+movers - and the report is delivered to whoever owns a unit of that *name*.
+The stock army gives both players the same sixteen names, so:
+
+- a player whose `pawn1` walked into the other player's `pawn1` and did not
+  shift it is told twice, once for each unit called `pawn1`, at their own
+  unit's square both times: "8 order(s) rejected last turn" for four moves;
+- a player whose Lance struck the other player's `keep1` and left it standing
+  is told "keep1 at (3,0): the contest at (3, 7) was undecided" - the square
+  of their own Keep, which took no part, and the square of a contest they
+  were in anyway, but reported against the wrong unit.
+
+Nothing is disclosed that R6.8 withholds, since the reporting player was in
+every one of these contests. What is wrong is the account: a unit of yours
+that did nothing is named as refused, and a move is refused twice.
+
+Reproduction: games 202 and 205 of `matches/RESULTS-DEFAULT-BOARD.md`; any
+stock army against any other, once a move ends in an undecided contest.
+
+Found by playing the `default-board-series`. Not fixed here, for the same
+reason as 31. The fix is for the rejection record to carry the owner and be
+filtered by it, as the turn feed already is, and belongs with `turn-commit`.
 
 ## Unspecified, and worth deciding
 

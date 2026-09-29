@@ -1,0 +1,118 @@
+=== game 212: p1 Lancers vs p2 Runners
+  board 8x8, p1: 250 points, rows 0-3, p2: 250 points, rows 4-7
+  p1 Lancers: 11 x Lance (a8 h2 e10) + Keep with the flag; every Lance hunts
+  p2 Runners: 14 x Runner (a2 h4 e10) + Keep with the flag; every Runner hunts
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Lance ! 8 2 10; add unit Lance lance1 0 3; add unit Lance lance2 1 3; add unit Lance lance3 2 3; add unit Lance lance4 3 3; add unit Lance lance5 4 3; add unit Lance lance6 5 3; add unit Lance lance7 6 3; add unit Lance lance8 7 3; add unit Lance lance9 1 2; add unit Lance lance10 4 2; add unit Lance lance11 6 2; add type Keep K 1 10 5; add unit Keep keep1 3 0; set flag keep1
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Runner r 2 4 10; add unit Runner runner1 0 4; add unit Runner runner2 1 4; add unit Runner runner3 2 4; add unit Runner runner4 3 4; add unit Runner runner5 4 4; add unit Runner runner6 5 4; add unit Runner runner7 6 4; add unit Runner runner8 7 4; add unit Runner runner9 0 5; add unit Runner runner10 1 5; add unit Runner runner11 2 5; add unit Runner runner12 5 5; add unit Runner runner13 6 5; add unit Runner runner14 7 5; add type Keep K 1 10 5; add unit Keep keep1 3 7; set flag keep1
+    after turn 1: in play 12 v 15
+  -- turn 2
+    p1: move lance1 south; move lance10 south; move lance11 south; move lance2 south; move lance3 south; move lance4 south; move lance5 south; move lance6 south; move lance7 south; move lance8 south; move lance9 south
+    p2: move runner1 north; move runner10 north; move runner11 north; move runner12 north; move runner13 north; move runner14 north; move runner2 north; move runner3 north; move runner4 north; move runner5 north; move runner6 north; move runner7 north; move runner8 north; move runner9 north
+    p2: 12 order(s) rejected last turn:
+    p2:   - runner1 at (0,4): the contest at (0, 4) was undecided
+    p2:   - runner9 at (0,5): the contest at (0, 4) was undecided
+    p2:   - runner10 at (1,5): the contest at (1, 4) was undecided
+    p2:   - runner2 at (1,4): the contest at (1, 4) was undecided
+    p2:   - runner11 at (2,5): the contest at (2, 4) was undecided
+    p2:   - runner3 at (2,4): the contest at (2, 4) was undecided
+    p2:   - runner12 at (5,5): the contest at (5, 4) was undecided
+    p2:   - runner6 at (5,4): the contest at (5, 4) was undecided
+    p2:   - runner13 at (6,5): the contest at (6, 4) was undecided
+    p2:   - runner7 at (6,4): the contest at (6, 4) was undecided
+    p2:   - runner14 at (7,5): the contest at (7, 4) was undecided
+    p2:   - runner8 at (7,4): the contest at (7, 4) was undecided
+    after turn 2: in play 1 v 10
+  -- turn 3
+    p1: holds
+    p2: move runner10 north; move runner11 north; move runner12 north; move runner13 north; move runner14 north; move runner2 north; move runner5 north; move runner7 north; move runner9 north
+    after turn 3: in play 1 v 10
+  -- turn 4
+    p1: holds
+    p2: move runner10 north; move runner11 north; move runner12 north; move runner13 north; move runner14 west; move runner2 north; move runner5 north; move runner7 north; move runner9 north
+    after turn 4: in play 1 v 10
+  -- turn 5
+    p1: holds
+    p2: move runner10 north; move runner11 north; move runner12 north; move runner13 west; move runner14 north; move runner2 north; move runner5 north; move runner7 north; move runner9 east
+    after turn 5: in play 1 v 10
+  -- turn 6
+    p1: holds
+    p2: move runner10 east; move runner11 north; move runner12 west; move runner13 north; move runner14 west; move runner2 north; move runner5 west; move runner7 west; move runner9 north
+    after turn 6: in play 1 v 10
+  -- turn 7
+    p1: holds
+    p2: move runner10 north; move runner11 east; move runner12 north; move runner13 west; move runner14 north; move runner2 east; move runner5 north; move runner7 north; move runner9 east
+    p1: 1 order(s) rejected last turn:
+    p1:   - keep1 at (3,0): the contest at (3, 0) was undecided
+    p2: 1 order(s) rejected last turn:
+    p2:   - runner5 at (3,1): the contest at (3, 0) was undecided
+    after turn 7: in play 1 v 9
+  -- turn 8
+    p1: move keep1 south
+    p2: holds
+    after turn 8: in play 1 v 8
+  -- turn 9
+    p1: holds
+    p2: move runner10 east; move runner12 west; move runner13 west; move runner14 west; move runner2 east; move runner7 west; move runner9 north
+    after turn 9: in play 1 v 6
+  -- turn 10
+    p1: holds
+    p2: holds
+    after turn 10: in play 1 v 6
+  -- turn 11
+    p1: holds
+    p2: move runner13 north; move runner14 west; move runner2 south; move runner7 west; move runner9 east
+    p1: game over: player 2 wins on turn 11
+    p2: game over: player 2 wins on turn 11
+    p1 is eliminated from turn 11
+    after turn 11: in play 0 v 3
++-+-+-+-+-+-+-+-+
+| | | |r| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+SYMBOL  PLAYER  TYPE
+K            2  Keep
+r            2  Runner
+  game over: player 2 wins on turn 11
+  final units:
+    p1 keep1   Keep    a1 h-4 destroyed flag
+    p1 lance1  Lance   a8 h0 destroyed
+    p1 lance10 Lance   a8 h-6 destroyed
+    p1 lance11 Lance   a8 h-6 destroyed
+    p1 lance2  Lance   a8 h-6 destroyed
+    p1 lance3  Lance   a8 h0 destroyed
+    p1 lance4  Lance   a8 h0 destroyed
+    p1 lance5  Lance   a8 h-6 destroyed
+    p1 lance6  Lance   a8 h0 destroyed
+    p1 lance7  Lance   a8 h-6 destroyed
+    p1 lance8  Lance   a8 h0 destroyed
+    p1 lance9  Lance   a8 h-6 destroyed
+    p2 keep1   Keep    a1 h10 (3,7) hp 10 en 5 flag
+    p2 runner1 Runner  a2 h-6 destroyed
+    p2 runner10Runner  a2 h0 destroyed
+    p2 runner11Runner  a2 h0 destroyed
+    p2 runner12Runner  a2 h0 destroyed
+    p2 runner13Runner  a2 h-3 destroyed
+    p2 runner14Runner  a2 h2 (3,2) hp 2 en 2
+    p2 runner2 Runner  a2 h-3 destroyed
+    p2 runner3 Runner  a2 h-6 destroyed
+    p2 runner4 Runner  a2 h-4 destroyed
+    p2 runner5 Runner  a2 h0 destroyed
+    p2 runner6 Runner  a2 h-6 destroyed
+    p2 runner7 Runner  a2 h2 (3,0) hp 2 en 2
+    p2 runner8 Runner  a2 h-6 destroyed
+    p2 runner9 Runner  a2 h-3 destroyed
