@@ -6,7 +6,7 @@ the number stays in the path and is checked rather than looked up. This
 suite is what that buys: somebody can try the game without a second person.
 
 Each seat has to stay a separate identity through all of it. Its own army,
-its own orders, its own view, and its own place at the commit barrier.
+its own programs, its own view, and its own place at the commit barrier.
 """
 
 import pytest
@@ -123,32 +123,34 @@ def test_neither_seat_is_shown_what_the_other_sees(client, ada):
         assert theirs not in names
 
 
-def test_an_order_belongs_to_the_seat_that_gave_it(client, ada):
+def test_a_command_belongs_to_the_seat_that_gave_it(client, ada):
+    """A player gives no orders any more; what a seat does during setup is
+    the same test of the guard. Seat 1 moves its flag to a second unit, and
+    seat 2's carrier is untouched by it."""
     _deploy(client, ada, 1, 0, 0)
     _deploy(client, ada, 2, 3, 3)
-    client.post(f'/games/{GAME}/players/1/commit', headers=ada)
-    client.post(f'/games/{GAME}/players/2/commit', headers=ada)
+    _command(client, ada, 1,
+             {'kind': 'add_unit', 'type_name': 'Cross1', 'name': 'u1b',
+              'x': 1, 'y': 0})
 
-    _command(client, ada, 1, {'kind': 'move', 'unit': 'u1', 'direction': 2})
+    _command(client, ada, 1, {'kind': 'set_flag', 'unit': 'u1b'})
 
-    ordered = [u for u in _units(client, ada, 1) if u['name'] == 'u1'][0]
-    assert ordered['direction'] == 'east'
+    carriers = [u['name'] for u in _units(client, ada, 1) if u['flag']]
+    assert carriers == ['u1b']
 
-    # the other seat's unit was not ordered by that
-    other = [u for u in _units(client, ada, 2) if u['name'] == 'u2'][0]
-    assert other['direction'] is None
+    # the other seat's carrier was not changed by that
+    other = [u['name'] for u in _units(client, ada, 2) if u['flag']]
+    assert other == ['u2']
 
 
-def test_a_seat_may_not_order_a_unit_of_the_other_seat(client, ada):
+def test_a_seat_may_not_designate_a_unit_of_the_other_seat(client, ada):
     """Entitlement to both seats is still entitlement to each separately."""
     _deploy(client, ada, 1, 0, 0)
     _deploy(client, ada, 2, 3, 3)
-    client.post(f'/games/{GAME}/players/1/commit', headers=ada)
-    client.post(f'/games/{GAME}/players/2/commit', headers=ada)
 
     response = client.post(f'/games/{GAME}/players/1/commands',
-                           json={'kind': 'move', 'unit': 'u2',
-                                 'direction': 2}, headers=ada)
+                           json={'kind': 'set_flag', 'unit': 'u2'},
+                           headers=ada)
 
     assert response.status_code == 400
 
