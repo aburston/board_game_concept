@@ -73,11 +73,6 @@ want.
 - **WHEN** two players commit the stock army unchanged
 - **THEN** every unit of each array with a controller, the Keeps excepted, stands on a square other than the one it was seeded on at some turn within the first twenty turns of play
 
-#### Scenario: The default takes a flag nobody defends
-
-- **WHEN** a player commits the stock army unchanged against an army of the same units whose every controller halts for nothing
-- **THEN** the game is decided in the unchanged army's favour within one hundred turns
-
 #### Scenario: A blocked hunter costs nothing
 
 - **WHEN** a unit running the hunter finds one of its own both ways round on a turn

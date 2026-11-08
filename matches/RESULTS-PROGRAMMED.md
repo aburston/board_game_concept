@@ -7,6 +7,15 @@ in any of these games. Each seat typed its types, its programs, its
 squares and its flag, committed, and the game played itself to its end
 the moment the second seat had.
 
+> **The default army has changed since.** The `default-army-that-plays`
+> change, made from what these games showed, moved the Lines to the array's
+> front rank and the Walls back beside the Keeps, made the Pawn a vanguard
+> that advances (compute 3, cost 10; the array 308), let a blocked hunter
+> sleep instead of paying to hold, and stops a game in which nothing has
+> happened for fifty turns (R7.7). Games 221-224 and 239, which have a
+> stock seat, were played with the earlier array and programs; the rebuilt
+> doctrines of the other games are unaffected. They have not been replayed.
+
 ## What was played
 
 **The code.** Commit `d49a170` and the two that follow it on the

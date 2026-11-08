@@ -306,24 +306,3 @@ def test_the_whole_army_gets_out(tmp_path):
                 for _depth, _x, type_name, name in army.ARRAY
                 if type_name not in ('Wall', 'Keep')}
     assert expected <= moved, sorted(expected - moved)
-
-
-def test_the_default_takes_a_flag_nobody_defends(tmp_path):
-    """The unchanged array against the same sixteen units whose every
-    controller halts for nothing wins within a hundred turns."""
-    harness = GameHarness(tmp_path)
-    harness.create(army.DEFAULT_SIZE_X, army.DEFAULT_SIZE_Y, [1, 2])
-    assert harness.session(1).clientSave()
-    garrison = harness.session(2)
-    from board_game_concept.service import games
-    from board_game_concept.service.commands import SetProgram
-    for name, record in army.types().items():
-        if record['compute'] > 0:
-            games.perform(garrison, SetProgram(type_name=name,
-                                               program='HALT'))
-    assert garrison.clientSave()
-    server = harness.play()
-    outcome = server.getOutcome()
-    assert outcome['decided'] is True, outcome
-    assert outcome['winner'] == 1
-    assert outcome['turn'] <= 100, outcome

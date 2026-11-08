@@ -40,9 +40,13 @@ plays, and the first thing it should be is a game.
   repeating, which were four of the twenty games in the series. Separable
   from the rest if wanted, but without it the mirror of two default armies
   still ends in hundreds of empty turns.
-- The default's play is held by tests that play it: the unchanged default
-  takes a Garrison's flag, and in the mirror every unit with legs leaves its
-  square.
+- The default's play is held by a test that plays it: in the mirror of two
+  unchanged defaults every unit with legs leaves its square. A second test,
+  that the default takes the flag of an army whose programs all halt, was
+  proposed and dropped: a halted army still strikes back, rests for free
+  and keeps two Heavies in front of its Keeps, and the default loses twelve
+  units for three with the carrier struck to half its health. Taking a
+  garrison needs hunters that arrive together, which is another change.
 
 ## Capabilities
 
