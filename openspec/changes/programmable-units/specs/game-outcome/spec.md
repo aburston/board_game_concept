@@ -42,7 +42,7 @@ The system SHALL resolve the game without regard to an eliminated player: their
 units are left standing and inert, their controllers do not run, and nothing
 of theirs is waited for.
 
-#### Scenario: An eliminated player's controllers
+#### Scenario: The barrier ignores an eliminated player
 
 - **WHEN** a turn is resolved after a player has been eliminated
 - **THEN** none of that player's controllers runs
@@ -59,19 +59,19 @@ of theirs is waited for.
 Once the game is decided or stopped undecided the system SHALL resolve no
 further turns, and every session SHALL report the result and offer the record.
 
-#### Scenario: Resolution stops
+#### Scenario: The server stops
 
 - **WHEN** a turn decides the game, or the game stops undecided
 - **THEN** the result is recorded
 - **AND** no further turn is resolved
 
-#### Scenario: A client opens a finished game
+#### Scenario: A client opens a decided game
 
 - **WHEN** a player opens a session for a game that has been resolved to its end
 - **THEN** the client reports the result
 - **AND** offers the replay
 
-#### Scenario: An observer opens a finished game
+#### Scenario: An observer opens a decided game
 
 - **WHEN** the observer opens a game that has been resolved to its end
 - **THEN** it reports the result alongside the final board

@@ -110,7 +110,7 @@ so a sleeper that was not in a fight SHALL rest.
 - **WHEN** a turn resolves in which such a unit took no action
 - **THEN** its energy is unchanged
 
-#### Scenario: A unit whose controller ordered a move
+#### Scenario: A unit that was ordered to move
 
 - **WHEN** a turn resolves in which a unit's controller ordered it to move
 - **THEN** that unit does not recover energy, whether or not the move was carried out
@@ -217,6 +217,18 @@ make a game impossible to open.
 - **AND** an observer is not shown it
 - **AND** nothing reveals that the player has drafted anything at all
 
+#### Scenario: A draft from an earlier turn
+
+- **WHEN** a game is opened holding a draft recorded before the game was resolved
+- **THEN** the draft is discarded, the setup having been committed
+- **AND** the game opens on its record
+
+#### Scenario: Drafting is not permitted while awaiting resolution
+
+- **WHEN** a player has committed their setup and another player has not
+- **THEN** no further action is drafted for them
+- **AND** the client reports that it is waiting for the other setups
+
 #### Scenario: A drafted action that is no longer legal
 
 - **WHEN** a draft is restored and one of its actions can no longer be carried out
@@ -238,7 +250,7 @@ the moment they commit, and SHALL NOT be able to amend it afterwards. There
 SHALL be no way to withdraw a commit: a player who has committed is committed
 for the game, whatever any other player does next.
 
-#### Scenario: Committing a setup
+#### Scenario: Committing orders
 
 - **WHEN** a player commits
 - **THEN** their types, programs, units and flag are fixed

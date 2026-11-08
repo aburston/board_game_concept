@@ -101,6 +101,11 @@ player has committed, or that it is waiting for the other players' setups.
 - **WHEN** `commit` is run and the game cannot be saved
 - **THEN** the client reports the problem and returns to the prompt
 
+#### Scenario: Reloading after resolution
+
+- **WHEN** the game has been resolved since the player committed
+- **THEN** the client reloads the game and shows the result and the final turn
+
 #### Scenario: Committing a setup with no flag
 
 - **WHEN** the player runs `commit` during setup and no unit of theirs carries
@@ -137,6 +142,17 @@ same name.
 
 - **WHEN** the player reads a turn on which none of their units' orders were refused
 - **THEN** nothing is reported under rejections
+
+#### Scenario: Rejections describe only the last resolved turn
+
+- **WHEN** the player reads a turn of the record
+- **THEN** the rejections shown are that turn's alone
+- **AND** no earlier turn's rejections are shown with them
+
+#### Scenario: A destroyed unit is not reported every turn
+
+- **WHEN** the player reads turns after one of their units was destroyed
+- **THEN** nothing is reported about that unit on any of them
 
 #### Scenario: Another player's unit of the same name
 

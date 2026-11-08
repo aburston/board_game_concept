@@ -35,19 +35,19 @@ The system SHALL let the observer see how far a game has got and how it ended,
 reporting the turn number it is showing and, once the game is resolved, the
 winner, the draw, or that it stopped undecided and why.
 
-#### Scenario: Opening a resolved game
+#### Scenario: Opening a decided game
 
 - **WHEN** the observer opens a game whose outcome has been written
 - **THEN** it reports the winner, the draw, or the undecided stop, and the turn number
 - **AND** it shows the final board and offers the replay
 
-#### Scenario: Opening a game still being set up
+#### Scenario: Opening a game still being played
 
 - **WHEN** the observer opens a game whose players have not all committed their setups
 - **THEN** it reports no outcome
 - **AND** reports that the game is being set up
 
-#### Scenario: Reloading onto a resolved game
+#### Scenario: Reloading onto a decided game
 
 - **WHEN** `reload` is entered and the game has been resolved since the session started
 - **THEN** the observer reports the outcome after reloading
