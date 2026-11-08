@@ -408,6 +408,31 @@ class TestTheProgramsRunWithinTheirCaps:
                    if u['player'] == 1 and u.get('flag')]
         assert carrier == (flags or [FLAG_UNIT])
 
+    @pytest.mark.parametrize('name', [d for d in DOCTRINES
+                                      if d not in ('garrison', 'bulwark')])
+    def test_every_doctrine_that_hunts_moves(self, tmp_path, arena, name):
+        """A program that parses and fits its cap can still order
+        nothing - a register a sensor overwrites, a square read as a friend
+        - and the listing cannot tell. Against a Garrison that never comes,
+        a doctrine's own units are the only thing that can move, and every
+        doctrine but the Garrison says it means to."""
+        _outcome, records = self.play(tmp_path, arena, name, turns=3)
+        moved = [t['unit'] for r in records[1:] for t in r['traces']
+                 if t['player'] == 1 and t.get('order') not in (None, 'hold')]
+        assert moved, f'{name} ordered nothing on the first turns of play'
+
+    def test_the_bulwark_comes_out_to_meet_what_reaches_it(self, tmp_path,
+                                                           arena):
+        """Nobody in the Bulwark hunts, so against a Garrison nothing of
+        it moves; against a hunt its Heavies go at what its map shows
+        within two squares."""
+        _outcome, records = self.play(tmp_path, arena, 'bulwark',
+                                      against='flag_hunt', turns=40)
+        moved = [t['unit'] for r in records for t in r['traces']
+                 if t['player'] == 1 and t.get('order') not in (None, 'hold')
+                 and t['unit'].startswith('heavy')]
+        assert moved, 'no Heavy of the Bulwark ever moved'
+
     def test_garrison_against_garrison_repeats_at_once(self, tmp_path,
                                                        arena):
         outcome, _records = self.play(tmp_path, arena, 'garrison')
