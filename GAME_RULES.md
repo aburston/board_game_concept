@@ -16,13 +16,18 @@ Rules are numbered `R1.1`, open questions `Q1`, so you can point at one.
 
 ## R1. What the game is
 
-**R1.1** Two or more players design their own unit types, deploy units of those
-types onto a shared grid, and then each turn order each unit to step one square
-in one of four directions. Units that end up on the same square fight.
+**R1.1** Two or more players design their own unit types, write the program
+each type's controller runs, deploy units of those types onto a shared grid,
+and commit. Nobody orders anything after that: the game is played to its end
+the moment the last setup is committed, every turn resolved one after another
+by the controllers alone, and watched afterwards as a replay. Each turn every
+unit's controller reads what its army knows and gives its order - a step one
+square in one of four directions, or nothing. Units that end up on the same
+square fight.
 
 **R1.2 The invariant: no randomness in the resolution of the rules.** A turn is
-a pure function of the board and the orders given — the same orders on the same
-board always resolve the same way. There is no dice, no hidden roll, and no
+a pure function of the board and the programs on it — the same programs on the
+same board always resolve the same way, and so does the whole game. There is no dice, no hidden roll, and no
 random number anywhere in the game. Nor is there any rule decided by the order a
 list happens to hold its members in: that is unpredictable to a player in
 exactly the way a die roll would be, and harder to see. Where two things could
@@ -38,7 +43,9 @@ each.
 player, and any number of read-only **observers**.
 
 **R1.4** The game ends when one player is the last with a unit left standing,
-or in a draw when the last players are wiped out together. See **R7**.
+or in a draw when the last players are wiped out together - or stops
+**undecided**, when its whole state repeats or the turn cap is reached. See
+**R7**.
 
 ---
 
@@ -61,15 +68,15 @@ added once the game has started.
 
 **R2.3.1 The point budget.** Each player is registered with a **point budget**,
 which is what bounds the army they may deploy (**R2.9**). It is an integer from
-**1 to 1000**, and is **250** where the administrator does not name one - what
-the default army (**R2.13**) costs, and 18 points over, so that a player can
+**1 to 1000**, and is **320** where the administrator does not name one - what
+the default army (**R2.13**) costs, and 16 points over, so that a player can
 change what they were given without first taking something back. Two
 players of the same game may be given different budgets. A budget is fixed at
 registration: nothing in play raises or lowers it. A player file may carry a
 `budget:` key; one that does not gets the default.
 
 **R2.4 Unit types.** Each player defines their own unit types with
-`add type <name> <symbol> <attack> <health> <energy>`:
+`add type <name> <symbol> <attack> <health> <energy> [<compute>]`:
 
 | Field | Rule |
 |---|---|
@@ -78,35 +85,48 @@ registration: nothing in play raises or lowers it. A player file may carry a
 | `attack` | integer, **0 to 10** |
 | `health` | integer, **1 to 10** |
 | `energy` | integer, **0 to 100** |
+| `compute` | integer, **0 to 10**; 0 when left out |
 
 **Attack 0 is allowed, with or without energy.** With no energy it is a wall
-(**R2.10**): health standing on a square. With energy it is a **scout** — it
-goes where it likes and strikes nothing, and it is priced accordingly, since
-what it costs is `attack + health + energy` (**R2.9**) and its attack is
-nothing. What is refused is **energy 0 with an attack above it**: an attack
-the type could never pay for is a wall that was charged for a weapon.
+(**R2.10**): health standing on a square. With energy and compute it is a
+**scout** — it goes where it likes and strikes nothing, and it is priced
+accordingly, since what it costs is `attack + health + energy + compute`
+(**R2.9**) and its attack is nothing.
 
-**A type with any energy must hold at least its movement cost in it.** A
-move costs a unit a quarter of its health, rounded up (**R4.3**), and rest gives
-back 1 a turn (**R3.9**), so a type with less energy than that could never
-afford a single move at any point in its life. `add type Heavy H 3 6 1` is
-refused, because health 6 costs 2 to move; `add type Heavy H 3 6 2` is a unit
-that can cross one square and must then stand still for two turns. A scout is
-held to this like anything else that means to move. Only a type with **no
-energy at all** is exempt: 0 energy against a fare it can never pay is the
-whole point of a wall (**R2.10**).
+**Compute 0 is a type with no controller.** It runs no program, gives no
+order and never moves of its own accord: it holds its square, and with an
+attack and energy it strikes back at what walks into it - a **turret**
+(**R2.10**). A type with compute above 0 has a controller and carries a
+program (**R10**); setting a program on a type with compute 0 is refused,
+saying it has no controller. **Energy 0 is refused with compute above it**:
+a controller that could never pay for a tick of thinking.
+
+**A type that thinks must hold at least its movement cost in energy.** A
+move costs a unit a quarter of its health, rounded up (**R4.3**), and rest
+gives back 1 a turn (**R3.9**), so a type with less energy than that could
+never afford a single move at any point in its life. `add type Heavy H 3 6 1
+1` is refused, because health 6 costs 2 to move; `add type Heavy H 3 6 2 1`
+is a unit that can cross one square and must then stand still for two turns.
+A scout is held to this like anything else that means to move. A type with
+**no compute** is exempt: it will never be told to move, so what it holds is
+what it strikes with, and a turret with one energy and a strike it can pay
+for once is a design and not a mistake.
 
 A type is rejected at the moment it is defined, not later during play. Types are
 private to the player who defined them: an opponent learns of one only by
 fighting a unit of it (**R6.2**).
 
-**R2.5 What the three statistics mean.**
+**R2.5 What the four statistics mean.**
 - **attack** — damage dealt per attack, *and* the energy that attack costs.
 - **health** — total damage the unit absorbs before it is destroyed, *and* the
   energy each of its moves costs (**R4.3**). Health is paid for twice over:
   once at the till, and again every square the unit walks.
-- **energy** — the single resource spent by both moving and attacking. A unit
-  that takes no action during a turn gets **1** of it back (**R3.9**).
+- **energy** — the single resource spent by moving, by attacking and by
+  thinking. A unit that takes no action during a turn gets **1** of it back
+  (**R3.9**).
+- **compute** — how much the unit's controller may think in a turn, and how
+  cheaply: ten ticks a turn per point, and ten ticks of thinking per point
+  for one energy (**R10.3**). 0 is no controller at all.
 
 **R2.6 Deploying units.** `add unit <type> <name> <x> <y>` creates one unit as a
 copy of one of your own types, at those coordinates. It is refused if:
@@ -129,22 +149,24 @@ board. The same rule is applied; it just does not divide anything.
 The area you may deploy in is published, so a client can show it to you.
 
 **R2.7 Unit names.** A name must be unique **within one player's** units. Two
-different players may both have a unit called `scout`; an order is always
-resolved against the units the ordering player owns, and so is what each
-player is told a turn did (**R6.8**). The default army (**R2.13**) hands both
-players the same fifteen names, so this is the ordinary case rather than an
-awkward one.
+different players may both have a unit called `scout`; a controller's order is
+always its own unit's, a message is addressed among one army's units, and
+what each player is told a turn did is decided by whose units it was about
+(**R6.8**). The default army (**R2.13**) hands both players the same sixteen
+names, so this is the ordinary case rather than an awkward one.
 
-**R2.8 Setup ends at your first commit.** Before your first `commit` you may
-define types and deploy units but may not order movement. After it you may order
-movement but may no longer define types or deploy units. There is no way to
-reinforce later.
+**R2.8 Setup ends at your commit, and so does everything you do.** Before
+your `commit` you may define types, write their programs (**R10.1**), deploy
+units and designate the flag. After it nothing of yours can be changed, and
+nothing is asked of you again: there are no orders to give, because every
+order from here on is a controller's. There is no way to reinforce later.
 
-**R2.9 What a unit costs.** A type costs `attack + health + energy` points, so
-`add type Cross X 1 10 10` costs **21**. The cheapest type a player can define
-costs 3 and the dearest costs 120. Defining a type is free; **deploying** is
-what spends. Each unit deployed costs its type's price again, so four Crosses
-cost 84 of a 100-point budget and a fifth is refused.
+**R2.9 What a unit costs.** A type costs `attack + health + energy + compute`
+points, so `add type Cross X 1 10 10` costs **21** and `add type Runner r 2 4
+10 5` costs **21** too. The cheapest type a player can define costs 3 and the
+dearest costs 130. Defining a type is free, and so is writing its program;
+**deploying** is what spends. Each unit deployed costs its type's price again,
+so four Crosses cost 84 of a 100-point budget and a fifth is refused.
 
 What you have spent is the total price of every unit you have deployed,
 including the ones that have since been destroyed. **There are no refunds**:
@@ -160,23 +182,28 @@ deployments arrive in one turn than the budget can pay for, they are charged in
 order of unit name, so which ones survive is decided by the rules and not by the
 order they were written in.
 
-**R2.10 Walls and scouts.** A type with **attack 0 and energy 0** is a wall:
-health standing on a square. A type with **attack 0 and energy above it** is a
-**scout**: it moves like anything else and lands nothing when it arrives,
-taking whatever is dealt to it. A scout is a unit like any other for every
-other rule - it blocks a square, it can carry the flag (**R2.11**), and its
-energy means it can act, so it **does** keep its owner in the game where a
-wall does not (**R7.1**). It can never be ordered to move, because a move costs it
-a quarter of its health in energy (**R4.3**) and it holds none, and never will
-(**R3.9**
-gives nothing back to a type designed with none). It never attacks and never defends itself, so an exchange in
-which only walls stand lands no attacks and nobody is destroyed (**R5.6**). It
-can be destroyed like anything else, it blocks a square like anything else, and
-it costs its health and nothing else — a wall of 10 health costs 10 points.
+**R2.10 Walls, turrets and scouts.** A type with **attack 0, energy 0 and
+compute 0** is a wall: health standing on a square. It can never move, because
+a move costs it a quarter of its health in energy (**R4.3**) and it holds
+none, and never will (**R3.9** gives nothing back to a type designed with
+none). It never attacks and never defends itself, so an exchange in which only
+walls stand lands no attacks and nobody is destroyed (**R5.6**). It can be
+destroyed like anything else, it blocks a square like anything else, and it
+costs its health and nothing else — a wall of 10 health costs 10 points.
+
+A type with **attack and energy above 0 and compute 0** is a **turret**: it
+has no controller, so it never moves of its own accord, but it strikes back
+at whatever walks into it, pays for the strike as any unit does, and rests
+when it did nothing. A type with **attack 0, energy above it and compute
+above 0** is a **scout**: it goes where its program sends it and lands
+nothing when it arrives, taking whatever is dealt to it. A scout is a unit
+like any other for every other rule - it blocks a square, it can carry the
+flag (**R2.11**), and its energy means it can act.
 
 Because a wall can never recover and never act, **it does not keep its owner in
-the game** (**R7.1**). An army of nothing but walls has already lost; walls are
-ground you deny an opponent, not an army.
+the game** (**R7.1**). A turret and a scout do: each can act. An army of
+nothing but walls has already lost; walls are ground you deny an opponent,
+not an army.
 
 **R2.11 One of your units carries your flag.** You designate it during setup
 with `set flag <unit>`, naming one of your own units, and you may change your
@@ -200,21 +227,26 @@ cost nothing until you deploy one (**R2.9**), you may redefine any of them
 under its own name, add your own alongside, and never deploy the ones you do
 not want.
 
-| Name | Symbol | Attack | Health | Energy | Cost | Move fare |
-|---|---|---|---|---|---|---|
-| Wall | `W` | 0 | 10 | 0 | 10 | 3 |
-| Scout | `o` | 0 | 2 | 12 | 14 | 1 |
-| Pawn | `p` | 1 | 4 | 2 | 7 | 1 |
-| Runner | `r` | 2 | 4 | 10 | 16 | 1 |
-| Line | `L` | 3 | 6 | 12 | 21 | 2 |
-| Lance | `!` | 8 | 2 | 10 | 20 | 1 |
-| Keep | `K` | 1 | 10 | 5 | 16 | 3 |
-| Heavy | `H` | 5 | 10 | 15 | 30 | 3 |
+| Name | Symbol | Attack | Health | Energy | Compute | Cost | Move fare | Program |
+|---|---|---|---|---|---|---|---|---|
+| Wall | `W` | 0 | 10 | 0 | 0 | 10 | 3 | none: no controller |
+| Scout | `o` | 0 | 2 | 12 | 6 | 20 | 1 | explorer: walks at the nearest unknown square |
+| Pawn | `p` | 1 | 4 | 2 | 2 | 9 | 1 | sentry: steps onto what struck it, else sleeps |
+| Runner | `r` | 2 | 4 | 10 | 5 | 21 | 1 | hunter: walks at the enemy flag |
+| Line | `L` | 3 | 6 | 12 | 4 | 25 | 2 | hunter |
+| Lance | `!` | 8 | 2 | 10 | 3 | 23 | 1 | hunter |
+| Keep | `K` | 1 | 10 | 5 | 8 | 24 | 3 | warden: sleeps, and strikes back when woken |
+| Heavy | `H` | 5 | 10 | 15 | 4 | 34 | 3 | hunter |
+
+Every type with compute carries a default program (**R10**), written to fit
+its cap on every turn, so that a player who changes nothing fields an army
+that plays. `show program <type>` lists any of them; `set program <type>
+<file>` replaces one.
 
 *The array.* In a **two-player** game each player also opens their seat with
 sixteen of those units already deployed in their own half (**R2.6a**), and
-their flag (**R2.11**) already on the left-hand Keep. It costs **242** of the
-250-point budget. Both players get the same layout, mirrored, reading from
+their flag (**R2.11**) already on the left-hand Keep. It costs **304** of the
+320-point budget. Both players get the same layout, mirrored, reading from
 each player's own edge inwards:
 
 ```
@@ -227,7 +259,7 @@ column stands in its mirror. There is no reason for one flank to be stronger
 than the other before anybody has moved. It is why there are two Keeps —
 eight columns leave no middle square for one — and why the Lance is in the
 catalogue but not in the opening array: four pairs a row is eight pairs, and
-eight pairs of eight different types come to 268 points.
+eight pairs of eight different types come to more than the budget.
 
 The slow units stand in **front**, which is the opposite of chess, because a
 unit's reach is its energy divided by its move fare (**R4.3**). A Heavy has
@@ -243,8 +275,9 @@ you deploy by hand, as you always could.
 
 *Changing it.* Take a unit back with `remove unit <name>` (**R2.12**) and its
 points come back with it. In a browser, clicking a unit you have placed takes
-it back; clicking an empty square in your own half deploys there. Take the whole array back and it stays gone - it is
-not deployed again when you next open your seat.
+it back; clicking an empty square in your own half deploys there. Give a type
+a program of your own with `set program`. Take the whole array back and it
+stays gone - it is not deployed again when you next open your seat.
 
 *A note on the administrator.* The board and the number of players can still
 be changed after you have been given an army. If the board is resized under
@@ -263,41 +296,54 @@ refused after the commit, as everything else in setup is.
 
 ## R3. The turn
 
-**R3.1 Simultaneous commit.** Every player issues all their orders, then
-`commit`. The server holds the turn open until **every player still in the
-game** has committed, then applies all orders together. A player who has been
-eliminated (**R7.1**) is not waited for. Nobody gains from committing early or
-late, and nobody gains from the order the server happens to read the orders
-in.
+**R3.1 One commit each, and the game plays itself.** Every player sets up and
+then `commit`s once. The server holds the game open until **every registered
+player** has committed a setup, and then resolves the whole game in one held
+act: turn after turn, one straight after another, until it is decided
+(**R7.2**), its whole state repeats (**R7.5**) or the turn cap is reached
+(**R7.6**). Nobody is waited for after the last setup commit, nobody gains
+from committing early or late, and nobody gains from the order the server
+happens to read the setups in. A player whose setup is committed waits for
+the others' and is then shown the result; a player who opens a resolved game
+is shown the result and the record (**R3.10**).
 
 **R3.2 Commits are final, and nothing before one is.** Once you commit you
-cannot withdraw or amend. Your client blocks and waits for the server rather
-than accepting further orders. Until then every order is still yours to
-change: `hold <unit>` takes back the order a unit was given this turn, leaving
-it with none at all — which is holding, so it rests (**R3.9**) like any unit
-that was told to do nothing.
+cannot withdraw or amend anything: not a type, not a program, not a unit, not
+the flag. Until then every setup decision is still yours to change (**R2.12**).
 
-**R3.3 Orders are used once.** After a turn resolves, every unit's direction is
-cleared and its state returns to `NOP`. An order never carries over to the next
-turn. A unit given no order stays where it is.
+**R3.3 Orders are the controllers', and are used once.** Every order in the
+game is given by a unit's controller during the think phase (**R10**). After a
+turn resolves, every unit's direction is cleared and its state returns to
+`NOP`. An order never carries over to the next turn. A unit given no order -
+by a controller that chose not to, that halted, that is asleep, or that has
+none - stays where it is.
 
-**R3.4 A turn resolves in four phases, in this order:**
-1. **Deployment** — units waiting to be placed are put on the board.
-2. **Movement** — every unit's destination is worked out against the board *as
+**R3.4 A turn resolves in six phases, in this order:**
+1. **Thinking** — every awake controller runs its type's program against the
+   board *as the turn began*, as its army knew it (**R6.9**), and gives its
+   unit's order, says what it says and sleeps if it chooses to. One snapshot
+   per army, taken before any controller runs, so no controller sees
+   another's order, message or move from the same turn.
+2. **Deployment** — units waiting to be placed are put on the board (the
+   setup turn only).
+3. **Movement** — every unit's destination is worked out against the board *as
    the turn began*, and then every move is applied at once. Squares that end up
    holding more than one unit are collected.
-3. **Combat** — every one of those squares is fought out to a conclusion.
-4. **Rest** — every unit that did none of the above gets a point of energy
+4. **Combat** — every one of those squares is fought out to a conclusion.
+5. **The map** — every army's map is updated from where its units stand and
+   what they fought (**R6.9**), and every unit struck is woken (**R10.6**).
+6. **Rest** — every unit that did none of the above gets a point of energy
    back (**R3.9**).
 
 Because destinations are decided before any move is applied, the outcome of a
-turn never depends on the order the units happen to be held in. Both later
-phases complete inside the same turn: a fight never carries over.
+turn never depends on the order the units happen to be held in. Every phase
+completes inside the same turn: a fight never carries over, and a message
+said this turn is read next turn (**R10.7**).
 
-**R3.5 Deployment happens on the turn you commit it.** A newly created unit is
-placed on the board when the turn resolves. If its square is taken by then, the
-deployment is refused, no unit is created, and the turn resolves without it —
-the turn is not failed.
+**R3.5 Deployment happens on the setup turn.** A unit is placed on the board
+when the setups are resolved, which is the first turn of the record. If its
+square is taken by then, the deployment is refused, no unit is created, and
+the turn resolves without it — the turn is not failed.
 
 **R3.5a A setup commit that clashes with a committed square is refused.** You
 cannot see anybody else's units while you are setting up, so two of you can
@@ -312,49 +358,64 @@ both, which was there so that neither player gained from the order they were
 read in; the price of being able to do something about a clash is that
 committing early decides it. It also tells you that the square is taken,
 which you would not otherwise know until you met what is standing there — the
-least that lets you deploy somewhere else. Both are accepted **for setup**,
-and this rule reaches nothing else: deployments happen only during setup.
+least that lets you deploy somewhere else.
 
 Where deployments reach the server without a commit — a loaded player file, or
 orders written by hand — **both** are still refused when the turn resolves, so
 nothing that goes round the commit gains by it.
 
 **R3.6 A refused order does not stop the turn.** The server refuses the single
-order, records it against that player, and carries on. Each player is written a
-list of what was refused; the client prints it before taking the next command.
-The list describes only the turn just resolved — it does not accumulate.
+order, records it against the owner of the unit it refused, and carries on.
+Each player is written a list of what was refused, with the turn; the record
+holds it turn by turn (**R3.10**). The list describes only the turn it belongs
+to — it does not accumulate.
 
-**R3.7 Every order that does nothing says so.** Anything of yours the turn
-would not carry out is reported back to you: an order refused while it was
-being applied, a move nobody could pay for, a move off the board, and a contest
-of yours that ended undecided. Each names the unit, its square, and the reason.
+**R3.7 Every order that does nothing says so.** Anything of yours a turn would
+not carry out is in the record for you: an order refused while it was being
+applied, a move nobody could pay for, a move off the board, and a contest of
+yours that ended undecided. Each names the unit, its square, and the reason -
+and it is your own unit, never another player's of the same name (**R6.8**).
 
 **R3.9 A unit that does nothing recovers 1 energy.** At the end of every turn,
-each unit standing on the board that **was given no order** and **paid for
-nothing** while the turn resolved gets 1 energy back. It never recovers past
-the energy its type was designed with, and a destroyed unit recovers nothing.
+each unit standing on the board that **was given no order**, **paid for
+nothing** while the turn resolved and **whose meter did not charge it**
+(**R10.3**) gets 1 energy back. It never recovers past the energy its type was
+designed with, and a destroyed unit recovers nothing. A sleeping unit rests
+every turn it sleeps: sleeping is doing nothing at all.
 
 Both halves matter. A unit ordered to move has acted whether or not the move
 happened — one ordered off the board pays nothing (**R4.6**) and still does not
 rest, so walking into the edge is not a way to refuel. A unit that was attacked
 and could not afford to strike back has done nothing at all, and does rest:
-being hit is not an action.
+being hit is not an action. A unit whose controller thought and gave no order
+rests unless the thinking itself cost it an energy that turn.
 
 Rest happens after combat and before the game is judged (**R7**), so a unit
 that spends its last energy acting is out before it can recover it, while one
 that merely stood still is not.
 
+**R3.10 Every turn is recorded.** Each resolved turn is written to the record
+as it happens: the board, every unit, every flag, what the turn did, each
+army's map and every controller's trace (**R10.8**), and whether it ended the
+game. The record is what the replay reads (**R8**): any turn, forwards and
+back, with the board drawn whole for everybody once the game is over, each
+player's own traces and refusals, and the board as their own army knew it on
+request.
+
 **R3.8 Turns are numbered.** Resolved turns count from 1, and the number is
-recorded with the board, with each player's view, and with each player's list of
-refused orders, so every record says which turn it describes. The
-administrator's commit that ends setup is not a turn and is not numbered.
+recorded with the board, with each player's view, with each turn of the
+record and with each player's list of refused orders, so every record says
+which turn it describes. The administrator's commit that ends setup is turn 0
+of the record: the board as it was before anybody's army reached it.
 
 ---
 
 ## R4. Movement
 
-**R4.1 One square, four directions.** `move <unit> <north|south|east|west>`.
-No diagonals, no multi-square moves, no standing order.
+**R4.1 One square, four directions.** A controller's `MOVE north|east|south|
+west` (**R10.2**), or a register holding one of those four. No diagonals, no
+multi-square moves, no standing order - a controller that wants to keep
+walking says so again every turn.
 
 | Direction | Effect |
 |---|---|
@@ -363,7 +424,9 @@ No diagonals, no multi-square moves, no standing order.
 | `east`  | x + 1 |
 | `west`  | x − 1 |
 
-**R4.2 You may only order your own units, and only units on the board.**
+**R4.2 A controller orders its own unit and nothing else, and only while it
+stands on the board.** No program reaches another unit: it can tell one what
+it saw (**R10.7**), and the other decides for itself.
 
 **R4.3 Moving costs energy.** A move costs a unit **a quarter of its maximum
 health, rounded up** — a quarter of the health its type was designed with —
@@ -397,13 +460,13 @@ till (**R2.9**), and again every square it walks.
 Stepping onto an occupied square is charged exactly like stepping onto an empty
 one.
 
-**R4.5 If you cannot pay, you do not move.** The unit stays put and its energy
+**R4.5 If it cannot pay, it does not move.** The unit stays put and its energy
 is unchanged. The order is still consumed and is not retried next turn, and the
-refusal is reported to you.
+refusal is in the record for you (**R3.7**).
 
-**R4.6 The board edge stops you.** A unit ordered off the board stays at the
-edge square, pays nothing, and its order is consumed. The refusal is reported to
-you, and the turn continues normally for everyone else.
+**R4.6 The board edge stops it.** A unit ordered off the board stays at the
+edge square, pays nothing, and its order is consumed. The refusal is in the
+record for you, and the turn continues normally for everyone else.
 
 **R4.7 What a unit finds where it lands decides what happens.** Because every
 destination is worked out before any move is applied, this is judged on where
@@ -544,13 +607,15 @@ plays:**
 - **A strike kills only if it is lethal on its own.** One exchange deals the
   attack value once, so a unit is destroyed this turn only if that single
   strike takes it to zero health. Anything it does not kill survives, and the
-  contest is undecided — the movers fall back and you pay again next turn to
-  press it. Wearing a unit down takes as many turns as `ceil(health ÷ attack)`
+  contest is undecided — the movers fall back and the unit pays again next turn
+  if its controller presses it. Wearing a unit down takes as many turns as `ceil(health ÷ attack)`
   strikes, one strike a turn.
 - **Identical units no longer destroy each other in a turn.** Two matched units
   each take one strike and both live, unless that one strike is lethal (attack
   at least the other's health). A mirror match is a stand-off that has to be
-  fought out over turns, not a mutual annihilation in one. See **Q2**.
+  fought out over turns, not a mutual annihilation in one. See **Q2**. Two
+  controllers that press the same stand-off every turn with nothing changing
+  between them is a state that repeats, and the game stops on it (**R7.5**).
 
 ---
 
@@ -561,8 +626,11 @@ plays:**
 **R6.2 You see an enemy unit only by fighting it.** Visibility is recorded when
 two units actually *exchange attacks*, whether in a contested square or in a
 head-on collision (**R4.9**). Merely being next to an enemy reveals nothing.
-Contact also reveals that unit's **type**, with the statistics its owner
-designed it with.
+Contact also reveals that unit's **type**, with the attack, health and energy
+its owner designed it with - and **nothing of how it thinks**: not its
+compute, not its program, not what its controller did. A type's controller
+is its owner's to read and the observer's, and nobody else's, in the record
+as everywhere.
 
 **R6.3 Visibility is not cumulative.** Every unit's record of what it has seen is
 wiped at the start of each turn's resolution. An enemy you fought last turn and
@@ -588,6 +656,34 @@ listed for you, marked destroyed and off the board, so you can see what you have
 lost. They are never drawn on a square. An enemy unit you destroyed appears in
 your view for that turn only, and drops out like any other contact (**R6.3**).
 
+**R6.9 Your army shares one map, and fills it only by standing and
+fighting.** Every army keeps a map of the board, one per player, read by every
+controller of that army (**R10.4**) and written by nobody's program: a square
+one of your units stands on at the end of a turn is known empty from then on,
+stamped with the turn it was last stood on; an enemy one of your units fought
+this turn is known where it stands at the end of the turn, with its type's
+attack and health and the turn it was met; every other square is unknown.
+Nothing reveals a square you have not walked or fought on - there is no free
+detection, and a controller that wants to know what is there has to go and
+find out. The map is updated once a turn, after combat (**R3.4**), so a
+controller reads what its army knew at the end of the previous turn. Your
+own units are always on it, and every flag (**R6.5**). A compute-0 unit's
+fight feeds the map like any other's: it has no controller, but it is still
+one of your units.
+
+A remembered enemy stays where it was met until one of your units stands on
+that square and finds it empty, or meets it again somewhere else: the map
+does not forget, and it is not told when an enemy walks away. A unit that has
+been destroyed reports nothing more.
+
+**R6.10 The replay shows everyone the whole board.** Once a game is resolved,
+every turn of its record is drawn for every seat with every unit on it, as the
+observer has always been shown it: a game that is over has nothing left to
+hide. What stays private in the record is what was private in play - each
+seat's traces and programs are its own (**R6.2**) - and the board as *your
+army knew it* is yours to switch to at any turn, which is what your
+controllers were reading.
+
 **R6.8 You are told what a turn did to your own units, and nothing of what
 other players did to each other.** A fight is told to the people in it: if one
 of your units struck, was struck, moved or fell, you are told, by name and
@@ -603,7 +699,8 @@ whole log (**R6.6**).
 
 Whose units an entry is about is what decides this, not the names in it. Two
 players may hold a unit of one name (**R2.7**) - the default army gives them
-fifteen - and each is told only about their own.
+sixteen - and each is told only about their own, in the account of a turn and
+in the list of what it refused alike.
 
 ---
 
@@ -648,20 +745,40 @@ deployment, which leaves both players with nothing standing and is a draw.
 Judging that turn on what survived it left a game that could be neither played
 on nor finished.
 
+**R7.5 A game whose state repeats stops, undecided.** After every turn the
+whole state of the game is hashed: every unit's square, health, energy,
+memory, meter, sleep and inbox, and every army's map. The controllers are
+deterministic (**R1.2**), so a game whose whole state has been seen before
+can never change again: it is stopped there and recorded as **undecided**,
+saying so and naming the turn it first stood like this. Two armies that never
+move, two stand-offs pressed turn after turn, a hunter patrolling a loop -
+each ends this way rather than running for ever. The stamp a standing unit
+puts on its own square every turn (**R6.9**) is left out of the hash, since
+it would otherwise make a game that never changes look as though it did. A
+program that reads the turn number and acts on a particular one can still
+make a repeated state play on differently; the cap (**R7.6**) is the backstop
+for that.
+
+**R7.6 A game stops at the turn cap.** A game that is neither decided nor
+repeating by turn **500** is stopped there and recorded as undecided, saying
+the cap was reached. The cap exists so that a game always ends; it is not a
+rule anybody plays to.
+
 **R7.3 A game with fewer than two registered players is never decided.** There
 is nobody to be the last player standing against; a solo game is a sandbox.
 
-**R7.4 A decided game stops.** No further turn is resolved and no further order
-is accepted. The server reports the result and exits; a client reports it and
-refuses orders and commits, though it will still show you the final board; the
-observer reports it too. An eliminated player is told they are out and stops
-being waited for at the commit barrier.
+**R7.4 A decided game stops, and so does an undecided one.** No further turn
+is resolved and nothing is accepted. The server reports the result - the
+winner, the draw, or the undecided stop and why, with the turn - and exits;
+a client opening the game reports it and shows the final turn of the record,
+refusing every setup command; the observer reports it too. An eliminated
+player is told they are out when the replay reaches the turn their flag fell.
 
 ---
 
 ## R8. What each role may type
 
-Every role: `help`, `exit`, `show ...`.
+Every role: `help`, `exit`, `show ...`, and the account commands.
 
 | Command | Server | Client | Observer |
 |---|:--:|:--:|:--:|
@@ -670,17 +787,34 @@ Every role: `help`, `exit`, `show ...`.
 | `remove player <number>` | ✔ | | |
 | `load board <file>` | ✔ | | |
 | `load player <file>` | ✔ | | |
-| `add type <name> <symbol> <attack> <health> <energy>` | | ✔ | |
+| `add type <name> <symbol> <attack> <health> <energy> [<compute>]` | | ✔ | |
+| `set program <type> <file>` | | ✔ | |
 | `add unit <type> <name> <x> <y>` | | ✔ | |
 | `remove unit <name>` | | ✔ | |
 | `set flag <unit>` | | ✔ | |
-| `move <unit> <north\|south\|east\|west>` | | ✔ | |
-| `hold <unit>` | | ✔ | |
 | `commit` | ✔ | ✔ | |
 | `reload` | | | ✔ |
 | `show board` / `types` / `units` / `players` | ✔ | ✔ | ✔ |
 | `show pending` / `events` / `designs` / `flags` | ✔ | ✔ | ✔ |
 | `show placement` | ✔ | ✔ | ✔ |
+| `show program <type>` | ✔ | ✔ | ✔ |
+| `show turn <n> [known]` / `next` / `prev` | ✔ | ✔ | ✔ |
+
+There is no `move` and no `hold`: a player gives no orders. `set program`
+reads the file where the client runs and lists the program back with the tick
+cost of each line; `show program` lists any type the session may read - a
+player's own, or anybody's for the server and the observer.
+
+`show turn <n>` reads one turn of the record of a resolved game: the board
+after it with every unit on it, what the turn did, what it would not do for
+your units, and your controllers' traces - every seat's, for the server and
+the observer. `next` and `prev` step from the turn last shown. `known` draws
+the board as your own army knew it after that turn (**R6.9**). While any
+player's setup is uncommitted these are refused, saying the game has not been
+resolved and whose setups are to come. A client or observer opening a
+resolved game shows the result and the final turn without being asked;
+`bgcserver --replay` opens a resolved game at the prompt for the
+administrator, where without the flag it reports the outcome and exits.
 
 Every `show` answers with a table: a header naming its columns, then one row per
 thing, lined up so a row can be read across and a column compared down.
@@ -688,12 +822,12 @@ thing, lined up so a row can be read across and a column compared down.
 stand for. A subject with nothing in it yet says so in a line rather than
 printing an empty table.
 
-Ending a `show` in `json` — `show units json` — writes the same content as a
-single JSON document instead, for a caller that is not a person. It holds one
-key, named for the subject, and the fields a player acts on; it is not the
-storage format, and nothing else is printed with it. `json` is the only word a
-subject may be followed by: anything else is reported as an invalid show
-command.
+Ending a `show` in `json` — `show units json`, `show turn 3 known json` —
+writes the same content as a single JSON document instead, for a caller that
+is not a person. It holds one key, named for the subject, and the fields a
+player acts on; it is not the storage format, and nothing else is printed with
+it. `json` is the only word a subject may be followed by: anything else is
+reported as an invalid show command.
 
 The observer is read-only because it is never given the commands that write.
 A blank line does nothing; an unrecognised command is reported and the session
@@ -710,9 +844,12 @@ answer is currently spread across four sections. **Where this table and a rule
 disagree, the rule is right** — and `tests/test_cost_table.py` holds the
 numbers in it to the ones the game actually charges.
 
-There are two currencies. **Points** are spent once, at deployment, out of a
-budget fixed for the game (**R2.3.1**). **Energy** belongs to the unit and is
-spent a little at a time, by moving and by attacking, and by nothing else.
+There are three currencies. **Points** are spent once, at deployment, out of
+a budget fixed for the game (**R2.3.1**). **Energy** belongs to the unit and
+is spent a little at a time, by moving, by attacking and by thinking, and by
+nothing else. **Ticks** are what thinking is measured in: every instruction
+costs a stated number, a turn's thinking is capped, and the meter turns ticks
+into energy (**R10.3**).
 
 The fare for a move is not a constant: it is **a quarter of the health the
 unit's type was designed with, rounded up** (**R4.3**), read from the design and
@@ -722,8 +859,9 @@ because it rounds up.
 
 | What | What it costs | Rule |
 |---|---|---|
-| Defining a type | nothing — but a type with any energy must be designed holding at least its movement cost in it, or it could never afford one move | **R2.4** |
-| Deploying a unit | **points**: `attack + health + energy`, its type's price | **R2.9** |
+| Defining a type | nothing — but a type that thinks must be designed holding at least its movement cost in energy, or it could never afford one move | **R2.4** |
+| Writing a program | nothing; the program is paid for as it runs | **R10.1** |
+| Deploying a unit | **points**: `attack + health + energy + compute`, its type's price | **R2.9** |
 | — a unit that is destroyed | nothing back; there are no refunds | **R2.9** |
 | A move onto an empty square | **a quarter of the unit's maximum health, rounded up**, in energy | **R4.3** |
 | A move onto an occupied square | **the same fare**, whatever it walks into | **R4.4** |
@@ -734,8 +872,11 @@ because it rounds up.
 | — an exchange it cannot afford in full | **nothing** — it strikes nobody rather than striking some | **R5.4** |
 | — an exchange fought by a wall | **nothing** — a wall never attacks | **R2.10** |
 | Being attacked | **nothing in energy**; damage comes off health | **R5.5** |
+| A turn's thinking | **ticks**, one instruction at a time as the tariff in **R10.2** says; at most `10 × compute` in one turn, and a controller that reaches the cap gives no order | **R10.3** |
+| — the meter | **1 energy for every `10 × compute` ticks** thought, carried across turns, charged the moment the meter fills; a unit with no energy to pay halts at the instruction that would fill it | **R10.3** |
+| — a turn asleep | **nothing**: a sleeping controller does not run, and the unit rests | **R10.6** |
 | A turn in which a unit did nothing | **gains 1 energy**, never above the energy its type was designed with | **R3.9** |
-| — a turn in which it was given any order | **gains nothing**, even if the order cost it nothing | **R3.9** |
+| — a turn in which it was given any order, or its meter charged it | **gains nothing**, even if the order cost it nothing | **R3.9** |
 
 Three things follow from the table that are worth stating out loud, because
 they decide how the game is played and none of them is obvious from any single
@@ -769,12 +910,121 @@ cost for the rest of the game — the worst. The same edge sits between 8 and 9.
 again a point at a time as it walks and fights. A unit's energy is both a line
 in its price and the number of actions left in it.
 
-**Standing still is a move you can make.** It is the only way to get energy
-back, it costs a turn, and it is refused to anything you gave an order to —
-so a unit ordered into the board's edge, which pays nothing, still learns
-nothing and gains nothing from the turn. Rest returns 1 whatever the unit is,
-so a heavy unit takes a quarter of its health in quiet turns to buy back one
-square — three, at health 9 or 10.
+**Standing still is a move a controller can make.** It is the only way to
+get energy back, it costs a turn, and it is refused to anything that was given
+an order — so a unit its controller sent into the board's edge, which pays
+nothing, still learns nothing and gains nothing from the turn. Rest returns 1
+whatever the unit is, so a heavy unit takes a quarter of its health in quiet
+turns to buy back one square — three, at health 9 or 10.
+
+**Thinking is paid for in energy, slowly.** A controller that thinks `t`
+ticks a turn on compute `c` pays one energy every `10c ÷ t` turns, and that
+energy comes out of the same pocket as the moves and the strikes. The
+cheapest thought is no thought: `SLEEP` for as long as you dare (**R10.6**),
+and let the blow that wakes you be the signal. The dearest is a program that
+reaches its cap every turn, which costs exactly one energy a turn and gives no
+order for it.
+
+---
+
+## R10. The controller
+
+**R10.1 A type carries a program, and every unit of it runs the program.**
+A program is text in a small assembly language, set during setup with
+`set program <type> <file>` (or written in a browser's armoury), fixed by the
+commit, and refused at the moment it is set if any line is not an instruction
+the set accepts - naming the line. A type with compute 0 has no controller
+and carries no program (**R2.4**). The program is private to the player who
+wrote it (**R6.2**).
+
+**R10.2 The machine and its tariff.** Eight registers `r0` to `r7`, a memory
+of words addressed by number and unbounded, and an inbox of messages. Every
+instruction costs a fixed number of ticks whatever it returns, so a program's
+bill is the same on every board:
+
+| Instruction | Ticks | What it does |
+|---|---|---|
+| `SELF` | 1 | my square into `r0`, `r1`; my health, energy into `r2`, `r3`; my player into `r4` |
+| `TURN` | 1 | the turn number into `r0` |
+| `EXTENT` | 1 | the board's width and height into `r0`, `r1` |
+| `FLAG mine\|enemy` | 2 | where that flag stands into `r0`, `r1`, or -1 if fallen or unknown |
+| `CONTACT` | 2 | the enemy I fought last turn: its square into `r0`, `r1`, its attack and health into `r2`, `r3`; -1 if none |
+| `MAP rX, rY` | 3 | what my army knows of that square into `r0`: 0 unknown, 1 empty, 2 friend, 3 enemy, 4 off the board; with the turn it was learned in `r1` and, for an enemy, its attack and health in `r2`, `r3` |
+| `NEAREST friend\|enemy\|unknown` | 4 | the nearest such square into `r0`, `r1`, or -1 if none; ties by distance, then the lower `y`, then the lower `x` |
+| `RECV` | 2 | the oldest message in my inbox into `r0`, `r1`, `r2`, or -1 if none |
+| `FLUSH` | 1 | empty my inbox |
+| `SET rX, n` | 1 | a constant into a register |
+| `MOV rX, rY` | 1 | copy a register |
+| `ADD`, `SUB rX, rY\|n` | 1 | arithmetic into `rX` |
+| `ABS rX`, `SIGN rX` | 1 | magnitude, or -1, 0, 1 |
+| `DIST rX, rY` | 1 | the distance from my square to `(rX, rY)` into `r0` |
+| `LOAD rX, rY\|n`, `STORE rX, rY\|n` | 1 | my memory, by address |
+| `JMP label` | 1 | go to a label |
+| `JIF cond r..., label` | 1 | go if `zero`, `notzero`, `neg`, `pos` of one register, or `eq`, `lt` of two |
+| `HALT` | 0 | stop thinking; the order so far stands |
+| `MOVE north\|east\|south\|west\|rX` | 1 | my order for the turn; a later `MOVE` replaces an earlier |
+| `HOLD` | 1 | no order, said on purpose |
+| `SAY to\|all, w, w, w` | 5 | three words to a friendly unit by name, or to every friend |
+| `SLEEP n` | 1 | sleep for `n` turns, 1 to 100, and stop thinking |
+
+Labels are a word and a colon at the start of a line; `;` begins a comment.
+A jump to a label that is not there is refused with the program.
+
+**R10.3 The meter: how thinking is paid for.** A controller may think at most
+**`10 × compute` ticks in one turn**; one that reaches the cap halts where it
+stands and gives **no order** that turn - whatever it had decided before the
+cap was a thought it did not finish. Every tick thought goes onto the unit's
+**meter**, which holds `10 × compute` ticks and charges the unit **one energy
+each time it fills**, carrying the remainder into the next turn: a program of
+6 ticks a turn on compute 2 pays its first energy on the fourth turn with 4
+ticks carried. A unit whose energy is 0 cannot pay, and its controller halts
+at the instruction that would fill the meter, giving no order. The meter is
+charged before the turn's moves and strikes, so a unit can think itself out
+of the energy for the move it was about to order; the move is then refused
+(**R4.5**) and reported.
+
+**R10.4 What a controller sees.** Its own unit, the turn, the board's extent,
+where the flags stand, the enemy it fought last turn, and its army's shared
+map (**R6.9**) as it stood at the end of the previous turn. Nothing else: no
+other unit's order, nothing of any square its army has not stood on or fought
+on. Every controller of an army reads the same snapshot, taken before any of
+them runs.
+
+**R10.5 Memory and the inbox persist.** A unit's memory and inbox survive from
+turn to turn for as long as the unit stands; nothing else of the machine
+does - the registers start empty every turn. Memory is practically unbounded,
+and nothing is charged for holding it. A destroyed unit's memory dies with
+it.
+
+**R10.6 Sleep.** `SLEEP n` puts the unit to sleep for `n` turns, 1 to 100:
+its controller does not run and pays nothing, and the unit rests (**R3.9**)
+every turn it sleeps. **A blow wakes it**: a unit struck in a contest fights
+back in that same exchange as any unit does (**R5.2**), its sleep is cancelled
+at the end of that turn, and its controller runs again next turn. Nothing
+else wakes it - not a message, not an enemy walking past. There is no sleep
+for ever: 100 is the most, and a unit that would rather not think pays a tick
+every hundred turns to say so again.
+
+**R10.7 The radio.** `SAY` sends three words to one friendly unit by name, or
+to every friend with `all`, anywhere on the board; a message to a unit that is
+not a friend is dropped and noted in the sender's trace. Messages said this
+turn are delivered after every controller has run, in a settled order - the
+turn, then the sender's name, then the order said - and are read next turn
+with `RECV`, oldest first. A message does not wake a sleeper; it waits in the
+inbox. The map (**R6.9**) is shared without any of this: the radio carries
+what a program chooses to say, and the map carries what the army saw.
+
+**R10.8 The trace.** Every turn, every controller that ran leaves a trace in
+the record (**R3.10**): the ticks it thought, the energy the meter charged,
+the order it gave, what it said and to whom, any message dropped, whether it
+slept or was woken, and whether it halted and at which instruction. A trace
+is its owner's to read and the observer's; nothing of it reaches another
+player (**R6.2**).
+
+**R10.9 Every default program fits its cap.** The programs the catalogue
+ships with (**R2.13**) are written to run within their type's cap on every
+turn of a stock-army game, and `tests/test_default_army.py` plays one to hold
+them to it.
 
 ---
 ---
@@ -828,8 +1078,8 @@ at all.
 **What happens.** A fight is one exchange a turn (**R5.2**), so two identical
 units each take one strike and both survive — unless that single strike is
 lethal, meaning attack is at least health. Below that they stand off, undecided,
-and have to be ordered back into the square turn after turn; a kill takes
-`ceil(health ÷ attack)` strikes, one a turn. Only when a single strike already
+and their controllers have to send them back into the square turn after turn;
+a kill takes `ceil(health ÷ attack)` strikes, one a turn. Only when a single strike already
 finishes the other do identical units annihilate together, and a three-way of
 those dies to the last unit at once.
 
@@ -856,10 +1106,12 @@ accept that a fight then depends on it rather than on the two units alone.
 | R2.6–R2.8 | `board-model`, `turn-commit`, `player-client` | `service/games.py`, `domain/board.py` |
 | R2.9 | `point-budget` | `domain/budget.py`, `service/games.py`, `service/turn.py` |
 | R2.10 | `unit-types` | `domain/unit.py` (`UnitType.__init__`, `exchangeAttacks`) |
-| R3.1–R3.9 | `turn-commit`, `game-persistence`, `game-outcome` | `service/turn.py`, `domain/board.py` (`commit`, `_rest`) |
+| R2.13 | `default-army` | `domain/army.py`, `tests/test_default_army.py` |
+| R3.1–R3.10 | `turn-commit`, `game-persistence`, `game-outcome` | `service/turn.py` (`resolve_game`, `turn_record`), `domain/board.py` (`commit`, `_think`, `_rest`) |
 | R4.1–R4.10 | `unit-movement` | `domain/unit.py` (`planMove`), `domain/board.py` (`_move`) |
 | R5.1–R5.11 | `combat-resolution` | `domain/unit.py` (`exchangeAttacks`, `resolveContest`, `resolveCollision`) |
-| R6.1–R6.6 | `visibility` | `storage/serialise.py`, `service/game.py` |
-| R7.1–R7.4 | `game-outcome` | `service/turn.py`, `cli/*.py` |
-| R8 | `game-server`, `player-client`, `game-observer` | `cli/roles.py`, `cli/grammar.py` |
+| R6.1–R6.10 | `visibility`, `unit-program` | `storage/serialise.py`, `service/game.py`, `domain/army_map.py`, `service/replay.py` |
+| R7.1–R7.6 | `game-outcome` | `service/turn.py`, `cli/*.py` |
+| R8 | `game-server`, `player-client`, `game-observer` | `cli/roles.py`, `cli/grammar.py`, `cli/show.py` |
 | R9 | nothing of its own — it restates the rules above | `tests/test_cost_table.py` |
+| R10 | `unit-program` | `domain/program.py`, `domain/unit.py` (`think`), `domain/board.py` (`_think`), `tests/test_program_*.py`, `tests/test_meter.py`, `tests/test_sleep.py`, `tests/test_think_phase.py` |
