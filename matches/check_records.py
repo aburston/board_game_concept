@@ -62,4 +62,4 @@ def main(numbers):
 
 
 if __name__ == '__main__':
-    main([int(n) for n in sys.argv[1:]] or range(221, 248))
+    main([int(n) for n in sys.argv[1:]] or list(range(221, 248)) + list(range(251, 271)))

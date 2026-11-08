@@ -1,5 +1,15 @@
 # Twenty games nobody ordered
 
+> **Played under superseded rules.** Since these games were played the
+> default array was rearranged and the Pawn became a vanguard
+> (`default-army-that-plays`), the Scout got an explorer of its own, units
+> that contest a square now see each other whether or not a blow lands
+> (R6.2), a tie for the nearest square is settled towards the seat's own
+> edge (R10), and a game in which nothing happens for fifty turns stops
+> (R7.7). Games 241-247 at the end of this write-up replayed the stock
+> pairings as each of those landed; the whole draw played again under all
+> of them is `RESULTS-ARMY-THAT-PLAYS.md`.
+
 The seventh series, and the first played under the rules the project is
 named for: a type carries a program, every unit runs its type's program
 once a turn, and a player's whole game is the setup. Nobody gave an order

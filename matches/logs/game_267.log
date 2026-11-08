@@ -1,0 +1,1951 @@
+=== game 267: p1 Executioner vs p2 Lancers
+  board 8x8, p1: 320 points, rows 0-3, p2: 320 points, rows 4-7
+  p1 Executioner: 9 x Exec (a10 h4 e12 c4, our own type) + Keep with the flag; every Exec hunts
+  p2 Lancers: 11 x Lance (a8 h2 e10 c4) + Keep with the flag; every Lance hunts
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Exec X 10 4 12 4; set program Exec hunter11.asm; add type Keep K 1 10 5 8; set program Keep warden.asm; add unit Exec exec1 0 3; add unit Exec exec2 1 3; add unit Exec exec3 2 3; add unit Exec exec4 3 3; add unit Exec exec5 4 3; add unit Exec exec6 5 3; add unit Exec exec7 6 3; add unit Exec exec8 7 3; add unit Exec exec9 4 2; add unit Keep keep1 3 0; set flag keep1
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Lance ! 8 2 10 4; set program Lance hunter9.asm; add type Keep K 1 10 5 8; set program Keep warden.asm; add unit Lance lance1 0 4; add unit Lance lance2 1 4; add unit Lance lance3 2 4; add unit Lance lance4 3 4; add unit Lance lance5 4 4; add unit Lance lance6 5 4; add unit Lance lance7 6 4; add unit Lance lance8 7 4; add unit Lance lance9 1 5; add unit Lance lance10 4 5; add unit Lance lance11 6 5; add unit Keep keep1 3 7; set flag keep1
+  -- turn 1
+    p1: places its army
+    p2: places its army
+      exec1 is placed at (0, 3)
+      exec2 is placed at (1, 3)
+      exec3 is placed at (2, 3)
+      exec4 is placed at (3, 3)
+      exec5 is placed at (4, 3)
+      exec6 is placed at (5, 3)
+      exec7 is placed at (6, 3)
+      exec8 is placed at (7, 3)
+      exec9 is placed at (4, 2)
+      keep1 is placed at (3, 0)
+      lance1 is placed at (0, 4)
+      lance2 is placed at (1, 4)
+      lance3 is placed at (2, 4)
+      lance4 is placed at (3, 4)
+      lance5 is placed at (4, 4)
+      lance6 is placed at (5, 4)
+      lance7 is placed at (6, 4)
+      lance8 is placed at (7, 4)
+      lance9 is placed at (1, 5)
+      lance10 is placed at (4, 5)
+      lance11 is placed at (6, 5)
+      keep1 is placed at (3, 7)
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |X| | | |
++-+-+-+-+-+-+-+-+
+|X|X|X|X|X|X|X|X|
++-+-+-+-+-+-+-+-+
+|!|!|!|!|!|!|!|!|
++-+-+-+-+-+-+-+-+
+| |!| | |!| |!| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 1: in play 10 v 12
+  -- turn 2
+    p1: exec1 moves south; exec2 moves south; exec3 moves south; exec4 moves south; exec5 moves south; exec6 moves south; exec7 moves south; exec8 moves south; exec9 moves west; keep1 holds
+    p2: keep1 holds; lance1 moves north; lance10 moves west; lance11 moves west; lance2 moves north; lance3 moves north; lance4 moves north; lance5 moves north; lance6 moves north; lance7 moves north; lance8 moves north; lance9 moves east
+      exec9 moves to (3, 2)
+      lance9 moves to (2, 5)
+      lance10 moves to (3, 5)
+      lance11 moves to (5, 5)
+      exec1 and lance1 collide between (0, 3) and (0, 4)
+      exec1 attacks lance1 for 10
+      lance1 is destroyed
+      lance1 attacks exec1 for 8
+      exec1 is destroyed
+      exec2 and lance2 collide between (1, 3) and (1, 4)
+      exec2 attacks lance2 for 10
+      lance2 is destroyed
+      lance2 attacks exec2 for 8
+      exec2 is destroyed
+      exec3 and lance3 collide between (2, 3) and (2, 4)
+      exec3 attacks lance3 for 10
+      lance3 is destroyed
+      lance3 attacks exec3 for 8
+      exec3 is destroyed
+      exec4 and lance4 collide between (3, 3) and (3, 4)
+      exec4 attacks lance4 for 10
+      lance4 is destroyed
+      lance4 attacks exec4 for 8
+      exec4 is destroyed
+      exec5 and lance5 collide between (4, 3) and (4, 4)
+      exec5 attacks lance5 for 10
+      lance5 is destroyed
+      lance5 attacks exec5 for 8
+      exec5 is destroyed
+      exec6 and lance6 collide between (5, 3) and (5, 4)
+      exec6 attacks lance6 for 10
+      lance6 is destroyed
+      lance6 attacks exec6 for 8
+      exec6 is destroyed
+      exec7 and lance7 collide between (6, 3) and (6, 4)
+      exec7 attacks lance7 for 10
+      lance7 is destroyed
+      lance7 attacks exec7 for 8
+      exec7 is destroyed
+      exec8 and lance8 collide between (7, 3) and (7, 4)
+      exec8 attacks lance8 for 10
+      lance8 is destroyed
+      lance8 attacks exec8 for 8
+      exec8 is destroyed
+      exec1 thinks for 26 ticks, pays 0, moves south
+      exec2 thinks for 26 ticks, pays 0, moves south
+      exec3 thinks for 26 ticks, pays 0, moves south
+      exec4 thinks for 26 ticks, pays 0, moves south
+      exec5 thinks for 26 ticks, pays 0, moves south
+      exec6 thinks for 26 ticks, pays 0, moves south
+      exec7 thinks for 26 ticks, pays 0, moves south
+      exec8 thinks for 33 ticks, pays 0, moves south
+      exec9 thinks for 33 ticks, pays 0, moves west
+      keep1 thinks for 1 ticks, pays 0, holds
+      keep1 thinks for 1 ticks, pays 0, holds
+      lance1 thinks for 26 ticks, pays 0, moves north
+      lance10 thinks for 33 ticks, pays 0, moves west
+      lance11 thinks for 33 ticks, pays 0, moves west
+      lance2 thinks for 26 ticks, pays 0, moves north
+      lance3 thinks for 26 ticks, pays 0, moves north
+      lance4 thinks for 26 ticks, pays 0, moves north
+      lance5 thinks for 26 ticks, pays 0, moves north
+      lance6 thinks for 26 ticks, pays 0, moves north
+      lance7 thinks for 26 ticks, pays 0, moves north
+      lance8 thinks for 33 ticks, pays 0, moves north
+      lance9 thinks for 33 ticks, pays 0, moves east
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |X| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |!|!| |!| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 2: in play 2 v 4
+  -- turn 3
+    p1: exec9 moves south; keep1 sleeps
+    p2: keep1 sleeps; lance10 moves north; lance11 moves north; lance9 moves north
+      exec9 moves to (3, 3)
+      lance9 moves to (2, 4)
+      lance10 moves to (3, 4)
+      lance11 moves to (5, 4)
+      exec9 thinks for 26 ticks, pays 1, moves south
+      keep1 sleeps
+      keep1 sleeps
+      lance10 thinks for 26 ticks, pays 1, moves north
+      lance11 thinks for 26 ticks, pays 1, moves north
+      lance9 thinks for 26 ticks, pays 1, moves north
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |X| | | | |
++-+-+-+-+-+-+-+-+
+| | |!|!| |!| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 3: in play 2 v 4
+  -- turn 4
+    p1: exec9 holds; keep1 sleeps
+    p2: keep1 sleeps; lance10 holds; lance11 holds; lance9 holds
+      exec9 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep1 sleeps
+      lance10 thinks for 6 ticks, pays 0, holds
+      lance11 thinks for 6 ticks, pays 0, holds
+      lance9 thinks for 6 ticks, pays 0, holds
+      exec9 rests and recovers to 10 energy
+      lance9 rests and recovers to 8 energy
+      lance10 rests and recovers to 8 energy
+      lance11 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |X| | | | |
++-+-+-+-+-+-+-+-+
+| | |!|!| |!| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 4: in play 2 v 4
+  -- turn 5
+    p1: exec9 sleeps; keep1 sleeps
+    p2: keep1 sleeps; lance10 sleeps; lance11 sleeps; lance9 sleeps
+      exec9 sleeps
+      keep1 sleeps
+      keep1 sleeps
+      lance10 sleeps
+      lance11 sleeps
+      lance9 sleeps
+      exec9 rests and recovers to 11 energy
+      lance9 rests and recovers to 9 energy
+      lance10 rests and recovers to 9 energy
+      lance11 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |X| | | | |
++-+-+-+-+-+-+-+-+
+| | |!|!| |!| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 5: in play 2 v 4
+  -- turn 6
+    p1: exec9 moves south; keep1 sleeps
+    p2: keep1 sleeps; lance10 moves north; lance11 moves north; lance9 moves north
+      lance9 moves to (2, 3)
+      lance11 moves to (5, 3)
+      exec9 and lance10 collide between (3, 3) and (3, 4)
+      the contest at (3, 3) is undecided between exec9,lance10
+      exec9 thinks for 26 ticks, pays 1, moves south
+      keep1 sleeps
+      keep1 sleeps
+      lance10 thinks for 26 ticks, pays 1, moves north
+      lance11 thinks for 26 ticks, pays 1, moves north
+      lance9 thinks for 26 ticks, pays 1, moves north
+    p1: - exec9 at (3,3): the contest at (3, 3) was undecided
+    p2: - lance10 at (3,4): the contest at (3, 3) was undecided
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |!|X| |!| | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 6: in play 2 v 4
+  -- turn 7
+    p1: exec9 holds; keep1 sleeps
+    p2: keep1 sleeps; lance10 holds; lance11 holds; lance9 holds
+      exec9 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep1 sleeps
+      lance10 thinks for 6 ticks, pays 0, holds
+      lance11 thinks for 6 ticks, pays 0, holds
+      lance9 thinks for 6 ticks, pays 0, holds
+      exec9 rests and recovers to 10 energy
+      lance9 rests and recovers to 8 energy
+      lance10 rests and recovers to 8 energy
+      lance11 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |!|X| |!| | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 7: in play 2 v 4
+  -- turn 8
+    p1: exec9 sleeps; keep1 sleeps
+    p2: keep1 sleeps; lance10 sleeps; lance11 sleeps; lance9 sleeps
+      exec9 sleeps
+      keep1 sleeps
+      keep1 sleeps
+      lance10 sleeps
+      lance11 sleeps
+      lance9 sleeps
+      exec9 rests and recovers to 11 energy
+      lance9 rests and recovers to 9 energy
+      lance10 rests and recovers to 9 energy
+      lance11 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |!|X| |!| | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 8: in play 2 v 4
+  -- turn 9
+    p1: exec9 moves south; keep1 sleeps
+    p2: keep1 sleeps; lance10 moves north; lance11 moves north; lance9 moves north
+      lance9 moves to (2, 2)
+      lance11 moves to (5, 2)
+      exec9 and lance10 collide between (3, 3) and (3, 4)
+      the contest at (3, 3) is undecided between exec9,lance10
+      exec9 thinks for 26 ticks, pays 1, moves south
+      keep1 sleeps
+      keep1 sleeps
+      lance10 thinks for 26 ticks, pays 1, moves north
+      lance11 thinks for 26 ticks, pays 1, moves north
+      lance9 thinks for 26 ticks, pays 1, moves north
+    p1: - exec9 at (3,3): the contest at (3, 3) was undecided
+    p2: - lance10 at (3,4): the contest at (3, 3) was undecided
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |!| | |!| | |
++-+-+-+-+-+-+-+-+
+| | | |X| | | | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 9: in play 2 v 4
+  -- turn 10
+    p1: exec9 holds; keep1 sleeps
+    p2: keep1 sleeps; lance10 holds; lance11 holds; lance9 holds
+      exec9 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep1 sleeps
+      lance10 thinks for 6 ticks, pays 0, holds
+      lance11 thinks for 6 ticks, pays 0, holds
+      lance9 thinks for 6 ticks, pays 0, holds
+      exec9 rests and recovers to 10 energy
+      lance9 rests and recovers to 8 energy
+      lance10 rests and recovers to 8 energy
+      lance11 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |!| | |!| | |
++-+-+-+-+-+-+-+-+
+| | | |X| | | | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 10: in play 2 v 4
+  -- turn 11
+    p1: exec9 sleeps; keep1 sleeps
+    p2: keep1 sleeps; lance10 sleeps; lance11 sleeps; lance9 sleeps
+      exec9 sleeps
+      keep1 sleeps
+      keep1 sleeps
+      lance10 sleeps
+      lance11 sleeps
+      lance9 sleeps
+      exec9 rests and recovers to 11 energy
+      lance9 rests and recovers to 9 energy
+      lance10 rests and recovers to 9 energy
+      lance11 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |!| | |!| | |
++-+-+-+-+-+-+-+-+
+| | | |X| | | | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 11: in play 2 v 4
+  -- turn 12
+    p1: exec9 moves south; keep1 sleeps
+    p2: keep1 sleeps; lance10 moves north; lance11 moves west; lance9 moves north
+      lance9 moves to (2, 1)
+      lance11 moves to (4, 2)
+      exec9 and lance10 collide between (3, 3) and (3, 4)
+      exec9 attacks lance10 for 10
+      lance10 is destroyed
+      lance10 attacks exec9 for 8
+      exec9 is destroyed
+      exec9 thinks for 26 ticks, pays 0, moves south
+      keep1 sleeps
+      keep1 sleeps
+      lance10 thinks for 26 ticks, pays 0, moves north
+      lance11 thinks for 26 ticks, pays 0, moves west
+      lance9 thinks for 26 ticks, pays 0, moves north
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | |!| | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 12: in play 1 v 3
+  -- turn 13
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 holds; lance9 holds
+      keep1 sleeps
+      keep1 sleeps
+      lance11 thinks for 6 ticks, pays 1, holds
+      lance9 thinks for 6 ticks, pays 1, holds
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | |!| | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 13: in play 1 v 3
+  -- turn 14
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 sleeps; lance9 sleeps
+      keep1 sleeps
+      keep1 sleeps
+      lance11 sleeps
+      lance9 sleeps
+      lance9 rests and recovers to 8 energy
+      lance11 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | |!| | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 14: in play 1 v 3
+  -- turn 15
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 holds; lance9 holds
+      keep1 sleeps
+      keep1 sleeps
+      lance11 thinks for 6 ticks, pays 0, holds
+      lance9 thinks for 6 ticks, pays 0, holds
+      lance9 rests and recovers to 9 energy
+      lance11 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | |!| | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 15: in play 1 v 3
+  -- turn 16
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 sleeps; lance9 sleeps
+      keep1 sleeps
+      keep1 sleeps
+      lance11 sleeps
+      lance9 sleeps
+      lance9 rests and recovers to 10 energy
+      lance11 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | |!| | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 16: in play 1 v 3
+  -- turn 17
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 moves north; lance9 moves east
+      lance9 moves to (3, 1)
+      lance11 moves to (4, 1)
+      keep1 sleeps
+      keep1 sleeps
+      lance11 thinks for 26 ticks, pays 0, moves north
+      lance9 thinks for 26 ticks, pays 0, moves east
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | |!|!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 17: in play 1 v 3
+  -- turn 18
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 moves north; lance9 moves north
+      lance9 engages keep1 at (3, 0)
+      lance11 moves to (4, 0)
+      (3, 0) is contested by 2 units
+      keep1 attacks lance9 for 1
+      the contest at (3, 0) is undecided between keep1,lance9
+      lance9 falls back to (3, 1)
+      keep1 holds (3, 0)
+      keep1 is woken by the blow
+      keep1 sleeps, and is woken
+      keep1 sleeps
+      lance11 thinks for 33 ticks, pays 1, moves north
+      lance9 thinks for 26 ticks, pays 1, moves north
+    p1: - keep1 at (3,0): the contest at (3, 0) was undecided
+    p2: - lance9 at (3,1): the contest at (3, 0) was undecided
++-+-+-+-+-+-+-+-+
+| | | |K|!| | | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 18: in play 1 v 3
+  -- turn 19
+    p1: keep1 holds
+    p2: keep1 sleeps; lance11 holds; lance9 holds
+      keep1 thinks for 1 ticks, pays 0, holds
+      keep1 sleeps
+      lance11 thinks for 6 ticks, pays 0, holds
+      lance9 thinks for 6 ticks, pays 0, holds
+      keep1 rests and recovers to 5 energy
+      lance9 rests and recovers to 8 energy
+      lance11 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | | |K|!| | | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 19: in play 1 v 3
+  -- turn 20
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 sleeps; lance9 sleeps
+      keep1 sleeps
+      keep1 sleeps
+      lance11 sleeps
+      lance9 sleeps
+      lance9 rests and recovers to 9 energy
+      lance11 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | | |K|!| | | |
++-+-+-+-+-+-+-+-+
+| | | |!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 20: in play 1 v 3
+  -- turn 21
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 moves west; lance9 moves north
+      lance9 engages keep1 at (3, 0)
+      lance11 engages keep1 at (3, 0)
+      (3, 0) is contested by 3 units
+      keep1 attacks lance9 for 1
+      lance9 is destroyed
+      keep1 attacks lance11 for 1
+      the contest at (3, 0) is undecided between keep1,lance11
+      lance11 falls back to (4, 0)
+      keep1 holds (3, 0)
+      keep1 is woken by the blow
+      keep1 sleeps, and is woken
+      keep1 sleeps
+      lance11 thinks for 26 ticks, pays 1, moves west
+      lance9 thinks for 26 ticks, pays 1, moves north
+    p1: - keep1 at (3,0): the contest at (3, 0) was undecided
+    p2: - lance11 at (4,0): the contest at (3, 0) was undecided
++-+-+-+-+-+-+-+-+
+| | | |K|!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 21: in play 1 v 2
+  -- turn 22
+    p1: keep1 holds
+    p2: keep1 sleeps; lance11 holds
+      keep1 thinks for 1 ticks, pays 0, holds
+      keep1 sleeps
+      lance11 thinks for 6 ticks, pays 0, holds
+      keep1 rests and recovers to 5 energy
+      lance11 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | | |K|!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 22: in play 1 v 2
+  -- turn 23
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 sleeps
+      keep1 sleeps
+      keep1 sleeps
+      lance11 sleeps
+      lance11 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | | |K|!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 23: in play 1 v 2
+  -- turn 24
+    p1: keep1 sleeps
+    p2: keep1 sleeps; lance11 moves west
+      lance11 engages keep1 at (3, 0)
+      (3, 0) is contested by 2 units
+      keep1 attacks lance11 for 1
+      lance11 is destroyed
+      keep1 holds (3, 0)
+      keep1 is woken by the blow
+      keep1 sleeps, and is woken
+      keep1 sleeps
+      lance11 thinks for 26 ticks, pays 1, moves west
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 24: in play 1 v 1
+  -- turn 25
+    p1: keep1 holds
+    p2: keep1 sleeps
+      keep1 thinks for 1 ticks, pays 0, holds
+      keep1 sleeps
+      keep1 rests and recovers to 5 energy
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 25: in play 1 v 1
+  -- turn 26
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 26: in play 1 v 1
+  -- turn 27
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 27: in play 1 v 1
+  -- turn 28
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 28: in play 1 v 1
+  -- turn 29
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 29: in play 1 v 1
+  -- turn 30
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 30: in play 1 v 1
+  -- turn 31
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 31: in play 1 v 1
+  -- turn 32
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 32: in play 1 v 1
+  -- turn 33
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 33: in play 1 v 1
+  -- turn 34
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 34: in play 1 v 1
+  -- turn 35
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 35: in play 1 v 1
+  -- turn 36
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 36: in play 1 v 1
+  -- turn 37
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 37: in play 1 v 1
+  -- turn 38
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 38: in play 1 v 1
+  -- turn 39
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 39: in play 1 v 1
+  -- turn 40
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 40: in play 1 v 1
+  -- turn 41
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 41: in play 1 v 1
+  -- turn 42
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 42: in play 1 v 1
+  -- turn 43
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 43: in play 1 v 1
+  -- turn 44
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 44: in play 1 v 1
+  -- turn 45
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 45: in play 1 v 1
+  -- turn 46
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 46: in play 1 v 1
+  -- turn 47
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 47: in play 1 v 1
+  -- turn 48
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 48: in play 1 v 1
+  -- turn 49
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 49: in play 1 v 1
+  -- turn 50
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 50: in play 1 v 1
+  -- turn 51
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 51: in play 1 v 1
+  -- turn 52
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 52: in play 1 v 1
+  -- turn 53
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 53: in play 1 v 1
+  -- turn 54
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 54: in play 1 v 1
+  -- turn 55
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 55: in play 1 v 1
+  -- turn 56
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 56: in play 1 v 1
+  -- turn 57
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 57: in play 1 v 1
+  -- turn 58
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 58: in play 1 v 1
+  -- turn 59
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 59: in play 1 v 1
+  -- turn 60
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 60: in play 1 v 1
+  -- turn 61
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 61: in play 1 v 1
+  -- turn 62
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 62: in play 1 v 1
+  -- turn 63
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 63: in play 1 v 1
+  -- turn 64
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 64: in play 1 v 1
+  -- turn 65
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 65: in play 1 v 1
+  -- turn 66
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 66: in play 1 v 1
+  -- turn 67
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 67: in play 1 v 1
+  -- turn 68
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 68: in play 1 v 1
+  -- turn 69
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 69: in play 1 v 1
+  -- turn 70
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 70: in play 1 v 1
+  -- turn 71
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 71: in play 1 v 1
+  -- turn 72
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 72: in play 1 v 1
+  -- turn 73
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 73: in play 1 v 1
+  -- turn 74
+    p1: keep1 sleeps
+    p2: keep1 sleeps
+      keep1 sleeps
+      keep1 sleeps
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 74: in play 1 v 1
+  game over: undecided on turn 74, nothing happened for fifty turns (since turn 24)
+  final units:
+    p1 keep1    Keep    a1 h10 (3,0) hp 10 en 5 flag
+    p2 keep1    Keep    a1 h10 (3,7) hp 10 en 5 flag

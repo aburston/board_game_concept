@@ -627,7 +627,7 @@ Each game writes `matches/logs/game_<n>.log` - each seat's setup, the
 board after every turn, what every turn did, every refusal, the outcome and
 the final units - beside the roles' transcripts and a turn-by-turn history
 in JSON. The series are written up in `matches/RESULTS-*.md`; the current
-one is `matches/RESULTS-PROGRAMMED.md`, and the earlier ones say at their
+one is `matches/RESULTS-ARMY-THAT-PLAYS.md`, and the earlier ones say at their
 head which rules they were played under. `tests/test_match_harness.py`
 checks every doctrine's army and programs against the game's own rules
 without playing a game; `pytest -m slow tests/test_match_harness.py` plays
