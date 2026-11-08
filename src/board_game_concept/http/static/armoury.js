@@ -1,8 +1,11 @@
-// Setup: designing unit types, and deploying units within a budget.
+// Setup: designing unit types, writing their programs, and deploying units
+// within a budget.
 //
-// The cost of a type is the sum of its three statistics, and it is shown as
+// The cost of a type is the sum of its four statistics, and it is shown as
 // they are chosen rather than when the type is defined - the trade the budget
 // exists to make is only a trade if you can see it while you are making it.
+// A type's program is written here too, listed line by line with what each
+// line costs in ticks, because the tariff is the other half of that trade.
 //
 // The administrator's setup - sizing the board and registering players - is
 // the same screen, because it is the same phase and the same commands.
@@ -11,6 +14,7 @@ import * as api from './api.js';
 import { state, set, say, go, load, loadSeat, element, button, field,
          link } from './app.js';
 import { renderBoard } from './board.js';
+import { listing } from './program.js';
 
 export function renderArmoury() {
   const game = state.game;
@@ -55,6 +59,7 @@ export function renderArmoury() {
   wrap.append(renderBudget(game));
   wrap.append(renderDesigner(game));
   wrap.append(renderTypes(game));
+  wrap.append(renderProgramEditor(game));
   if (game.board) wrap.append(renderDeploy(game));
   if (game.board) wrap.append(renderDeployed(game));
   if (game.board) wrap.append(renderFlag(game));
@@ -231,8 +236,8 @@ function renderCommittedSetup(game) {
     (entry) => entry.player === game.number);
   card.append(element('p', {},
     !waiting
-      ? 'The first turn has resolved. What happened to your army is on the '
-        + 'board.'
+      ? 'The game has been played. What happened to your army is in the '
+        + 'replay.'
       : deployed.length
         ? `${deployed.length} `
           + `${deployed.length === 1 ? 'unit is' : 'units are'}`
@@ -249,12 +254,12 @@ function renderCommittedSetup(game) {
   }
   card.append(element('p', { class: 'small muted' },
     waiting
-      ? 'A committed setup cannot be withdrawn or amended. The first turn '
-        + 'resolves when every player has committed one, and your units '
-        + 'appear on the board then.'
+      ? 'A committed setup cannot be withdrawn or amended. The game is '
+        + 'played to its end the moment every player has committed one, '
+        + 'and the replay is on the board then.'
       : 'A committed setup cannot be withdrawn or amended, and there is no '
-        + 'second setup: whatever the first turn left you is what you play '
-        + 'with.'));
+        + 'second setup: the game was played out from it, and the replay '
+        + 'is on the board.'));
   card.append(element('p', {},
     link('Go to the board',
          `#/play/${encodeURIComponent(game.gameno)}/${game.number}`,
@@ -456,7 +461,8 @@ function nextSeat(registered) {
 // --- the player's half
 
 function costOf(type) {
-  return Number(type.attack) + Number(type.health) + Number(type.energy);
+  return Number(type.attack) + Number(type.health) + Number(type.energy)
+    + Number(type.compute || 0);
 }
 
 function me(game) {
@@ -509,22 +515,38 @@ function renderDesigner(game) {
                       { min: 1, max: 10 });
   const energy = bind('Energy (0–100)', 'number', 'energy',
                       { min: 0, max: 100 });
+  // compute is the fourth statistic: what the type's controller has. 0 is a
+  // type with no controller - a wall, a turret - which runs no program and
+  // is exempt from needing the energy to move
+  const compute = bind('Compute (0–10)', 'number', 'compute',
+                       { min: 0, max: 10 });
 
   const cost = element('strong', {}, '3');
   const price = element('p', { class: 'small' }, 'Costs ', cost, ' points — ',
-    element('span', { class: 'muted' }, 'attack + health + energy'));
+    element('span', { class: 'muted' },
+            'attack + health + energy + compute'));
+  const thinking = element('p', { class: 'small muted' });
 
   // the cost moves as the design is chosen: this is what makes the trade
   // visible while it is being made rather than after it is refused
   const recost = () => {
     const total = Number(attack.input.value || 0)
-      + Number(health.input.value || 0) + Number(energy.input.value || 0);
+      + Number(health.input.value || 0) + Number(energy.input.value || 0)
+      + Number(compute.input.value || 0);
     cost.textContent = String(total);
     const left = Number(me(game).left);
     price.classList.toggle('unaffordable',
                            Number.isFinite(left) && total > left);
+    const brain = Number(compute.input.value || 0);
+    const perCompute = (state.tariff && state.tariff.ticks_per_compute) || 10;
+    thinking.textContent = brain > 0
+      ? `With compute ${brain} its controller may think ${brain * perCompute} `
+        + `ticks a turn, and ${brain * perCompute} ticks of thinking cost it `
+        + 'one energy.'
+      : 'With compute 0 it has no controller: it runs no program, holds its '
+        + 'square and strikes back when struck.';
   };
-  for (const stat of [attack, health, energy]) {
+  for (const stat of [attack, health, energy, compute]) {
     stat.input.addEventListener('input', recost);
   }
 
@@ -535,20 +557,23 @@ function renderDesigner(game) {
   form.append(element('div', { class: 'row' },
     element('div', { class: 'grow' }, attack.label),
     element('div', { class: 'grow' }, health.label),
-    element('div', { class: 'grow' }, energy.label)));
+    element('div', { class: 'grow' }, energy.label),
+    element('div', { class: 'grow' }, compute.label)));
   form.append(price);
+  form.append(thinking);
   form.append(element('p', { class: 'small muted' },
-    'A type with less energy than health can never move and never strike — ' +
-    'it holds a square and nothing else.'));
+    'A type that thinks must have at least the energy to move once. One '
+    + 'with no compute need not: it holds a square and strikes what walks '
+    + 'into it.'));
   form.append(element('p', {},
     element('button', { class: 'primary', type: 'submit' }, 'Define type')));
   form.addEventListener('submit', send(game, () => api.addType(
     name.input.value.trim(), symbol.input.value.trim(),
     Number(attack.input.value), Number(health.input.value),
-    Number(energy.input.value)), () => {
+    Number(energy.input.value), Number(compute.input.value || 0)), () => {
       // only once it was accepted: a refusal leaves the design to be fixed
       state.design = { name: '', symbol: '', attack: '1', health: '1',
-                       energy: '1' };
+                       energy: '1', compute: '0' };
     }));
   card.append(form);
   recost();
@@ -572,18 +597,34 @@ function renderTypes(game) {
     element('th', { class: 'number' }, 'Atk'),
     element('th', { class: 'number' }, 'HP'),
     element('th', { class: 'number' }, 'Energy'),
+    element('th', { class: 'number' }, 'Compute'),
+    element('th', {}, 'Program'),
     element('th', { class: 'number' }, 'Cost'),
     element('th', {}, ''))));
   const body = element('tbody', {});
   for (const type of mine) {
     const cost = costOf(type);
     const affordable = !Number.isFinite(left) || cost <= left;
+    const brain = Number(type.compute || 0);
     body.append(element('tr', {},
       element('td', {}, type.name),
       element('td', {}, type.symbol),
       element('td', { class: 'number' }, String(type.attack)),
       element('td', { class: 'number' }, String(type.health)),
       element('td', { class: 'number' }, String(type.energy)),
+      element('td', { class: 'number' }, String(brain)),
+      // whether it carries a program; the program itself is in the editor
+      // below. A type with no compute has no controller and is said so,
+      // rather than being shown as a type that forgot its program
+      element('td', { class: 'small' }, brain === 0
+        ? element('span', { class: 'muted' }, 'no controller')
+        : (type.program
+          ? button('edit', () => set({ program: { type: type.name,
+                                                  text: null } }),
+                   { class: 'small link' })
+          : button('write one', () => set({ program: { type: type.name,
+                                                       text: '' } }),
+                   { class: 'small' }))),
       element('td', { class: 'number' }, String(cost)),
       element('td', {}, affordable
         ? element('span', { class: 'tag mine' }, 'affordable')
@@ -591,6 +632,167 @@ function renderTypes(game) {
   }
   table.append(body);
   card.append(table);
+  return card;
+}
+
+/**
+ * A type's program, written or pasted, with every line's tick cost beside it.
+ *
+ * The listing is worked out here as it is typed, from the tariff the server
+ * exports, so a line that is not an instruction is marked where it stands
+ * before anything is sent. The one parser there is still has the last word:
+ * the text is checked against it as well, and a line it refuses is marked
+ * with its reason. The program is not sent until every line is accepted.
+ *
+ * What is being edited lives in `state.program`: the type, and the text as
+ * it stands. A redraw - a refusal, a reload of the views - finds it there.
+ * `text: null` means the stored program has not been read into the editor
+ * yet, and is read once.
+ */
+function renderProgramEditor(game) {
+  const card = element('div', { class: 'card program-editor' });
+  card.append(element('h2', {}, 'Program'));
+  const thinkers = (game.types || []).filter(
+    (type) => type.player === game.number && Number(type.compute || 0) > 0);
+  if (thinkers.length === 0) {
+    card.append(element('p', { class: 'muted' },
+      'None of your types has compute, so none has a controller to program. '
+      + 'A type with compute 0 holds its square and strikes back when '
+      + 'struck.'));
+    return card;
+  }
+
+  const editing = state.program || { type: '', text: '' };
+  const chooser = element('select', { id: 'program-type' });
+  for (const type of thinkers) {
+    chooser.append(element('option', { value: type.name },
+      `${type.name} — compute ${type.compute}`
+      + (type.program ? '' : ' — no program yet')));
+  }
+  const chosen = thinkers.find((type) => type.name === editing.type)
+    || thinkers[0];
+  chooser.value = chosen.name;
+  chooser.addEventListener('change', () => {
+    set({ program: { type: chooser.value, text: null } });
+  });
+
+  // the stored program is read once into the editor, when a type is chosen
+  // whose text is not in hand yet
+  if (editing.type !== chosen.name || editing.text === null) {
+    state.program = { type: chosen.name, text: '' };
+    if (chosen.program) {
+      api.readProgram(game.gameno, game.number, chosen.name)
+        .then((answer) => {
+          if (state.program && state.program.type === chosen.name) {
+            set({ program: { type: chosen.name,
+                             text: (answer.program || {}).program || '' } });
+          }
+        })
+        .catch((error) => say(error.message));
+    }
+  }
+  const text = state.program.text || '';
+  const tariff = state.tariff || null;
+  const perCompute = (tariff && tariff.ticks_per_compute) || 10;
+  const compute = Number(chosen.compute);
+  const cap = compute * perCompute;
+
+  card.append(element('label', { for: 'program-type' }, 'Type', chooser));
+  card.append(element('p', { class: 'small muted' },
+    `${chosen.name} has compute ${compute}: its controller may think `
+    + `${cap} ticks a turn, and ${cap} ticks cost it one energy. A controller `
+    + 'that reaches the cap gives no order that turn.'));
+
+  const editor = element('textarea', {
+    id: 'program-text', rows: Math.max(8, text.split('\n').length + 1),
+    spellcheck: 'false', 'aria-label': `program of ${chosen.name}`,
+  });
+  editor.value = text;
+  const lines = listing(text, tariff);
+  const check = state.programCheck && state.programCheck.text === text
+    ? state.programCheck : null;
+  const bad = new Map();
+  for (const line of lines) if (line.error) bad.set(line.line, line.error);
+  if (check && check.ok === false && !bad.has(check.line)) {
+    bad.set(check.line, check.message);
+  }
+  editor.addEventListener('input', () => {
+    state.program = { type: chosen.name, text: editor.value };
+    // the listing is redrawn as it is typed, and the server asked a moment
+    // later, so a line the tariff accepts and the parser refuses - a jump
+    // to a label that is not there - is marked too
+    window.clearTimeout(renderProgramEditor._timer);
+    renderProgramEditor._timer = window.setTimeout(async () => {
+      const typed = state.program.text;
+      try {
+        const answer = await api.checkProgram(typed, compute);
+        if (state.program && state.program.text === typed) {
+          set({ programCheck: { text: typed, ...answer } });
+        }
+      } catch (error) {
+        // a check that could not be made is not a refusal
+      }
+    }, 400);
+    set({});
+    // `set` redraws the whole screen; the editor keeps the caret where it
+    // was by being given focus and its position back
+    const again = document.getElementById('program-text');
+    if (again) {
+      again.focus();
+      again.setSelectionRange(editor.selectionStart, editor.selectionEnd);
+    }
+  });
+
+  const total = lines.reduce((sum, line) => sum + (line.ticks || 0), 0);
+  const table = element('table', { class: 'listing' });
+  table.append(element('thead', {}, element('tr', {},
+    element('th', { class: 'number' }, 'Line'),
+    element('th', { class: 'number' }, 'Ticks'),
+    element('th', {}, 'Instruction'))));
+  const body = element('tbody', {});
+  for (const line of lines) {
+    const wrong = bad.get(line.line);
+    body.append(element('tr', { class: wrong ? 'bad' : '' },
+      element('td', { class: 'number' }, String(line.line)),
+      element('td', { class: 'number' },
+              line.ticks === null ? '' : String(line.ticks)),
+      element('td', {}, element('code', {}, line.text || ' '),
+              wrong ? element('span', { class: 'tag warn' }, wrong) : null)));
+  }
+  table.append(body);
+
+  card.append(element('div', { class: 'row' },
+    element('div', { class: 'grow' }, editor),
+    element('div', { class: 'grow' }, table)));
+  card.append(element('p', { class: 'small' },
+    element('strong', {}, `${total} ticks`), ' for a straight run — ',
+    `${cap} is the most a turn may think, and ${cap} ticks cost one energy`,
+    total > cap
+      ? element('span', { class: 'tag warn' }, 'over the cap')
+      : null));
+  const accepted = bad.size === 0 && !(check && check.ok === false);
+  card.append(element('p', {},
+    button('Set program', async () => {
+      try {
+        await api.perform(game.gameno, game.number,
+                          api.setProgram(chosen.name, state.program.text));
+        await loadSeat(game.gameno, game.number);
+        say(`${chosen.name} carries this program.`);
+      } catch (error) {
+        say(error.message);
+        const found = /line (\d+)/.exec(error.message);
+        if (found) {
+          state.programCheck = { text: state.program.text, ok: false,
+                                 line: Number(found[1]),
+                                 message: error.message };
+        }
+      }
+      set({});
+    }, { class: 'primary', disabled: !accepted }),
+    accepted ? null
+      : element('span', { class: 'small muted' },
+                ' Fix the marked lines first: a program is not sent until '
+                + 'every line is accepted.')));
   return card;
 }
 
@@ -760,8 +962,10 @@ function renderCommit(game) {
   const card = element('div', { class: 'card' });
   card.append(element('h2', {}, 'Commit'));
   card.append(element('p', { class: 'small muted' },
-    'Committing publishes your army for the first turn. It cannot be ' +
-    'withdrawn or amended.'));
+    'Committing publishes your army, types, programs and flag. It cannot be '
+    + 'withdrawn or amended, and the game is played out from it the moment '
+    + 'the last setup is committed: every turn, by the controllers, with no '
+    + 'orders from anybody.'));
   // a setup with nothing carrying the flag is refused by the server, and
   // finding that out by pressing the button is finding it out at the worst
   // moment
@@ -773,7 +977,8 @@ function renderCommit(game) {
   }
   card.append(button('Commit setup', async () => {
     if (!window.confirm(
-      'Commit? This cannot be withdrawn or amended.')) return;
+      'Commit? This cannot be withdrawn or amended, and the game plays out '
+      + 'from it.')) return;
     try {
       await api.commit(game.gameno, game.number);
       go(`#/play/${encodeURIComponent(game.gameno)}/${game.number}`);

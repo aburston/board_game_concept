@@ -126,6 +126,33 @@ export const perform = (gameno, number, command) =>
 export const commit = (gameno, number) =>
   post(`${seatPath(gameno, number)}/commit`);
 
+// --- the record of a resolved game, and a type's program
+//
+// A game is played to its end the moment the last setup is committed, and
+// every turn is written as it goes. The page reads it back a turn at a time;
+// `known` asks for the board as this seat's own army knew it after the turn
+
+export const listTurns = (gameno, number) =>
+  get(`${seatPath(gameno, number)}/turns`);
+
+export const readTurn = (gameno, number, turn, known, seat) => {
+  const query = [];
+  if (known) query.push('known=1');
+  if (known && seat !== null && seat !== undefined) query.push(`seat=${seat}`);
+  return get(`${seatPath(gameno, number)}/turns/${turn}`
+             + (query.length ? `?${query.join('&')}` : ''));
+};
+
+export const readProgram = (gameno, number, typeName) =>
+  get(`${seatPath(gameno, number)}/programs/${encodeURIComponent(typeName)}`);
+
+// the instruction set's tariff, and a check of a program against the one
+// parser there is. Rules rather than game state, so neither names a seat
+export const programTariff = () => get('/_/program');
+
+export const checkProgram = (program, compute) =>
+  post('/_/program/check', { program, compute });
+
 // the long polls, which are meant to take as long as their budget. They are
 // given that budget plus a margin to answer in, rather than the patience an
 // ordinary request gets, which they would exceed by design
@@ -160,21 +187,23 @@ export const addPlayer = (number, budget) => (
 export const removePlayer = (number) =>
   ({ kind: 'remove_player', number });
 
-export const addType = (name, symbol, attack, health, energy) =>
-  ({ kind: 'add_type', name, symbol, attack, health, energy });
+export const addType = (name, symbol, attack, health, energy, compute) =>
+  ({ kind: 'add_type', name, symbol, attack, health, energy,
+     compute: compute === undefined ? 0 : compute });
+
+export const setProgram = (typeName, program) =>
+  ({ kind: 'set_program', type_name: typeName, program });
 
 export const addUnit = (typeName, name, x, y) =>
   ({ kind: 'add_unit', type_name: typeName, name, x, y });
 
 export const removeUnit = (name) => ({ kind: 'remove_unit', name });
 
-export const move = (unit, direction) => ({ kind: 'move', unit, direction });
-
-export const hold = (unit) => ({ kind: 'hold', unit });
-
 export const setFlag = (unit) => ({ kind: 'set_flag', unit });
 
-// what the engine calls each direction, and what a person calls it
+// what the engine calls each direction, and what a person calls it. No order
+// is built from these any more - a player gives none - but a controller's
+// order in a trace is numbered the engine's way and read back here
 export const DIRECTIONS = [
   { key: 'north', word: 'north', value: 1, dx: 0, dy: -1, arrow: '↑' },
   { key: 'east', word: 'east', value: 2, dx: 1, dy: 0, arrow: '→' },
@@ -184,3 +213,6 @@ export const DIRECTIONS = [
 
 export const directionByWord = (word) =>
   DIRECTIONS.find((direction) => direction.word === word) || null;
+
+export const directionByValue = (value) =>
+  DIRECTIONS.find((direction) => direction.value === Number(value)) || null;

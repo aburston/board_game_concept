@@ -21,9 +21,6 @@
   --warn-soft: #fbf3dd;
 
   --focus: #1b62c9;
-  /* an order in flight. Not `--theirs`: an order is yours, and the two are
-     never drawn on the same square anyway */
-  --order: #c1272d;
 
   /* how much of something is left, drawn round a unit: its energy and its
      health. Not `--mine` / `--warn` / `--theirs`, which say whose a thing is
@@ -56,7 +53,6 @@
     --theirs-soft: #2c1f1c;
     --warn: #e2c069;
     --warn-soft: #2a2417;
-    --order: #ff6b6b;
     --focus: #7fb2ff;
     --level-full: #6fc584;
     --level-low: #e2b04a;
@@ -176,21 +172,6 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
 .board .cursor { fill: none; stroke: var(--focus); stroke-width: 3; }
 .board .selected { fill: none; stroke: var(--mine); stroke-width: 3; stroke-dasharray: 4 3; }
 
-/* the box being drawn round a group. Dashed and faint: it is a gesture in
-   progress rather than a thing on the board, and it is gone the moment the
-   pointer comes up. `--focus` rather than `--mine`, so it is not mistaken for
-   the outline the units it catches are about to be given - and `--focus` is
-   defined in both colour schemes, so it reads on either.
-   `pointer-events: none` because it is drawn over the squares it is taking
-   and would otherwise swallow the release that ends the gesture */
-.board .selection-box {
-  fill: var(--focus);
-  fill-opacity: 0.12;
-  stroke: var(--focus);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 3;
-  pointer-events: none;
-}
 
 /* a unit moves by a change of transform; the transition is the animation */
 .board .unit { transition: transform 320ms ease; }
@@ -198,16 +179,6 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
   .board .unit { transition: none; }
 }
 
-/* a board a box can be drawn on. `pan-x pan-y` leaves one-finger panning to
-   the browser - a board fills a phone's screen, and a player who could not
-   scroll past it would be stranded - while taking pinch-zoom away from it, so
-   that two fingers on the board are a gesture this page can have. It costs
-   pinch-to-zoom over the board, which still works over the rest of the page,
-   and it is the price of having any two-finger gesture at all. Double-tap
-   zoom goes with it, which is wanted: a double-tap is an order.
-   Only where the box is offered: the deploy board has no such gesture, and
-   taking pinch-zoom from it would be a loss that bought nothing */
-.board.boxable { touch-action: pan-x pan-y; }
 
 /* a unit that can be picked up and put down. `touch-action: none` is on the
    unit rather than the whole board on purpose: a finger dragging a piece must
@@ -229,33 +200,6 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
 .board .unit.mine text { fill: var(--mine); }
 .board .unit.theirs text { fill: var(--theirs); }
 .board .unit .ring { fill: none; stroke-width: 2; }
-/* the five things a unit can be told, in the shape of what they do: four
-   headings around a centre that means "stay where you are" */
-.compass-wrap { margin-top: 0.5rem; }
-.compass-wrap p { margin: 0 0 0.35rem; }
-.compass {
-  display: grid;
-  grid-template-columns: repeat(3, 2.6rem);
-  grid-template-rows: repeat(3, 2.6rem);
-  gap: 0.25rem;
-  justify-content: start;
-}
-.compass .point {
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  font-size: 1.15rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-/* the centre: holding is a choice, and the same button takes an order back */
-.compass .point.hold { font-size: 1.4rem; color: var(--ink-soft); }
-.compass .point.hold.undoes {
-  color: var(--warn);
-  border-color: var(--warn);
-}
 
 /* what a unit can still pay for, drawn as an arc outside its ring - never
    over it, because the ring is what says whose the unit is. Coloured by how
@@ -355,13 +299,6 @@ kbd {
     min-height: 44px;
     padding: 0.55rem 0.8rem;
   }
-  /* the compass grows with them: a 44px button in a 2.6rem cell overflows
-     the grid it was placed in */
-  .compass {
-    grid-template-columns: repeat(3, 48px);
-    grid-template-rows: repeat(3, 48px);
-  }
-  .compass .point { padding: 0; }
   /* a link in a sentence cannot be 44px tall without breaking the sentence,
      so it is given room around it instead */
   td a, p a, nav a { display: inline-block; padding: 0.5rem 0.25rem; }
@@ -449,18 +386,6 @@ ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: va
 .board .clash .damage { fill: var(--ink-soft); }
 .board .clash .damage.mine { fill: var(--theirs); font-weight: 600; }
 
-/* an order in flight, drawn out of the unit and into the square it is headed
-   for. Red on purpose: what a turn is about to do is the thing a player
-   checks last before committing, and it used to be a 12px glyph. An outline
-   rather than a solid, so that what it crosses - the edge of its own square,
-   and whatever stands in the one it points at - shows through it. Round
-   joins because the tip is acute and a mitre would spike past it */
-.board .order .outline {
-  fill: none;
-  stroke: var(--order);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
-}
 
 /* the roster: what you have and what you have met, side by side with the
    board so an attack can be weighed without leaving the screen */
@@ -501,3 +426,58 @@ ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: va
 .board .flag.mine .standard { fill: var(--mine); }
 .board .flag.theirs .standard { fill: var(--theirs); }
 .flag-key { color: var(--theirs); font-weight: 600; }
+
+/* --- the replay -------------------------------------------------------- */
+
+/* the controls under the board: the scrubber takes the width, the buttons
+   sit in a row beneath it, and every one of them has a key as well */
+.replay-controls { margin-top: 0.6rem; }
+.replay-controls .scrub-row { display: flex; align-items: center; gap: 0.75rem; margin: 0.3rem 0; }
+.replay-controls .turn-label { white-space: nowrap; min-width: 7rem; }
+.replay-controls .scrubber { flex: 1 1 auto; min-width: 8rem; accent-color: var(--mine); }
+.replay-controls .replay-buttons { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin: 0.3rem 0; }
+.replay-controls .control { min-width: 2.6rem; }
+.replay-controls .control[aria-pressed="true"] { outline: 2px solid var(--mine); outline-offset: 1px; }
+.replay-controls label.inline { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; color: var(--ink); }
+.replay-controls .known-row { margin: 0.3rem 0; }
+
+/* what an army knew: a square it has never stood on or fought on is drawn
+   hatched and marked `?`, and an enemy it remembers is a glyph with the turn
+   it was met - a memory, not a sighting, so it is not drawn as a unit */
+.board.known .square.unknown { fill: var(--line); opacity: 0.55; }
+.board.known .square.remembered { fill: var(--theirs-soft); stroke: var(--theirs); }
+.board .remembered-enemy text { fill: var(--theirs); font-family: var(--mono); font-weight: 700; }
+.board .remembered-enemy .met { font-weight: 400; fill: var(--ink-soft); }
+
+/* a controller's trace: the chosen unit's row is marked as the board's
+   chosen unit is, by an inset bar and not by colour alone */
+.traces tbody tr { cursor: pointer; }
+.traces tbody tr.chosen td { background: var(--mine-soft); }
+.traces tbody tr.chosen td:first-child { box-shadow: inset 3px 0 0 var(--mine); }
+.traces tbody tr.halted td { color: var(--warn); }
+.traces tbody tr:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.trace-detail { margin-top: 0.5rem; }
+
+/* --- the program editor ------------------------------------------------ */
+
+/* the text and its listing side by side, a line of one against a line of
+   the other; a line the set refuses is marked where it stands */
+.program-editor textarea {
+  width: 100%;
+  min-height: 12rem;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  border: 1px solid var(--edge);
+  border-radius: 0.35rem;
+  padding: 0.5rem;
+  background: var(--card);
+  color: var(--ink);
+  resize: vertical;
+}
+.program-editor .listing { font-size: 0.86rem; }
+.program-editor .listing code { font-family: var(--mono); white-space: pre; }
+.program-editor .listing tr.bad td { background: var(--warn-soft); }
+.program-editor .listing tr.bad td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+.program-editor .listing .tag { margin-left: 0.5rem; }
+button.link { background: none; border: none; color: var(--focus); text-decoration: underline; padding: 0; }

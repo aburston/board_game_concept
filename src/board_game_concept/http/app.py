@@ -139,6 +139,43 @@ def create_app(base_path=None, backend=None, account_store=None):
     def health():
         return jsonify({'ok': True})
 
+    @app.get('/_/program')
+    def program_tariff():
+        """The instruction set's tariff, for an editor that lists a program's
+        ticks as it is typed. Rules rather than game state, so no credential:
+        the same table `domain/program.py` prices every program by."""
+        from ..domain.program import (MAX_SLEEP, TICKS, TICKS_PER_COMPUTE,
+                                      CONDITIONS, DIRECTIONS)
+        return jsonify({
+            'ticks': TICKS,
+            'ticks_per_compute': TICKS_PER_COMPUTE,
+            'max_sleep': MAX_SLEEP,
+            'conditions': CONDITIONS,
+            'directions': sorted(DIRECTIONS),
+        })
+
+    @app.post('/_/program/check')
+    def program_check():
+        """Check a program without setting it: the listing, or the line the
+        instruction set refuses it at. What the armoury marks a bad line
+        with, from the one parser there is."""
+        from ..domain.program import Program, ProgramError, cap
+        body = request.get_json(silent=True) or {}
+        text = body.get('program') or ''
+        compute = int(body.get('compute') or 0)
+        try:
+            program = Program(text)
+        except ProgramError as error:
+            return jsonify({'ok': False, 'line': error.line,
+                            'message': error.message})
+        return jsonify({
+            'ok': True,
+            'lines': [{'line': number, 'text': raw, 'ticks': ticks}
+                      for number, raw, ticks in program.listing()],
+            'total': program.ticks,
+            'cap': cap(compute),
+        })
+
     @app.get('/')
     def page():
         """The one page. Every screen is a route inside it.
@@ -215,8 +252,13 @@ def create_app(base_path=None, backend=None, account_store=None):
         if record is None:
             return jsonify({'error': f'the record has no turn {turn}'}), 404
         known = request.args.get('known') in ('1', 'true', 'yes')
+        # whose knowledge, for a session that sees everything and has no
+        # army of its own; a seat is given its own and nobody else's
+        seat = request.args.get('seat')
+        seat = int(seat) if seat and seat.isdigit() else None
         return jsonify({'turn': replay.turn_view(
-            record, int(number), data.seesEverything(), known=known)})
+            record, int(number), data.seesEverything(), known=known,
+            seat=seat)})
 
     @app.post('/games/<gameno>/players/<int:number>/commands')
     @acts_as_number

@@ -38,10 +38,10 @@
 
 ## 6. The HTTP API and the web interface
 
-- [ ] 6.1 Add endpoints for setting and reading a type's program with its listing, for reading a turn's record (board, units, flags, events, traces filtered by seat, a seat's map), and remove the order and hold endpoints; verify with `tests/test_http_api.py` and `tests/test_client_over_http.py` reworked, including that a seat's request for another seat's trace gets nothing.
-- [ ] 6.2 Add compute and a program editor with a per-line tick listing to `armoury.js`, refusing a program on compute 0 and marking bad lines; verify with `tests/test_static_serving.py` source-level checks and a `node` run of the listing function against the tick table exported from the server.
-- [ ] 6.3 Replace the ordering board in `play.js` and `board.js` with the replay: scrubber, play, pause, step, speed, movement between turns, the army-knew toggle, the trace panel, the setup wait, and the outcome at the final turn; remove box selection, drag-to-order, the compass, order arrows and the ordering keyboard; keep drag-to-deploy; verify with `tests/test_board_selection.py`, `tests/test_order_arrow.py` and `tests/test_web_flow.py` reworked to the `web-interface` delta.
-- [ ] 6.4 Verify keyboard reach of setup and replay with a source-level test that every replay control has a key and the editor is focusable.
+- [x] 6.1 Add endpoints for setting and reading a type's program with its listing, for reading a turn's record (board, units, flags, events, traces filtered by seat, a seat's map), and remove the order and hold endpoints; verify with `tests/test_http_api.py` and `tests/test_client_over_http.py` reworked, including that a seat's request for another seat's trace gets nothing.
+- [x] 6.2 Add compute and a program editor with a per-line tick listing to `armoury.js`, refusing a program on compute 0 and marking bad lines; verify with `tests/test_static_serving.py` source-level checks and a `node` run of the listing function against the tick table exported from the server.
+- [x] 6.3 Replace the ordering board in `play.js` and `board.js` with the replay: scrubber, play, pause, step, speed, movement between turns, the army-knew toggle, the trace panel, the setup wait, and the outcome at the final turn; remove box selection, drag-to-order, the compass, order arrows and the ordering keyboard; keep drag-to-deploy; verify with `tests/test_board_selection.py`, `tests/test_order_arrow.py` and `tests/test_web_flow.py` reworked to the `web-interface` delta.
+- [x] 6.4 Verify keyboard reach of setup and replay with a source-level test that every replay control has a key and the editor is focusable.
 
 ## 7. Rules, coverage and documentation
 

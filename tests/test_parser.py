@@ -130,16 +130,23 @@ class TestAdd:
 
     def test_a_type(self):
         assert parse('add type Cross X 1 2 10') == commands.AddType(
-            name='Cross', symbol='X', attack=1, health=2, energy=10)
+            name='Cross', symbol='X', attack=1, health=2, energy=10,
+            compute=0)
+
+    def test_a_type_with_compute(self):
+        assert parse('add type Cross X 1 2 10 4') == commands.AddType(
+            name='Cross', symbol='X', attack=1, health=2, energy=10,
+            compute=4)
 
     @pytest.mark.parametrize('line', ['add type', 'add type Cross X 1 2',
-                                      'add type Cross X 1 2 10 11'])
+                                      'add type Cross X 1 2 10 11 12'])
     def test_a_type_with_the_wrong_arguments(self, line):
-        assert refused(line) == 'must provide 5 args for type'
+        assert refused(line) == (
+            'must provide 5 args for type, and optionally its compute')
 
     def test_a_type_whose_statistics_are_not_numbers(self):
         assert refused('add type Cross X a 2 10') == (
-            'attack, health and energy must be numbers')
+            'attack, health, energy and compute must be numbers')
 
     def test_a_unit(self):
         assert parse('add unit Cross x1 0 3') == commands.AddUnit(
@@ -177,21 +184,48 @@ class TestLoad:
         assert refused(line) == f'must provide 1 args for load {subject}'
 
 
-class TestMove:
+class TestThereAreNoOrders:
+    """A player gives no orders: every move is a controller's."""
 
-    @pytest.mark.parametrize('word,direction', [
-        ('north', UnitType.NORTH), ('east', UnitType.EAST),
-        ('south', UnitType.SOUTH), ('west', UnitType.WEST)])
-    def test_every_direction(self, word, direction):
-        assert parse(f'move x1 {word}') == commands.Move(
-            unit='x1', direction=direction)
+    @pytest.mark.parametrize('line', ['move x1 north', 'hold x1', 'move',
+                                      'move x1 nowhere'])
+    def test_an_order_is_not_a_command(self, line):
+        assert refused(line) == 'invalid command'
 
-    @pytest.mark.parametrize('line', ['move', 'move x1', 'move x1 north east'])
+
+class TestSetProgram:
+
+    def test_a_program_is_read_from_a_file(self):
+        assert parse('set program Runner hunt.asm') == commands.SetProgramFile(
+            type_name='Runner', path='hunt.asm')
+
+    @pytest.mark.parametrize('line', ['set program', 'set program Runner',
+                                      'set program Runner a.asm b.asm'])
     def test_with_the_wrong_arguments(self, line):
-        assert refused(line) == 'must provide 2 args for move'
+        assert refused(line) == (
+            'must provide a type and the file holding its program')
 
-    def test_an_unknown_direction(self):
-        assert refused('move x1 nowhere') == 'invalid direction nowhere'
+
+class TestTheRecord:
+
+    def test_a_program_is_shown_by_type(self):
+        assert parse('show program Keep') == commands.Show(
+            subject='program', name='Keep')
+        assert parse('show program Keep json').format == 'json'
+        assert refused('show program') == 'must provide the name of a type'
+
+    def test_a_turn_is_shown_by_number(self):
+        assert parse('show turn 12') == commands.Show(subject='turn', turn=12)
+        assert parse('show turn 12 known') == commands.Show(
+            subject='turn', turn=12, known=True)
+        assert parse('show turn 12 known json') == commands.Show(
+            subject='turn', turn=12, known=True, format='json')
+        assert refused('show turn twelve') == 'the turn must be a number'
+        assert refused('show turn 12 unknown') == 'invalid show command'
+
+    def test_stepping(self):
+        assert parse('next') == commands.Next()
+        assert parse('prev') == commands.Prev()
 
 
 class TestRoles:
@@ -204,7 +238,8 @@ class TestRoles:
 
     @pytest.mark.parametrize('line', [
         'add type Cross X 1 1 10', 'add unit Cross x1 0 0',
-        'move x1 north', 'commit', 'set board 4 4', 'load player p.yaml'])
+        'set flag x1', 'set program Cross hunt.asm', 'commit',
+        'set board 4 4', 'load player p.yaml'])
     def test_the_observer_holds_nothing_that_writes(self, line):
         command = parse(line)
         assert not roles.OBSERVER.allows(command)

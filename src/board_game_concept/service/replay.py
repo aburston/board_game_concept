@@ -61,25 +61,29 @@ def program_view(record):
     }
 
 
-def turn_view(record, player_number, sees_everything, known=False):
+def turn_view(record, player_number, sees_everything, known=False,
+              seat=None):
     """One turn of the record, as this seat may read it.
 
     The board is drawn from the record's units and flags, whole; or, when
     `known` is asked for, from the seat's own army map as it stood after the
     turn - what the army knew, which is the thing its controllers were
-    reading. The events, the rejections and the traces are the seat's own
-    unless the seat sees everything.
+    reading. A session that sees everything has no army of its own and names
+    whose knowledge it wants with `seat`. The events, the rejections and the
+    traces are the seat's own unless the seat sees everything.
     """
     units = record.get('units') or []
     turn = record.get('turn')
-    if known and not sees_everything:
-        board = known_board(record, player_number)
-    elif known:
-        # the observer and the administrator have no army and no map of
-        # their own; the board is what they know
-        board = record_board(record)
+    army = None
+    if known:
+        army = seat if (sees_everything and seat is not None) else (
+            None if sees_everything else player_number)
+    if army is not None:
+        board = known_board(record, army)
+        army_map = (record.get('maps') or {}).get(str(army)) or {}
     else:
         board = record_board(record)
+        army_map = None
     events = record.get('events') or []
     traces = record.get('traces') or []
     if not sees_everything:
@@ -90,6 +94,8 @@ def turn_view(record, player_number, sees_everything, known=False):
     return {
         'turn': turn,
         'board': board,
+        'known': army,
+        'map': army_map,
         'units': [_unit_entry(unit) for unit in units
                   if not unit.get('destroyed')],
         'events': [{'turn': turn, **entry} for entry in events],
@@ -226,4 +232,8 @@ def _unit_entry(unit):
         'x': _as_int(unit.get('x')),
         'y': _as_int(unit.get('y')),
         'flag': bool(unit.get('flag')),
+        # the design, so a unit can be drawn against what it was built with
+        'type_attack': _as_int(unit.get('type_attack')),
+        'type_health': _as_int(unit.get('type_health')),
+        'type_energy': _as_int(unit.get('type_energy')),
     }

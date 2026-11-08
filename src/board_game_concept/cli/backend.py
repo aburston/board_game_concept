@@ -130,9 +130,11 @@ class Session:
         """The turns the record holds, in order."""
         raise NotImplementedError
 
-    def getTurn(self, turn, known=False):
+    def getTurn(self, turn, known=False, seat=None):
         """One turn of the record as this session may read it, or None if
-        the record has no such turn."""
+        the record has no such turn. `known` draws the board as an army knew
+        it: this session's own, or `seat`'s for a session that sees
+        everything."""
         raise NotImplementedError
 
     def waitingOn(self):
@@ -254,12 +256,13 @@ class LocalSession(Session):
     def turnNumbers(self):
         return list(self._game.repository.turn_numbers())
 
-    def getTurn(self, turn, known=False):
+    def getTurn(self, turn, known=False, seat=None):
         record = self._game.repository.read_turn(int(turn))
         if record is None:
             return None
         return replay.turn_view(record, self.player_number,
-                                self._game.seesEverything(), known=known)
+                                self._game.seesEverything(), known=known,
+                                seat=seat)
 
     def waitingOn(self):
         if self._game.getOutcome() is not None:
@@ -489,11 +492,16 @@ class HttpSession(Session):
         return self._get(f'/players/{self.player_number}/turns').get(
             'turns', [])
 
-    def getTurn(self, turn, known=False):
+    def getTurn(self, turn, known=False, seat=None):
+        params = {}
+        if known:
+            params['known'] = '1'
+        if seat is not None:
+            params['seat'] = str(seat)
         response = self._session.get(
             f'{self.base_url}/games/{self.gameno}/players/'
             f'{self.player_number}/turns/{int(turn)}',
-            params={'known': '1'} if known else None)
+            params=params or None)
         if response.status_code == 404:
             return None
         _raise_for(response)
