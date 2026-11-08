@@ -1057,13 +1057,32 @@ filtered by it, as the turn feed already is, and belongs with `turn-commit`.
 
 ## Unspecified, and worth deciding
 
-Nothing, at present. The two entries that stood here — units passing through
-each other, and the missing win condition — were both settled by the
-`fix-rules-defects` change and are recorded above as numbers 15 and 21.
+Two things the programmed series (`matches/RESULTS-PROGRAMMED.md`, games
+221-240) showed, each a design choice rather than a defect:
 
-Two questions are still open and are design choices rather than defects: energy
-never regenerating, and identical units always destroying each other. They are
-set out in Part 2 of `GAME_RULES.md`.
+- **The catalogue's programs field two Heavies and twelve bystanders.** The
+  stock array's back rank is boxed in by its own front rank, the hunter will
+  not step onto one of its own, the Pawns are sentries that never move and
+  the Walls cannot, so a player who commits what they are handed sends two
+  units and pays, every turn, for twelve controllers that think about a
+  route they cannot take. Whether the remedy is a Pawn that advances, a
+  hunter that waits for the way to clear, or an array that leaves the back
+  rank a way out is a decision about `default-army`, not a bug in it.
+- **A sleeping unit's countdown and a controller's meter count as state.**
+  `R7.5` stops a game whose whole state repeats, and the whole state
+  includes them, so a board on which nothing can ever happen again - two
+  Keeps asleep at opposite edges, a boxed-in rank thinking - runs to the cap
+  of 500 turns instead. Four games in the series were static for over 470
+  turns each. Excluding the counters from the comparison, or stopping a game
+  in which nothing has moved or struck for some number of turns, would stop
+  those games in a tenth of the time with the same result.
+
+The two entries that once stood here — units passing through each other,
+and the missing win condition — were settled by the `fix-rules-defects`
+change and are recorded above as numbers 15 and 21. Two older questions are
+still open and are design choices too: energy never regenerating beyond a
+rest, and identical units always destroying each other. They are set out in
+Part 2 of `GAME_RULES.md`.
 
 ## Left to a follow-up
 
