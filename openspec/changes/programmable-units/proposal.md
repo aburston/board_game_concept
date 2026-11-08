@@ -52,8 +52,8 @@ until read. Facts travel by the map; orders travel by radio.
 **BREAKING: fire and observe.** Once every seat's setup is committed the game
 resolves **every turn at once**, as fast as the engine can, and stops when it
 is decided, when the entire state of the game repeats (so nothing can ever
-change), or at a generous turn cap. There is no per-turn commit, no pause and
-no concession: there is a **record** of every turn, and every role watches it
+change), or at a generous turn cap. There is no per-turn commit and nothing
+to pause: there is a **record** of every turn, and every role watches it
 as a replay - forward, back, at any speed. A seat sees the whole board in the
 replay, may overlay what its own army knew at each turn, and reads a
 **controller trace** for each of its own units: ticks, energy paid, the order
