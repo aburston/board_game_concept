@@ -29,6 +29,7 @@ how it ended, are read from the record rather than counted off the board.
 """
 
 import argparse
+import codecs
 import json
 import os
 import re
@@ -297,48 +298,65 @@ class Session:
     def __init__(self, argv, transcript):
         self.argv = argv
         self.transcript = open(transcript, 'w', encoding='utf-8')
-        self.output = ''
+        # what the session has printed, as pieces joined when they are read:
+        # a record of five hundred turns is a megabyte of transcript, and
+        # growing one string a character at a time was quadratic in it
+        self.chunks = []
+        self.length = 0
         self.lock = threading.Lock()
         self.proc = subprocess.Popen(
             argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT, text=True, env=ENV, cwd=ROOT, bufsize=1)
+            stderr=subprocess.STDOUT, env=ENV, cwd=ROOT)
         self.reader = threading.Thread(target=self._read, daemon=True)
         self.reader.start()
 
     def _read(self):
+        decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
         while True:
-            chunk = self.proc.stdout.read(1)
-            if not chunk:
+            data = self.proc.stdout.read1(65536)
+            text = decoder.decode(data, final=not data)
+            if text:
+                with self.lock:
+                    self.chunks.append(text)
+                    self.length += len(text)
+                    self.transcript.write(text)
+                    self.transcript.flush()
+            if not data:
                 return
-            with self.lock:
-                self.output += chunk
-                self.transcript.write(chunk)
-                self.transcript.flush()
+
+    def _text(self):
+        """Everything said so far. Called with the lock held."""
+        if len(self.chunks) > 1:
+            self.chunks = [''.join(self.chunks)]
+        return self.chunks[0] if self.chunks else ''
+
+    @property
+    def output(self):
+        with self.lock:
+            return self._text()
 
     def mark(self):
         with self.lock:
-            return len(self.output)
+            return self.length
 
     def since(self, mark):
         with self.lock:
-            return self.output[mark:]
+            return self._text()[mark:]
 
     def send(self, line):
-        self.proc.stdin.write(line + '\n')
+        self.proc.stdin.write((line + '\n').encode('utf-8'))
         self.proc.stdin.flush()
 
     def wait_for(self, predicate, timeout=120, poll=0.05):
         """Wait until the session has said something that satisfies this."""
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            with self.lock:
-                text = self.output
+            text = self.output
             if predicate(text):
                 return text
             if self.proc.poll() is not None:
                 # one last look: the process may have said it and then exited
-                with self.lock:
-                    text = self.output
+                text = self.output
                 if predicate(text):
                     return text
                 raise RuntimeError(f'{self.argv[-1]} exited: {text[-800:]}')
