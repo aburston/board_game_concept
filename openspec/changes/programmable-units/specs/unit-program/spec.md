@@ -83,7 +83,7 @@ program SHALL NOT be refused for what it would do.
 
 #### Scenario: A sleep longer than the longest
 
-- **WHEN** a program runs `SLEEP` with a number above 10, or below 1
+- **WHEN** a program runs `SLEEP` with a number above 100, or below 1
 - **THEN** it is refused when it is set, naming the line
 
 #### Scenario: A program that would loop
@@ -127,7 +127,7 @@ registers, memory and inbox; nothing SHALL yield a random number or the clock.
 - **THEN** `MOVE dir` (1 tick), with `dir` `north`, `east`, `south`, `west` or a register holding 1 to 4, sets this turn's order, a later `MOVE` replacing an earlier; `HOLD` (1) sets the order to hold
 - **AND** `SAY to, w, w, w` (5) sends three words, numbers or registers, to the friend named `to` or to `all`
 - **AND** `RECV` (2) sets r0 to 1 and r1, r2, r3 to the next unread message's words, or r0 to 0 if none; `FLUSH` (1) discards every unread message
-- **AND** `SLEEP n` (1), with `n` a number from 1 to 10, ends the run and switches the controller off for `n` turns
+- **AND** `SLEEP n` (1), with `n` a number from 1 to 100, ends the run and switches the controller off for `n` turns
 
 #### Scenario: Nearest is settled by position
 
@@ -203,7 +203,7 @@ recorded in the unit's trace with the instruction it stopped at.
 ### Requirement: Sleep Is How A Unit Rests
 
 The system SHALL switch a unit's controller off for `n` turns, `n` being 1 to
-10, when its program runs `SLEEP n`; no sleep SHALL last longer. A sleeping
+100, when its program runs `SLEEP n`; no sleep SHALL last longer. A sleeping
 unit SHALL give no order, spend no ticks, and recover energy under the rest
 rule like any unit that did nothing. Being in a fight SHALL wake it: the
 exchange is fought on the ordinary terms, and its controller runs again on
@@ -218,8 +218,8 @@ message SHALL NOT.
 
 #### Scenario: The longest sleep
 
-- **WHEN** a unit runs `SLEEP 10` and is never attacked
-- **THEN** its controller runs again on the eleventh turn, so no unit is dormant for free
+- **WHEN** a unit runs `SLEEP 100` and is never attacked
+- **THEN** its controller runs again on the hundred-and-first turn, so no unit is dormant for free
 - **AND** sleeping again costs it the tick of another `SLEEP`
 
 #### Scenario: Woken by a blow
