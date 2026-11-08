@@ -14,7 +14,9 @@ the moment the second seat had.
 > sleep instead of paying to hold, and stops a game in which nothing has
 > happened for fifty turns (R7.7). Games 221-224 and 239, which have a
 > stock seat, were played with the earlier array and programs; the rebuilt
-> doctrines of the other games are unaffected. They have not been replayed.
+> doctrines of the other games are unaffected. Those five pairings were
+> played again under the new default as games 241-245, written up in the
+> addendum at the end.
 
 ## What was played
 
@@ -438,3 +440,93 @@ each seat's setup, what every controller decided and what it spent every
 turn, the board after it, every event and every refusal, the outcome and
 the final units. `matches/check_records.py` reads all twenty and reports
 each complete.
+
+## Addendum: the five stock pairings under the array that plays
+
+The `default-army-that-plays` change was made from what games 221-224 and
+239 showed. The five pairings with a stock seat were played again under it,
+as games 241 to 245, through the same harness, on commit `2ac85ee`, the
+one that archived the change. What changed between the two runs:
+the Lines stand in the array's front rank and the Walls beside the Keeps;
+the Pawn is a vanguard on compute 3 that advances when it can afford a
+step and a strike; a hunter blocked both ways sleeps instead of holding;
+and a game in which nothing happens for fifty turns stops (**R7.7**). The
+Garrison, Advance and Screen doctrines are unchanged files: Garrison still
+sets every program to `HALT`, Advance still gives its Pawns and Heavies the
+harness's own advance and everything else `HALT`, Screen the same with the
+Scouts posted. Flag Hunt is the catalogue's programs, so it is the one
+doctrine the change altered.
+
+| # | player 1 | player 2 | result | in play, start → end | was (games 221-224, 239) |
+|---|---|---|---|---|---|
+| 241 | Garrison | Garrison | undecided, turn 2, repeated turn 1 | 14v14 → 14v14 | the same |
+| 242 | Advance | Garrison | undecided, turn 29, repeated turn 28 | 14v14 → 8v14 | undecided, turn 45, repeated turn 44, 8v14 |
+| 243 | Flag Hunt | Garrison | undecided, turn 114, quiet since 64 | 14v14 → 2v11 | undecided at the cap, 12v14 |
+| 244 | Screen | Garrison | undecided, turn 73, quiet since 23 | 14v14 → 8v14 | undecided, turn 104, repeated turn 44, 8v14 |
+| 245 | Flag Hunt | Flag Hunt | undecided, turn 112, quiet since 62 | 14v14 → 4v4 | undecided at the cap, 12v12 |
+
+**The whole army goes out now.** In 243 and 245 every unit of the stock
+array with a controller but the Keeps left the square it was seeded on:
+the Pawns, Lines and Heavies on turn 2, the Runners and Scouts on turn 4,
+when the squares in front of them had cleared. The old array sent two
+Heavies; the new one sends twelve units and keeps four at home, which is
+what the array was rearranged to do.
+
+**The default still cannot take a garrison, and now we know by how much**
+(243). Flag Hunt reached the Garrison's edge on turn 10 and fought there
+for fifty-four turns. The Garrison lost a Pawn, a Line and a Heavy; Flag
+Hunt lost all twelve units that went, the last of them, a Heavy, on turn 64.
+The Garrison's carrier was struck once, by `heavy2` on turn 40, for five of
+its ten health, and never again. The reason is the array itself: the new
+layout puts two Heavies in front of the Keeps and a Wall on each flank, so a
+hunter aiming at the flag square funnels into the strongest square on the
+board, and a halted army strikes back for free while an attacker that fails
+to kill falls back, pays for the blow, and rests before trying again. A
+default that defends this well against itself cannot also take itself. The
+`default-army-that-plays` change proposed a scenario that it should, and
+dropped it on this evidence; what would take a garrison is hunters that
+arrive together, which is another change.
+
+**Advance and Screen are shorter and the same** (242, 244). The Advance and
+Screen doctrines are the harness's, not the catalogue's, so the only thing
+the change did to them is move their Lines to the front rank with a `HALT`
+program - two more units standing in the way of nothing. Advance's Pawns and
+Heavies reach the Garrison on turn 14 and all six die on turn 23, as before,
+and the state repeats six turns later instead of twenty-two: a sleeping
+hunter costs nothing on the meter, so the board settles at once. Screen is
+the same game with the Scouts at their posts from turn 11, and stops fifty
+turns after the last casualty.
+
+**The mirror is a battle now, and it ends** (245). Two unchanged defaults
+met on the frontier on turn 4. The Lines killed each other on turn 11,
+colliding between rows 3 and 4 and striking for three into six; the Heavies
+on turn 16, as before; the eight Pawns on turn 59, having stepped into each
+other every other turn and struck for one until four blows each had landed;
+the four Runners on turn 62. What was left on each side was two Keeps, two
+Walls and two Scouts, which strike nothing, standing on the frontier facing
+their opposite numbers, and fifty quiet turns later the game stopped. 112
+turns instead of 500, and 8,276 ticks of thinking a side instead of 81,752,
+of which the first sixty-two turns were a fight and the last fifty were two
+Scouts looking at each other.
+
+**The tariff, under the new programs.** A boxed-in hunter used to run its
+whole longest path and pay to hold; it now runs it once, sleeps, and pays
+nothing while asleep. Flag Hunt in 243 paid 85 energy for 3,898 ticks over
+114 turns - most of it in the fifty-four turns of fighting - against 1,792
+for 81,902 in game 223. In the mirror each side paid 174 against 1,788.
+Nothing was stopped at its cap; the fourteen halts a side in 245 are units
+with no energy left being refused another tick after the fight.
+
+**What the replays say.** The array that plays does what it was meant to:
+everything goes, the fights happen on the frontier and at the enemy's edge,
+and the quiet stop ends a settled board in fifty turns rather than
+hundreds. What it does not do is decide anything: every one of the five is
+undecided, as every one of the five was before, because a Garrison cannot
+be taken by what the catalogue fields and a mirror cannot be won. The two
+Scouts left facing each other in 245 are the one thing worth a second
+look - a Scout's explorer, with every square it can reach known, has nothing
+to do, and two of them standing on the frontier for fifty turns is what
+stopped the game.
+
+The logs are `matches/logs/game_241.log` to `game_245.log`;
+`matches/check_records.py 241 242 243 244 245` reports each complete.

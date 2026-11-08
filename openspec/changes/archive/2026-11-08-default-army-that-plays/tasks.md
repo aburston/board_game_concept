@@ -33,4 +33,4 @@
 
 ## Workflow follow-up
 
-- Tasks 4.1, 4.2 and 5.1 were not carried out before the change was archived at the user's request: the five stock games of the series have not been replayed under the new array, and the series write-up carries only a note at its head saying which array games 221-240 were played with. The suite was run on SQLite before archiving.
+- Tasks 4.1, 4.2 and 5.1 were not carried out before the change was archived at the user's request. The suite was run on SQLite before archiving. The five stock games were replayed afterwards as games 241-245 and written up as an addendum to `matches/RESULTS-PROGRAMMED.md`, which also says at its head which array games 221-240 were played with.

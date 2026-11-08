@@ -1,0 +1,144 @@
+=== game 241: p1 Garrison vs p2 Garrison
+  board 8x8, p1: 320 points, rows 0-3, p2: 320 points, rows 4-7
+  p1 Garrison: the stock army as given; every controller halts for nothing, so no unit is ever ordered
+  p2 Garrison: the stock army as given; every controller halts for nothing, so no unit is ever ordered
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: set program Heavy hold.asm; set program Keep hold.asm; set program Line hold.asm; set program Pawn hold.asm; set program Runner hold.asm; set program Scout hold.asm
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: set program Heavy hold.asm; set program Keep hold.asm; set program Line hold.asm; set program Pawn hold.asm; set program Runner hold.asm; set program Scout hold.asm
+  -- turn 1
+    p1: places its army
+    p2: places its army
+      pawn1 is placed at (0, 1)
+      pawn2 is placed at (1, 1)
+      line1 is placed at (2, 1)
+      heavy1 is placed at (3, 1)
+      heavy2 is placed at (4, 1)
+      line2 is placed at (5, 1)
+      pawn3 is placed at (6, 1)
+      pawn4 is placed at (7, 1)
+      runner1 is placed at (0, 0)
+      scout1 is placed at (1, 0)
+      wall1 is placed at (2, 0)
+      keep1 is placed at (3, 0)
+      keep2 is placed at (4, 0)
+      wall2 is placed at (5, 0)
+      scout2 is placed at (6, 0)
+      runner2 is placed at (7, 0)
+      pawn1 is placed at (0, 6)
+      pawn2 is placed at (1, 6)
+      line1 is placed at (2, 6)
+      heavy1 is placed at (3, 6)
+      heavy2 is placed at (4, 6)
+      line2 is placed at (5, 6)
+      pawn3 is placed at (6, 6)
+      pawn4 is placed at (7, 6)
+      runner1 is placed at (0, 7)
+      scout1 is placed at (1, 7)
+      wall1 is placed at (2, 7)
+      keep1 is placed at (3, 7)
+      keep2 is placed at (4, 7)
+      wall2 is placed at (5, 7)
+      scout2 is placed at (6, 7)
+      runner2 is placed at (7, 7)
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+    after turn 1: in play 14 v 14  (walls: 2 v 2)
+  -- turn 2
+    p1: heavy1 holds; heavy2 holds; keep1 holds; keep2 holds; line1 holds; line2 holds; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 holds; runner2 holds; scout1 holds; scout2 holds
+    p2: heavy1 holds; heavy2 holds; keep1 holds; keep2 holds; line1 holds; line2 holds; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 holds; runner2 holds; scout1 holds; scout2 holds
+      heavy1 thinks for 0 ticks, pays 0, holds
+      heavy2 thinks for 0 ticks, pays 0, holds
+      keep1 thinks for 0 ticks, pays 0, holds
+      keep2 thinks for 0 ticks, pays 0, holds
+      line1 thinks for 0 ticks, pays 0, holds
+      line2 thinks for 0 ticks, pays 0, holds
+      pawn1 thinks for 0 ticks, pays 0, holds
+      pawn2 thinks for 0 ticks, pays 0, holds
+      pawn3 thinks for 0 ticks, pays 0, holds
+      pawn4 thinks for 0 ticks, pays 0, holds
+      runner1 thinks for 0 ticks, pays 0, holds
+      runner2 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      scout2 thinks for 0 ticks, pays 0, holds
+      heavy1 thinks for 0 ticks, pays 0, holds
+      heavy2 thinks for 0 ticks, pays 0, holds
+      keep1 thinks for 0 ticks, pays 0, holds
+      keep2 thinks for 0 ticks, pays 0, holds
+      line1 thinks for 0 ticks, pays 0, holds
+      line2 thinks for 0 ticks, pays 0, holds
+      pawn1 thinks for 0 ticks, pays 0, holds
+      pawn2 thinks for 0 ticks, pays 0, holds
+      pawn3 thinks for 0 ticks, pays 0, holds
+      pawn4 thinks for 0 ticks, pays 0, holds
+      runner1 thinks for 0 ticks, pays 0, holds
+      runner2 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      scout2 thinks for 0 ticks, pays 0, holds
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+    after turn 2: in play 14 v 14  (walls: 2 v 2)
+  game over: undecided on turn 2, its state repeated (as it stood after turn 1)
+  final units:
+    p1 heavy1   Heavy   a5 h10 (3,1) hp 10 en 15
+    p1 heavy2   Heavy   a5 h10 (4,1) hp 10 en 15
+    p1 keep1    Keep    a1 h10 (3,0) hp 10 en 5 flag
+    p1 keep2    Keep    a1 h10 (4,0) hp 10 en 5
+    p1 line1    Line    a3 h6 (2,1) hp 6 en 12
+    p1 line2    Line    a3 h6 (5,1) hp 6 en 12
+    p1 pawn1    Pawn    a1 h4 (0,1) hp 4 en 2
+    p1 pawn2    Pawn    a1 h4 (1,1) hp 4 en 2
+    p1 pawn3    Pawn    a1 h4 (6,1) hp 4 en 2
+    p1 pawn4    Pawn    a1 h4 (7,1) hp 4 en 2
+    p1 runner1  Runner  a2 h4 (0,0) hp 4 en 10
+    p1 runner2  Runner  a2 h4 (7,0) hp 4 en 10
+    p1 scout1   Scout   a0 h2 (1,0) hp 2 en 12
+    p1 scout2   Scout   a0 h2 (6,0) hp 2 en 12
+    p1 wall1    Wall    a0 h10 (2,0) hp 10 en 0
+    p1 wall2    Wall    a0 h10 (5,0) hp 10 en 0
+    p2 heavy1   Heavy   a5 h10 (3,6) hp 10 en 15
+    p2 heavy2   Heavy   a5 h10 (4,6) hp 10 en 15
+    p2 keep1    Keep    a1 h10 (3,7) hp 10 en 5 flag
+    p2 keep2    Keep    a1 h10 (4,7) hp 10 en 5
+    p2 line1    Line    a3 h6 (2,6) hp 6 en 12
+    p2 line2    Line    a3 h6 (5,6) hp 6 en 12
+    p2 pawn1    Pawn    a1 h4 (0,6) hp 4 en 2
+    p2 pawn2    Pawn    a1 h4 (1,6) hp 4 en 2
+    p2 pawn3    Pawn    a1 h4 (6,6) hp 4 en 2
+    p2 pawn4    Pawn    a1 h4 (7,6) hp 4 en 2
+    p2 runner1  Runner  a2 h4 (0,7) hp 4 en 10
+    p2 runner2  Runner  a2 h4 (7,7) hp 4 en 10
+    p2 scout1   Scout   a0 h2 (1,7) hp 2 en 12
+    p2 scout2   Scout   a0 h2 (6,7) hp 2 en 12
+    p2 wall1    Wall    a0 h10 (2,7) hp 10 en 0
+    p2 wall2    Wall    a0 h10 (5,7) hp 10 en 0

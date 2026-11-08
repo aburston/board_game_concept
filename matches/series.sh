@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Play the seventh series: games 221-240 on the default board under the
 # programmed rules, in the draw the `programmable-units` change fixed before
-# the first game was played.
+# the first game was played; and games 241-245, the five pairings with a
+# stock seat played again under the array the `default-army-that-plays`
+# change gave the game.
 #
 # Each game is one `arena.py` invocation and writes its own log, so the series
 # can be resumed: a game whose log already ends in an outcome line is skipped.
@@ -40,6 +42,11 @@ DRAW="
 238 fugitive   executioner
 239 flag_hunt  flag_hunt
 240 advance    advance
+241 garrison   garrison
+242 advance    garrison
+243 flag_hunt  garrison
+244 screen     garrison
+245 flag_hunt  flag_hunt
 "
 
 played() {
