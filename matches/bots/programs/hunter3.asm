@@ -53,6 +53,5 @@ JIF zero r0, stay
 JIF pos r4, east
 MOVE west
 HALT
-stay: HOLD           ; both ways stand one of mine: wait for it to move
-HALT
+stay: SLEEP 1        ; both ways stand one of mine: rest until one moves
 rest: SLEEP 1

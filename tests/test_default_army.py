@@ -306,3 +306,28 @@ def test_the_whole_army_gets_out(tmp_path):
                 for _depth, _x, type_name, name in army.ARRAY
                 if type_name not in ('Wall', 'Keep')}
     assert expected <= moved, sorted(expected - moved)
+
+
+def test_a_scout_goes_round_an_enemy_it_knows_of_rather_than_into_it():
+    """A Scout strikes nothing, so a step onto a known enemy is a contest
+    it cannot win and a fare for nothing: two Scouts facing each other
+    across the frontier used to bump for fifty turns until the quiet stop
+    took the game. The explorer goes round what its map shows."""
+    from board_game_concept.domain.army_map import ArmyMap
+    from board_game_concept.domain.program import Program, Snapshot, run
+    program = Program(army.types()['Scout']['program'])
+    known = ArmyMap()
+    # everything round me is known but the row beyond the enemy
+    for x in range(8):
+        for y in range(0, 4):
+            known.visited[(x, y)] = 1
+    known.enemies[(1, 4)] = (60, 0, 2)
+    snap = Snapshot(61, 8, 8, 1, {'me': (1, 3)}, {1: (3, 0), 2: (3, 7)},
+                    known)
+    me = {'x': 1, 'y': 3, 'health': 2, 'energy': 2, 'flag': False,
+          'number': 0}
+    result = run(program, snap, me, None, {}, [], 6, 2, 0)
+    # the nearest unknown is (1, 4) itself or the square beyond; either way
+    # the step is not south onto the enemy
+    assert result.order != 3, result
+    assert result.halted is None

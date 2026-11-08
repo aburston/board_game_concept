@@ -230,7 +230,7 @@ not want.
 | Name | Symbol | Attack | Health | Energy | Compute | Cost | Move fare | Program |
 |---|---|---|---|---|---|---|---|---|
 | Wall | `W` | 0 | 10 | 0 | 0 | 10 | 3 | none: no controller |
-| Scout | `o` | 0 | 2 | 12 | 6 | 20 | 1 | explorer: walks at the nearest unknown square |
+| Scout | `o` | 0 | 2 | 12 | 6 | 20 | 1 | explorer: walks at the nearest unknown square, round whatever is in the way, and gives up on one it cannot get nearer to |
 | Pawn | `p` | 1 | 4 | 2 | 3 | 10 | 1 | vanguard: steps at the enemy's edge when it can afford to, never onto its own |
 | Runner | `r` | 2 | 4 | 10 | 5 | 21 | 1 | hunter: walks at the enemy flag |
 | Line | `L` | 3 | 6 | 12 | 4 | 25 | 2 | hunter |
@@ -633,8 +633,10 @@ plays:**
 **R6.1 You always see your own units,** wherever they are.
 
 **R6.2 You see an enemy unit only by fighting it.** Visibility is recorded when
-two units actually *exchange attacks*, whether in a contested square or in a
-head-on collision (**R4.9**). Merely being next to an enemy reveals nothing.
+two units *contest a square*, whether by one walking into the other or in a
+head-on collision (**R4.9**) - and whether or not either can land a blow: two
+Scouts that collide have met, though neither strikes. Merely being next to an
+enemy reveals nothing.
 Contact also reveals that unit's **type**, with the attack, health and energy
 its owner designed it with - and **nothing of how it thinks**: not its
 compute, not its program, not what its controller did. A type's controller

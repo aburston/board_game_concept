@@ -50,7 +50,7 @@ The catalogue SHALL be:
 | Name   | Symbol | Attack | Health | Energy | Compute | Cost | Move fare | Default program |
 |--------|--------|--------|--------|--------|---------|------|-----------|-----------------|
 | Wall   | `W`    | 0      | 10     | 0      | 0       | 10   | 3         | none: no controller |
-| Scout  | `o`    | 0      | 2      | 12     | 6       | 20   | 1         | explorer: walks to the nearest unknown square, sleeps when there is none |
+| Scout  | `o`    | 0      | 2      | 12     | 6       | 20   | 1         | explorer: walks to the nearest unknown square, stepping round its own units, the enemies its army knows of and the board's edge, a step aside when the way is blocked; sleeps when there is nothing left to find, or when twenty turns have not brought it nearer to what it is looking for |
 | Pawn   | `p`    | 1      | 4      | 2      | 3       | 10   | 1         | vanguard: steps towards the enemy's edge when it can afford a step and a strike, never onto one of its own, and fights what it walks into; sleeps a turn otherwise |
 | Runner | `r`    | 2      | 4      | 10     | 5       | 21   | 1         | hunter: walks to the nearest enemy flag, round its own units, fighting what it meets |
 | Line   | `L`    | 3      | 6      | 12     | 4       | 25   | 2         | hunter |

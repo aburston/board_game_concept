@@ -528,5 +528,41 @@ look - a Scout's explorer, with every square it can reach known, has nothing
 to do, and two of them standing on the frontier for fifty turns is what
 stopped the game.
 
-The logs are `matches/logs/game_241.log` to `game_245.log`;
-`matches/check_records.py 241 242 243 244 245` reports each complete.
+### The Scouts, and game 246
+
+The two Scouts left facing each other in 245 were doing two things wrong,
+and one of them was the engine's. The explorer was the hunter with a
+different target, so it walked into any enemy in its way as a hunter
+should - but a Scout strikes nothing, so the contest was undecided every
+time, it fell back, paid the fare, and tried again. And it never learned:
+a sighting was recorded only when a blow was exchanged, so two units that
+could not strike met every turn and neither army's map ever held the
+other. That is fixed in the engine - units that contest a square have met,
+blow or no blow (**R6.2**) - and the Scout has a program of its own: it
+walks at the nearest unknown square trying four steps in turn and taking
+the first onto a square its map calls empty or unknown, never onto an
+enemy it knows of, and it remembers how near it has got to what it is
+looking for. Twenty turns without getting nearer means the unknown square
+is behind something it cannot pass - the enemy's Keeps and Walls, whose
+squares no friendly unit has stood on - and it sleeps rather than pace.
+Without that last rule a lone Scout pacing between two squares in the
+enemy's corner kept a replay of the mirror alive to the cap, because every
+step it took was something happening.
+
+| # | player 1 | player 2 | result | in play, start → end |
+|---|---|---|---|---|
+| 246 | Flag Hunt | Flag Hunt | undecided, turn 146, quiet since 96 | 14v14 → 4v2 |
+
+The Scouts moved sixty-two times in the game and collided never. The
+fighting went as in 245 to turn 59; the Scouts then explored the enemy's
+half, two of them walking into Keeps that struck them, and the last step
+was on turn 96. Both of player 1's Scouts survived and both of player 2's
+fell, which is the first stock mirror not to come out symmetric: the
+engine settles a tie for the nearest square by the lower row and then the
+lower column (`unit-program`), which is the same rule for both seats and
+not the same choice for a seat that faces the other way. A hunter has no
+ties to break, so the earlier mirrors never met it. Whether a tie-break
+should be read from the seat's own edge is a question for the rules.
+
+The logs are `matches/logs/game_241.log` to `game_246.log`;
+`matches/check_records.py 241 242 243 244 245 246` reports each complete.
