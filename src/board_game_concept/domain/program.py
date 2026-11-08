@@ -12,7 +12,9 @@ Three things make this safe for the invariant that a turn is a pure function
 of the board and the orders (R1.2). Nothing here reads anything but the
 snapshot it is handed, the unit's own memory and inbox: no clock, no random
 number, no object identity. Every "nearest" is settled by distance, then the
-lower y, then the lower x. And the ticks an instruction costs never depend on
+row nearer the seat's own edge, then the lower x - the same rule read from
+either end of the board, so that a mirror comes out a mirror. And the ticks
+an instruction costs never depend on
 what it returns, so a program's bill is the same on every board.
 """
 
@@ -224,11 +226,14 @@ class Snapshot:
     that no controller sees another's order, message or move from the same
     turn. `friends` maps each standing friendly unit's name to its square;
     `flags` maps each player with a standing carrier to its square; `army_map`
-    is the army's shared knowledge of the board.
+    is the army's shared knowledge of the board; `edge` is the row of the
+    seat's own edge of the board - 0 for the player placed nearer row 0, the
+    last row for the other - which is what a tie for the nearest square is
+    settled towards, so that the two seats of a mirror make mirrored choices.
     """
 
     def __init__(self, turn, size_x, size_y, player, friends, flags,
-                 army_map):
+                 army_map, edge=0):
         self.turn = turn
         self.size_x = size_x
         self.size_y = size_y
@@ -236,6 +241,7 @@ class Snapshot:
         self.friends = dict(friends)
         self.flags = dict(flags)
         self.army_map = army_map
+        self.edge = edge
         self.friend_squares = set(self.friends.values())
 
     def on_board(self, x, y):
@@ -247,7 +253,7 @@ class Snapshot:
     def flag_enemy(self, origin):
         squares = [square for number, square in self.flags.items()
                    if number != self.player]
-        return nearest_of(squares, origin)
+        return nearest_of(squares, origin, self.edge)
 
     def map_at(self, x, y):
         """`(kind, turn, attack, health)` for a square."""
@@ -262,36 +268,32 @@ class Snapshot:
         if kind == 'friend':
             squares = [square for square in self.friend_squares
                        if square != origin]
-            found = nearest_of(squares, origin)
+            found = nearest_of(squares, origin, self.edge)
             return found and (found[0], found[1], distance(found, origin))
         if kind == 'enemy':
-            found = nearest_of(self.army_map.enemy_squares(), origin)
+            found = nearest_of(self.army_map.enemy_squares(), origin,
+                               self.edge)
             return found and (found[0], found[1], distance(found, origin))
-        # unknown: every square the army has nothing on. Scanned in y then x
-        # order, keeping strictly nearer squares, which is the same tie-break
-        # as everywhere else
-        best = None
-        for y in range(self.size_y):
-            for x in range(self.size_x):
-                if (x, y) in self.friend_squares:
-                    continue
-                if self.army_map.at(x, y, self.turn)[0] != MAP_UNKNOWN:
-                    continue
-                far = distance((x, y), origin)
-                if best is None or far < best[2]:
-                    best = (x, y, far)
-        return best
+        # unknown: every square the army has nothing on, settled by the
+        # same tie-break as everywhere else
+        squares = [(x, y) for y in range(self.size_y)
+                   for x in range(self.size_x)
+                   if (x, y) not in self.friend_squares
+                   and self.army_map.at(x, y, self.turn)[0] == MAP_UNKNOWN]
+        found = nearest_of(squares, origin, self.edge)
+        return found and (found[0], found[1], distance(found, origin))
 
 
 def distance(a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 
-def nearest_of(squares, origin):
-    """The nearest square to an origin, ties going to the lower y then x."""
+def nearest_of(squares, origin, edge=0):
+    """The nearest square to an origin, ties going to the row nearer the
+    seat's own edge of the board, then the lower x."""
     best = None
     for square in squares:
-        key = (distance(square, origin), square[1], square[0])
+        key = (distance(square, origin), abs(square[1] - edge), square[0])
         if best is None or key < best[0]:
             best = (key, square)
     return None if best is None else best[1]

@@ -4,7 +4,8 @@
 # the first game was played; and games 241-245, the five pairings with a
 # stock seat played again under the array the `default-army-that-plays`
 # change gave the game; and game 246, the mirror again once the Scout's
-# explorer went round the enemies it knows of.
+# explorer went round the enemies it knows of; and game 247, the mirror once
+# more with ties for the nearest square settled towards each seat's own edge.
 #
 # Each game is one `arena.py` invocation and writes its own log, so the series
 # can be resumed: a game whose log already ends in an outcome line is skipped.
@@ -49,6 +50,7 @@ DRAW="
 244 screen     garrison
 245 flag_hunt  flag_hunt
 246 flag_hunt  flag_hunt
+247 flag_hunt  flag_hunt
 "
 
 played() {

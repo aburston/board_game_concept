@@ -331,3 +331,23 @@ def test_a_scout_goes_round_an_enemy_it_knows_of_rather_than_into_it():
     # the step is not south onto the enemy
     assert result.order != 3, result
     assert result.halted is None
+
+
+def test_the_mirror_comes_out_a_mirror(tmp_path):
+    """Two unchanged arrays face each other across the board, and nothing
+    in the rules or the programs tells north from south: every turn of the
+    record is its own reflection, unit for unit, to the end."""
+    harness = a_stock_game(tmp_path)
+    repository = harness.repository()
+    size_y = army.DEFAULT_SIZE_Y
+    for turn in repository.turn_numbers():
+        units = {}
+        for unit in repository.read_turn(turn)['units']:
+            units[(unit['player'], unit['name'])] = unit
+        for (player, name), unit in units.items():
+            other = units[(3 - player, name)]
+            assert unit.get('destroyed') == other.get('destroyed'), (turn, name)
+            if unit.get('destroyed'):
+                continue
+            assert (unit['x'], unit['y']) == (other['x'], size_y - 1 - other['y']), (turn, name)
+            assert (unit['health'], unit['energy']) == (other['health'], other['energy']), (turn, name)

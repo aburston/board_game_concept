@@ -557,12 +557,34 @@ The Scouts moved sixty-two times in the game and collided never. The
 fighting went as in 245 to turn 59; the Scouts then explored the enemy's
 half, two of them walking into Keeps that struck them, and the last step
 was on turn 96. Both of player 1's Scouts survived and both of player 2's
-fell, which is the first stock mirror not to come out symmetric: the
-engine settles a tie for the nearest square by the lower row and then the
-lower column (`unit-program`), which is the same rule for both seats and
-not the same choice for a seat that faces the other way. A hunter has no
-ties to break, so the earlier mirrors never met it. Whether a tie-break
-should be read from the seat's own edge is a question for the rules.
+fell, which was the first stock mirror not to come out symmetric: the
+engine settled a tie for the nearest square by the lower row and then the
+lower column, which is the same rule for both seats and not the same choice
+for a seat that faces the other way. A hunter has no ties to break, so the
+earlier mirrors never met it.
 
-The logs are `matches/logs/game_241.log` to `game_246.log`;
-`matches/check_records.py 241 242 243 244 245 246` reports each complete.
+### The tie-break, and game 247
+
+A tie for the nearest square is now settled towards the seat's own edge of
+the board - row 0 for the player placed nearer it, the last row for the
+other - and then by the lower column (`unit-program`, **R10**). The same
+rule read from either end of the board is the same choice for both seats.
+The mirror was played once more:
+
+| # | player 1 | player 2 | result | in play, start → end |
+|---|---|---|---|---|
+| 247 | Flag Hunt | Flag Hunt | undecided, turn 109, quiet since 59 | 14v14 → 4v4 |
+
+It is a mirror to the tick: 5,437 ticks of thinking and 122 energy a side,
+every casualty in pairs - the Lines on turn 11, the Heavies and the first
+Runners on 16, the second Runners on 32, the Pawns on 59 - and at the end
+two Keeps, two Walls and two Scouts a side, each Scout standing on the
+reflection of its opposite number's square. The Scouts moved fifty-six
+times and collided never, and had finished exploring what they could reach
+by the time the last Pawns fell, so the game stopped fifty turns after
+that. The in-process test that holds this plays the same two armies and
+requires every turn of the record to be its own reflection, unit for unit.
+
+The logs are `matches/logs/game_241.log` to `game_247.log`;
+`matches/check_records.py 241 242 243 244 245 246 247` reports each
+complete.

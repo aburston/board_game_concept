@@ -971,7 +971,7 @@ bill is the same on every board:
 | `FLAG mine\|enemy` | 2 | where that flag stands into `r0`, `r1`, or -1 if fallen or unknown |
 | `CONTACT` | 2 | the enemy I fought last turn: its square into `r0`, `r1`, its attack and health into `r2`, `r3`; -1 if none |
 | `MAP rX, rY` | 3 | what my army knows of that square into `r0`: 0 unknown, 1 empty, 2 friend, 3 enemy, 4 off the board; with the turn it was learned in `r1` and, for an enemy, its attack and health in `r2`, `r3` |
-| `NEAREST friend\|enemy\|unknown` | 4 | the nearest such square into `r0`, `r1`, or -1 if none; ties by distance, then the lower `y`, then the lower `x` |
+| `NEAREST friend\|enemy\|unknown` | 4 | the nearest such square into `r0`, `r1`, or -1 if none; ties by distance, then the row nearer your own edge of the board, then the lower `x` |
 | `RECV` | 2 | the oldest message in my inbox into `r0`, `r1`, `r2`, or -1 if none |
 | `FLUSH` | 1 | empty my inbox |
 | `SET rX, n` | 1 | a constant into a register |
