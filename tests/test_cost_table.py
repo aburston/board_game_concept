@@ -88,10 +88,11 @@ def test_the_rest_gain_is_the_one_the_game_gives(cost_table):
 
 
 def test_the_deployment_price_is_the_one_the_budget_charges(cost_table):
-    assert '`attack + health + energy`' in cost_table
-    kind = UnitType('Priced', 'P', 3, 5, 20)
-    assert kind.cost == 3 + 5 + 20, (
-        'a type is no longer priced at attack + health + energy; R9 says it is')
+    assert '`attack + health + energy + compute`' in cost_table
+    kind = UnitType('Priced', 'P', 3, 5, 20, 2)
+    assert kind.cost == 3 + 5 + 20 + 2, (
+        'a type is no longer priced at attack + health + energy + compute; '
+        'R9 says it is')
 
 
 def test_a_round_of_combat_is_charged_at_the_attack_value(cost_table):
