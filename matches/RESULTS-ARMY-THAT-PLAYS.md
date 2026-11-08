@@ -91,14 +91,14 @@ the flag once. This one wins on turn 74. The difference is not the array
 but the two rules that came after it: the army reached the Garrison's edge
 on turn 10 as before, lost its Lines, Scouts, Pawns, one Runner and both
 Heavies by turn 64 as before, and `heavy2` struck the carrier for five on
-turn 40 as before - but this time `runner1`, which in 243 had died walking
-into the same Heavies as everybody else, came at the Keep from the side,
-struck it for two on turns 67 and 68 and for the last two on turn 74, and
-died in the exchange that took the flag. A tie for the nearest square now
-settles towards the seat's own edge, which sent the Runner a different way
-round; and the Scout that lived to turn 65 had mapped the Garrison's back
-row, so the hunter knew what stood where. Three units left against eleven,
-and the flag down.
+turn 40 as before - but this time `runner1`, which in 243 had walked
+straight down its own column into the Garrison's Pawns and died there,
+turned east on turn 8 at a square where two ways were equally near, came
+down the middle behind the Heavies, struck the Keep for two on turns 67
+and 68 and for the last two on turn 74, and died in the exchange that took
+the flag. The turn-8 choice is the tie-break: the same squares, settled
+towards the seat's own edge rather than the lower row. Three units left
+against eleven, and the flag down.
 
 **It beats the cheap rebuilt armies faster and loses to the dear ones more
 slowly** (255-260). Against Lancers the win came on turn 38 rather than 75,
@@ -130,31 +130,35 @@ left on reflected squares, stopped fifty turns after the last Pawns fell.
 
 ## What the other rules did to the rebuilt armies
 
-Six games changed outcome or length; the rest are the seventh series'
-games again, because a rebuilt army fights on turn 2 and nothing about a
-tie or a contact rule reaches a front row that annihilates the one facing
-it.
+Four games changed outcome or length; the rest are the seventh series'
+games again, because a rebuilt army fights on turn 2 and a front row that
+annihilates the one facing it leaves nothing for a tie or a contact rule to
+reach. Three rules changed between the two series for a rebuilt army - the
+hunter that sleeps where it held, contact without a blow, and the tie-break
+- and the same doctrine files played both, so which rule moved which game
+is not something twenty games can say; a controlled replay could. What the
+logs show:
 
-**Contact without a blow lets the Bulwark hold** (263). In the seventh
-series the Lancers took Bulwark's Keep on turn 50 with one unit left. Here
-the last Lance died on turn 49 and the Keep stood with two health: the
-Walls that are struck now see what struck them, Bulwark's Heavies read the
-Lances on the map from the first blow on the Wall rather than the first
-blow on themselves, and came out two squares to meet them a turn sooner.
-Fifty quiet turns later the game stopped with a Keep a side.
+**The Bulwark holds its flag against the Lancers** (263). In the seventh
+series the last Lance and the Keep it struck fell together on turn 50. Here
+the Lances died a few turns sooner - `lance1` on turn 46 rather than 50,
+the last on 49 - and the Keep stood with two health. Bulwark's Heavies came
+out on turn 4 in both games. Fifty quiet turns later the game stopped with
+a Keep a side.
 
-**Heavies against Runners is a draw now** (264). The seventh series' win on
-turn 25 is a draw on turn 25: `heavy5` took the Runners' Keep in the same
-exchange as `runner9`, the one Runner that had got through to the Heavies'
-edge, took theirs. The Runner found its way round the Heavies by a tie
-settled the other way, and both flags fell together.
+**Heavies against Runners is a draw** (264). The seventh series' win on
+turn 25 is a draw on turn 25. `runner9` walked the same seven squares to
+the Heavies' Keep in both games and struck it on the same turn; what
+differs is one blow of two that `runner1` landed on turn 23 in this game
+and not in that one, before it died, so that `runner9`'s two on turn 25
+were the Keep's last two, in the same exchange as `heavy5` took the
+Runners'. Both flags fell together.
 
 **Heavies against Bulwark is twice as quick** (265). Turn 38 rather than
-74: Bulwark's Heavies came out to meet the attackers on the Walls' first
-blow, met them on open ground on turn 14, and all four died there along
-with four of the attackers' seven; the Keep fell to the three that were
-left twenty-four turns sooner than it had, because nothing was left to
-make them fall back.
+74. The exchange on turn 14 is the same in both games - all four of
+Bulwark's Heavies and four of the attackers' seven dead - and from there
+the three Heavies left took the Keep in twenty-four turns where the
+seventh series' three took sixty.
 
 **Executioner against Lancers ends** (267). Two Keeps asleep at opposite
 edges from turn 24, as before; the quiet stop takes the game on turn 74
@@ -207,11 +211,14 @@ decided. Fifty turns was never close: the longest gap between two
 happenings in a game that then went on was the Advance mirror's six-turn
 Pawn cycle.
 
-**The small rules moved three results.** Contact without a blow kept a
-Bulwark's flag (263); a tie settled towards the seat's own edge found a
-Runner a way round the Heavies and turned a win into a draw (264), and
-found the Runner that took the Garrison's flag (253). None of the three is
-a doctrine's doing: the same files played the same armies.
+**The small rules moved three results, and one of them is traceable.** The
+tie-break turned the Garrison's defeat (253): a Runner that had walked into
+the same Heavies as everybody else went the other way at a tie on turn 8
+and took the flag from behind. A Bulwark kept its flag (263) and Heavies
+against Runners became a draw (264) under the same three rule changes, and
+the logs show where each game diverged from its predecessor without saying
+which rule did it. None of the three is a doctrine's doing: the same files
+played the same armies.
 
 **Heavies are still the thing to beat.** Three of their four games won and
 the fourth a draw with seven Heavies standing; what beats them was not in
