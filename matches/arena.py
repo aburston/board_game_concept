@@ -380,7 +380,16 @@ class Session:
 
 # -------------------------------------------------------------------- a match
 
-OUTCOME = re.compile(r'^game over: .*turn (\d+)', re.M)
+# the turn a game ended on, as the outcome line says it: `player 1 wins on
+# turn 75`, `a draw on turn 12`, `undecided on turn 90, its state repeated
+# (as it stood after turn 10)` - the first turn named, not the last
+OUTCOME = re.compile(r'\bon turn (\d+)')
+
+
+def final_turn(outcome):
+    """The turn the game ended on, from its outcome line, or None."""
+    found = OUTCOME.search(outcome or '')
+    return int(found.group(1)) if found else None
 
 
 class Match:
@@ -573,10 +582,9 @@ class Match:
 
     def record(self):
         """Write the game down, turn by turn, from the record."""
-        found = OUTCOME.search(self.outcome or '')
-        if not found:
+        self.turns = final_turn(self.outcome)
+        if self.turns is None:
             raise RuntimeError(f'no turn in the outcome: {self.outcome!r}')
-        self.turns = int(found.group(1))
         for turn in range(1, self.turns + 1):
             doc = self.read_turn(turn)
             self.log(f'  -- turn {turn}')

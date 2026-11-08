@@ -217,6 +217,14 @@ class TestTheOutcomeIsReadFromTheRecord:
                                  'halted': 7}) == \
             'pawn1 holds (halts at line 7)'
 
+    def test_the_final_turn_is_the_one_the_game_ended_on(self, arena):
+        assert arena.final_turn('game over: player 1 wins on turn 75') == 75
+        assert arena.final_turn('game over: a draw on turn 12') == 12
+        assert arena.final_turn(
+            'game over: undecided on turn 90, its state repeated (as it '
+            'stood after turn 10)') == 90
+        assert arena.final_turn('not played: p1 Flagless: no flag') is None
+
     def test_the_board_is_drawn_as_the_roles_draw_it(self, arena):
         board = {'size_x': 2, 'size_y': 1, 'rows': [['K', ' ']]}
         assert arena.draw(board) == '+-+-+\n|K| |\n+-+-+'
@@ -433,7 +441,8 @@ class TestThroughTheRealRoles:
                                         'garrison', 'garrison')
         assert outcome.startswith('game over: undecided on turn')
         assert 'its state repeated' in outcome
-        assert match.turns <= 3
+        assert match.turns == 2
+        assert log.count('  -- turn ') == 2
         assert 'board 8x8, p1: 320 points, rows 0-3, p2: 320 points, ' \
                'rows 4-7' in log
         assert log.count('is handed 16 units') == 2

@@ -1,5 +1,17 @@
 # Twenty games on the default board
 
+> **Played under superseded rules.** Since these games were played the
+> `programmable-units` change took the orders away from the players: a type
+> carries a program, every unit runs its type's program once a turn and pays
+> for the thinking in energy, a player's whole game is the setup, and the
+> game is resolved to its end the moment the last setup is committed (R3,
+> R10). Compute is a fourth statistic priced into the cost, the default
+> budget is 320 and the stock array costs 304, and a game stops undecided
+> when its state repeats or at a cap of 500 turns rather than at a cap the
+> harness chose. The doctrines below ordered their units by hand each turn,
+> which nothing can do any more. The series played under the programmed
+> rules is `RESULTS-PROGRAMMED.md`.
+
 The sixth series, and the first played on the game as it stands. Every
 earlier series was played under rules the game no longer has; this one is
 played on what a new two-player game is given when nobody sets it up further,
