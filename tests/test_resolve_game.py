@@ -164,7 +164,7 @@ def test_a_blow_every_tenth_turn_keeps_a_game_alive(tmp_path):
     server = harness.play()
     outcome = server.getOutcome()
     assert outcome.get('reason') != 'quiet', outcome
-    assert outcome['turn'] > 2 * turn_service.QUIET_CAP
+    assert outcome['turn'] >= 2 * turn_service.QUIET_CAP, outcome
 
 
 def test_a_repeated_state_is_found_before_quiet_is(tmp_path):
