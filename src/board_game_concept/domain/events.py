@@ -67,6 +67,7 @@ DESCRIPTIONS = {
     'contested': lambda d: f"({d['x']}, {d['y']}) is contested by {d['units']} units",
     'attacked': lambda d: f"{d['unit']} attacks {d['target']} for {d['damage']}",
     'destroyed': lambda d: f"{d['unit']} is destroyed",
+    'woken': lambda d: f"{d['unit']} is woken by the blow",
     'flag_fallen': lambda d: (f"{d['unit']} carried player {d['player']}'s "
                               f"flag, and it has fallen"),
     'retreated': lambda d: f"{d['unit']} falls back to ({d['x']}, {d['y']})",
@@ -77,11 +78,27 @@ DESCRIPTIONS = {
     'undecided': lambda d: (f"the contest at ({d['x']}, {d['y']}) is undecided "
                             f"between {d['units']}"),
     'held': lambda d: f"{d['unit']} holds ({d['x']}, {d['y']})",
-    'shared': lambda d: f"({d['x']}, {d['y']}) is left shared by {d['units']} units",
     'emptied': lambda d: f"({d['x']}, {d['y']}) is left empty",
     'removed': lambda d: f"{d['unit']} leaves the board",
     'rested': lambda d: f"{d['unit']} rests and recovers to {d['energy']} energy",
+    'thought': lambda d: _thought(d),
 }
+
+
+def _thought(d):
+    """How a controller's turn reads: what it spent and what it decided."""
+    if d.get('slept'):
+        return (f"{d['unit']} sleeps"
+                + (", and is woken" if d.get('woken') else ""))
+    said = f", says {len(d['said'])}" if d.get('said') else ""
+    halted = (f", halts at line {d['halted']}" if d.get('halted') is not None
+              else "")
+    order = d.get('order')
+    heading = {1: 'north', 2: 'east', 3: 'south', 4: 'west'}.get(order, order)
+    decided = ("holds" if order in (None, 'hold')
+               else f"moves {heading}")
+    return (f"{d['unit']} thinks for {d['ticks']} ticks, pays "
+            f"{d['energy']}, {decided}{said}{halted}")
 
 
 # the kinds that say a blow was struck. A board marks these squares, and

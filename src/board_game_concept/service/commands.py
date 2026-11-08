@@ -82,12 +82,27 @@ class Commit(Node):
 class Show(Node):
     kind = 'show'
     # how the answer is to be written: as a table for a person, or as JSON for
-    # whatever is reading the session that is not one
-    fields = ('subject', 'format')
+    # whatever is reading the session that is not one. `name` is the type a
+    # `show program` names; `turn` and `known` are what a `show turn` asks
+    # for, and both are None for every other subject
+    fields = ('subject', 'format', 'name', 'turn', 'known')
 
     def __init__(self, **values):
         values.setdefault('format', 'table')
+        values.setdefault('name', None)
+        values.setdefault('turn', None)
+        values.setdefault('known', False)
         super().__init__(**values)
+
+
+class Next(Node):
+    """Show the turn after the one being shown."""
+    kind = 'next'
+
+
+class Prev(Node):
+    """Show the turn before the one being shown."""
+    kind = 'prev'
 
 
 class SetBoard(Node):
@@ -126,7 +141,24 @@ class SetFlag(Node):
 
 class AddType(Node):
     kind = 'add_type'
-    fields = ('name', 'symbol', 'attack', 'health', 'energy')
+    # compute and the program are defaulted rather than required, so a draft
+    # or a request written without them still reads as the command it was: a
+    # type with no compute has no controller and carries no program
+    fields = ('name', 'symbol', 'attack', 'health', 'energy', 'compute',
+              'program')
+
+    def __init__(self, **values):
+        if values.get('compute') is None:
+            values['compute'] = 0
+        values.setdefault('program', None)
+        super().__init__(**values)
+
+
+class SetProgram(Node):
+    """Give one of this player's types the program its units run."""
+
+    kind = 'set_program'
+    fields = ('type_name', 'program')
 
 
 class AddUnit(Node):
@@ -149,14 +181,14 @@ class LoadPlayer(Node):
     fields = ('path',)
 
 
-class Move(Node):
-    kind = 'move'
-    fields = ('unit', 'direction')
+class SetProgramFile(Node):
+    """`set program <type> <file>` as typed: the program is in a file the
+    session reads, and what reaches the game is a `SetProgram` holding its
+    text. Kept apart so that a session talking to a server reads the file on
+    its own side rather than naming a path the server owns."""
 
-
-class Hold(Node):
-    kind = 'hold'
-    fields = ('unit',)
+    kind = 'set_program_file'
+    fields = ('type_name', 'path')
 
 
 class Login(Node):

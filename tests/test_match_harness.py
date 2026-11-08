@@ -1,12 +1,12 @@
 """The match harness under `matches/`, held to the `match-series` capability.
 
-A series of bot-played games is evidence about the rules only if each bot was
-handed its own player's view and nothing else, every command went through a
-real role's prompt, and the game - not the harness - decided what was
-allowed. The games themselves are not tests: they take minutes and their
+A series of games between doctrines is evidence about the rules only if each
+doctrine was given its own seat and nothing else, every command went through
+a real role's prompt, and the game - not the harness - decided what was
+allowed and how the game went. The games themselves are not tests: their
 outcomes are the question. What is tested here is the boundary the harness
-keeps and the armies the doctrines state, without playing a game, plus two
-slow tests that do play one for a turn or two through the real roles.
+keeps and the armies and programs the doctrines state, without playing a
+game through the roles, plus one slow test that does.
 """
 
 import importlib.util
@@ -17,8 +17,22 @@ from pathlib import Path
 
 import pytest
 
+from board_game_concept.cli import parser
+from board_game_concept.cli.session import read_program_file
 from board_game_concept.domain.army import ARRAY, CATALOGUE, FLAG_UNIT
+from board_game_concept.domain.player import Player
+from board_game_concept.domain.program import Program, cap
 from board_game_concept.domain.unit import UnitType
+from board_game_concept.service import games
+from board_game_concept.service.commands import SetProgram
+
+from game_harness import GameHarness
+
+# the arena plays on SQLite, and the in-process games here resolve to
+# their end - five hundred turns, for a pairing that never repeats -
+# which the YAML backend takes minutes over for nothing the SQLite run
+# does not show
+pytestmark = pytest.mark.backend('sqlite')
 
 ROOT = Path(__file__).resolve().parent.parent
 MATCHES = ROOT / 'matches'
@@ -29,9 +43,12 @@ REBUILT = ('lancers', 'heavies', 'runners', 'bulwark', 'executioner',
            'fugitive')
 DOCTRINES = STOCK + REBUILT
 
-BUDGET = 250
+BUDGET = Player.DEFAULT_BUDGET
 SIZE = 8
 HALF = 4
+DESIGNS = {name: (symbol, attack, health, energy, compute)
+           for name, symbol, attack, health, energy, compute, _program
+           in CATALOGUE}
 
 
 def load(name, path):
@@ -48,25 +65,21 @@ def arena():
 
 
 @pytest.fixture(scope='module')
-def common(arena):
-    if str(BOTS) not in sys.path:
-        sys.path.insert(0, str(BOTS))
-    return load('common', BOTS / 'common.py')
+def checker():
+    return load('check_records', MATCHES / 'check_records.py')
 
 
-def bot(arena, name, player):
-    return arena.load_bot(BOTS / f'{name}.py', player)
+def doctrine(arena, name):
+    return arena.load_doctrine(BOTS / f'{name}.yaml')
 
 
 # ------------------------------------------------------------ canned views
 
 def stock_units(player, north):
     """The stock army as the game deploys it for this seat (R2.13)."""
-    designs = {name: (symbol, attack, health, energy)
-               for name, symbol, attack, health, energy in CATALOGUE}
     units = []
     for depth, x, type_name, name in ARRAY:
-        symbol, attack, health, energy = designs[type_name]
+        symbol, attack, health, energy, _compute = DESIGNS[type_name]
         y = depth if north else SIZE - 1 - depth
         units.append({'player': player, 'name': name, 'type': type_name,
                       'symbol': symbol, 'attack': attack, 'health': health,
@@ -75,8 +88,8 @@ def stock_units(player, north):
     return units
 
 
-def stock_view(player, turn=1):
-    """A seat's own view of the stock army facing the stock army."""
+def stock_view(player, turn=0):
+    """A seat's own view of the stock army, as it is handed it."""
     north = player == 1
     rows = list(range(0, HALF)) if north else list(range(HALF, SIZE))
     mine = stock_units(player, north)
@@ -86,6 +99,8 @@ def stock_view(player, turn=1):
                        if u['name'] == FLAG_UNIT)
         flags.append({'player': who, 'x': carrier['x'], 'y': carrier['y'],
                       'standing': True})
+    spent = sum(sum(DESIGNS[type_name][1:]) for _d, _x, type_name, _n
+                in ARRAY)
     return {
         'turn': turn, 'me': player, 'rejected': [],
         'board': {'size_x': SIZE, 'size_y': SIZE, 'empty': ' ', 'rows': [],
@@ -93,16 +108,18 @@ def stock_view(player, turn=1):
         'units': mine,
         'types': [{'player': player, 'name': name, 'symbol': symbol,
                    'attack': attack, 'health': health, 'energy': energy,
-                   'cost': attack + health + energy}
-                  for name, symbol, attack, health, energy in CATALOGUE],
+                   'compute': compute, 'program': program is not None,
+                   'cost': attack + health + energy + compute}
+                  for name, symbol, attack, health, energy, compute, program
+                  in CATALOGUE],
         'players': [{'player': 1, 'status': 'active',
                      'budget': BUDGET if player == 1 else None,
-                     'spent': 242 if player == 1 else None,
-                     'left': 8 if player == 1 else None},
+                     'spent': spent if player == 1 else None,
+                     'left': BUDGET - spent if player == 1 else None},
                     {'player': 2, 'status': 'active',
                      'budget': BUDGET if player == 2 else None,
-                     'spent': 242 if player == 2 else None,
-                     'left': 8 if player == 2 else None}],
+                     'spent': spent if player == 2 else None,
+                     'left': BUDGET - spent if player == 2 else None}],
         'flags': flags,
         'placement': {'size_x': SIZE, 'size_y': SIZE, 'rows': rows,
                       'neutral_row': None, 'restricted': True},
@@ -114,9 +131,29 @@ def transcript(docs):
     return ''.join(f'bgcclient> {json.dumps(doc, indent=2)}\n' for doc in docs)
 
 
-# ------------------------------------------------- the view a bot is given
+def parsed(commands):
+    """The setup commands as the words they are: the type, its statistics,
+    the units and their squares, the carrier and the programs."""
+    types, units, flags, programs = {}, [], [], {}
+    for command in commands:
+        words = command.split()
+        if words[:2] == ['add', 'type']:
+            _, _, name, symbol, attack, health, energy, compute = words
+            types[name] = (symbol, int(attack), int(health), int(energy),
+                           int(compute))
+        elif words[:2] == ['add', 'unit']:
+            _, _, type_name, name, x, y = words
+            units.append((type_name, name, int(x), int(y)))
+        elif words[:2] == ['set', 'flag']:
+            flags.append(words[2])
+        elif words[:2] == ['set', 'program']:
+            programs[words[2]] = Path(words[3])
+    return types, units, flags, programs
 
-class TestTheViewABotIsGiven:
+
+# ------------------------------------------------- the view a doctrine gets
+
+class TestTheViewADoctrineIsGiven:
 
     def test_six_documents_are_read_back_as_six(self, arena):
         view = stock_view(1)
@@ -126,10 +163,10 @@ class TestTheViewABotIsGiven:
     def test_the_view_holds_every_subject_and_nothing_else(self, arena):
         view = stock_view(2)
         docs = [{subject: view[subject]} for subject in arena.SUBJECTS]
-        assembled = arena.assemble_view(3, 2, docs, ['a refusal'])
+        assembled = arena.assemble_view(0, 2, docs, ['a refusal'])
         assert set(assembled) == set(arena.SUBJECTS) | {'turn', 'me',
                                                         'rejected'}
-        assert assembled['turn'] == 3 and assembled['me'] == 2
+        assert assembled['me'] == 2
         assert assembled['rejected'] == ['a refusal']
         assert assembled['flags'] == view['flags']
         assert assembled['placement']['rows'] == [4, 5, 6, 7]
@@ -138,143 +175,65 @@ class TestTheViewABotIsGiven:
         view = stock_view(1)
         docs = [{subject: view[subject]} for subject in arena.SUBJECTS[:-1]]
         with pytest.raises(RuntimeError, match='placement'):
-            arena.assemble_view(1, 1, docs, [])
+            arena.assemble_view(0, 1, docs, [])
 
-    def test_the_units_table_is_not_a_reply(self, arena):
+    def test_a_program_listing_is_not_a_reply(self, arena):
         said = arena.replies(
-            'bgcclient> PLAYER  NAME  TYPE  SYMBOL  ATTACK  HEALTH  ENERGY  '
-            'X  Y  STATE  DIRECTION  FLAG\n'
-            '     1  pawn1  Pawn  p  1  4  2  0  1  moving  south  -\n'
-            'bgcclient> error moving unit Unit nosuch does not exist\n'
-            'bgcclient> 1 order(s) rejected last turn:\n'
-            '  - pawn1 at (0,1): cannot pay\n'
+            'bgcclient> Lance: compute 3, 30 ticks per energy, cap 30 ticks '
+            'a turn\n'
+            'LINE  TICKS  PROGRAM\n'
+            '   1      1  SELF\n'
+            '   2      0  HALT\n'
+            'a straight run costs 1 ticks\n'
+            'bgcclient> error adding unit: that square is occupied\n'
             'bgcclient> ')
-        assert said == ['error moving unit Unit nosuch does not exist',
-                        '1 order(s) rejected last turn:',
-                        '  - pawn1 at (0,1): cannot pay']
+        assert said == ['error adding unit: that square is occupied']
+
+    def test_depth_is_counted_from_the_seats_own_edge(self, arena):
+        north, south = stock_view(1), stock_view(2)
+        assert [arena.depth_row(north, d) for d in range(4)] == [0, 1, 2, 3]
+        assert [arena.depth_row(south, d) for d in range(4)] == [7, 6, 5, 4]
 
 
-# ------------------------------------------------ the outcome is the game's
+# ------------------------------------------- the outcome is the record's
 
-class TestTheOutcomeIsReadFromTheGame:
+class TestTheOutcomeIsReadFromTheRecord:
 
-    def test_status_is_read_from_the_players_subject(self, arena):
-        doc = {'players': [{'player': 1, 'status': 'active'},
-                           {'player': 2, 'status': 'eliminated'}]}
-        assert arena.status_from(doc, 1) == 'active'
-        assert arena.status_from(doc, 2) == 'eliminated'
-
-    def test_a_change_of_status_is_logged_once(self, arena, tmp_path,
-                                               monkeypatch):
-        monkeypatch.setattr(arena, 'LOGS', tmp_path)
-        bots = {1: bot(arena, 'garrison', 1), 2: bot(arena, 'garrison', 2)}
-        match = arena.Match(99999, bots)
-        match.turn = 7
-        assert match.status_changed(2, 'active') is False
-        assert match.status_changed(2, 'eliminated') is True
-        assert match.status_changed(2, 'eliminated') is False
-        match.log_file.close()
-        logged = (tmp_path / 'game_99999.log').read_text()
-        assert logged.count('p2 is eliminated from turn 7') == 1
+    def test_status_is_read_from_the_turns_eliminated(self, arena):
+        doc = {'eliminated': [2]}
+        assert arena.status_of(doc, 1) == 'active'
+        assert arena.status_of(doc, 2) == 'eliminated'
+        assert arena.status_of({}, 2) == 'active'
 
     def test_a_wall_is_not_counted_in_play(self, arena):
         units = stock_units(1, True) + stock_units(2, False)
-        units[0] = dict(units[0], x=None, y=None, state='destroyed')
+        for unit in units:
+            unit['type_energy'] = unit['energy']
+        units[0] = dict(units[0], x=None, y=None)
         alive, walls = arena.tally(units)
         assert alive == {1: 13, 2: 14}
         assert walls == {1: 2, 2: 2}
 
+    def test_what_a_controller_decided_reads_as_a_few_words(self, arena):
+        assert arena.order_text({'unit': 'runner1', 'order': 3}) == \
+            'runner1 moves south'
+        assert arena.order_text({'unit': 'keep1', 'slept': True}) == \
+            'keep1 sleeps'
+        assert arena.order_text({'unit': 'pawn1', 'order': None,
+                                 'halted': 7}) == \
+            'pawn1 holds (halts at line 7)'
 
-# ---------------------------------------------------------- the helpers
+    def test_the_final_turn_is_the_one_the_game_ended_on(self, arena):
+        assert arena.final_turn('game over: player 1 wins on turn 75') == 75
+        assert arena.final_turn('game over: a draw on turn 12') == 12
+        assert arena.final_turn(
+            'game over: undecided on turn 90, its state repeated (as it '
+            'stood after turn 10)') == 90
+        assert arena.final_turn('not played: p1 Flagless: no flag') is None
 
-class TestWhatABotReadsFromItsView:
-
-    def test_size_comes_from_the_board_and_nowhere_else(self, common):
-        assert common.size(stock_view(1)) == (8, 8)
-        with pytest.raises(KeyError):
-            common.size({'units': []})
-
-    def test_the_flags(self, common):
-        view = stock_view(1)
-        assert common.my_flag(view) == (3, 0)
-        assert common.enemy_flags(view) == [(2, 3, 7)]
-        view['flags'][1] = {'player': 2, 'x': None, 'y': None,
-                            'standing': False}
-        assert common.enemy_flags(view) == []
-        view['flags'][0]['standing'] = False
-        assert common.my_flag(view) is None
-
-    def test_rows_and_depth_from_either_side(self, common):
-        north, south = stock_view(1), stock_view(2)
-        assert common.rows(north) == [0, 1, 2, 3]
-        assert common.rows(south) == [4, 5, 6, 7]
-        assert common.north(north) and not common.north(south)
-        assert [common.depth_row(north, d) for d in range(4)] == [0, 1, 2, 3]
-        assert [common.depth_row(south, d) for d in range(4)] == [7, 6, 5, 4]
-
-    def test_budget_and_what_is_left(self, common):
-        view = stock_view(2)
-        assert common.budget(view) == 250
-        assert common.left(view) == 8
-
-    def test_the_fare_is_a_quarter_of_the_health_rounded_up(self, common):
-        assert [common.fare_for(h) for h in range(1, 11)] == \
-            [1, 1, 1, 1, 2, 2, 2, 2, 3, 3]
-        fares = common.fares(stock_view(1))
-        assert fares['heavy1'] == 3 and fares['pawn1'] == 1
-        assert fares['line1'] == 2
-
-    def test_lethal_is_the_strikes_of_one_exchange(self, common):
-        assert common.lethal([8], 8)
-        assert not common.lethal([5], 10)
-        assert common.lethal([5, 5], 10)
-        assert common.lethal([2, 2, 2], 6)
-
-
-class TestResolve:
-
-    def contact_view(self, common):
-        """Three Runners beside a Line they have all seen."""
-        view = stock_view(1)
-        runners = [{'player': 1, 'name': f'r{i}', 'type': 'Runner',
-                    'symbol': 'r', 'attack': 2, 'health': 4, 'energy': 10,
-                    'x': x, 'y': y, 'state': 'holding', 'direction': None,
-                    'flag': False}
-                   for i, (x, y) in enumerate([(2, 3), (4, 3), (3, 2)])]
-        view['units'] = runners
-        return view
-
-    def test_several_units_may_be_ordered_at_one_seen_enemy(self, common):
-        view = self.contact_view(common)
-        target = (3, 3)
-        wishes = {u['name']: common.steps_towards(u, target)
-                  for u in view['units']}
-        orders = common.resolve(view, wishes, together=[target])
-        assert sorted(orders) == ['move r0 east', 'move r1 west',
-                                  'move r2 south']
-
-    def test_two_units_are_never_ordered_at_one_empty_square(self, common):
-        view = self.contact_view(common)
-        target = (3, 3)
-        wishes = {u['name']: common.steps_towards(u, target)
-                  for u in view['units']}
-        orders = common.resolve(view, wishes)
-        assert len(orders) == 1
-
-    def test_a_unit_that_cannot_pay_is_not_ordered(self, common):
-        view = self.contact_view(common)
-        for unit in view['units']:
-            unit['energy'] = 0
-        wishes = {u['name']: [(0, 1)] for u in view['units']}
-        assert common.resolve(view, wishes) == []
-
-    def test_a_unit_walking_off_the_board_is_not_ordered(self, common):
-        view = self.contact_view(common)
-        wishes = {u['name']: [(0, -1)] for u in view['units']}
-        orders = common.resolve(view, wishes)
-        assert orders == ['move r0 north', 'move r1 north', 'move r2 north']
-        view['units'][2]['y'] = 0
-        assert 'move r2 north' not in common.resolve(view, wishes)
+    def test_the_board_is_drawn_as_the_roles_draw_it(self, arena):
+        board = {'size_x': 2, 'size_y': 1, 'rows': [['K', ' ']]}
+        assert arena.draw(board) == '+-+-+\n|K| |\n+-+-+'
 
 
 # ------------------------------------------------------- the doctrines
@@ -282,138 +241,217 @@ class TestResolve:
 class TestSetup:
 
     @pytest.mark.parametrize('name', STOCK)
-    def test_a_stock_doctrine_changes_nothing(self, arena, name):
+    def test_a_stock_doctrine_keeps_the_army(self, arena, name):
         for player in (1, 2):
-            assert bot(arena, name, player).setup(stock_view(player)) == []
+            commands = doctrine(arena, name).setup(stock_view(player))
+            assert not [c for c in commands if c.startswith('remove ')]
+            assert not [c for c in commands if c.startswith('add ')]
 
     @pytest.mark.parametrize('name', REBUILT)
     def test_a_rebuilt_doctrine_takes_everything_back_first(self, arena,
                                                             name):
-        commands = bot(arena, name, 1).setup(stock_view(1))
+        commands = doctrine(arena, name).setup(stock_view(1))
         removed = [c for c in commands if c.startswith('remove unit ')]
         assert len(removed) == 16
         assert commands[:16] == removed
         assert all(not c.startswith('remove') for c in commands[16:])
 
-    @pytest.mark.parametrize('name', REBUILT)
+    @pytest.mark.parametrize('name', DOCTRINES)
     def test_the_army_is_one_the_game_accepts(self, arena, name):
-        """Every type through the game's own constructor, the cost against
-        the budget, every square inside the seat's half, no square twice,
-        and exactly one carrier among the units deployed."""
+        """Every type through the game's own constructor with its program,
+        the cost against the budget, every square inside the seat's half,
+        no square twice, exactly one carrier among the units deployed, and
+        a program only on a type that has the compute to run it."""
         for player in (1, 2):
             view = stock_view(player)
-            commands = bot(arena, name, player).setup(view)
-            designs, units, flags, squares, cost = {}, [], [], set(), 0
-            for command in commands:
-                parts = command.split()
-                if parts[:2] == ['add', 'type']:
-                    _, _, tname, symbol, attack, health, energy = parts
-                    kind = UnitType(tname, symbol, int(attack), int(health),
-                                    int(energy))
-                    designs[tname] = kind
-                elif parts[:2] == ['add', 'unit']:
-                    _, _, tname, uname, x, y = parts
-                    x, y = int(x), int(y)
-                    assert tname in designs, f'{uname} of an undefined type'
-                    assert 0 <= x < SIZE
-                    assert y in view['placement']['rows'], \
-                        f'{uname} at ({x},{y}) is outside rows ' \
-                        f'{view["placement"]["rows"]}'
-                    assert (x, y) not in squares, f'({x},{y}) taken twice'
-                    squares.add((x, y))
-                    kind = designs[tname]
-                    cost += kind.attack + kind.health + kind.energy
-                    units.append(uname)
-                elif parts[:2] == ['set', 'flag']:
-                    flags.append(parts[2])
-            assert len(set(units)) == len(units)
+            commands = doctrine(arena, name).setup(view)
+            types, units, flags, programs = parsed(commands)
+            designs = dict(DESIGNS)
+            designs.update(types)
+            for type_name, path in programs.items():
+                assert path.is_file(), f'{name}: {path} is not a file'
+                assert type_name in designs, f'{name}: {type_name} unknown'
+                assert designs[type_name][4] > 0, \
+                    f'{name}: {type_name} has no compute for a program'
+            for type_name, (symbol, attack, health, energy, compute) in \
+                    types.items():
+                program = programs.get(type_name)
+                UnitType(type_name, symbol, attack, health, energy, compute,
+                         read_program_file(program) if program else None)
+            if not units:
+                continue
+            squares, cost, named = set(), 0, []
+            for type_name, unit_name, x, y in units:
+                assert type_name in designs, f'{unit_name} of an undefined type'
+                assert 0 <= x < SIZE
+                assert y in view['placement']['rows'], \
+                    f'{unit_name} at ({x},{y}) is outside rows ' \
+                    f'{view["placement"]["rows"]}'
+                assert (x, y) not in squares, f'({x},{y}) taken twice'
+                squares.add((x, y))
+                cost += sum(designs[type_name][1:])
+                named.append(unit_name)
+            assert len(set(named)) == len(named)
             assert cost <= BUDGET, f'{name} costs {cost}'
-            assert len(flags) == 1 and flags[0] in units
+            assert len(flags) == 1 and flags[0] in named
+
+    @pytest.mark.parametrize('name', DOCTRINES)
+    def test_every_program_parses(self, arena, name):
+        commands = doctrine(arena, name).setup(stock_view(1))
+        _types, _units, _flags, programs = parsed(commands)
+        for path in programs.values():
+            Program(read_program_file(path))
 
     def test_deploy_puts_depth_zero_at_the_seat_edge(self, arena):
-        south = bot(arena, 'lancers', 2).setup(stock_view(2))
+        south = doctrine(arena, 'lancers').setup(stock_view(2))
         assert 'add unit Keep keep1 3 7' in south
         assert 'add unit Lance lance1 0 4' in south
-        assert south[-1] == 'set flag keep1'
-        north = bot(arena, 'lancers', 1).setup(stock_view(1))
+        assert 'set flag keep1' in south
+        north = doctrine(arena, 'lancers').setup(stock_view(1))
         assert 'add unit Keep keep1 3 0' in north
         assert 'add unit Lance lance1 0 3' in north
 
-
-class TestTheStockDoctrinesOnTurnOne:
-
-    def ordered(self, arena, name, player=1):
-        view = stock_view(player, turn=2)
-        by_name = {u['name']: u for u in view['units']}
-        orders = bot(arena, name, player).orders(view)
-        parsed = []
-        for order in orders:
-            _, unit, direction = order.split()
-            parsed.append((by_name[unit], direction))
-        return parsed
-
-    def test_garrison_orders_nothing(self, arena):
-        assert self.ordered(arena, 'garrison') == []
-        assert self.ordered(arena, 'garrison', 2) == []
-
-    def test_advance_orders_only_the_front_rank_forward(self, arena):
-        ordered = self.ordered(arena, 'advance')
-        assert ordered
-        assert {u['type'] for u, _ in ordered} <= {'Pawn', 'Heavy'}
-        assert {d for _, d in ordered} == {'south'}
-        assert {d for _, d in self.ordered(arena, 'advance', 2)} == {'north'}
-
-    def test_flag_hunt_sends_everything_but_keeps_and_walls(self, arena):
-        for player, away in ((1, 'north'), (2, 'south')):
-            ordered = self.ordered(arena, 'flag_hunt', player)
-            names = sorted(u['name'] for u, _ in ordered)
-            # on turn one the front rank steps out, and the Runners and
-            # Scouts behind the Pawns follow them out of their squares
-            # (R4.8); the Lines behind the Walls and the Keeps stay
-            assert names == ['heavy1', 'heavy2', 'pawn1', 'pawn2', 'pawn3',
-                             'pawn4', 'runner1', 'runner2', 'scout1',
-                             'scout2']
-            assert {u['type'] for u, _ in ordered} <= set(
-                bot(arena, 'flag_hunt', player).hunters)
-            assert away not in {d for _, d in ordered}
-
-    def test_a_hunter_walks_round_its_own_units(self, arena, common):
-        """A Runner in the corner with the rank in front gone: the way to
-        the flag is round the Scout beside it, not through it."""
-        view = stock_view(1)
-        view['units'] = [u for u in view['units']
-                         if u['name'] in ('runner1', 'scout1', 'keep1')]
-        runner = next(u for u in view['units'] if u['name'] == 'runner1')
-        assert common.path_step(view, runner, (3, 7)) == (0, 1)
-        view['units'].append(dict(runner, name='blocker', x=0, y=1))
-        assert common.path_step(view, runner, (3, 7)) is None
-        view['units'][-1]['y'] = 2
-        assert common.path_step(view, runner, (3, 7)) == (0, 1)
-        orders = bot(arena, 'flag_hunt', 1).orders(view)
-        assert 'move runner1 south' in orders
-
-    def test_screen_moves_the_scouts(self, arena):
-        ordered = self.ordered(arena, 'screen')
-        scouts = [u['name'] for u, _ in ordered if u['type'] == 'Scout']
-        assert sorted(scouts) == ['scout1', 'scout2']
+    def test_a_programs_path_is_the_clients_to_read(self, arena):
+        """The client reads the file, so it is named absolutely - a session
+        talking to a server never names a path the server owns."""
+        commands = doctrine(arena, 'garrison').setup(stock_view(1))
+        _t, _u, _f, programs = parsed(commands)
+        assert programs
+        assert all(path.is_absolute() for path in programs.values())
 
 
-class TestADoctrineIsAFunctionOfItsView:
+class TestADoctrineIsAFunctionOfItsFile:
 
     @pytest.mark.parametrize('name', DOCTRINES)
-    def test_the_same_view_twice_gives_the_same_orders(self, arena, name):
+    def test_the_same_seat_twice_gives_the_same_commands(self, arena, name):
         for player in (1, 2):
-            view = stock_view(player, turn=2)
-            first = bot(arena, name, player).orders(view)
-            second = bot(arena, name, player).orders(view)
+            view = stock_view(player)
+            first = doctrine(arena, name).setup(view)
+            second = doctrine(arena, name).setup(view)
             assert first == second
 
-    def test_nothing_under_bots_consults_chance_or_the_clock(self):
-        forbidden = re.compile(r'\b(random|time|id|hash)\s*[.(]')
-        for path in BOTS.glob('*.py'):
-            for number, line in enumerate(path.read_text().splitlines(), 1):
-                code = line.split('#')[0]
-                assert not forbidden.search(code), f'{path.name}:{number}'
+    def test_nothing_under_bots_is_code(self):
+        """A doctrine is data: a file of types, squares and programs, and
+        the programs run on the game's own machine. Nothing under `bots/`
+        can consult chance, the clock or the other seat."""
+        for path in BOTS.rglob('*'):
+            if path.is_file():
+                assert path.suffix in ('.yaml', '.asm'), path
+
+
+# --------------------------------------------- the programs run in the game
+
+def apply(session, commands):
+    """Type a doctrine's setup at an in-process session, as the client does:
+    each line parsed by the grammar, a program file read on this side."""
+    for line in commands:
+        command = parser.parse(line)
+        if command.kind == 'set_program_file':
+            command = SetProgram(type_name=command.type_name,
+                                 program=read_program_file(command.path))
+        games.perform(session, command)
+
+
+class TestTheProgramsRunWithinTheirCaps:
+    """Every doctrine's setup is accepted by the game, and no controller it
+    fields is stopped at its cap on any turn of a game against the
+    Garrison - a program that fits its type is the one thing a listing
+    cannot prove, because the longest path is not the straight run."""
+
+    def play(self, tmp_path, arena, name, against='garrison', turns=12):
+        harness = GameHarness(tmp_path)
+        harness.create(SIZE, SIZE, [1, 2])
+        for player, who in ((1, name), (2, against)):
+            session = harness.session(player)
+            rows = games_rows(session, player)
+            view = {'me': player, 'placement': {'rows': rows},
+                    'units': [{'player': player, 'name': u.name, 'x': u.x}
+                              for u in session.getBoard().units
+                              if u.player is not None
+                              and u.player.number == player]}
+            apply(session, doctrine(arena, who).setup(view))
+            assert session.clientSave()
+        server = harness.play()
+        outcome = server.getOutcome()
+        assert outcome is not None
+        records = [harness.turn_record(t)
+                   for t in range(1, min(outcome['turn'], turns) + 1)]
+        return outcome, records
+
+    @pytest.mark.parametrize('name', DOCTRINES)
+    def test_no_controller_is_stopped_at_its_cap(self, tmp_path, arena,
+                                                 name):
+        """A controller is stopped for one of two reasons: it reached the
+        cap its compute buys it, which is the program's fault, or it had no
+        energy left to buy another tick with, which is the fight's (R10.5).
+        The second is read off the unit's energy as the turn began."""
+        _outcome, records = self.play(tmp_path, arena, name)
+        before = {}
+        halted = []
+        for record in records:
+            for trace in record.get('traces') or []:
+                if trace.get('halted') is None or trace['player'] != 1:
+                    continue
+                if before.get(trace['unit'], 1) > 0:
+                    halted.append((record['turn'], trace['unit'],
+                                   trace['halted'], trace['ticks']))
+            before = {u['name']: u['energy'] for u in record['units']
+                      if u['player'] == 1}
+        assert not halted, halted
+
+    @pytest.mark.parametrize('name', DOCTRINES)
+    def test_the_setup_is_the_one_the_doctrine_states(self, tmp_path, arena,
+                                                      name):
+        _outcome, records = self.play(tmp_path, arena, name, turns=1)
+        commands = doctrine(arena, name).setup(stock_view(1))
+        _types, units, flags, _programs = parsed(commands)
+        placed = {u['name'] for u in records[0]['units']
+                  if u['player'] == 1 and not u.get('destroyed')}
+        wanted = ({u[1] for u in units} if units
+                  else {name for _d, _x, _t, name in ARRAY})
+        assert placed == wanted
+        carrier = [u['name'] for u in records[0]['units']
+                   if u['player'] == 1 and u.get('flag')]
+        assert carrier == (flags or [FLAG_UNIT])
+
+    @pytest.mark.parametrize('name', [d for d in DOCTRINES
+                                      if d not in ('garrison', 'bulwark')])
+    def test_every_doctrine_that_hunts_moves(self, tmp_path, arena, name):
+        """A program that parses and fits its cap can still order
+        nothing - a register a sensor overwrites, a square read as a friend
+        - and the listing cannot tell. Against a Garrison that never comes,
+        a doctrine's own units are the only thing that can move, and every
+        doctrine but the Garrison says it means to."""
+        _outcome, records = self.play(tmp_path, arena, name, turns=3)
+        moved = [t['unit'] for r in records[1:] for t in r['traces']
+                 if t['player'] == 1 and t.get('order') not in (None, 'hold')]
+        assert moved, f'{name} ordered nothing on the first turns of play'
+
+    def test_the_bulwark_comes_out_to_meet_what_reaches_it(self, tmp_path,
+                                                           arena):
+        """Nobody in the Bulwark hunts, so against a Garrison nothing of
+        it moves; against a hunt its Heavies go at what its map shows
+        within two squares."""
+        _outcome, records = self.play(tmp_path, arena, 'bulwark',
+                                      against='flag_hunt', turns=40)
+        moved = [t['unit'] for r in records for t in r['traces']
+                 if t['player'] == 1 and t.get('order') not in (None, 'hold')
+                 and t['unit'].startswith('heavy')]
+        assert moved, 'no Heavy of the Bulwark ever moved'
+
+    def test_garrison_against_garrison_repeats_at_once(self, tmp_path,
+                                                       arena):
+        outcome, _records = self.play(tmp_path, arena, 'garrison')
+        assert outcome['decided'] is False
+        assert outcome['reason'] == 'repeated'
+        assert outcome['turn'] <= 3
+
+
+def games_rows(session, player):
+    """Where this seat may deploy, as the placement view says."""
+    from board_game_concept.http import views
+    return views.placement_view(player, session.getPlayers(),
+                                session.getBoard())['rows']
 
 
 # ------------------------------------------------ through the real roles
@@ -421,48 +459,46 @@ class TestADoctrineIsAFunctionOfItsView:
 @pytest.mark.slow
 class TestThroughTheRealRoles:
 
-    def play(self, arena, tmp_path, monkeypatch, p1, p2, turns):
+    def play(self, arena, tmp_path, monkeypatch, p1, p2, gameno=99998):
         monkeypatch.setattr(arena, 'LOGS', tmp_path)
-        bots = {1: bot(arena, p1, 1), 2: bot(arena, p2, 2)}
-        match = arena.Match(99998, bots, max_turns=turns)
+        doctrines = {1: doctrine(arena, p1), 2: doctrine(arena, p2)}
+        match = arena.Match(gameno, doctrines)
         outcome = match.play()
-        return outcome, (tmp_path / 'game_99998.log').read_text(), match
+        return outcome, (tmp_path / f'game_{gameno}.log').read_text(), match
 
-    def test_garrison_against_garrison_for_two_turns(self, arena, tmp_path,
-                                                     monkeypatch):
+    def test_garrison_against_garrison_stops_on_its_first_repeated_state(
+            self, arena, checker, tmp_path, monkeypatch):
         outcome, log, match = self.play(arena, tmp_path, monkeypatch,
-                                        'garrison', 'garrison', 2)
-        assert outcome is None
-        assert 'board 8x8, p1: 250 points, rows 0-3, p2: 250 points, ' \
+                                        'garrison', 'garrison')
+        assert outcome.startswith('game over: undecided on turn')
+        assert 'its state repeated' in outcome
+        assert match.turns == 2
+        assert log.count('  -- turn ') == 2
+        assert 'board 8x8, p1: 320 points, rows 0-3, p2: 320 points, ' \
                'rows 4-7' in log
         assert log.count('is handed 16 units') == 2
-        assert log.count('keeps the army as given') == 2
-        assert 'after turn 2: in play 14 v 14  (walls: 2 v 2)' in log
+        assert log.count('set program Keep hold.asm') == 2
+        assert re.search(r'^  -- turn 1\n    p1: places its army', log, re.M)
+        assert 'in play 14 v 14  (walls: 2 v 2)' in log
         assert match.status == {1: 'active', 2: 'active'}
         final = match.history[-1]['units']
         carriers = sorted((u['player'], u['name']) for u in final
                           if u.get('flag'))
         assert carriers == [(1, 'keep1'), (2, 'keep1')]
+        monkeypatch.setattr(checker, 'LOGS', tmp_path)
+        assert checker.check(99998) == []
 
     def test_a_setup_without_a_flag_is_not_played(self, arena, tmp_path,
                                                   monkeypatch):
-        class Flagless:
-            name = 'Flagless'
-            doctrine = 'takes the carrier back and names no other'
-
-            def __init__(self, player):
-                pass
-
-            def setup(self, view):
-                return ['remove unit keep1']
-
-            def orders(self, view):
-                return []
-
+        flagless = arena.Doctrine(
+            {'name': 'Flagless',
+             'doctrine': 'takes the carrier back and names no other',
+             'rebuild': False}, BOTS)
+        flagless.setup = lambda view: ['remove unit keep1']
         monkeypatch.setattr(arena, 'LOGS', tmp_path)
-        bots = {1: Flagless(1), 2: bot(arena, 'garrison', 2)}
-        outcome = arena.Match(99997, bots, max_turns=2).play()
+        doctrines = {1: flagless, 2: doctrine(arena, 'garrison')}
+        outcome = arena.Match(99997, doctrines).play()
         assert outcome.startswith('not played: p1 Flagless: ')
         assert 'flag' in outcome
         log = (tmp_path / 'game_99997.log').read_text()
-        assert '-- turn 2' not in log
+        assert '-- turn 1' not in log

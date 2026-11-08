@@ -10,24 +10,24 @@ what a role is offered must be what a role is allowed.
 import pytest
 
 from board_game_concept.cli import roles
-from board_game_concept.cli.grammar import (DIRECTION, NAME, NUMBER, Optional,
-                                            PATH, Slot, SYMBOL, TYPE, UNIT,
-                                            USAGES)
+from board_game_concept.cli.grammar import (NAME, NUMBER, Optional, PATH,
+                                            Slot, SYMBOL, TYPE, UNIT, USAGES)
 from board_game_concept.cli.parser import parse
 
-# every usage line as it read before the grammar was described as words rather
-# than as sentences. `help` prints these, and this change was meant to be
-# invisible in what it prints
+# every usage line `help` prints, in the order it prints them. A player gives
+# no orders - every move is a controller's, running its type's program - so
+# `move` and `hold` are gone, and the program and the record have arrived
 USAGE_LINES = [
     'add player <number> [<budget>]',
     'remove player <number>',
     'remove unit <unit>',
-    'add type <name> <symbol> <attack> <health> <energy>',
+    'add type <name> <symbol> <attack> <health> <energy> [<compute>]',
     'add unit <type> <name> <x> <y>',
     'load board <file>',
     'load player <file>',
     'set board <size_x> <size_y>',
     'set flag <unit>',
+    'set program <type> <file>',
     'show board [json]',
     'show types [json]',
     'show units [json]',
@@ -37,8 +37,10 @@ USAGE_LINES = [
     'show designs [json]',
     'show flags [json]',
     'show placement [json]',
-    'move <unit> <north|east|south|west>',
-    'hold <unit>',
+    'show program <type> [json]',
+    'show turn <n> [known] [json]',
+    'next',
+    'prev',
     'commit',
     'reload',
     'login [<username>]',
@@ -54,7 +56,6 @@ FILLERS = {
     UNIT: 'alpha',
     TYPE: 'tank',
     PATH: 'board.yaml',
-    DIRECTION: 'north',
     NUMBER: '1',
     NAME: 'alpha',
     SYMBOL: 'X',
@@ -108,12 +109,35 @@ def test_what_a_role_is_offered_is_what_it_is_allowed(role, usage):
 
 
 def test_a_slot_knows_what_it_stands_for():
-    move = [usage for usage in USAGES if usage.kind == 'move'][0]
+    program = [usage for usage in USAGES
+               if usage.kind == 'set_program_file'][0]
 
-    unit, direction = move.words[1], move.words[2]
+    type_slot, file_slot = program.words[2], program.words[3]
 
-    assert isinstance(unit, Slot) and unit.kind == UNIT
-    assert isinstance(direction, Slot) and direction.kind == DIRECTION
+    assert isinstance(type_slot, Slot) and type_slot.kind == TYPE
+    assert isinstance(file_slot, Slot) and file_slot.kind == PATH
+
+
+def test_there_is_no_order_in_the_grammar():
+    """A player gives no orders: every move comes from a controller."""
+    from board_game_concept.cli.parser import ParseError
+
+    assert not any(usage.kind in ('move', 'hold') for usage in USAGES)
+    for line in ('move alpha north', 'hold alpha'):
+        with pytest.raises(ParseError):
+            parse(line)
+
+
+def test_a_type_is_defined_with_or_without_compute():
+    assert parse('add type Runner r 2 4 10').compute == 0
+    assert parse('add type Runner r 2 4 10 5').compute == 5
+
+
+def test_a_turn_of_the_record_is_asked_for_by_number():
+    shown = parse('show turn 12')
+    assert (shown.subject, shown.turn, shown.known) == ('turn', 12, False)
+    assert parse('show turn 12 known').known is True
+    assert parse('show program Keep').name == 'Keep'
 
 
 @pytest.mark.parametrize('role', [roles.SERVER, roles.CLIENT, roles.OBSERVER],

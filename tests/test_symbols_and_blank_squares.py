@@ -108,7 +108,8 @@ def test_a_stored_type_with_a_blank_symbol_is_refused(tmp_path):
     repository.write_board(6, 3)
     repository.write_player(1, {
         'Blank': {'name': 'Blank', 'symbol': ' ',
-                  'attack': '3', 'health': '6', 'energy': '10'},
+                  'attack': '3', 'health': '6', 'energy': '10',
+                  'compute': 0},
     }, 100)
 
     with pytest.raises(UnreadableGame) as refused:

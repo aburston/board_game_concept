@@ -1,0 +1,18 @@
+# Garrison: the stock army, exactly as handed, and nobody thinks.
+#
+# The control. A seat that keeps what the game gave it and tells every type
+# to do nothing: every unit rests every turn, and the only fighting it does
+# is striking back at whatever walks into one of its squares (R5.2). What
+# the other games show about a doctrine is measured against what this one
+# shows about the army alone. Two of these facing each other change
+# nothing from one turn to the next, which is how a game stops undecided on
+# its first repeated state (R7.5).
+name: Garrison
+doctrine: the stock army as given; every controller halts for nothing, so no unit is ever ordered
+programs:
+  Scout: programs/hold.asm
+  Pawn: programs/hold.asm
+  Runner: programs/hold.asm
+  Line: programs/hold.asm
+  Keep: programs/hold.asm
+  Heavy: programs/hold.asm

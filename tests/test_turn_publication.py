@@ -119,7 +119,8 @@ def test_the_next_turn_is_seeded_after_the_orders_are_cleared(tmp_path):
         'state': 0, 'direction': 0, 'destroyed': False, 'on_board': False,
     }]
     server.getPlayers()[1]['types']['Cross'] = {
-        'name': 'Cross', 'symbol': 'X', 'attack': 1, 'health': 5, 'energy': 10}
+        'name': 'Cross', 'symbol': 'X', 'attack': 1, 'health': 5, 'energy': 10,
+        'compute': 0, 'program': None}
     recorder.calls.clear()
     assert server.serverSave()
 
@@ -147,7 +148,8 @@ def test_a_commit_is_spent_before_one_is_recorded_on_a_players_behalf(
         'state': 0, 'direction': 0, 'destroyed': False, 'on_board': False,
     }]
     server.getPlayers()[1]['types']['Cross'] = {
-        'name': 'Cross', 'symbol': 'X', 'attack': 1, 'health': 5, 'energy': 10}
+        'name': 'Cross', 'symbol': 'X', 'attack': 1, 'health': 5, 'energy': 10,
+        'compute': 0, 'program': None}
     recorder.calls.clear()
     assert server.serverSave()
 
@@ -266,7 +268,8 @@ def test_a_loaded_players_units_still_reach_the_board(tmp_path):
         'state': 0, 'direction': 0, 'destroyed': False, 'on_board': False,
     }]
     server.getPlayers()[1]['types']['Cross'] = {
-        'name': 'Cross', 'symbol': 'X', 'attack': 1, 'health': 5, 'energy': 10}
+        'name': 'Cross', 'symbol': 'X', 'attack': 1, 'health': 5, 'energy': 10,
+        'compute': 0, 'program': None}
 
     # the setup resolution seeds the units as next turn's orders...
     assert server.serverSave()

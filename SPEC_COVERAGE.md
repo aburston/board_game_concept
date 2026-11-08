@@ -8,17 +8,17 @@ source of truth for intended behaviour.
 
 | Capability | Covers |
 |---|---|
-| `unit-types` | Unit type definition, statistic ranges, energy against health, state and direction constants |
+| `unit-types` | Unit type definition, the four statistics and their ranges, compute as the controller's size, energy against health, walls and scouts, state and direction constants |
 | `board-model` | Board creation, unit placement, name uniqueness, lookup, rendering |
-| `unit-movement` | Movement orders, simultaneous resolution, head-on collisions, edge handling, the energy a move costs |
+| `unit-movement` | A controller's `MOVE`, simultaneous resolution, head-on collisions, edge handling, the energy a move costs |
 | `combat-resolution` | Contested squares, one simultaneous strike a turn, damage, destruction is final |
-| `turn-commit` | Turn resolution, determinism, the commit barrier, setup vs play |
-| `visibility` | Own units always visible, enemies revealed by contact, per-player views as the only board a client is given, and an account of a turn bounded by whose units were in it |
-| `game-persistence` | On-disk game layout, YAML formats, orders as transport |
-| `player-client` | The `bgcclient` command surface |
-| `game-server` | The `bgcserver` command surface and unattended turn cycle |
-| `game-observer` | The `bgcobserver` read-only command surface |
-| `game-outcome` | Player elimination, victory, draw, how a decided game stops, turn numbering |
+| `turn-commit` | The phases of a turn, the think phase, determinism, the one commit each seat makes, the resolution to the game's end that follows the last of them, and the record of every turn |
+| `visibility` | Own units always visible, enemies revealed by contact, the army's map of where it has been and what it met, programs never disclosed, per-player views as the only board a client is given, an account of a turn bounded by whose units were in it, and the whole board in the replay once the game is resolved |
+| `game-persistence` | On-disk game layout, YAML formats, a setup as transport, the record of every turn, and the refusal of a game set up before controllers |
+| `player-client` | The `bgcclient` command surface: setting a type's program, the one commit, and watching the replay |
+| `game-server` | The `bgcserver` command surface, the wait for the players' setups, and reading the record with `--replay` |
+| `game-observer` | The `bgcobserver` read-only command surface, and replaying a resolved game |
+| `game-outcome` | Player elimination, victory, draw, how a decided game stops, the undecided stops on a repeated state and at the turn cap, turn numbering |
 | `cli-completion` | What completes at each point in a session, where the candidates come from, and the shell completion for launching a role |
 | `point-budget` | What a player's point budget is and when it is fixed, what a type costs, how spend is derived from the board, and when a deployment is refused |
 | `flag-carrier` | Which unit carries a player's flag, when it is fixed, what a flag shows everybody, and what its destruction does to its owner and their army |
@@ -29,14 +29,19 @@ source of truth for intended behaviour.
 | `cli-installation` | The console scripts an install puts on the path, and what a wheel has to carry beside the code |
 | `placement-zones` | Where a player may deploy during setup: the two-player halves, the neutral row, and the area published per seat |
 | `default-army` | What a new game and a newly registered player start with: the default board, the catalogue of eight types, the fifteen-unit array, and when each is given |
-| `web-interface` | Playing in a browser: a client of the same contract, what it must make visible, and what it must not remember |
+| `web-interface` | Playing in a browser: a client of the same contract, the armoury where a program is written and priced, the replay the game is watched as, what it must make visible, and what it must not remember |
 | `match-series` | How a series of bot-played games is run so that its results are evidence about the rules: through the real roles, each bot given only its own view, on the game's own defaults, recorded turn by turn, and written up saying what it was played under |
+| `unit-program` | The controller a type's units run: the program and its instruction set, the one published cost of every instruction, the meter and the per-turn cap compute buys, sleep and waking, the army's shared map, the radio and the inbox, and the trace kept for the owner |
 
 Validate them with:
 
 ```
-openspec validate --specs --strict
+openspec validate --specs
 ```
+
+(`--strict` also fails a spec whose requirement text runs over 500
+characters, which most of these do by design: the text says why the rule is
+what it is, and the scenarios say what it does.)
 
 The invariant every capability is written under is stated in `turn-commit` —
 **no randomness in the resolution of the rules**. `tests/test_determinism.py`
@@ -105,11 +110,17 @@ suites that serve a role over HTTP are; run it with
 `BOARD_GAME_BACKEND=sqlite`.
 
 
-## Selecting and ordering several units at once
+## Selecting and ordering several units at once - removed
 
 The `box-select-and-move-groups` change gave the ordering board a selection
-that holds more than one unit. The requirements it added and modified are held
-by `tests/test_board_selection.py`.
+that holds more than one unit, held by `tests/test_board_selection.py`. The
+`programmable-units` change removed every requirement in this table along
+with the orders themselves: a player gives no orders, so there is nothing to
+select a group for, nothing to double-click, no compass and no arrow.
+`test_board_selection.py` and `test_order_arrow.py` went with them, and
+`tests/test_static_serving.py` now holds the opposite - that nothing in the
+page orders a unit, and that an arrow key on the replay board orders nothing.
+The table is kept as the record of what was held while it stood.
 
 | Requirement | Held by |
 |---|---|
@@ -148,14 +159,68 @@ The arithmetic is run rather than read. Where a boundary falls, and whether
 one thing drawn round a unit overlaps the next, are questions a source-level
 grep cannot answer, so `band` and the radii are evaluated under `node` against
 the module's own constants — the ring's outer edge, the arc's two edges, the
-health bar's lower edge, the order arrow's start, and half a square. A change
-to any one of them fails the test that says it must not touch its neighbour.
+health bar's lower edge, and half a square. A change to any one of them fails
+the test that says it must not touch its neighbour. The order arrow's start
+was among them until the arrow went with the orders.
 
 What is still checked by hand is whether the three colours can be told apart
 on a real screen, in both schemes. Red, amber and green is the worst pairing
 for the commonest colour blindness; the length of the arc and of the bar
 carries the same information, and the figures are in the tray and in every
 unit's description, so hue is a second channel here rather than the only one.
+
+## Programmable units
+
+The `programmable-units` change is the concept the project is named for: a
+type carries a program, every unit of the type runs it once a turn against
+what its army knows, and a player's whole game is the setup. It added the
+`unit-program` capability and reached into eleven others. Where each
+requirement is held:
+
+| Requirement | Held by |
+|---|---|
+| `unit-program` — A Type Carries A Program | `test_program_parser.py` for what parses; `test_repository.py` for a type with a program round-tripping on both backends; `test_cli_client_surface.py` and `test_http_api.py` for setting one and reading it back |
+| `unit-program` — Units Of One Type Share Code And Nothing Else | `test_repository.py`, for a unit's own registers, memory, inbox and sleep round-tripping; `test_resolve_game.py`, for the controllers surviving a session |
+| `unit-program` — A Program Is Checked When It Is Set | `test_program_parser.py` for every refusal naming its line - a bad line, a missing label, a label twice, a sleep outside its bounds; `test_cli_client_surface.py`, `test_http_api.py` and `test_web_flow.py` for the refusal at each surface, and for a program on a type with no compute |
+| `unit-program` — Every Instruction Has One Published Cost | `test_program_parser.py` for the listing pricing each line from `TICKS`; `test_program_executor.py` for a sensor's cost not depending on its answer and a loop costing what it runs; `test_static_serving.py` for the browser's listing agreeing with the server's line for line, from the tariff the server publishes |
+| `unit-program` — Thinking Is Paid For Through The Meter | `test_program_executor.py`: compute buys ticks, a small program over several turns, and thinking when the energy is gone |
+| `unit-program` — A Controller Halts At The Cap | `test_program_executor.py`, for the halt within a turn and the halted program's order being dropped; `test_default_army.py`, which runs every catalogue program against its type's cap on every turn of a game |
+| `unit-program` — Sleep Is How A Unit Rests | `test_program_executor.py` for `SLEEP` ending the run and `HALT` ending it for nothing; `test_program_parser.py` for the bounds; `test_resolve_game.py` for two armies that only sleep |
+| `unit-program` — The Army Shares One Map | `test_army_map.py`: an enemy met by one unit is known to all, and the map is not a sensor |
+| `unit-program` — A Square Is Known Only By Standing Or Fighting On It | `test_army_map.py`: a square walked on is known empty next turn, stale knowledge stays stamped, a friend standing on a square clears an enemy once met there, a turret feeds the map and reads nothing, a fallen unit reports nothing more |
+| `unit-program` — The Radio Carries Three Words | `test_program_executor.py`, for `SAY`, `RECV` and `FLUSH` |
+| `unit-program` — The Inbox Persists And Is Ordered | `test_program_executor.py` and `test_repository.py` |
+| `unit-program` — The Controller Trace Is Kept For Its Owner | `test_turn_reporting.py` and `test_web_flow.py`, for a seat reading its own traces and not another's; `test_cli_observer_surface.py` for the observer reading every trace |
+| `unit-types` — Unit Type Definition, Validation, Statistic Semantics, Walls And Scouts | `test_type_rule_loading.py` for a stored type that names compute 0 being a wall or a turret that never thought; `test_basic.py` for the floor a type with compute is held to; `test_default_army.py` for the catalogue's scouts and walls fitting the rules; `test_parser.py` and `test_cli_client_surface.py` for the optional fourth statistic at the prompt, its range, and a program refused on a type with no controller |
+| `point-budget` — A Unit Type Costs The Sum Of Its Statistics (compute among them); A Player Is Registered With A Point Budget (320) | `test_default_army.py` for the cost and the array's 304; `test_web_flow.py` and `test_seeding_the_default_army.py` for the default budget |
+| `default-army` — Every Registered Player Is Given The Default Catalogue (with programs); The Default Deployment Is Paid For Like Any Other | `test_default_army.py`: every default program parses and fits its cap on every turn; `test_seeding_the_default_army.py` |
+| `turn-commit` — The Think Phase | `test_program_executor.py` for what a controller does; `test_full_game.py` for two stock armies playing to an end on what their controllers decide |
+| `turn-commit` — The Game Is Resolved To Its End When Setup Completes | `test_two_player_commit.py`, for the first commit waiting and the second resolving, and the game played to its end without another commit; `test_resolve_game.py` for nobody being waited for afterwards; `test_cli_server_surface.py` for the last setup commit resolving the game and the server exiting |
+| `turn-commit` — Every Turn Is Recorded | `test_resolve_game.py`, which reads every turn of the record back; `test_turn_reporting.py` for the record holding what each player was told, and a turn's rejections being that turn's alone |
+| `turn-commit` — Commit Barrier, Players Wait For Turn Completion (removed) | `test_commit_record.py` and `test_turn_publication.py` hold what remains: the one commit, spent when the game resolves, and the publication of the record before a player is released |
+| `game-outcome` — An Unchanging Game Stops | `test_resolve_game.py`: two armies that never move stop where the state repeats, a game that never repeats stops at the cap, a decided game records its deciding turn |
+| `game-outcome` — Eliminated Players Do Not Hold The Turn Open; A Decided Game Accepts No Further Turns | `test_game_outcome.py` |
+| `game-persistence` — The Record Of Every Turn Is Persisted | `test_repository.py`, for a turn record round-tripping and being replaced rather than added to, on both backends; `test_army_map.py` for the map's record |
+| `game-persistence` — A Game Set Up Before Controllers Cannot Be Opened | `test_type_rule_loading.py`: a stored type with no compute is refused naming the field, while one that names compute 0 is read as a type that never thought |
+| `visibility` — An Army Remembers Where It Has Been And What It Met | `test_army_map.py`; `test_web_flow.py` for the board as an army knew it |
+| `visibility` — Programs Are Never Disclosed | `test_http_api.py`, for a seat reading its own program and not the other seat's; `test_web_flow.py` for the traces |
+| `visibility` — The Replay Shows The Whole Board Once The Game Is Resolved | `test_web_flow.py` and `test_cli_client_surface.py`, for a turn of the record drawn whole for a seat that met nobody |
+| `player-client` — Setting A Type's Program; Watching The Replay; Committing A Turn; Reporting Rejected Orders | `test_cli_client_surface.py`, one test per scenario; `test_server_client_integration.py` for a client killed mid-setup getting its program back |
+| `player-client` — Ordering Movement; An Order Given And Not Committed Can Be Taken Back (removed) | `test_parser.py`'s `TestThereAreNoOrders`, which asks the grammar for `move` and `hold` and is refused |
+| `game-server` — The Administrator Reads The Record; Unattended Turn Cycle | `test_cli_server_surface.py`: the administrator reads a turn with `--replay`, the record is refused while the game is being set up, a server started against a resolved game reports and exits |
+| `game-observer` — The Observer Replays The Game; Observing A Decided Game | `test_cli_observer_surface.py`, for opening at the final turn, reading a turn, a program and a trace |
+| `web-interface` — A Program Is Written In The Armoury | `test_static_serving.py`: compute beside the other three statistics, the editor, each line priced as it is typed, a program not sent until every line is accepted, no program for a type with no compute; `test_web_flow.py` for a program written, listed and read back through the page's own calls |
+| `web-interface` — The Game Is Watched As A Replay | `test_static_serving.py`: the play screen is a replay, the board is drawn from the record, a unit keeps its element so a turn is seen as movement, the replay opens at the final turn with the result, every control has a key; `test_web_flow.py` for the turns listed and read |
+| `web-interface` — What A Seat's Army Knew Is Shown On Request | `test_static_serving.py` for the toggle and whose; `test_web_flow.py` for the board as an army knew it |
+| `web-interface` — A Seat Reads Its Controllers' Traces | `test_static_serving.py`, for the trace panel and a click on a unit showing its trace |
+| `web-interface` — the removed ordering requirements | `test_static_serving.py`: nothing in the page orders a unit, an arrow key on the replay board orders nothing, waiting says whose setups are to come and moves on by itself, the eliminated player is told when the replay reaches that turn |
+
+What is still checked by hand is the replay as a thing watched: that a unit
+is seen to move rather than to jump, that the speed keys feel right, and
+that the known board reads as a map rather than as a broken one. The
+arithmetic of the tariff is not among those: the browser's listing is run
+under `node` against the server's answer for the same program, line for
+line.
 
 ## A series of games is evidence, and is held to it
 
@@ -165,19 +230,23 @@ keep to count as evidence, as the `match-series` capability.
 
 | Requirement | Held by |
 |---|---|
-| `match-series` — A Game Is Played Through The Real Roles | `matches/arena.py` launches the three roles as subprocesses of the running interpreter and types at their prompts; `test_match_harness.py`'s slow tests play a game that way and read what the roles said |
-| `match-series` — A Bot Is Given Its Own View And Nothing Else | `test_match_harness.py`, for the six subjects a view is assembled from and the error when one is missing; the harness reads the observer only after both seats have ordered, and passes nothing from it to a bot |
-| `match-series` — A Series Is Played On The Game's Defaults | `test_match_harness.py`'s slow test, which plays Garrison against Garrison and reads `8x8`, `250` and the halves back from the log; the harness sends `add player` and `commit` and nothing else |
-| `match-series` — The Outcome Is Read From The Game | `test_match_harness.py`, for status read from the players subject and logged the turn it changes, and for a wall not being counted in play |
-| `match-series` — Every Game Leaves A Record That Can Be Checked | the log, the three transcripts and the history each game writes under `matches/logs/`; the series script skips a game whose log ends in an outcome |
-| `match-series` — A Series Write-Up Says What It Was Played Under | `matches/RESULTS-DEFAULT-BOARD.md` at its head; the five earlier write-ups carry the superseded notice |
+| `match-series` — A Game Is Played Through The Real Roles | `matches/arena.py` launches the roles as subprocesses of the running interpreter and types at their prompts: `bgcserver` registers the seats and commits, each `bgcclient` types its doctrine's setup and commits, and the record is read back at a `bgcobserver` prompt once the game is over; `test_match_harness.py`'s slow test plays a game that way and reads what the roles said |
+| `match-series` — A Bot Is Given Its Own View And Nothing Else | `test_match_harness.py`, for the six subjects a seat's view is assembled from and the error when one is missing, for a doctrine being data and nothing under `bots/` being code, and for the same file setting up the same seat with the same commands twice; the harness reads the record only after the outcome |
+| `match-series` — A Series Is Played On The Game's Defaults | `test_match_harness.py`'s slow test, which plays Garrison against Garrison and reads `8x8`, `320` and the halves back from the log; the harness sends `add player` and `commit` and nothing else |
+| `match-series` — The Outcome Is Read From The Game | `test_match_harness.py`, for a seat's status read from the record's own list of the eliminated, for a wall not being counted in play, and for Garrison against Garrison stopping undecided on its first repeated state - in process, and through the roles |
+| `match-series` — Every Game Leaves A Record That Can Be Checked | the log, the roles' transcripts and the history each game writes under `matches/logs/`; `matches/check_records.py` reads them back, and the slow test runs it on the game it played; the series script skips a game whose log ends in an outcome |
+| `match-series` — A Series Write-Up Says What It Was Played Under | `matches/RESULTS-PROGRAMMED.md` at its head; the six earlier write-ups carry the superseded notice |
 
-The doctrines are held to the game before a game is played: every rebuilt
-army is run through `UnitType`, costed against the budget, placed inside its
+The doctrines are held to the game before a game is played: every type a
+doctrine fields is run through `UnitType` with its program, every program
+through `Program`, the army costed against the budget, placed inside its
 half of an 8 x 8 board with no square twice, and checked for exactly one
-carrier; every doctrine is called twice on one view and must answer the same,
-and nothing under `matches/bots/` may name `random`, `time`, `id(` or
-`hash(`.
+carrier; and each doctrine is then played against the Garrison in process,
+through the same service calls the client makes, and every turn's traces
+read for a controller stopped at its cap - the one thing a listing cannot
+prove, because a program's longest path is not its straight run. A
+controller stopped for want of energy is the fight's doing and is told
+apart by the unit's energy as the turn began.
 
 One thing the harness could not take from the game: `bgcserver -g <n>` on a
 number nobody has created opens an *unsized* game, and the 8 x 8 default of
@@ -949,7 +1018,7 @@ that reason. Not fixed here: the change plays games and changes no rule. The
 fix is for the local flow to create a game the registry's way when the
 number is new, and belongs with `game-server`.
 
-### 32. The rejected-orders list is matched by unit name, not by owner — open
+### 32. The rejected-orders list is matched by unit name, not by owner — fixed
 
 `visibility` says a player is told what a turn did to their own units, and
 nothing of what other players did to each other, and that whose units an
@@ -974,33 +1043,55 @@ that did nothing is named as refused, and a move is refused twice.
 Reproduction: games 202 and 205 of `matches/RESULTS-DEFAULT-BOARD.md`; any
 stock army against any other, once a move ends in an undecided contest.
 
+Fixed by the `programmable-units` change. The `undecided` event now names
+each survivor with its owner, and the report looks each one up as that
+owner's unit rather than by name alone; a refusal names the owner of the
+unit it refused the same way. `tests/test_turn_reporting.py` holds two
+players with a `pawn1` and a `keep1` each to one undecided contest between
+the pawns, and each player is told of their own pawn once and of nothing
+else.
+
 Found by playing the `default-board-series`. Not fixed here, for the same
 reason as 31. The fix is for the rejection record to carry the owner and be
 filtered by it, as the turn feed already is, and belongs with `turn-commit`.
 
 ## Unspecified, and worth deciding
 
-Nothing, at present. The two entries that stood here — units passing through
-each other, and the missing win condition — were both settled by the
-`fix-rules-defects` change and are recorded above as numbers 15 and 21.
+Two things the programmed series (`matches/RESULTS-PROGRAMMED.md`, games
+221-240) showed, each a design choice rather than a defect:
 
-Two questions are still open and are design choices rather than defects: energy
-never regenerating, and identical units always destroying each other. They are
-set out in Part 2 of `GAME_RULES.md`.
+- **The catalogue's programs field two Heavies and twelve bystanders.** The
+  stock array's back rank is boxed in by its own front rank, the hunter will
+  not step onto one of its own, the Pawns are sentries that never move and
+  the Walls cannot, so a player who commits what they are handed sends two
+  units and pays, every turn, for twelve controllers that think about a
+  route they cannot take. Whether the remedy is a Pawn that advances, a
+  hunter that waits for the way to clear, or an array that leaves the back
+  rank a way out is a decision about `default-army`, not a bug in it.
+- **A sleeping unit's countdown and a controller's meter count as state.**
+  `R7.5` stops a game whose whole state repeats, and the whole state
+  includes them, so a board on which nothing can ever happen again - two
+  Keeps asleep at opposite edges, a boxed-in rank thinking - runs to the cap
+  of 500 turns instead. Four games in the series were static for over 470
+  turns each. Excluding the counters from the comparison, or stopping a game
+  in which nothing has moved or struck for some number of turns, would stop
+  those games in a tenth of the time with the same result.
+
+The two entries that once stood here — units passing through each other,
+and the missing win condition — were settled by the `fix-rules-defects`
+change and are recorded above as numbers 15 and 21. Two older questions are
+still open and are design choices too: energy never regenerating beyond a
+rest, and identical units always destroying each other. They are set out in
+Part 2 of `GAME_RULES.md`.
 
 ## Left to a follow-up
 
 The `format-show-command-output` change gave every `show` subject a table and a
-`json` form, rendered from one view per subject in `cli/views.py`, and put the
-client's read-back after `move` through the same renderer. Two pieces of
-printing were deliberately left outside it, and are worth the same pass:
+`json` form, rendered from one view per subject in `cli/views.py`. One piece
+of printing was deliberately left outside it, and is worth the same pass:
 
-- **The server's turn log.** The unattended cycle prints the grid and the
-  published YAML for each resolved turn. That is a log of what was published
-  rather than an answer to a command, and it is what `game-persistence`
-  describes, so it was left as it is.
-- **Prompts, refusals and status lines.** `commit complete`, `waiting for turn
-  to complete...`, the rejected-order list and the outcome line are unchanged.
+- **Prompts, refusals and status lines.** `commit complete`, the waiting
+  line, the rejected-order list and the outcome line are unchanged.
 
 The `add-cli-autocomplete` change left two things outside completion, both
 deliberately:
@@ -1012,9 +1103,10 @@ deliberately:
   sessions would mean deciding where to write it and what one game may learn
   about another, which is a separate question from completing a line.
 
-Completion also offers a name the game may still refuse: a unit with no energy
-left completes, and moving it may then be rejected. Completion answers what
-words fit where, and the service layer keeps deciding what may be done.
+Completion also offers a name the game may still refuse: a type with no
+compute completes for `set program`, and giving it one is then refused.
+Completion answers what words fit where, and the service layer keeps
+deciding what may be done.
 
 One word in `cli-output` is not reachable through the roles today: a unit's
 state reads `waiting` only while it is on a board and not yet deployed, and
@@ -1024,10 +1116,12 @@ mid-resolution and what a caller reading a board directly would see.
 
 ## Documented but not implemented
 
-- **Unit programming.** The concept the project is named for — programming a
-  unit to play itself — does not exist. Units are ordered by hand each turn.
+Nothing, at present. Unit programming — the concept the project is named
+for — was the last entry here, and the `programmable-units` change built
+it: `unit-program` describes it and the section above says where each
+requirement is held.
 
-The web service is no longer among these. The Flask/REST API, the SQLite
+The web service is not among these either. The Flask/REST API, the SQLite
 backend and the browser interface are built and specified: `web-interface`,
 `identity-and-accounts` and `game-registry` describe them, and
 `tests/test_web_flow.py` drives exactly the calls the page makes. What a

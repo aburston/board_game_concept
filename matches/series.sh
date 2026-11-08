@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Play the sixth series: games 201-220 on the default board, in the draw the
-# `default-board-series` change fixed before the first game was played.
+# Play the seventh series: games 221-240 on the default board under the
+# programmed rules, in the draw the `programmable-units` change fixed before
+# the first game was played.
 #
 # Each game is one `arena.py` invocation and writes its own log, so the series
 # can be resumed: a game whose log already ends in an outcome line is skipped.
 # Run from anywhere; the games are played out of the repository root.
 #
 #   matches/series.sh            # every game not yet played
-#   matches/series.sh 205 206    # just these
+#   matches/series.sh 225 226    # just these
 #   PARALLEL=4 matches/series.sh # this many games at once
 
 set -u
@@ -19,26 +20,26 @@ PARALLEL="${PARALLEL:-1}"
 
 # game number, player 1, player 2
 DRAW="
-201 garrison   garrison
-202 advance    garrison
-203 flag_hunt  garrison
-204 screen     garrison
-205 flag_hunt  lancers
-206 flag_hunt  heavies
-207 flag_hunt  runners
-208 flag_hunt  bulwark
-209 flag_hunt  executioner
-210 flag_hunt  fugitive
-211 lancers    heavies
-212 lancers    runners
-213 lancers    bulwark
-214 heavies    runners
-215 heavies    bulwark
-216 runners    bulwark
-217 executioner lancers
-218 fugitive   executioner
-219 flag_hunt  flag_hunt
-220 advance    advance
+221 garrison   garrison
+222 advance    garrison
+223 flag_hunt  garrison
+224 screen     garrison
+225 flag_hunt  lancers
+226 flag_hunt  heavies
+227 flag_hunt  runners
+228 flag_hunt  bulwark
+229 flag_hunt  executioner
+230 flag_hunt  fugitive
+231 lancers    heavies
+232 lancers    runners
+233 lancers    bulwark
+234 heavies    runners
+235 heavies    bulwark
+236 runners    bulwark
+237 executioner lancers
+238 fugitive   executioner
+239 flag_hunt  flag_hunt
+240 advance    advance
 "
 
 played() {
@@ -53,7 +54,7 @@ play() {
         return
     fi
     "$PYTHON" matches/arena.py --game "$game" \
-        --p1 "$BOTS/$p1.py" --p2 "$BOTS/$p2.py" > "matches/logs/series_$game.out" 2>&1
+        --p1 "$BOTS/$p1.yaml" --p2 "$BOTS/$p2.yaml" > "matches/logs/series_$game.out" 2>&1
     echo "game $game: $(grep -E '^  (game over|undecided after|not played)' "matches/logs/game_$game.log" || echo 'did not finish')"
 }
 

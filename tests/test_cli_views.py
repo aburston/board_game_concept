@@ -8,7 +8,6 @@ from board_game_concept.domain import army
 from board_game_concept import Board, Player, UnitType
 from board_game_concept.cli import views
 from board_game_concept.service import games
-from board_game_concept.service.commands import Move
 
 from game_harness import GameHarness
 
@@ -31,7 +30,8 @@ def test_types_view_lists_every_type_with_its_statistics(tmp_path):
     by_name = {entry['name']: entry for entry in entries}
     assert by_name['tank'] == {
         'player': 1, 'name': 'tank', 'symbol': 'T',
-        'attack': 3, 'health': 5, 'energy': 10, 'cost': 18}
+        'attack': 3, 'health': 5, 'energy': 10, 'compute': 0,
+        'program': False, 'cost': 18}
     assert by_name['scout']['player'] == 2
 
 
@@ -51,10 +51,10 @@ def test_units_view_carries_the_units_own_statistics(tmp_path):
 
 
 def test_units_view_says_a_unit_is_moving_and_where(tmp_path):
-    # an order is held by the session that gave it until the turn resolves,
-    # so the view is taken there rather than from a reloaded game
+    # an order is a controller's now, held on the unit until the turn
+    # resolves, so the view is taken from the board that holds it
     client = a_game(tmp_path).session(1)
-    games.order_move(client, Move(unit='alpha', direction=UnitType.EAST))
+    client.getBoard().getUnitByName('alpha')[0].move(UnitType.EAST)
 
     entries = views.units_view(client.getBoard())
 

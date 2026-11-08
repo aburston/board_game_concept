@@ -49,28 +49,37 @@ class Role:
 ACCOUNT_COMMANDS = ('login', 'logout', 'whoami', 'passwd')
 
 
+# the record of a resolved game is read the same way by every role: a turn
+# at a time, stepping forwards and back. What each sees of a turn is the
+# session's to decide, not the grammar's
+REPLAY_COMMANDS = ('next', 'prev')
+
 SERVER = Role(
     'server',
-    kinds=ACCOUNT_COMMANDS + ('help', 'exit', 'commit', 'show',
-                              'set_board', 'add_player', 'remove_player',
-                              'load_board', 'load_player'),
+    kinds=ACCOUNT_COMMANDS + REPLAY_COMMANDS + (
+        'help', 'exit', 'commit', 'show', 'set_board', 'add_player',
+        'remove_player', 'load_board', 'load_player'),
     show_subjects=('board', 'types', 'units', 'players', 'pending',
-                   'events', 'designs', 'flags', 'placement'))
+                   'events', 'designs', 'flags', 'placement', 'program',
+                   'turn'))
 
 CLIENT = Role(
     'client',
-    kinds=ACCOUNT_COMMANDS + ('help', 'exit', 'commit', 'show', 'add_type',
-                              'add_unit', 'remove_unit', 'set_flag', 'move',
-                              'hold'),
+    kinds=ACCOUNT_COMMANDS + REPLAY_COMMANDS + (
+        'help', 'exit', 'commit', 'show', 'add_type', 'add_unit',
+        'remove_unit', 'set_flag', 'set_program_file'),
     # `pending` is this player's own published orders and nobody else's - a
     # session holds only its own - and it is the only way to read back an
     # army that has been committed and not yet deployed. The browser shows
     # it; withholding it here made the two clients answer differently
     show_subjects=('board', 'types', 'units', 'players', 'pending',
-                   'events', 'designs', 'flags', 'placement'))
+                   'events', 'designs', 'flags', 'placement', 'program',
+                   'turn'))
 
 OBSERVER = Role(
     'observer',
-    kinds=ACCOUNT_COMMANDS + ('help', 'exit', 'reload', 'show'),
+    kinds=ACCOUNT_COMMANDS + REPLAY_COMMANDS + (
+        'help', 'exit', 'reload', 'show'),
     show_subjects=('board', 'types', 'units', 'players', 'pending',
-                   'events', 'designs', 'flags', 'placement'))
+                   'events', 'designs', 'flags', 'placement', 'program',
+                   'turn'))

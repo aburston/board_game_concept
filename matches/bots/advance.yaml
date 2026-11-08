@@ -1,0 +1,23 @@
+# Advance: the stock army, and the front rank walks at the enemy as a line.
+#
+# The rank the game puts nearest the frontier - four Pawns and two Heavies,
+# with two Walls that cannot move - steps towards the enemy's edge one
+# square a turn whenever it can afford the step and the strike it may have
+# to land on arriving (R5.10), and never onto one of its own. The back rank
+# holds: the Keeps carry the flag and can barely move, and the Runners,
+# Lines and Scouts stay with them.
+#
+# A Pawn has two energy and a fare of one, so it walks every other turn. A
+# Heavy has fifteen against a fare of three and a strike of five: three
+# squares, then two turns' rest for every further one. The line does not
+# wait for its slowest member, so it stretches. A Pawn's compute of two
+# buys it twenty ticks a turn, and the program is written to fit.
+name: Advance
+doctrine: the stock army; Pawns and Heavies step towards the enemy each turn they can afford to, the back rank holds
+programs:
+  Pawn: programs/advance2.asm
+  Heavy: programs/advance8.asm
+  Scout: programs/hold.asm
+  Runner: programs/hold.asm
+  Line: programs/hold.asm
+  Keep: programs/hold.asm

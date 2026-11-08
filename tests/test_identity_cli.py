@@ -92,7 +92,7 @@ class ObserverIdentity(CliTestCase):
     'add player 2',
     'add type Cross X 1 1 10',
     'add unit Cross x1 0 0',
-    'move x1 north',
+    'set flag x1',
 ])
 def test_the_observer_is_refused_below_the_command_line(tmp_path, line):
     """No role table is consulted here; the identity alone decides."""

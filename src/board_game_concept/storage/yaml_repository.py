@@ -5,9 +5,18 @@ per-player files under `players`, one directory per game number. This is the
 only module that knows any of those names.
 """
 
+import json
 import os
+import re
 
 import yaml
+
+# libyaml's emitter and parser where the interpreter has them: a game is
+# resolved to its end writing a feed and a record every turn, and the pure
+# Python emitter spent most of a game's time on them. Both write and read
+# the same documents
+_DUMPER = getattr(yaml, 'CSafeDumper', yaml.SafeDumper)
+_LOADER = getattr(yaml, 'CSafeLoader', yaml.SafeLoader)
 
 from ..domain.events import record as event_record
 from ..service.errors import UnreadableGame
@@ -32,6 +41,12 @@ class YamlGameRepository(GameRepository):
             from ..cli.session import default_base_path
             base_path = default_base_path()
         self.gameno = gameno
+        # the feeds this repository last wrote, by path, with the stamp the
+        # file had once written: a game resolved to its end writes a feed
+        # every turn, and reading the whole file back before each write made
+        # a game of sixty turns take twenty seconds. The stamp is what keeps
+        # a feed another writer changed from being read from memory
+        self._feeds = {}
         self.root = os.path.join(base_path, 'games', f'_{gameno}')
         self.data_path = os.path.join(self.root, 'data')
         self.player_path = os.path.join(self.root, 'players')
@@ -74,7 +89,7 @@ class YamlGameRepository(GameRepository):
     def _read_yaml(self, path, what):
         try:
             with open(path) as f:
-                return yaml.safe_load(f)
+                return yaml.load(f, Loader=_LOADER)
         except FileNotFoundError:
             return None
         except yaml.YAMLError as e:
@@ -91,7 +106,7 @@ class YamlGameRepository(GameRepository):
     def write_board(self, size_x, size_y):
         self.ensure()
         with self._replace(os.path.join(self.data_path, 'board.yaml')) as file:
-            yaml.safe_dump({'board': {'size_x': size_x, 'size_y': size_y}}, file)
+            yaml.dump({'board': {'size_x': size_x, 'size_y': size_y}}, file, Dumper=_DUMPER)
 
     def read_progress(self):
         return self._read_yaml(
@@ -100,7 +115,7 @@ class YamlGameRepository(GameRepository):
     def write_progress(self, progress):
         self.ensure()
         with self._replace(os.path.join(self.data_path, 'progress.yaml')) as file:
-            yaml.safe_dump(progress, file)
+            yaml.dump(progress, file, Dumper=_DUMPER)
 
     def read_units(self):
         units = self._read_yaml(
@@ -147,8 +162,9 @@ class YamlGameRepository(GameRepository):
 
     def write_player(self, number, types, budget):
         with self._replace(self._player_file(number)) as file:
-            yaml.safe_dump(
-                {'number': number, 'budget': budget, 'types': types}, file)
+            yaml.dump(
+                {'number': number, 'budget': budget, 'types': types}, file,
+                Dumper=_DUMPER)
 
     # --- what a player can see
 
@@ -232,7 +248,7 @@ class YamlGameRepository(GameRepository):
 
     def mark_committed(self, number, turn=None):
         with self._replace(self._commit_marker(number)) as file:
-            yaml.safe_dump({'turn': turn}, file)
+            yaml.dump({'turn': turn}, file, Dumper=_DUMPER)
 
     def has_committed(self, number):
         return os.path.exists(self._commit_marker(number))
@@ -255,7 +271,7 @@ class YamlGameRepository(GameRepository):
 
     def write_draft(self, number, draft):
         with self._replace(self._draft_file(number)) as file:
-            yaml.safe_dump(draft, file)
+            yaml.dump(draft, file, Dumper=_DUMPER)
 
     def clear_draft(self, number):
         # a draft that is not there has already been discarded, which is what
@@ -279,7 +295,7 @@ class YamlGameRepository(GameRepository):
 
     def write_rejections(self, number, rejected, turn=None):
         with self._replace(self._rejections_file(number)) as file:
-            yaml.safe_dump({'turn': turn, 'rejected': rejected}, file)
+            yaml.dump({'turn': turn, 'rejected': rejected}, file, Dumper=_DUMPER)
 
     # --- what the turns did
     #
@@ -317,9 +333,38 @@ class YamlGameRepository(GameRepository):
 
     def write_flags(self, entries):
         with self._replace(self._flags_file()) as file:
-            yaml.safe_dump({'flags': list(entries or [])}, file)
+            yaml.dump({'flags': list(entries or [])}, file, Dumper=_DUMPER)
 
     # --- what a seat has met
+
+    # --- the record of every turn
+
+    def _turn_file(self, turn):
+        return os.path.join(self.data_path, 'turns', f'turn_{int(turn)}.yaml')
+
+    def read_turn(self, turn):
+        path = self._turn_file(turn)
+        if not os.path.exists(path):
+            return None
+        return self._read_yaml(path, f'the record of turn {turn}')
+
+    def write_turn(self, turn, record):
+        path = self._turn_file(turn)
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
+        with self._replace(path) as file:
+            yaml.dump(record, file, sort_keys=False, Dumper=_DUMPER)
+
+    def turn_numbers(self):
+        folder = os.path.join(self.data_path, 'turns')
+        if not os.path.exists(folder):
+            return []
+        found = []
+        for name in os.listdir(folder):
+            match = re.match(r'^turn_(\d+)\.yaml$', name)
+            if match:
+                found.append(int(match.group(1)))
+        return sorted(found)
 
     def _known_types_file(self, number):
         return os.path.join(self.player_path, f'{number}_types_seen.yaml')
@@ -331,7 +376,7 @@ class YamlGameRepository(GameRepository):
 
     def write_known_types(self, number, entries):
         with self._replace(self._known_types_file(number)) as file:
-            yaml.safe_dump({'types': list(entries or [])}, file)
+            yaml.dump({'types': list(entries or [])}, file, Dumper=_DUMPER)
 
     def _read_events(self, path, since, what):
         stored = self._read_yaml(path, what)
@@ -347,9 +392,24 @@ class YamlGameRepository(GameRepository):
                                             entry.get('detail'))})
         return made
 
-    def _write_events(self, path, turn, entries):
+    def _stamp(self, path):
+        try:
+            stat = os.stat(path)
+        except FileNotFoundError:
+            return None
+        return (stat.st_mtime_ns, stat.st_size, stat.st_ino)
+
+    def _feed_turns(self, path):
+        """The turns a feed file holds, from memory where the file is the one
+        this repository wrote last."""
+        cached = self._feeds.get(path)
+        if cached is not None and cached[0] == self._stamp(path):
+            return list(cached[1])
         stored = self._read_yaml(path, 'a stored feed') or {}
-        turns = [held for held in (stored.get('turns') or [])
+        return list(stored.get('turns') or [])
+
+    def _write_events(self, path, turn, entries):
+        turns = [held for held in self._feed_turns(path)
                  if held.get('turn') != turn]
         turns.append({
             'turn': turn,
@@ -361,8 +421,10 @@ class YamlGameRepository(GameRepository):
         })
         turns.sort(key=lambda held: (held.get('turn') is None,
                                      held.get('turn')))
+        kept = turns[-HISTORY_TURNS:]
         with self._replace(path) as file:
-            yaml.safe_dump({'turns': turns[-HISTORY_TURNS:]}, file)
+            yaml.dump({'turns': kept}, file, Dumper=_DUMPER)
+        self._feeds[path] = (self._stamp(path), kept)
 
 
 def _kind_of(entry):
@@ -432,6 +494,24 @@ def _unit_line(unit):
         # nothing about the flag is a record every reader has to guess at,
         # and the two other booleans beside it are always written too
         f", flag: {bool(unit.get('flag'))}"
+        # the controller's state, where the reader is entitled to it: a view
+        # written for a seat carries none of it for the other seats' units
+        + (_controller_line(unit) if 'type_compute' in unit else '')
+    )
+
+
+def _controller_line(unit):
+    """A unit's controller state as the tail of its flow mapping.
+
+    Memory and the inbox are lists of lists, written as JSON, which YAML
+    reads as flow sequences.
+    """
+    return (
+        f", type_compute: {unit.get('type_compute')}"
+        f", meter: {unit.get('meter') or 0}"
+        f", asleep: {unit.get('asleep') or 0}"
+        f", memory: {json.dumps(unit.get('memory') or [])}"
+        f", inbox: {json.dumps(unit.get('inbox') or [])}"
     )
 
 

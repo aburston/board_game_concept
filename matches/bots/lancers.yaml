@@ -1,0 +1,34 @@
+# Lancers: eleven Lances and a Keep to carry the flag.
+#
+# The Lance is in the catalogue and not in the stock array (R2.13): attack
+# 8, health 2, energy 10, compute 4, twenty-four points, a fare of one.
+# Under one strike a turn a kill is a strike that reaches the health on its
+# own (R5.11), and eight reaches everything in the stock army but a Keep or
+# a Heavy - and two Lances arriving together reach those. Every Lance dies
+# to any strike of two.
+#
+# Eleven of them are 264 points; the Keep that carries the flag is 24. A
+# Lance holds ten energy against a strike costing eight, so it walks two
+# squares and then rests a turn for every further one, and once it has
+# struck it is eight quiet turns from striking again. The doctrine is one
+# blow each. Every Lance runs the catalogue's hunter.
+name: Lancers
+doctrine: 11 x Lance (a8 h2 e10 c4) + Keep with the flag; every Lance hunts
+rebuild: true
+types:
+  - {name: Lance, symbol: '!', attack: 8, health: 2, energy: 10, compute: 4, program: programs/hunter9.asm}
+  - {name: Keep, symbol: K, attack: 1, health: 10, energy: 5, compute: 8, program: programs/warden.asm}
+units:   # type, name, column, depth from my own edge
+  - [Lance, lance1, 0, 3]
+  - [Lance, lance2, 1, 3]
+  - [Lance, lance3, 2, 3]
+  - [Lance, lance4, 3, 3]
+  - [Lance, lance5, 4, 3]
+  - [Lance, lance6, 5, 3]
+  - [Lance, lance7, 6, 3]
+  - [Lance, lance8, 7, 3]
+  - [Lance, lance9, 1, 2]
+  - [Lance, lance10, 4, 2]
+  - [Lance, lance11, 6, 2]
+  - [Keep, keep1, 3, 0]
+flag: keep1

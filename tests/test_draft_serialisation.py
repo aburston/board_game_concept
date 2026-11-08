@@ -58,9 +58,9 @@ def test_every_command_survives_a_draft(usage):
 
 
 def test_a_draft_keeps_the_order_it_was_given_in():
-    commands = [parse('add type Cross X 1 1 10'),
+    commands = [parse('add type Cross X 1 1 10 2'),
                 parse('add unit Cross x1 0 0'),
-                parse('move x1 north')]
+                parse('set flag x1')]
 
     document = yaml.safe_dump(serialise_draft(commands, turn=0))
 
@@ -70,7 +70,7 @@ def test_a_draft_keeps_the_order_it_was_given_in():
 def test_a_draft_for_another_turn_is_not_restored():
     """Work left behind by a session that ended mid-resolution is discarded."""
     document = yaml.safe_dump(
-        serialise_draft([parse('move x1 north')], turn=3))
+        serialise_draft([parse('set flag x1')], turn=3))
 
     assert restore_draft(yaml.safe_load(document), turn=4) == []
     assert restore_draft(yaml.safe_load(document), turn=2) == []

@@ -30,12 +30,23 @@ export const state = {
   // function of the game rather than of the order somebody clicked things.
   // Empty is nothing selected; one name is the single unit that used to be
   // held here, which is now simply the case where the set has one member
-  selected: [],
+  selected: [],        // the unit chosen on the board, as `player/name`
   // what is half-typed in the armoury. In `state` rather than in the DOM
   // because `render` replaces the whole screen: a refusal redraws, and a
   // form rebuilt from nothing would throw away the design somebody was in
   // the middle of - which is the moment they are most likely to give up
-  design: { name: '', symbol: '', attack: '1', health: '1', energy: '1' },
+  design: { name: '', symbol: '', attack: '1', health: '1', energy: '1',
+            compute: '0' },
+  // the program being written in the armoury: which type's, and the text as
+  // it stands. `text: null` is a stored program not yet read into the editor
+  program: null,
+  programCheck: null,  // the server's last word on that text
+  tariff: null,        // the instruction set's tariff, read once
+  // where the replay is: the turn being shown, whether it is playing and at
+  // what speed, whether the board is drawn as an army knew it and whose,
+  // the turns the record holds, and the unit whose trace is open
+  replay: { turn: null, playing: false, speed: 1, known: false, seat: null,
+            turns: [], record: null, trace: null },
   unitName: '',
   deployType: '',      // the type being deployed, kept across placements
   boardSize: { x: '', y: '' },   // a size typed and not yet sent
@@ -179,8 +190,12 @@ export async function loadSeat(gameno, number) {
   // than "no such thing". `types` and `players` answer either way, which is
   // what the armoury needs before a board exists.
   const absent = (error) => (error.status === 404 ? null : Promise.reject(error));
+  if (!state.tariff) {
+    // the tariff is rules rather than game state, and does not change
+    state.tariff = await api.programTariff().catch(() => null);
+  }
   const [seatState, board, units, types, players, pending, seen, flags,
-         placement, events, barrier] = await Promise.all([
+         placement, events, barrier, turns] = await Promise.all([
     api.readState(gameno, number),
     api.readView(gameno, number, 'board').catch(absent),
     api.readView(gameno, number, 'units').catch(absent),
@@ -208,12 +223,16 @@ export async function loadSeat(gameno, number) {
     // player deciding whether to think for another minute wants to know
     // whether everyone else is already waiting on them
     api.waitForCommit(gameno, number, 0).catch(() => null),
+    // the turns the record holds, which is every turn once the game is
+    // resolved and none before
+    api.listTurns(gameno, number).catch(absent),
   ]);
   const previous = state.game && state.game.gameno === gameno
     && state.game.number === number ? state.game : null;
   state.previous = previous;
   state.events = (events && events.events) || [];
   state.barrier = barrier || null;
+  state.replay = { ...state.replay, turns: (turns && turns.turns) || [] };
   state.game = {
     gameno,
     number,

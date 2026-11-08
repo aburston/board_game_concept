@@ -109,17 +109,6 @@ def test_the_arc_stays_inside_its_square():
 
 
 @pytest.mark.skipif(NODE is None, reason='node is not installed')
-def test_an_ordered_units_arrow_clears_its_own_energy():
-    """Started from the ring as it used to be, the arrow was drawn across the
-    arc - the same defect the arc had against the ring, one radius further
-    out.
-    """
-    arc_outer, start = _run('[(RING + 3) + 1.5, ARC + 3]')
-    assert start > arc_outer
-    assert 'const start = ARC + 3;' in _static('board.js'), (
-        'written against the arc, so moving the arc moves this with it')
-
-
 def test_the_arc_is_stroked_at_three():
     """Which is what the clearances above are computed against."""
     sheet = _static('style.css')

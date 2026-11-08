@@ -240,3 +240,23 @@ class GameRepository:
     def write_known_types(self, number, entries):
         """Replace what this seat has met with `entries`."""
         raise NotImplementedError
+
+    # --- the record of every turn
+    #
+    # A game is resolved to its end the moment every setup is committed, and
+    # what anybody watches afterwards is this: for every turn, the board and
+    # the units as the turn left them, the flags, what happened, what every
+    # army knew and what every controller did. One record a turn, kept for
+    # the life of the game, read back by number for the replay.
+
+    def read_turn(self, turn):
+        """One turn's record, or None if that turn was never recorded."""
+        raise NotImplementedError
+
+    def write_turn(self, turn, record):
+        """Record one turn, replacing any record of that turn."""
+        raise NotImplementedError
+
+    def turn_numbers(self):
+        """Every turn recorded, in order."""
+        raise NotImplementedError

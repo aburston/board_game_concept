@@ -1,0 +1,33 @@
+# Fugitive: the flag on a Runner that keeps moving, and Lances in front.
+#
+# Everybody can see where a flag is (R6.5), and every other doctrine here
+# carries it on a Keep - ten health that can barely move. This one puts it
+# on a Runner (attack 2, health 4, energy 10, compute 5, fare 1) whose
+# program walks it along the back row every turn it can afford a step and
+# a strike, turning at the edge and away from an enemy its army knows of
+# within two columns. A hunter aiming at the flag square is aiming at where
+# the carrier was; the square it is told next turn is a different one.
+#
+# The rest of the points are eleven Lances, played as the Lancers play
+# them. The question is whether a flag that moves is harder to take than
+# one that does not, or just one that runs out of energy sooner.
+name: Fugitive
+doctrine: the flag on a Runner that walks the back row every turn it can + 11 x Lance (a8 h2 e10 c4) that hunt
+rebuild: true
+types:
+  - {name: Lance, symbol: '!', attack: 8, health: 2, energy: 10, compute: 4, program: programs/hunter9.asm}
+  - {name: Runner, symbol: r, attack: 2, health: 4, energy: 10, compute: 5, program: programs/fugitive.asm}
+units:
+  - [Lance, lance1, 0, 3]
+  - [Lance, lance2, 1, 3]
+  - [Lance, lance3, 2, 3]
+  - [Lance, lance4, 3, 3]
+  - [Lance, lance5, 4, 3]
+  - [Lance, lance6, 5, 3]
+  - [Lance, lance7, 6, 3]
+  - [Lance, lance8, 7, 3]
+  - [Lance, lance9, 1, 2]
+  - [Lance, lance10, 4, 2]
+  - [Lance, lance11, 6, 2]
+  - [Runner, runner1, 3, 0]
+flag: runner1

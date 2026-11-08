@@ -13,9 +13,10 @@ import time
 
 from flask import Flask, jsonify, request
 
+from ..cli import backend as backend_module
 from ..cli import session as session_module
 from ..service import games as game_ops
-from ..service import identity
+from ..service import identity, replay
 from ..service.commands import as_record as _AS_RECORD, from_record
 from ..service.errors import (AccountError, GameDataError, GameError,
                               NoSuchGame, NoSuchPlayer, UnreadableGame)
@@ -138,6 +139,43 @@ def create_app(base_path=None, backend=None, account_store=None):
     def health():
         return jsonify({'ok': True})
 
+    @app.get('/_/program')
+    def program_tariff():
+        """The instruction set's tariff, for an editor that lists a program's
+        ticks as it is typed. Rules rather than game state, so no credential:
+        the same table `domain/program.py` prices every program by."""
+        from ..domain.program import (MAX_SLEEP, TICKS, TICKS_PER_COMPUTE,
+                                      CONDITIONS, DIRECTIONS)
+        return jsonify({
+            'ticks': TICKS,
+            'ticks_per_compute': TICKS_PER_COMPUTE,
+            'max_sleep': MAX_SLEEP,
+            'conditions': CONDITIONS,
+            'directions': sorted(DIRECTIONS),
+        })
+
+    @app.post('/_/program/check')
+    def program_check():
+        """Check a program without setting it: the listing, or the line the
+        instruction set refuses it at. What the armoury marks a bad line
+        with, from the one parser there is."""
+        from ..domain.program import Program, ProgramError, cap
+        body = request.get_json(silent=True) or {}
+        text = body.get('program') or ''
+        compute = int(body.get('compute') or 0)
+        try:
+            program = Program(text)
+        except ProgramError as error:
+            return jsonify({'ok': False, 'line': error.line,
+                            'message': error.message})
+        return jsonify({
+            'ok': True,
+            'lines': [{'line': number, 'text': raw, 'ticks': ticks}
+                      for number, raw, ticks in program.listing()],
+            'total': program.ticks,
+            'cap': cap(compute),
+        })
+
     @app.get('/')
     def page():
         """The one page. Every screen is a route inside it.
@@ -176,6 +214,51 @@ def create_app(base_path=None, backend=None, account_store=None):
         if subject in VIEWS_THAT_NEED_A_BOARD and data.getBoard() is None:
             return jsonify({'error': 'no board yet'}), 404
         return jsonify({subject: builder(data)})
+
+    @app.get('/games/<gameno>/players/<int:number>/programs/<type_name>')
+    @acts_as_number
+    def read_program(gameno, number, type_name):
+        """A type's program with its tick listing: a seat's own types, or
+        any type for a session entitled to the whole game."""
+        try:
+            data = _load_game(gameno, number)
+            record = backend_module._type_record(data, type_name,
+                                                 int(number))
+            return jsonify({'program': replay.program_view(record)})
+        except GameDataError as error:
+            return _game_error_response(error)
+        except GameError as error:
+            return jsonify({'error': str(error)}), 404
+
+    @app.get('/games/<gameno>/players/<int:number>/turns')
+    @acts_as_number
+    def list_turns(gameno, number):
+        try:
+            repository = _repository(gameno)
+            return jsonify({'turns': list(repository.turn_numbers())})
+        except GameDataError as error:
+            return _game_error_response(error)
+
+    @app.get('/games/<gameno>/players/<int:number>/turns/<int:turn>')
+    @acts_as_number
+    def read_turn(gameno, number, turn):
+        """One turn of the record as this seat may read it. `?known=1`
+        draws the board from the seat's own army map instead."""
+        try:
+            data = _load_game(gameno, number)
+            record = data.repository.read_turn(int(turn))
+        except GameDataError as error:
+            return _game_error_response(error)
+        if record is None:
+            return jsonify({'error': f'the record has no turn {turn}'}), 404
+        known = request.args.get('known') in ('1', 'true', 'yes')
+        # whose knowledge, for a session that sees everything and has no
+        # army of its own; a seat is given its own and nobody else's
+        seat = request.args.get('seat')
+        seat = int(seat) if seat and seat.isdigit() else None
+        return jsonify({'turn': replay.turn_view(
+            record, int(number), data.seesEverything(), known=known,
+            seat=seat)})
 
     @app.post('/games/<gameno>/players/<int:number>/commands')
     @acts_as_number
@@ -394,14 +477,22 @@ def _commit_payload(data, resolved):
         'resolved': bool(resolved),
         'turn_number': data.getTurnNumber(),
         'outcome': data.getOutcome(),
-        'waiting_on': sorted(awaited - committed),
+        # a game that is over waits for nobody: every turn after the last
+        # setup commit was the controllers'
+        'waiting_on': ([] if data.getOutcome() is not None
+                       else sorted(awaited - committed)),
     }
 
 
 def _state_payload(data):
+    committed = set(data.repository.committed_players(data.getTurnNumber()))
     return {
         'turn_number': data.getTurnNumber(),
         'outcome': data.getOutcome(),
+        # whose setup commits the game is still waiting for: nobody's once
+        # it is over
+        'waiting_on': ([] if data.getOutcome() is not None
+                       else sorted(_awaited_players(data) - committed)),
         'new_game': data.getNewGame(),
         'unprocessed_moves': data.getUnprocessedMoves(),
         'rejected': data.getRejected(),

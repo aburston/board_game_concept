@@ -1,0 +1,31 @@
+# Executioner: a type of our own, attack 10, and nine of it.
+#
+# Attack 10, health 4, energy 12, compute 4: thirty points, a fare of
+# one. Ten is the most a strike can be and the most health a unit can have,
+# so one strike destroys anything on the board (R5.11), Keep and Heavy
+# included, and the carrier of the flag with them. Health 4 rides for a
+# fare of one and dies to a Heavy's five outright, or to two Runners'
+# strikes.
+#
+# Nine of them and a Keep for the flag are 294 points. Twelve energy
+# against a strike of ten is two squares and then a rest for every further
+# one; a strike leaves a unit ten quiet turns from its next. Each
+# Executioner is one kill, delivered on foot by the catalogue's hunter.
+name: Executioner
+doctrine: 9 x Exec (a10 h4 e12 c4, our own type) + Keep with the flag; every Exec hunts
+rebuild: true
+types:
+  - {name: Exec, symbol: X, attack: 10, health: 4, energy: 12, compute: 4, program: programs/hunter11.asm}
+  - {name: Keep, symbol: K, attack: 1, health: 10, energy: 5, compute: 8, program: programs/warden.asm}
+units:
+  - [Exec, exec1, 0, 3]
+  - [Exec, exec2, 1, 3]
+  - [Exec, exec3, 2, 3]
+  - [Exec, exec4, 3, 3]
+  - [Exec, exec5, 4, 3]
+  - [Exec, exec6, 5, 3]
+  - [Exec, exec7, 6, 3]
+  - [Exec, exec8, 7, 3]
+  - [Exec, exec9, 4, 2]
+  - [Keep, keep1, 3, 0]
+flag: keep1

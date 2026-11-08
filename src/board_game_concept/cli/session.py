@@ -9,10 +9,12 @@ cannot be read.
 
 import os
 import sys
+import time
 
 from .. import YamlGameRepository
 from ..service import commands
 from ..service.errors import AccountError, GameDataError, GameError
+from ..storage.lock import GameIsBusy
 from ..storage.sqlite_repository import SqliteGameRepository
 from .backend import HttpSession, LocalSession
 from .parser import ParseError, parse
@@ -266,8 +268,20 @@ def make_accounts(session, backend=None, base_path=None):
     return LocalAccounts(backend=backend, base_path=base_path)
 
 
-def load_game(data):
+# how long a role waits for a game another session is holding before it
+# gives up on it. A game is resolved to its end under one hold, so a role
+# woken by the last setup commit finds the game held for as long as the
+# resolution takes
+BUSY_PATIENCE = 600.0
+BUSY_RETRY = 0.25
+
+
+def load_game(data, patient=False):
     """Read the game, or report why it cannot be read and stop.
+
+    `patient` is for a role that knows the game may be held - the client
+    woken by a resolution that is still running - and waits for the hold to
+    lift rather than dying of it.
 
     A session that cannot open its game has nothing to offer, so this is the
     one place a role still exits. The service layer raises; only here does
@@ -281,12 +295,22 @@ def load_game(data):
     cannot be somebody else - so it is reported and exits rather than
     traced back.
     """
-    try:
-        data.load()
-    except (GameDataError, AccountError) as error:
-        for line in error.lines():
-            print(line, file=sys.stderr)
-        sys.exit(1)
+    deadline = time.monotonic() + BUSY_PATIENCE
+    while True:
+        try:
+            data.load()
+            return
+        except GameIsBusy:
+            if not patient or time.monotonic() >= deadline:
+                print(str(GameIsBusy(
+                    'the game is being resolved and could not be read')),
+                    file=sys.stderr)
+                sys.exit(1)
+            time.sleep(BUSY_RETRY)
+        except (GameDataError, AccountError) as error:
+            for line in error.lines():
+                print(line, file=sys.stderr)
+            sys.exit(1)
 
 
 def _read_line(prompt):
@@ -363,8 +387,35 @@ __all__ = ['COMPILED_DEFAULT_BACKEND', 'GameError', 'add_backend_argument',
            'make_repository', 'make_session', 'read_command', 'report']
 
 
+def read_program_file(path):
+    """The text of a program file a `set program` names, or a refusal."""
+    try:
+        with open(path, encoding='utf-8') as file:
+            return file.read()
+    except OSError as error:
+        raise GameError(f"cannot read the program file {path}: "
+                        f"{error.strerror or error}") from error
+
+
+def describe_waiting(waiting):
+    """Whose setups the game is still waiting for, as one line."""
+    if not waiting:
+        return "waiting for the game to be resolved"
+    who = ', '.join(str(number) for number in waiting)
+    return f"waiting for player(s) {who} to commit their setup"
+
+
 def describe_outcome(outcome):
     """How the game ended, as one line for whoever is watching."""
+    if outcome.get('decided') is False:
+        why = {'repeated': 'its state repeated',
+               'cap': 'the turn cap was reached'}.get(
+            outcome.get('reason'), 'it could not go on')
+        since = outcome.get('since')
+        again = f" (as it stood after turn {since})" if since is not None \
+            else ''
+        return (f"game over: undecided on turn {outcome['turn']}, {why}"
+                f"{again}")
     if outcome.get('winner') is None:
         return f"game over: a draw on turn {outcome['turn']}"
     return (f"game over: player {outcome['winner']} wins "

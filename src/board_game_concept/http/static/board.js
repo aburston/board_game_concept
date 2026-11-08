@@ -3,52 +3,30 @@
 //
 // Moving a unit between turns is a change of that transform, and the CSS
 // transition on it is the whole animation - no timeline, no frame loop, no
-// library. `prefers-reduced-motion` turns it off.
+// library. `prefers-reduced-motion` turns it off. The replay leans on this:
+// drawing the next turn's record moves every unit from its old square to its
+// new one, which is what makes a turn visible rather than only its result.
 //
 // This file draws what the view gives it and never decides what to conceal.
-// A seat's published view already holds only what that seat may see, so
-// everything here has already been filtered where `visibility` filters it -
-// and a board that tried to be clever about hiding would be a second opinion
-// on a question that already has an answer.
+// A seat's published view already holds only what that seat may see, and a
+// turn of the record is drawn whole for everybody because `visibility` grants
+// the whole board once a game is finished - so everything here has already
+// been filtered where it is decided, and a board that tried to be clever
+// about hiding would be a second opinion on a question that already has an
+// answer.
+//
+// Nothing here orders anything. A player gives no orders - every move is a
+// controller's, running its type's program - so a click on a unit chooses it
+// and nothing more, and the box, the double-click and the arrow that an order
+// used to be drawn with are gone with the orders.
 
 const NS = 'http://www.w3.org/2000/svg';
 
-
-/**
- * Give a node a click and a double-click that cannot both happen.
- *
- * One gesture, one outcome: a click that turns out to be the first half of a
- * double-click never also does what a single click does.
- */
-function makeClickable(node, single, double) {
-  let timer = null;
-  node.addEventListener('click', (event) => {
-    event.stopPropagation();
-    // where nothing is waiting for a second click there is nothing to wait
-    // for: the deploy board places a unit the moment it is asked, as it
-    // always has, and only a board that offers both defers anything
-    if (!double) {
-      if (single) single(event);
-      return;
-    }
-    if (timer) {
-      // the second click of a pair, and the first has not happened yet
-      clearTimeout(timer);
-      timer = null;
-      event.preventDefault();
-      double(event);
-      return;
-    }
-    timer = setTimeout(() => { timer = null; if (single) single(event); },
-                       CLICK_DELAY);
-  });
-}
 const SQUARE = 44;
 const PAD = 6;
 
-// the ring is smaller than the square it stands in, so that an order drawn
-// out of it has somewhere to be drawn: a unit that filled its square left
-// the arrow saying where it was going crammed against the edge
+// the ring is smaller than the square it stands in, so that what is drawn
+// round it - the energy arc, the health bar - has somewhere to be drawn
 const RING = SQUARE / 2 - 11;
 
 // where the energy arc runs, outside the ring and touching nothing. Stroked
@@ -57,55 +35,25 @@ const RING = SQUARE / 2 - 11;
 // 16 from the centre. Half a square is 22, so it is well inside its own
 const ARC = RING + 3;
 
-// how far an order's arrow reaches out of the square, as a share of one
-// square, measured from the unit's centre. Past the edge on purpose - what it
-// points at is the square it is going to, which is the whole of what the
-// arrow is for - but only just: 0.70 of 44 is 30.8, which is 8.8 past the
-// edge at 22, inside the next square and short of a unit standing there,
-// whose ring begins 11 from that square's centre and so 11 past the edge. It
-// was 0.78, and a tip 12.3 past the edge lay across the neighbour's ring
-const REACH = 0.70;
-
 // how far the pointer travels before a click becomes a drag. Without it every
-// tap on a unit is a one-pixel drag, and selecting a unit - the thing done
+// tap on a unit is a one-pixel drag, and choosing a unit - the thing done
 // most often - stops working
 const DRAG_THRESHOLD = 4;
 
-// how far it travels before a press on the board becomes a box. Deliberately
-// much further than a drag's: a double-click is two presses in the same place
-// by a hand that is not perfectly still, and a box drawn on that jitter took
-// the selection away - it caught nothing, and nothing is what it then
-// selected - a moment before the second click tried to order it. Half a
-// square is a movement somebody meant to make.
-//
-// In the board's own units, so it is half a square however the board is
-// scaled to its pane: `DRAG_THRESHOLD` is four of those, which on a board
-// scaled up is less than a pixel of glass.
-const BOX_THRESHOLD = SQUARE / 2;
-
-// how long a single click waits to see whether a second is coming. Both mean
-// something here - a click chooses and a double-click orders - so the click's
-// effect is held for this long and dropped if the second arrives.
-//
-// The pair is counted here rather than left to the browser's `dblclick`,
-// because the first click of a pair redraws the board: it moves the cursor,
-// and `render` replaces the whole SVG. The element the browser would have
-// fired `dblclick` at is gone by then. Counting the clicks ourselves means
-// the redraw simply never happens - the first click's effect is still
-// waiting when the second cancels it
-const CLICK_DELAY = 350;
+// what a square of an army's map is drawn with when the map is all the army
+// knows of it, as `service/replay.py` writes them
+const UNKNOWN_SYMBOL = '?';
+const ENEMY_SYMBOL = 'E';
 
 /**
  * Which band a share of something falls in: green, amber or red.
  *
  * One function for both of the things drawn round a unit, so energy and
- * health are read on one scale rather than two. They each had their own
- * comparison against a quarter, written out twice, which is a pair of
- * boundaries that could have drifted apart with nothing to notice.
+ * health are read on one scale rather than two.
  *
  * A boundary belongs to the worse band - a unit at exactly a third is red,
- * and at exactly two thirds amber - because a player deciding whether to
- * commit a unit should not be told it is fine when it is on the line.
+ * and at exactly two thirds amber - because a player reading a unit should
+ * not be told it is fine when it is on the line.
  */
 function band(share) {
   if (share > 2 / 3) return 'full';
@@ -138,62 +86,45 @@ export function emptySymbol(board) {
  * Draw a board.
  *
  * `options` carries what the screen knows and the board does not: whose seat
- * this is, which units are selected, where the keyboard cursor is, and what to
- * do when a square is chosen.
+ * this is, which unit is chosen, where the keyboard cursor is, and what to do
+ * when a square or a unit is chosen. `known` is the board as an army knew it,
+ * drawn over the squares: unknown squares and remembered enemies, from the
+ * record's map.
  */
 export function renderBoard(board, units, options) {
   const settings = options || {};
   const mine = settings.mine;
-  // the selection is a set of names, and every one of them is marked. It
-  // used to be a single name, and a group drawn with one unit outlined would
-  // be a board that disagreed with the order it is about to be given
   const selected = new Set(settings.selected || []);
   const width = board.size_x * SQUARE + PAD * 2;
   const height = board.size_y * SQUARE + PAD * 2;
-  // room to begin a box outside the grid. Without it a group standing in a
-  // corner cannot be boxed at all: a box has to begin somewhere that is not a
-  // unit, and every square around such a group is either a unit or off the
-  // board. The margin is drawn on nothing and only ever pressed on
-  const grab = settings.onBox ? SQUARE / 2 : 0;
 
   const root = svg('svg', {
     // a watching session owns none of the units, so "yours and theirs" says
     // nothing to it and every unit was drawn as an enemy. It is told to
     // colour by player instead
     class: 'board' + (settings.watching ? ' watching' : '')
-      + (settings.onBox ? ' boxable' : ''),
-    viewBox: `${-grab} ${-grab} ${width + grab * 2} ${height + grab * 2}`,
-    width: width + grab * 2,
-    height: height + grab * 2,
+      + (settings.known ? ' known' : ''),
+    viewBox: `0 0 ${width} ${height}`,
+    width,
+    height,
     role: 'grid',
     'aria-label': `board, ${board.size_x} by ${board.size_y}`,
   });
-
-  // the margin, as something a pointer can land on. An `<svg>` element's own
-  // background is not reliably a target, and a press that hits nothing starts
-  // nothing
-  if (grab) {
-    root.append(svg('rect', {
-      class: 'field',
-      x: -grab,
-      y: -grab,
-      width: width + grab * 2,
-      height: height + grab * 2,
-      fill: 'transparent',
-    }));
-  }
 
   const empty = emptySymbol(board);
   const marks = settings.marks || new Map();
   const flags = (settings.flags || []).filter(
     (flag) => flag.standing && flag.x !== null && flag.y !== null);
+  const known = settings.known || null;
   const squares = svg('g', { class: 'squares' });
   for (let y = 0; y < board.size_y; y += 1) {
     for (let x = 0; x < board.size_x; x += 1) {
+      const knowledge = known ? knownAt(known, x, y) : null;
       const rect = svg('rect', {
         class: 'square'
-          + (isReachable(settings, x, y) ? ' reachable' : '')
-          + (isOutOfPlay(settings, y) ? ' out-of-play' : ''),
+          + (isOutOfPlay(settings, y) ? ' out-of-play' : '')
+          + (knowledge === 'unknown' ? ' unknown' : '')
+          + (knowledge === 'enemy' ? ' remembered' : ''),
         x: PAD + x * SQUARE,
         y: PAD + y * SQUARE,
         width: SQUARE,
@@ -202,19 +133,18 @@ export function renderBoard(board, units, options) {
       });
       rect.dataset.x = x;
       rect.dataset.y = y;
-      if ((settings.onSquare || settings.onSquareDouble)
-          && !isOutOfPlay(settings, y)) {
-        makeClickable(
-          rect,
-          settings.onSquare && ((event) => settings.onSquare(x, y, event)),
-          settings.onSquareDouble
-            && ((event) => settings.onSquareDouble(x, y, event)));
+      if (settings.onSquare && !isOutOfPlay(settings, y)) {
+        rect.addEventListener('click', (event) => {
+          event.stopPropagation();
+          settings.onSquare(x, y, event);
+        });
         rect.style.cursor = 'pointer';
       }
       if (marks.has(`${x},${y}`)) rect.classList.add('fought');
       squares.append(rect);
       const title = svg('title', {});
       title.textContent = describeSquare(board, units, x, y, empty)
+        + describeKnowledge(knowledge, known, x, y)
         + describeFight(marks.get(`${x},${y}`))
         + (settings.hint ? '. Arrow keys move about the board' : '');
       rect.append(title);
@@ -222,11 +152,34 @@ export function renderBoard(board, units, options) {
   }
   root.append(squares);
 
-  // a drag that begins on a square rather than on a unit draws a box round
-  // the units it crosses. It is put on the squares layer, so which gesture
-  // starts is decided by what is under the pointer when it goes down -
-  // exactly as it is on a table
-  if (settings.onBox) makeBoxable(root, board, settings);
+  // what an army remembered of a square it is not standing on: an enemy met
+  // there, with the turn it was met. Drawn as a glyph on the square rather
+  // than as a unit, because it is a memory and not a sighting
+  if (known) {
+    for (const [x, y, turn, attack, health] of known.enemies || []) {
+      const group = svg('g', {
+        class: 'remembered-enemy',
+        transform: `translate(${PAD + x * SQUARE}, ${PAD + y * SQUARE})`,
+      });
+      const glyph = svg('text', {
+        x: SQUARE / 2, y: SQUARE / 2 + 5, 'font-size': 14,
+        'text-anchor': 'middle',
+      });
+      glyph.textContent = ENEMY_SYMBOL;
+      group.append(glyph);
+      const when = svg('text', {
+        class: 'met', x: SQUARE - 4, y: SQUARE - 4, 'font-size': 9,
+        'text-anchor': 'end',
+      });
+      when.textContent = `t${turn}`;
+      group.append(when);
+      const title = svg('title', {});
+      title.textContent = `an enemy met here on turn ${turn}: attack `
+        + `${attack}, health ${health} as it was then`;
+      group.append(title);
+      root.append(group);
+    }
+  }
 
   // every flag in the game, on the square it stands on. Drawn for a carrier
   // this seat has never met as well as for one it can see: a flag's square is
@@ -255,13 +208,11 @@ export function renderBoard(board, units, options) {
     root.append(group);
   }
 
-  // where the last turn was fought. Drawn on the square rather than named in
-  // a list, because "the contest at (0, 4)" is a coordinate and this is a
+  // where the turn was fought. Drawn on the square rather than named in a
+  // list, because "the contest at (0, 4)" is a coordinate and this is a
   // board: the whole point of having one is that it shows you where
   for (const mark of marks.values()) {
     const group = svg('g', { class: 'clash' });
-    // bottom left, and the damage bottom right: the middle of the bottom
-    // edge belongs to the order arrow, and the top edge to the health bar
     const blade = svg('text', {
       class: 'blades',
       x: PAD + mark.x * SQUARE + 9,
@@ -312,6 +263,9 @@ export function renderBoard(board, units, options) {
         + (unit.pending ? ' pending' : ''),
       transform: `translate(${PAD + unit.x * SQUARE}, ${PAD + unit.y * SQUARE})`,
     });
+    // a unit keeps its element across redraws of the replay by its key, so
+    // the browser can animate it from where it was to where it is
+    group.dataset.key = `${unit.player}/${unit.name}`;
     // where it stands, said rather than left to be read back out of the
     // transform. The squares under it carry theirs for the same reason
     group.dataset.x = unit.x;
@@ -331,14 +285,12 @@ export function renderBoard(board, units, options) {
     }));
 
     // the energy the unit has left, drawn as an arc round it. Energy is what
-    // decides whether a unit can move, whether it can strike, and whether it
-    // is inert - the thing to know before ordering it - and it was a number
-    // in a table while the board a player is looking at drew a spent unit
-    // and a fresh one identically.
+    // decides whether a unit can move, whether it can strike, and whether its
+    // controller can think - and a spent unit and a fresh one used to be
+    // drawn identically.
     //
     // Drawn OUTSIDE the ring rather than along it. The ring says whose the
-    // unit is, and an arc painted on the same line hid that - worst on a
-    // unit with most of its energy left, which covered most of its own ring
+    // unit is, and an arc painted on the same line hid that
     const power = settings.energyOf ? settings.energyOf(unit) : null;
     if (power && Number.isFinite(power.now) && power.full > 0) {
       const round = 2 * Math.PI * ARC;
@@ -364,7 +316,7 @@ export function renderBoard(board, units, options) {
 
     // health, as a bar under the ring. A unit one blow from destruction and a
     // unit nobody has touched drew identically, which made the number that
-    // decides whether to fight or fall back the one thing the board withheld
+    // decides a fight the one thing the board withheld
     const left = settings.healthOf ? settings.healthOf(unit) : null;
     if (left && Number.isFinite(left.now)) {
       const width = SQUARE - 16;
@@ -382,197 +334,51 @@ export function renderBoard(board, units, options) {
       }));
     }
 
-    if (own && selected.has(unit.name)) {
+    // the chosen unit is outlined, and dashed as well as coloured, so which it
+    // is does not depend on colour alone
+    if (selected.has(`${unit.player}/${unit.name}`)
+        || (own && selected.has(unit.name))) {
       group.append(svg('rect', {
         class: 'selected',
         x: 2, y: 2, width: SQUARE - 4, height: SQUARE - 4, rx: 3,
       }));
     }
-    if ((settings.onUnit || settings.onUnitDouble) && own) {
+    // a click on a unit chooses it: on the deploy board it is this seat's
+    // own and is taken back, and on the replay board it is any unit and its
+    // trace is shown. The screen decides which; the board only says which
+    // unit was clicked
+    if (settings.onUnit && (own || settings.anyUnit)) {
       group.style.cursor = 'pointer';
-      // the event goes with it: whether shift was held is the screen's to
-      // interpret, and the board goes on knowing nothing about what a
-      // selection is
-      makeClickable(
-        group,
-        settings.onUnit && ((event) => settings.onUnit(unit, event)),
-        settings.onUnitDouble && ((event) => settings.onUnitDouble(unit, event)));
-    } else if (settings.onSquare || settings.onSquareDouble) {
+      group.addEventListener('click', (event) => {
+        event.stopPropagation();
+        settings.onUnit(unit, event);
+      });
+    } else if (settings.onSquare) {
       // a unit that is not this seat's own is standing on a square, and the
       // square is what a click on it means. Its own drawing covers the
-      // square completely, so without this an enemy swallowed every click
-      // that landed on it - and moving onto an enemy is how you attack, so
-      // the one square a player most wants to order a unit onto was the one
-      // square they could not name
+      // square completely, so without this such a unit swallowed every click
       group.style.cursor = 'pointer';
-      makeClickable(
-        group,
-        settings.onSquare
-          && ((event) => settings.onSquare(unit.x, unit.y, event)),
-        settings.onSquareDouble
-          && ((event) => settings.onSquareDouble(unit.x, unit.y, event)));
+      group.addEventListener('click', (event) => {
+        event.stopPropagation();
+        settings.onSquare(unit.x, unit.y, event);
+      });
     }
     // and picked up and put down, which is what a person does to a board.
-    // Where the drop leads - a square to deploy on, a square to move to, or
-    // a refusal - is the screen's to decide, exactly as `onUnit` is
+    // Where the drop leads - a square to deploy on, or a refusal - is the
+    // screen's to decide, exactly as `onUnit` is. Offered only where the
+    // screen offers it, which is the deploy board and nowhere else
     if (settings.onDrop && own) {
       makeDraggable(root, group, unit, settings);
     }
-    // what a person gets for hovering: everything the unit is, and - for
-    // one of theirs - how to order it. The keyboard is faster than the
-    // mouse here and nothing said so anywhere near the board
+    // what a person gets for hovering: everything the unit is, and how to
+    // read more of it
     const title = svg('title', {});
     title.textContent = describeUnit(unit, own, left, settings.hint);
     group.append(title);
 
-    // an order in flight is drawn as an arrow out of the square and into the
-    // one it is headed for, so what a unit has been told to do is legible
-    // from across a table rather than being a glyph the size of a full stop
-    if (own && unit.direction) {
-      const heading = HEADINGS[unit.direction];
-      if (heading) group.append(orderArrow(heading));
-    }
     root.append(group);
   }
   return root;
-}
-
-// --- drawing a box round several units
-//
-// The same pointer-event machinery as the drag below, and deliberately the
-// same threshold: a press and release that never travelled is a click, and
-// the click listener already on the square deals with it.
-
-/**
- * Let a drag across empty squares select the units it encloses.
- *
- * The rectangle is written into the DOM during the gesture, which is the same
- * exception `makeDraggable` makes and for the same reason: re-rendering per
- * pointer move would rebuild the SVG under the pointer and throw away the
- * element holding the capture.
- *
- * Nothing here decides what a selection is. The two corners go back to the
- * screen in board coordinates, and which units that catches - whose they are,
- * whether they are standing - is the screen's to answer.
- */
-function makeBoxable(root, board, settings) {
-  let gesture = null;
-  let box = null;
-  // the second finger, where there is one. A one-finger drag on a phone is a
-  // page scroll and stays one - the stylesheet leaves panning to the browser
-  // - so the box a finger draws is the rectangle between two of them
-  let second = null;
-
-  // a corner of the box, as a square. A press in the margin is outside the
-  // grid on purpose, so it is clamped to the edge square rather than refused:
-  // what somebody means by starting a box off the corner of the board is the
-  // corner of the board
-  const corner = (point) => ({
-    x: Math.min(Math.max(Math.floor((point.x - PAD) / SQUARE), 0),
-                board.size_x - 1),
-    y: Math.min(Math.max(Math.floor((point.y - PAD) / SQUARE), 0),
-                board.size_y - 1),
-  });
-
-  root.addEventListener('pointerdown', (event) => {
-    if (event.button) return;
-    // a second finger while a first is down: the two are opposite corners of
-    // the box from here on, and the drag threshold does not apply - putting
-    // two fingers down is already deliberate
-    if (gesture && event.pointerId !== gesture.id) {
-      second = { id: event.pointerId, at: at(root, event) };
-      gesture.moved = true;
-      root.setPointerCapture(event.pointerId);
-      draw(gesture.from, second.at);
-      return;
-    }
-    // and no pointer capture yet. A captured pointer makes the browser
-    // dispatch the click at the element holding the capture, so capturing
-    // here delivered every click on the board to the <svg> itself and the
-    // square under the pointer never heard it - which is why a double-click
-    // ordered nothing anywhere except on a unit, whose own pointerdown stops
-    // this one from running at all. It is taken below, once the gesture has
-    // travelled far enough to be a box and there is no click left to lose
-    gesture = { id: event.pointerId, from: at(root, event), moved: false };
-  });
-
-  // where the far corner of the box is: the second finger if there is one,
-  // and otherwise wherever the one pointer has reached
-  const opposite = (here) => (second ? second.at : here);
-
-  const draw = (from, to) => {
-    if (!box) {
-      box = svg('rect', { class: 'selection-box', rx: 2 });
-      root.append(box);
-    }
-    box.setAttribute('x', Math.min(from.x, to.x));
-    box.setAttribute('y', Math.min(from.y, to.y));
-    box.setAttribute('width', Math.abs(to.x - from.x));
-    box.setAttribute('height', Math.abs(to.y - from.y));
-  };
-
-  root.addEventListener('pointermove', (event) => {
-    if (!gesture) return;
-    if (second && event.pointerId === second.id) {
-      second.at = at(root, event);
-      draw(gesture.from, second.at);
-      return;
-    }
-    if (event.pointerId !== gesture.id) return;
-    const here = at(root, event);
-    // the first finger may move too, and where a second is down it is a
-    // corner rather than a drag: no threshold, the box simply follows
-    if (second) {
-      gesture.from = here;
-      draw(here, second.at);
-      return;
-    }
-    if (!gesture.moved
-        && Math.hypot(here.x - gesture.from.x, here.y - gesture.from.y)
-           < BOX_THRESHOLD) return;
-    gesture.moved = true;
-    // now it is a box, so the gesture is followed off the square it began on
-    root.setPointerCapture(event.pointerId);
-    draw(gesture.from, here);
-  });
-
-  const done = (event) => {
-    if (!gesture) return;
-    // either finger ending the gesture takes the box: a player lifting one
-    // of two has finished choosing, and which one they lifted is not a
-    // distinction they were making
-    if (event.pointerId !== gesture.id
-        && !(second && event.pointerId === second.id)) return;
-    const moved = gesture.moved;
-    const from = corner(gesture.from);
-    const to = corner(
-      event.pointerId === gesture.id ? opposite(at(root, event))
-                                     : (second ? second.at : at(root, event)));
-    gesture = null;
-    second = null;
-    if (box) { box.remove(); box = null; }
-    // a press that never travelled is a click, and the square's own click
-    // listener has already dealt with it
-    if (!moved) return;
-    // the click the browser fires after a drag would move the cursor to
-    // wherever the box happened to end, so it is swallowed once
-    root.addEventListener('click', (click) => {
-      click.stopPropagation();
-      click.preventDefault();
-    }, { capture: true, once: true });
-    settings.onBox(from.x, from.y, to.x, to.y);
-  };
-  root.addEventListener('pointerup', done);
-  // a one-finger drag the browser claims for panning arrives here, which is
-  // what keeps the page scrolling and the box from fighting it
-  root.addEventListener('pointercancel', (event) => {
-    if (!gesture) return;
-    if (second && event.pointerId === second.id) { second = null; return; }
-    if (event.pointerId !== gesture.id) return;
-    gesture = null;
-    second = null;
-    if (box) { box.remove(); box = null; }
-  });
 }
 
 // --- picking a unit up
@@ -582,7 +388,6 @@ function makeBoxable(root, board, settings) {
 // which what happened was a click. HTML5 drag-and-drop would have been less
 // code and does not fire for touch on any phone, which is the device this is
 // most for.
-
 
 /**
  * Let one unit be dragged to a square, and tell the screen where it landed.
@@ -603,8 +408,6 @@ function makeDraggable(root, group, unit, settings) {
   group.addEventListener('pointerdown', (event) => {
     // the primary button only: a right-click is a menu, not a move
     if (event.button) return;
-    // and never a selection box as well: a press that lands on a unit is
-    // picking that unit up, whatever is drawn under it
     event.stopPropagation();
     gesture = { id: event.pointerId, from: at(root, event), moved: false };
     group.setPointerCapture(event.pointerId);
@@ -633,8 +436,8 @@ function makeDraggable(root, group, unit, settings) {
     // redraw that follows moves it; if it is refused this is where it belongs
     group.setAttribute('transform', home);
     if (!moved) return;
-    // the click the browser fires after a drag would select the unit or
-    // order it a second time, so it is swallowed once
+    // the click the browser fires after a drag would choose the unit as
+    // well, so it is swallowed once
     group.addEventListener('click', (click) => {
       click.stopPropagation();
       click.preventDefault();
@@ -669,72 +472,49 @@ function at(root, event) {
   return { x: inside.x, y: inside.y };
 }
 
-// which way each order points, in board coordinates
-const HEADINGS = {
-  north: { dx: 0, dy: -1 }, east: { dx: 1, dy: 0 },
-  south: { dx: 0, dy: 1 }, west: { dx: -1, dy: 0 },
-};
-
-/**
- * The arrow drawn for a unit under orders.
- *
- * One hollow silhouette - shaft and head as a single closed outline, stroked
- * and unfilled by the stylesheet - in the square's own coordinates: the
- * unit's group is already translated, so this is drawn as though the unit
- * were at the origin. An outline rather than a solid, because the arrow lies
- * across whatever stands in the square it points at, and a solid one covered
- * it; one shape rather than a hollow shaft under a hollow head, because two
- * outlines overlapped show a seam where they meet.
- */
-function orderArrow({ dx, dy }) {
-  const middle = SQUARE / 2;
-  // outside the energy arc, whose outer edge is 1.5 beyond `ARC`. Started
-  // from the ring as it used to be, an ordered unit had its arrow drawn
-  // across its own energy - the same defect the arc itself had against the
-  // ring, one radius further out. Written against `ARC` rather than as a
-  // number, so moving the arc moves this with it
-  const start = ARC + 3;
-  const tip = SQUARE * REACH;
-  // the silhouette, as (along the heading, across it): a shaft 4 wide from
-  // the start, and a head 10 wide by 9 long ending at the tip - the same
-  // envelope the solid arrow had, so its footprint is familiar; only the
-  // fill goes
-  const shape = [
-    [start, -2], [tip - 9, -2], [tip - 9, -5], [tip, 0],
-    [tip - 9, 5], [tip - 9, 2], [start, 2],
-  ];
-  const across = { x: -dy, y: dx };
-  const points = shape.map(([along, aside]) =>
-    `${middle + dx * along + across.x * aside},`
-    + `${middle + dy * along + across.y * aside}`).join(' ');
-  const group = svg('g', { class: 'order' });
-  group.append(svg('polygon', { class: 'outline', points }));
-  return group;
-}
-
 /**
  * Whether this row is one the seat being drawn for may not deploy in.
  *
  * `placeable` is the rows the contract says this seat may use, and it is
- * given only while units are being placed. Absent - on the play board, or in
- * a game whose placement is unrestricted - nothing is greyed.
+ * given only while units are being placed. Absent - on the replay board, or
+ * in a game whose placement is unrestricted - nothing is greyed.
  */
 function isOutOfPlay(settings, y) {
   return Boolean(settings.placeable) && !settings.placeable.includes(y);
 }
 
-function isReachable(settings, x, y) {
-  if (!settings.reachable) return false;
-  return settings.reachable.some((square) => square.x === x && square.y === y);
+/**
+ * What an army knew of a square, from the record's map: `unknown`, `empty`
+ * or `enemy`. A square one of its own units stands on is drawn as the unit
+ * and asked about nowhere.
+ */
+export function knownAt(known, x, y) {
+  if ((known.enemies || []).some(([ex, ey]) => ex === x && ey === y)) {
+    return 'enemy';
+  }
+  if ((known.visited || []).some(([vx, vy]) => vx === x && vy === y)) {
+    return 'empty';
+  }
+  return 'unknown';
+}
+
+function describeKnowledge(knowledge, known, x, y) {
+  if (!knowledge) return '';
+  if (knowledge === 'unknown') return '. Unknown to this army';
+  if (knowledge === 'empty') {
+    const [, , turn] = (known.visited || []).find(
+      ([vx, vy]) => vx === x && vy === y);
+    return `. Known empty, last stood on by this army on turn ${turn}`;
+  }
+  return '';
 }
 
 /**
  * One unit, said in full: whose it is, what it was built with, what it has
- * left, and what it has been told to do.
+ * left, and how to read more of it.
  *
  * The same sentence for an enemy as for your own, because what you may know
- * about an enemy is decided before the view reaches here - if it is on this
- * board you have met it, and its statistics are yours to read.
+ * about an enemy is decided before the view reaches here.
  */
 export function describeUnit(unit, own, left, hint) {
   const full = left && left.full ? ` of ${left.full}` : '';
@@ -744,37 +524,30 @@ export function describeUnit(unit, own, left, hint) {
     `health ${unit.health}${full}`,
     `energy ${unit.energy}`,
   ];
-  // the two things about a unit a player cannot read off the drawing, and
-  // which used to be paragraphs under the board
+  // the one thing about a unit a player cannot read off the drawing, and
+  // which used to be a paragraph under the board
   if (unit.pending) {
     said.push('deployed here and not on the field yet: it takes the field '
-      + 'when the first turn resolves');
-  }
-  if (unit.direction) {
-    said.push(unit.committed
-      ? `ordered ${unit.direction}, committed: it cannot be changed until the `
-        + 'turn resolves'
-      : `ordered ${unit.direction}`);
+      + 'when the game is resolved');
   }
   const sentence = said.join(', ');
-  if (!own || !hint) return sentence;
-  return `${sentence}. Click it or press Enter over it, then an arrow key `
-    + 'to order it that way. Shift-click adds it to a group, and a box drawn '
-    + 'across the board takes every unit in it. Double-click to one side of '
-    + 'what is selected to send it that way — a direction, not a square, and '
-    + 'it acts on the selection whatever is standing there — and double-click '
-    + 'the selection itself to take its orders back.';
+  if (!hint) return sentence;
+  // the hint over a unit in the replay says how to read its trace: a click,
+  // or Enter with the cursor over it. Nothing is ordered from the keyboard
+  // or anywhere else - orders are the controllers' alone
+  return `${sentence}. Click it, or press Enter over it, to read what its `
+    + 'controller did this turn.';
 }
 
 function describeFight(mark) {
   if (!mark) return '';
   const said = [];
-  if (mark.taken) said.push(`${mark.taken} damage taken here last turn`);
+  if (mark.taken) said.push(`${mark.taken} damage taken here this turn`);
   if (mark.dealt) said.push(`${mark.dealt} dealt`);
   if (mark.fallen.length) {
     said.push(`${mark.fallen.join(', ')} destroyed here`);
   }
-  if (!said.length) said.push('fought over last turn');
+  if (!said.length) said.push('fought over this turn');
   return `. ${said.join('; ')}`;
 }
 
@@ -785,4 +558,4 @@ function describeSquare(board, units, x, y, empty) {
     here.map((unit) => `${unit.name} (${unit.type})`).join(', ');
 }
 
-export { SQUARE, PAD };
+export { SQUARE, PAD, UNKNOWN_SYMBOL, ENEMY_SYMBOL };

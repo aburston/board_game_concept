@@ -192,3 +192,56 @@ def test_a_membership_without_a_budget_column_is_refused(tmp_path):
     with pytest.raises(UnreadableGame) as raised:
         repository.read_player(1)
     assert 'budget' in str(raised.value)
+
+
+# --- the record of every turn, and the controller's columns
+
+
+def test_a_turn_record_round_trips(tmp_path):
+    from test_repository import a_turn_record
+    repository = SqliteGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    for turn in (1, 2, 3):
+        repository.write_turn(turn, a_turn_record(turn))
+    assert repository.turn_numbers() == [1, 2, 3]
+    assert repository.read_turn(2) == a_turn_record(2)
+    assert repository.read_turn(9) is None
+    changed = a_turn_record(3)
+    changed['progress']['outcome'] = {'decided': False, 'reason': 'cap'}
+    repository.write_turn(3, changed)
+    assert repository.turn_numbers() == [1, 2, 3]
+    assert repository.read_turn(3)['progress']['outcome']['reason'] == 'cap'
+
+
+def test_a_type_with_a_program_round_trips(tmp_path):
+    repository = SqliteGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    program = 'SELF\nMOVE south ; walk\n'
+    repository.write_player(1, {'Runner': {
+        'name': 'Runner', 'symbol': 'r', 'attack': 2, 'health': 4,
+        'energy': 10, 'compute': 5, 'program': program}}, 320)
+    read = repository.read_player(1)['types']['Runner']
+    assert read['compute'] == 5
+    assert read['program'] == program
+
+
+def test_a_view_withholds_the_other_seats_controllers(tmp_path):
+    """A seat is handed its own units' controller state and nobody else's."""
+    from test_repository import a_turn_record
+    repository = SqliteGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    mine = a_turn_record(1)['units'][0]
+    mine.update({'symbol': 'X', 'attack': 1, 'type_attack': 1,
+                 'type_health': 5, 'type_energy': 10, 'state': 2,
+                 'direction': 0, 'destroyed': False, 'on_board': True,
+                 'flag': True})
+    theirs = dict(mine, id=1, player=2, name='o1', x=0, y=0,
+                  memory=[[0, 99]], inbox=[[7, 7, 7]])
+    repository.write_units({'board': {'size_x': 4, 'size_y': 4}, 'turn': 1,
+                            'player': None, 'units': [mine, theirs]})
+    repository.write_view(1, {'units': [{'id': 0}, {'id': 1}]})
+    view = {unit['name']: unit for unit in repository.read_view(1)}
+    assert view['x1']['memory'] == [[0, 4]]
+    assert view['x1']['type_compute'] == 3
+    for key in ('type_compute', 'meter', 'asleep', 'memory', 'inbox'):
+        assert key not in view['o1']

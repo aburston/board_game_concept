@@ -8,7 +8,6 @@ import pytest
 
 from board_game_concept import Board, Player, UnitType
 from board_game_concept.service import games
-from board_game_concept.service.commands import Move
 
 from game_harness import GameHarness
 
@@ -141,20 +140,21 @@ def test_a_client_lists_no_enemy_type_before_contact(tmp_path):
 def test_a_player_can_order_their_own_unit_when_a_name_is_shared(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(6, 3, [1, 2], budget=Player.MAX_BUDGET)
-    # player 2 deploys first, so their `scout` is registered first
-    harness.deploy(2, [('O', 'O', 1, 5, 50)], [('O', 'scout', 5, 2)])
+    # player 2 deploys first, so their `scout` is registered first; it is
+    # the one whose controller walks it west, and player 1's stands still
+    harness.deploy(2, [('O', 'O', 1, 5, 50, 1, 'MOVE west')],
+                   [('O', 'scout', 5, 2)])
     harness.deploy(1, [('X', 'X', 1, 5, 50)], [('X', 'scout', 0, 0)])
     harness.resolve()
+    harness.resolve()                    # the first turn of play
 
     # the server registers players in ascending order, so player 1's `scout`
-    # is always the first one holding that name. It is player 2 whose own
-    # order is refused because of it
-    session = harness.session(2)
-    games.order_move(session, Move(unit='scout', direction=UnitType.WEST))
-
-    ordered = session.getBoard().getUnitByName('scout', session.getPlayerObj(2))[0]
-    assert ordered.player.number == 2
-    assert ordered.state == UnitType.MOVING
+    # is always the first one holding that name. The order reached player
+    # 2's own unit and nobody else's
+    board = harness.session(0).getBoard()
+    moved = {(unit.player.number, unit.x, unit.y) for unit in board.units
+             if unit.name == 'scout'}
+    assert moved == {(2, 4, 2), (1, 0, 0)}
 
 
 # --- Q1: restoring is not deploying

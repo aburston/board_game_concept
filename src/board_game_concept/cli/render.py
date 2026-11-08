@@ -105,12 +105,13 @@ def _print_table(entries, headers, keys, numeric, nothing):
 
 def print_types(entries):
     _print_table(
-        entries,
+        [{**entry, 'program': ('yes' if entry.get('program') else 'no')}
+         for entry in entries or []],
         headers=('PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
-                 'COST'),
+                 'COMPUTE', 'PROGRAM', 'COST'),
         keys=('player', 'name', 'symbol', 'attack', 'health', 'energy',
-              'cost'),
-        numeric=('PLAYER', 'ATTACK', 'HEALTH', 'ENERGY', 'COST'),
+              'compute', 'program', 'cost'),
+        numeric=('PLAYER', 'ATTACK', 'HEALTH', 'ENERGY', 'COMPUTE', 'COST'),
         nothing='no unit types yet')
 
 
@@ -268,10 +269,7 @@ def render_command(command):
             elif isinstance(word, Optional):
                 continue
             elif isinstance(word, Slot):
-                value = getattr(command, values.pop(0))
-                if word.kind == 'direction':
-                    value = views.direction_word(value) or value
-                words.append(str(value))
+                words.append(str(getattr(command, values.pop(0))))
         return ' '.join(words)
     return command.kind
 
@@ -284,3 +282,91 @@ def print_dropped(dropped):
     for command, reason in dropped:
         described = render_command(command) if command is not None else 'draft'
         print(f"  - {described}: {reason}")
+
+
+# --- the record
+
+
+def print_program(view):
+    """A type's program, line by line with what each line costs.
+
+    The header says what the player needs to judge it by: the type's
+    compute, how many ticks of thinking an energy buys it, and the most it
+    may think in one turn. A line that is a comment or blank costs nothing
+    and shows no ticks.
+    """
+    print(f"{view['type']}: compute {view['compute']}, "
+          f"{view['ticks_per_energy']} ticks per energy, "
+          f"cap {view['cap']} ticks a turn")
+    if not view['lines']:
+        print('no program')
+        return
+    print(table(
+        ('LINE', 'TICKS', 'PROGRAM'),
+        [[entry['line'], entry['ticks'], entry['text']]
+         for entry in view['lines']],
+        numeric=('LINE', 'TICKS')))
+    print(f"a straight run costs {view['total']} ticks")
+
+
+def order_text(order):
+    """What a controller ordered, in the words a player would use."""
+    if order is None:
+        return None
+    if order == 'hold':
+        return 'hold'
+    heading = views.direction_word(order)
+    return f"move {heading}" if heading else str(order)
+
+
+def print_turn(view):
+    """One turn of the record: the board after it, what it did, what it
+    would not do, and what the controllers thought.
+
+    Printed in the order a player reads a turn in: where everything stands,
+    then what happened, then their own refusals, then how their units
+    decided. A turn that ended the game says so under the board.
+    """
+    print(f"turn {view['turn']}")
+    print_board_view(view['board'])
+    outcome = view.get('outcome')
+    if outcome:
+        from .session import describe_outcome
+        print(describe_outcome(outcome))
+    events = view.get('events') or []
+    if events:
+        print()
+        _print_table(
+            [{'text': entry.get('text'), 'where': _square_of(entry)}
+             for entry in events],
+            headers=('WHAT', 'WHERE'),
+            keys=('text', 'where'),
+            numeric=(),
+            nothing='')
+    rejected = view.get('rejected') or []
+    if rejected:
+        print()
+        print(f"{len(rejected)} order(s) rejected on turn {view['turn']}:")
+        for order in rejected:
+            print(f"  - {order['unit']} at "
+                  f"({order['x']},{order['y']}): {order['reason']}")
+    traces = view.get('traces') or []
+    if traces:
+        print()
+        _print_table(
+            [{'unit': trace.get('unit'), 'player': trace.get('player'),
+              'ticks': trace.get('ticks'), 'energy': trace.get('energy'),
+              'order': order_text(trace.get('order')),
+              'sleep': ('asleep' if trace.get('slept')
+                        else trace.get('sleep')),
+              'said': len(trace.get('said') or []),
+              'halted': ('line ' + str(trace['halted'])
+                         if trace.get('halted') is not None else None),
+              'woken': 'yes' if trace.get('woken') else None}
+             for trace in traces],
+            headers=('UNIT', 'PLAYER', 'TICKS', 'ENERGY', 'ORDER', 'SLEEP',
+                     'SAID', 'HALTED', 'WOKEN'),
+            keys=('unit', 'player', 'ticks', 'energy', 'order', 'sleep',
+                  'said', 'halted', 'woken'),
+            numeric=('PLAYER', 'TICKS', 'ENERGY', 'SAID'),
+            nothing='')

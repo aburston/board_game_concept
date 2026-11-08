@@ -52,6 +52,11 @@ CREATE TABLE IF NOT EXISTS unit_types (
     attack        INTEGER NOT NULL,
     health        INTEGER NOT NULL,
     energy        INTEGER NOT NULL,
+    -- the fourth statistic, and the program every unit of the type runs.
+    -- Not migrated: a database without these columns was written for a
+    -- game whose turns were ordered by hand, and is refused on reading
+    compute       INTEGER NOT NULL,
+    program       TEXT,
     PRIMARY KEY (player_number, name)
 );
 
@@ -77,7 +82,15 @@ CREATE TABLE IF NOT EXISTS units (
     direction     INTEGER NOT NULL,
     destroyed     INTEGER NOT NULL,
     on_board      INTEGER NOT NULL,
-    flag          INTEGER NOT NULL
+    flag          INTEGER NOT NULL,
+    -- the controller: the type's compute, the meter, the sleep left, and
+    -- `controller` as JSON holding the memory and the inbox. Null where the
+    -- record carries none: whether a unit may lack one is the service's
+    -- rule to hold, not the table's
+    type_compute  INTEGER,
+    meter         INTEGER,
+    asleep        INTEGER,
+    controller    TEXT
 );
 
 -- one player's orders for the open turn. Present rows mean "not consumed
@@ -102,6 +115,10 @@ CREATE TABLE IF NOT EXISTS orders (
     destroyed     INTEGER,
     on_board      INTEGER,
     flag          INTEGER NOT NULL,
+    type_compute  INTEGER,
+    meter         INTEGER,
+    asleep        INTEGER,
+    controller    TEXT,
     PRIMARY KEY (player_number, id)
 );
 
@@ -180,6 +197,14 @@ CREATE TABLE IF NOT EXISTS known_types (
     first_seen    INTEGER,
     last_seen     INTEGER,
     PRIMARY KEY (player_number, owner, name)
+);
+
+-- the record of every turn, for the replay: the board and the units as the
+-- turn left them, the flags, the events, every army's map and every
+-- controller's trace, as one JSON document a turn
+CREATE TABLE IF NOT EXISTS turns (
+    turn_no       INTEGER PRIMARY KEY,
+    record        TEXT NOT NULL
 );
 
 -- what each seat was told about each turn: the part of the log above that

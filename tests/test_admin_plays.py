@@ -187,19 +187,12 @@ def _claim_and_play(pair):
 
     first = _in_both(pair.seats(), lambda s: s.commit())
     assert [r.status_code for r in first] == [202, 202]
+    # the last setup commit plays each game to its end
     second = _in_both(pair.foes(), lambda s: s.commit())
     assert [r.status_code for r in second] == [200, 200]
-
-    moved = _in_both(pair.seats(),
-                     lambda s: s.perform({'kind': 'move', 'unit': 'u1',
-                                          'direction': EAST}))
-    assert [r.status_code for r in moved] == [204, 204]
-    turn_one = _in_both(pair.seats(), lambda s: s.commit())
-    assert [r.status_code for r in turn_one] == [202, 202]
-    turn_two = _in_both(pair.foes(), lambda s: s.commit())
-    assert [r.status_code for r in turn_two] == [200, 200]
-    assert (turn_two[0].get_json()['turn_number']
-            == turn_two[1].get_json()['turn_number'] == 2)
+    assert all(r.get_json()['outcome'] is not None for r in second)
+    assert (second[0].get_json()['turn_number']
+            == second[1].get_json()['turn_number'] == 2)
 
 
 def test_the_same_calls_answer_the_same_way_in_both_games(pair):
@@ -363,30 +356,24 @@ def test_the_barrier_holds_within_one_account(app):
     setup_last = held[2].commit()
     assert setup_last.status_code == 200
     assert setup_last.get_json()['resolved'] is True
-    assert setup_last.get_json()['turn_number'] == 1
-
-    # and again for a turn of play, so it is the barrier being tested rather
-    # than the one-off that ends setup
-    assert held[1].perform({'kind': 'move', 'unit': 'u1',
-                            'direction': EAST}).status_code == 204
-    turn_first = held[1].commit()
-    assert turn_first.status_code == 202
-    assert turn_first.get_json()['resolved'] is False
-    assert turn_first.get_json()['waiting_on'] == [2]
-    turn_last = held[2].commit()
-    assert turn_last.status_code == 200
-    assert turn_last.get_json()['resolved'] is True
-    assert turn_last.get_json()['turn_number'] == 2
+    # the one barrier there is: the last setup commit plays the game to its
+    # end, and nobody at the table is waited for again
+    assert setup_last.get_json()['turn_number'] >= 1
+    assert setup_last.get_json()['outcome'] is not None
+    assert setup_last.get_json()['waiting_on'] == []
 
 
 def test_one_account_plays_a_game_to_an_outcome(app):
     """Set up, driven together, and decided - with nobody else at the table."""
     _, held = _solo_game(app)
-    # adjacent, and alike in everything a move costs, so what decides the
-    # fight is the attack and not one of them running out of energy first
+    # alike in everything a move costs, so what decides the fight is the
+    # attack and not one of them running out of energy first. Seat 1's type
+    # is given a controller that walks it down the column at seat 2's unit;
+    # seat 2's has none and stands its ground
     assert held[1].perform({'kind': 'add_type', 'name': 'T1', 'symbol': 'X',
-                            'attack': 5, 'health': 5,
-                            'energy': 20}).status_code == 204
+                            'attack': 5, 'health': 5, 'energy': 20,
+                            'compute': 1,
+                            'program': 'MOVE south'}).status_code == 204
     assert held[1].perform({'kind': 'add_unit', 'type_name': 'T1',
                             'name': 'u1', 'x': 0, 'y': 0}).status_code == 204
     assert held[1].perform({'kind': 'set_flag',
@@ -401,39 +388,27 @@ def test_one_account_plays_a_game_to_an_outcome(app):
     assert held[2].perform({'kind': 'set_flag',
                             'unit': 'u2'}).status_code == 204
     assert held[1].commit().status_code == 202
-    assert held[2].commit().status_code == 200
+    last = held[2].commit()
+    assert last.status_code == 200
 
-    # seat 1 walks onto seat 2's square; seat 2 stands its ground
-    outcome = None
-    for _ in range(10):
-        held[1].perform({'kind': 'move', 'unit': 'u1', 'direction': SOUTH})
-        held[1].commit()
-        last = held[2].commit()
-        outcome = last.get_json().get('outcome')
-        if outcome:
-            break
-
+    # seat 1 walked onto seat 2's square and took its flag with its one unit
+    outcome = last.get_json().get('outcome')
     assert outcome, 'one account playing every seat never reached an outcome'
     assert outcome['decided'] is True
     assert outcome['winner'] == 1
 
 
 def test_two_seats_of_one_account_stay_two_identities(app):
-    """One account, two seats, two drafts - and one commit moves only one."""
+    """One account, two seats, two drafts - and one commit sets up only one."""
     _, held = _solo_game(app)
     _deploy(held[1], 'X', (0, 0))
-    _deploy(held[2], 'O', (3, 3))
-    held[1].commit()
-    held[2].commit()
 
-    assert held[1].perform({'kind': 'move', 'unit': 'u1',
-                            'direction': EAST}).status_code == 204
-    # committing seat 1 publishes seat 1's order and nothing of seat 2's, and
-    # the turn is still held open for seat 2
+    # committing seat 1 publishes seat 1's setup and nothing of seat 2's, and
+    # the game is still held open for seat 2
     held_open = held[1].commit()
     assert held_open.status_code == 202
     assert held_open.get_json()['waiting_on'] == [2]
 
-    ordered = held[1].view('pending').get_json()['pending']
-    assert [entry['unit'] for entry in ordered] == ['u1']
+    pending = held[1].view('pending').get_json()['pending']
+    assert [entry['unit'] for entry in pending] == ['u1']
     assert held[2].view('pending').get_json()['pending'] == []

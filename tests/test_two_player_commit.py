@@ -109,7 +109,10 @@ def test_the_first_commit_waits_and_the_second_resolves(tmp_path):
     second = web.commit(2)
     assert second.status_code == 200, second.get_json()
     assert second.get_json()['resolved'] is True
-    assert second.get_json()['turn_number'] == 1
+    # ...and the whole game with it: the last setup commit plays it to its
+    # end, so the answer carries the final turn and how the game ended
+    assert second.get_json()['turn_number'] >= 1
+    assert second.get_json()['outcome'] is not None
 
 
 def test_committing_second_does_not_win_the_game(tmp_path):
@@ -118,8 +121,9 @@ def test_committing_second_does_not_win_the_game(tmp_path):
     web.commit(1)
     web.commit(2)
 
-    assert web.game().getOutcome() is None
-    assert web.commit(2).get_json()['outcome'] is None
+    outcome = web.game().getOutcome()
+    assert outcome['decided'] is False
+    assert outcome['winner'] is None
 
 
 def test_neither_player_is_eliminated_by_the_other_committing(tmp_path):
@@ -154,17 +158,23 @@ def test_each_player_is_still_shown_their_own_unit(tmp_path):
         assert all(entry['status'] == 'active' for entry in players), players
 
 
-def test_the_game_goes_on_to_a_second_turn(tmp_path):
-    """Not decided, and not stuck either: the next turn resolves the same way."""
+def test_the_game_is_played_to_its_end_without_another_commit(tmp_path):
+    """Not decided, and not stuck either: nobody is waited for after setup.
+
+    Two units with no controller stand where they were deployed, so the
+    second turn leaves the game exactly as the first did, and the game stops
+    there, undecided, with both still standing.
+    """
     web = set_up(tmp_path)
     web.commit(1)
-    web.commit(2)
-
-    assert web.commit(1).status_code == 202
     resolved = web.commit(2)
+
     assert resolved.status_code == 200, resolved.get_json()
     assert resolved.get_json()['turn_number'] == 2
-    assert web.game().getOutcome() is None
+    outcome = web.game().getOutcome()
+    assert outcome['decided'] is False
+    assert outcome['reason'] == 'repeated'
+    assert outcome['since'] == 1
     assert standing(web.game()) == {('x1', 1), ('o1', 2)}
 
 

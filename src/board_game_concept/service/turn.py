@@ -5,21 +5,34 @@ committed" is a rule about the game and not a fact about files. The repository
 is asked who has committed; what that means is decided here.
 """
 
+import hashlib
+import json
 import sys
 
 from ..domain import UnitType, budget, placement
+from ..domain.events import players_in
 from ..storage.serialise import units_document
 from . import identity
 from . import turn_feed
 from .errors import GameError
 
+# the most turns a game is resolved for. Controllers are deterministic, so a
+# game whose whole state repeats can never change and is stopped where it
+# repeats; this is the backstop for one that wanders without repeating.
+# Nobody waits for a turn any more, so it can be generous
+TURN_CAP = 500
+
 
 def _types_without_objects(player):
-    """A player's types as they are written down, without the live objects."""
-    types = player['types']
-    for type_name in types:
-        types[type_name].pop('obj', None)
-    return types
+    """A player's types as they are written down, without the live objects.
+
+    A copy: the session goes on resolving turns with the same players, and
+    stripping the objects from the records it holds left the next turn with
+    types it could not deploy from.
+    """
+    return {type_name: {key: value for key, value in record.items()
+                        if key != 'obj'}
+            for type_name, record in player['types'].items()}
 
 
 def setup_refusal(game):
@@ -477,13 +490,14 @@ def resolve(game):
 
         _apply_orders(game, reject)
 
-        # resolve all moves and end the turn
-        events = game.board.commit()
-        _report_turn(game, events, reject)
-
         # setup ends with a resolution of its own, before anything is on the board.
         # That is not a turn of the game and is not numbered as one
         turn_number = game.getTurnNumber() + 1 if has_started(game) else 0
+
+        # run every controller, resolve all moves and end the turn
+        events = game.board.commit(turn=turn_number)
+        _report_turn(game, events, reject)
+
         eliminated = eliminated_players(game)
         outcome = decide(game, turn_number, eliminated)
         progress = {'turn': turn_number, 'eliminated': eliminated}
@@ -528,6 +542,13 @@ def resolve(game):
                                     turn_feed.for_seat(feed, number))
             _remember_types(repository, number, views[number], turn_number)
 
+        # the record of the turn, for the replay: the board and the units as
+        # the turn left them, the flags, what happened, what every army
+        # knows and what every controller did. Kept for every turn, so the
+        # game can be read from its first turn to its last
+        repository.write_turn(turn_number, turn_record(
+            game, turn_number, feed, progress))
+
         # --- and only now, the turn is over
 
         # this is what releases a player waiting on the turn: a client waits by
@@ -560,6 +581,116 @@ def resolve(game):
             game.notifier.wake(number)
 
     return True
+
+
+def turn_record(game, turn_number, feed, progress):
+    """One turn as the record the replay reads."""
+    board = game.board
+    return {
+        'turn': turn_number,
+        'board': {'size_x': board.size_x, 'size_y': board.size_y},
+        'units': units_document(board, turn=turn_number)['units'],
+        'flags': _flags_document(game),
+        'events': feed,
+        'maps': {str(number): army_map.record()
+                 for number, army_map in sorted(board.maps.items())},
+        'traces': list(board.traces),
+        'progress': dict(progress),
+    }
+
+
+def state_record(game):
+    """The whole state of the game as plain data, for telling whether it has
+    been here before: every unit's square, health, energy, memory, meter,
+    sleep and inbox, and every army's map.
+
+    Not the turn number, which is the one thing that always differs - and
+    not the stamp on a square a friendly unit is standing on, which is the
+    turn number again under another name: a unit that stands still restamps
+    its square every turn and would make a game that never changes look as
+    though it did. A program that reads the turn and acts on a particular
+    one can still make a repeated state play on differently; the cap is the
+    backstop for that.
+    """
+    units = units_document(game.board)['units']
+    for unit in units:
+        unit.pop('id', None)
+    standing = {}
+    for unit in game.board.units:
+        if unit.on_board and not unit.destroyed and unit.player is not None:
+            standing.setdefault(unit.player.number, set()).add((unit.x, unit.y))
+    maps = {}
+    for number, army_map in sorted(game.board.maps.items()):
+        record = army_map.record()
+        held = standing.get(number, set())
+        record['visited'] = [[x, y, turn] for x, y, turn in record['visited']
+                             if (x, y) not in held]
+        maps[str(number)] = record
+    return {
+        'units': units,
+        'maps': maps,
+        'eliminated': sorted(game.getEliminated()),
+    }
+
+
+def state_hash(game):
+    """A hash of `state_record`, over a canonical serialisation."""
+    text = json.dumps(state_record(game), sort_keys=True, separators=(',', ':'))
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+
+def _stop_undecided(game, reason, since=None):
+    """Record that the game stopped without a decision, and why."""
+    turn_number = game.getTurnNumber()
+    outcome = {'decided': False, 'winner': None, 'turn': turn_number,
+               'reason': reason}
+    if since is not None:
+        outcome['since'] = since
+    progress = {'turn': turn_number, 'eliminated': game.getEliminated(),
+                'outcome': outcome}
+    game.repository.write_progress(progress)
+    game.setProgress(progress)
+    # the last turn's record carries how the game ended
+    record = game.repository.read_turn(turn_number)
+    if record is not None:
+        record['progress'] = dict(progress)
+        game.repository.write_turn(turn_number, record)
+
+
+def resolve_game(game):
+    """Resolve every turn of the game, one after another, to its end.
+
+    Called when the last setup is committed, and nobody is waited for from
+    here on: every order comes from a unit's controller. Stops when the game
+    is decided, when its whole state repeats - the controllers are
+    deterministic, so nothing can ever change again - or at `TURN_CAP`.
+    Each turn is recorded as it goes, so a game is a record to be read.
+
+    Answers what `resolve` answers: `False` if a turn could not be resolved,
+    `True` once the game has been played to its end.
+    """
+    seen = {}
+    while True:
+        if game.getOutcome() is not None:
+            return True
+        if not resolve(game):
+            return False
+        if game.getOutcome() is not None:
+            return True
+        turn_number = game.getTurnNumber()
+        if turn_number == 0:
+            # the administrator's setup resolution: the game has not begun
+            return True
+        key = state_hash(game)
+        if key in seen:
+            _stop_undecided(game, 'repeated', since=seen[key])
+            return True
+        seen[key] = turn_number
+        if turn_number >= TURN_CAP:
+            _stop_undecided(game, 'cap')
+            return True
+        if not game.players or not game.repository.committed_players():
+            return True
 
 
 def _carry_flag(game, owner, name, order):
@@ -671,25 +802,40 @@ def _report_turn(game, events, reject):
 
     for event in events:
         if event.kind == 'refused':
-            unit = _named(game, event.detail['unit'])
-            if unit is not None:
-                reject(unit.player.number, order_for(unit),
-                       event.detail['reason'])
+            for number in players_in(event.detail):
+                unit = _owned(game, number, event.detail['unit'])
+                if unit is not None:
+                    reject(number, order_for(unit), event.detail['reason'])
         elif event.kind == 'undecided':
             where = f"({event.detail['x']}, {event.detail['y']})"
-            for name in event.detail['units'].split(','):
-                unit = _named(game, name)
+            # whose unit each survivor is comes from the event, not from the
+            # name: two players may both hold a `pawn1`, and matching by
+            # name told each about the other's contests
+            for owner, name in _survivors(event.detail):
+                unit = _owned(game, owner, name)
                 if unit is not None:
-                    reject(unit.player.number, order_for(unit),
+                    reject(owner, order_for(unit),
                            f"the contest at {where} was undecided")
 
 
-def _named(game, name):
-    """The unit of that name, or None if the board no longer holds one."""
-    try:
-        return game.board.getUnitByName(name)[0]
-    except AssertionError:
+def _owned(game, number, name):
+    """The unit of that name that this player owns, or None."""
+    player = game.players.get(number)
+    if player is None:
         return None
+    return game.board.findUnit(name, player['obj'])
+
+
+def _survivors(detail):
+    """The `(owner, name)` pairs an undecided contest names."""
+    pairs = []
+    for item in str(detail.get('survivors') or '').split(','):
+        if ':' not in item:
+            continue
+        owner, name = item.split(':', 1)
+        if owner:
+            pairs.append((int(owner), name))
+    return pairs
 
 
 def _loaded_orders_document(game, number, player, turn):
@@ -761,7 +907,13 @@ def barrier_met(game):
     given, and by the resolution, about the game it has just read. A barrier
     that meant one thing to the waiter and another to the resolver would be
     worse than the gap it exists to close.
+
+    A game that is over has no open turn, so its barrier is never met: the
+    setup commit was the last thing anyone was waited for, and a caller woken
+    after the resolution finds nothing to resolve.
     """
+    if game.getOutcome() is not None:
+        return False
     return _awaited_players(game).issubset(
         set(game.repository.committed_players(game.getTurnNumber())))
 
@@ -787,7 +939,9 @@ def resolve_when_ready(game):
         game.load()
         if not barrier_met(game):
             return None
-        return resolve(game)
+        # the barrier is met once and for all: every setup is committed, and
+        # the game is played to its end from here, nobody waited for
+        return resolve_game(game)
 
 
 def wait_for_all_commits(game):

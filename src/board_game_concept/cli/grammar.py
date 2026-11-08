@@ -15,29 +15,24 @@ display string alone could only be read by a person, and a second table of
 completable words beside this one is the drift this file exists to prevent.
 """
 
-from ..domain import UnitType
-
-DIRECTIONS = {
-    'north': UnitType.NORTH,
-    'east': UnitType.EAST,
-    'south': UnitType.SOUTH,
-    'west': UnitType.WEST,
-}
-
 SHOW_SUBJECTS = ('board', 'types', 'units', 'players', 'pending',
-                 'events', 'designs', 'flags', 'placement')
+                 'events', 'designs', 'flags', 'placement', 'program',
+                 'turn')
+
+# the one word a `show turn` may end in, asking for the board as the
+# player's own army knew it rather than as it was
+KNOWN = 'known'
 
 # the one word a `show` may end in, asking for the answer as JSON rather than
 # as a table
 SHOW_FORMAT = 'json'
 
 # what a slot stands for, and so where its candidates come from. A closed set:
-# the first four can be completed, and the last three are the person naming or
+# the first three can be completed, and the last three are the person naming or
 # numbering something that only they know
 UNIT = 'unit'
 TYPE = 'type'
 PATH = 'path'
-DIRECTION = 'direction'
 NUMBER = 'number'
 NAME = 'name'
 SYMBOL = 'symbol'
@@ -117,8 +112,10 @@ USAGES = (
           'take back one of your units, before your setup is committed'),
     Usage('add_type', ('add', 'type', Slot('name', NAME),
                        Slot('symbol', SYMBOL), Slot('attack', NUMBER),
-                       Slot('health', NUMBER), Slot('energy', NUMBER)),
-          'define a unit type'),
+                       Slot('health', NUMBER), Slot('energy', NUMBER),
+                       Optional(Slot('compute', NUMBER))),
+          'define a unit type; compute (0-10) is what its controller has, '
+          'and is 0 when left out'),
     Usage('add_unit', ('add', 'unit', Slot('type', TYPE), Slot('name', NAME),
                        Slot('x', NUMBER), Slot('y', NUMBER)),
           'deploy a unit of a type you have defined'),
@@ -131,6 +128,10 @@ USAGES = (
           'set the size of the board, before the game starts'),
     Usage('set_flag', ('set', 'flag', Slot('unit', UNIT)),
           'designate which of your units carries your flag, during setup'),
+    Usage('set_program_file', ('set', 'program', Slot('type', TYPE),
+                               Slot('file', PATH)),
+          'give one of your types the program its units run, read from a '
+          'file, during setup'),
     _show('board', 'show the board as you see it, as a table or as JSON'),
     _show('types', 'show the unit types you know of, as a table or as JSON'),
     _show('units', 'show the units you know of, as a table or as JSON'),
@@ -142,11 +143,19 @@ USAGES = (
           'show the enemy designs you have met, which outlive contact'),
     _show('flags', 'show where every flag is, whoever it belongs to'),
     _show('placement', 'show where you may deploy units during setup'),
-    Usage('move', ('move', Slot('unit', UNIT),
-                   Slot('|'.join(DIRECTIONS), DIRECTION)),
-          'order one of your units to move'),
-    Usage('hold', ('hold', Slot('unit', UNIT)),
-          'take back the order one of your units was given this turn'),
+    Usage('show', ('show', 'program', Slot('type', TYPE),
+                   Optional(SHOW_FORMAT)),
+          'list a type\'s program with the ticks each line costs',
+          subject='program'),
+    Usage('show', ('show', 'turn', Slot('n', NUMBER), Optional(KNOWN),
+                   Optional(SHOW_FORMAT)),
+          'show a turn of the record: the board after it, what it did, and '
+          'the traces; `known` draws the board as your army knew it',
+          subject='turn'),
+    Usage('next', ('next',),
+          'show the turn after the one being shown'),
+    Usage('prev', ('prev',),
+          'show the turn before the one being shown'),
     Usage('commit', ('commit',),
           'commit the actions you have taken; this cannot be undone'),
     Usage('reload', ('reload',),

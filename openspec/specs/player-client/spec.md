@@ -184,51 +184,6 @@ SHALL leave the session running and the game unchanged.
 - **THEN** the client reports the cost, what is left, and the budget
 - **AND** no unit is placed and nothing is spent
 - **AND** the session continues and accepts further commands
-### Requirement: Ordering Movement
-
-The system SHALL let a player order their own units via
-`move <unit> <north|south|east|west>`. An order SHALL be resolved against the
-units that player owns, so that another player holding a unit of the same name
-never affects it. The units listed back after an order SHALL be listed as
-`show units` lists them, in the same table and by the same renderer.
-
-#### Scenario: Ordering a move
-
-- **WHEN** the player runs `move` naming one of their units and a valid direction
-- **THEN** the order is recorded against that unit
-- **AND** the player's units are listed back as a table showing the pending order
-- **AND** no storage-internal field is shown
-
-#### Scenario: A unit name another player also uses
-
-- **WHEN** the player runs `move` naming one of their units, and another player holds a unit of the same name
-- **THEN** the order is recorded against the player's own unit
-- **AND** the order is not refused
-
-#### Scenario: Wrong argument count
-
-- **WHEN** `move` is given other than two arguments
-- **THEN** the client reports that two arguments are required and takes no action
-
-#### Scenario: Moving before the first turn resolves
-
-- **WHEN** `move` is run during setup
-- **THEN** the client refuses, reporting that units cannot move until the first turn is complete
-
-#### Scenario: Moving another player's unit
-
-- **WHEN** `move` names a unit the player does not own
-- **THEN** the client refuses the order, reporting that no such unit of theirs exists
-
-#### Scenario: Moving a unit not in play
-
-- **WHEN** `move` names a unit of the player's that is not on the board, including one that has been destroyed
-- **THEN** the client refuses the order
-
-#### Scenario: Invalid direction
-
-- **WHEN** `move` is given a direction other than north, south, east, or west
-- **THEN** the client reports the direction as invalid
 
 ### Requirement: Client Display Commands
 
@@ -288,16 +243,19 @@ the same visibility limit as the table.
   the square it is on
 - **AND** an enemy flag is listed whether or not that enemy has been met
 - **AND** a fallen flag is listed as fallen, with no square
+
 ### Requirement: Committing A Turn
 
-The system SHALL let a player finalise their turn via `commit`, after which the
-client waits for the turn to be resolved.
+The system SHALL let a player commit their setup via `commit`, after which
+their setup is fixed and the client shows them the game: the record, if every
+player has committed, or that it is waiting for the other players' setups.
 
 #### Scenario: Committing
 
 - **WHEN** the player runs `commit` and the save succeeds
 - **THEN** the client confirms the commit
-- **AND** the client waits for the server to resolve the turn before accepting further orders
+- **AND** if the player's was the last setup outstanding, the game is resolved and the client shows its result and final turn
+- **AND** otherwise the client says whose setups are still to come
 
 #### Scenario: Commit refused
 
@@ -306,8 +264,8 @@ client waits for the turn to be resolved.
 
 #### Scenario: Reloading after resolution
 
-- **WHEN** the server has resolved the turn
-- **THEN** the client reloads the game and resumes accepting orders
+- **WHEN** the game has been resolved since the player committed
+- **THEN** the client reloads the game and shows the result and the final turn
 
 #### Scenario: Committing a setup with no flag
 
@@ -315,6 +273,7 @@ client waits for the turn to be resolved.
   the flag
 - **THEN** the client reports that a unit must carry the flag
 - **AND** returns to the prompt with the setup unchanged
+
 ### Requirement: Work Survives A Session
 
 The system SHALL restore a player's uncommitted work when they reopen a game,
@@ -365,15 +324,16 @@ SHALL continue with the rest of their work restored.
 
 ### Requirement: Reporting Rejected Orders
 
-The system SHALL show the player everything of theirs the server would not
-carry out on the turn it last resolved, before taking their next command. This
-SHALL include orders refused while being applied, moves that could not be
-carried out while the turn was resolved, and contests of theirs that ended
-undecided.
+The system SHALL show the player, for any turn of the record they read,
+everything of theirs the turn would not carry out: orders refused while being
+applied, moves that could not be carried out while the turn was resolved, and
+contests of theirs that ended undecided. Each SHALL name the unit, its square
+and the reason, and SHALL be the player's own unit and nobody else's of the
+same name.
 
 #### Scenario: An order was rejected
 
-- **WHEN** the client starts a session and the server refused one or more of that player's orders on the last resolved turn
+- **WHEN** the player reads a turn on which one or more of their units' orders were refused
 - **THEN** the client reports how many were rejected
 - **AND** names the unit, its coordinates, and the reason for each
 
@@ -389,18 +349,24 @@ undecided.
 
 #### Scenario: Nothing was rejected
 
-- **WHEN** the client starts a session and none of that player's orders were refused
-- **THEN** the client reports nothing and prompts as usual
+- **WHEN** the player reads a turn on which none of their units' orders were refused
+- **THEN** nothing is reported under rejections
 
 #### Scenario: Rejections describe only the last resolved turn
 
-- **WHEN** a turn is resolved in which none of a player's orders are refused
-- **THEN** any rejection from an earlier turn is no longer reported to them
+- **WHEN** the player reads a turn of the record
+- **THEN** the rejections shown are that turn's alone
+- **AND** no earlier turn's rejections are shown with them
 
 #### Scenario: A destroyed unit is not reported every turn
 
-- **WHEN** turns are resolved after one of the player's units has been destroyed
+- **WHEN** the player reads turns after one of their units was destroyed
 - **THEN** nothing is reported about that unit on any of them
+
+#### Scenario: Another player's unit of the same name
+
+- **WHEN** another player's unit of the same name as one of the player's was in a contest
+- **THEN** nothing about it is reported to the player
 
 ### Requirement: Reporting The Outcome
 
@@ -509,35 +475,76 @@ offending unit back and deploying it elsewhere.
 - **WHEN** a player takes a unit back and opens their session again
 - **THEN** the unit is still gone
 
-### Requirement: An Order Given And Not Committed Can Be Taken Back
+### Requirement: Setting A Type's Program
 
-The system SHALL let a player take back the order one of their own units was
-given this turn, naming the unit, for as long as the turn has not been
-committed. The unit SHALL be left with no order at all rather than an order to
-hold: a unit that was never ordered and one whose order was taken back are the
-same unit, so it pays no fare, moves nowhere, and rests like any other unit
-that was given nothing to do.
+The system SHALL let a player set the program of one of their own types
+during setup via `set program <type> <file>`, reading it from the named file,
+and SHALL list it back with `show program <type>` with each line's tick cost.
+A program the instruction set refuses SHALL be refused naming the line, with
+the type's program unchanged. Setting a program on a type that is not the
+player's, or has compute 0, or after the setup is committed, SHALL be refused
+saying why.
 
-The system SHALL refuse this before the first turn is complete, where there
-are no orders to take back, and SHALL refuse it for a unit that is not the
-player's or does not exist.
+#### Scenario: Setting a program
 
-#### Scenario: Taking back an order
+- **WHEN** the player runs `set program Runner hunter.asm` during setup and the file holds a legal program
+- **THEN** the type `Runner` carries that program
+- **AND** the client lists it with the tick cost of each line
 
-- **WHEN** a player takes back the order they gave one of their units this turn
-- **THEN** that unit holds no direction and is not moving
+#### Scenario: A program with a bad line
 
-#### Scenario: The unit does not move
+- **WHEN** the file holds a line the instruction set does not accept
+- **THEN** the client refuses, naming the line
+- **AND** the type's program is as it was
 
-- **WHEN** the turn resolves after an order was taken back
-- **THEN** the unit is where it was, and paid no fare
+#### Scenario: A program on a type with no controller
 
-#### Scenario: The unit rests
+- **WHEN** the player sets a program on a type with compute 0
+- **THEN** the client refuses, saying the type has no controller
 
-- **WHEN** the turn resolves after an order was taken back, and the unit is below the energy its type was designed with
-- **THEN** it recovers a point, as a unit given no order does
+#### Scenario: After commit
 
-#### Scenario: Before the first turn
+- **WHEN** the player runs `set program` after committing their setup
+- **THEN** the client refuses, saying their setup is committed
 
-- **WHEN** a player tries to take back an order during setup
-- **THEN** it is refused, saying there are no orders until the first turn is complete
+#### Scenario: Reading a program back
+
+- **WHEN** the player runs `show program Keep`
+- **THEN** the program is listed line by line with each line's ticks and the total of a straight run
+- **AND** the listing says the type's compute, how many ticks an energy buys it, and the per-turn cap
+
+### Requirement: Watching The Replay
+
+The system SHALL let a player read the record of a resolved game via
+`show turn <n>`, `next` and `prev`, and the board as their army knew it via
+`show turn <n> known`. The client SHALL open a resolved game at its final
+turn, reporting the result, and SHALL refuse these commands, saying the game
+has not been resolved, while any player's setup is uncommitted.
+
+#### Scenario: Reading a turn
+
+- **WHEN** the player runs `show turn 12` on a resolved game
+- **THEN** the board after turn 12 is drawn with every unit on it
+- **AND** what turn 12 did to the player's units is listed
+- **AND** each of the player's controllers' traces for turn 12 is listed
+
+#### Scenario: Stepping through
+
+- **WHEN** the player runs `next` after `show turn 12`
+- **THEN** turn 13 is shown
+- **AND** `prev` then shows turn 12 again
+
+#### Scenario: What my army knew
+
+- **WHEN** the player runs `show turn 12 known`
+- **THEN** the board is drawn from the player's map as it stood after turn 12
+
+#### Scenario: Before the game is resolved
+
+- **WHEN** the player runs `show turn 1` while another player has not committed their setup
+- **THEN** the client refuses, saying the game has not been resolved
+
+#### Scenario: Opening a resolved game
+
+- **WHEN** the player opens a game that has been resolved
+- **THEN** the client reports the result and shows the final turn

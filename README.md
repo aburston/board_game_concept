@@ -4,12 +4,16 @@ Board game idea based on building and programming your own units
 `GAME_RULES.md` states the rules the game plays by, in one place.
 
  * Create your own unit types, and deploy units built from them
- * Order each unit every turn; every player's orders resolve at once
- * Units that meet fight it out, and the last player with a unit standing wins
+ * Write the program a type's units run; every unit thinks for itself, once a
+   turn, and pays for its thinking in energy
+ * Units that meet fight it out, and the last player whose flag still stands
+   wins
 
-Not built yet: programming a unit to play itself, which the concept is named
-for. Units are ordered by hand, one command at a time. See "Not built yet" in
-`MODULE_DESCRIPTION.md` for the rest.
+Nobody orders a unit by hand. A player's whole game is the setup: the types,
+their programs, where the units stand and which one carries the flag. When
+the last setup is committed the game is resolved to its end at once, every
+turn of it is written down, and what is left is a record to watch turn by
+turn - at a prompt with `show turn`, or in a browser as a replay.
 
 # Install
 
@@ -77,16 +81,17 @@ argument:
 
 ```
 bgcserver> add player 1 150     # 150 points to spend
-bgcserver> add player 2         # the default: 100
+bgcserver> add player 2         # the default: 320
 ```
 
 A budget is an integer from 1 to 1000 and is fixed for the life of the
-game. A type costs the sum of its statistics — `add type Cross X 1 10
-10` costs 21 — and every unit deployed from it costs that again, so a
-100-point budget buys four Crosses and refuses a fifth. Defining a type
-is free; deploying is what spends, and a destroyed unit is not refunded.
-`show types` prints each type's `COST` and `show players` prints your
-`BUDGET`, `SPENT` and `LEFT`.
+game. A type costs the sum of its four statistics — `add type Cross X 1
+10 10 2` costs 23, the 2 being its compute — and every unit deployed
+from it costs that again, so a 100-point budget buys four Crosses and
+refuses a fifth. Defining a type is free; deploying is what spends, and a
+destroyed unit is not refunded. The stock army a seat opens with costs
+304 of the default 320. `show types` prints each type's `COST` and
+`show players` prints your `BUDGET`, `SPENT` and `LEFT`.
 
 A player file handed to `load player` may carry a `budget:` key; one
 that leaves it out gets the default.
@@ -146,18 +151,24 @@ written: the board is one `<svg>` and a unit moves by a change of `transform`,
 so the animation is a CSS transition rather than a library. The repository
 stays one language with one toolchain.
 
-The interface shows three things the command line leaves you to find out the
-hard way: what a move will cost before you commit it, that a unit given no
-order recovers a point (so holding is a choice, not an empty row), and that an
-enemy vanishing from your board is contact lost rather than a defect.
+The armoury is where a game is played. A type is designed with four
+statistics — attack, health, energy and compute — and its cost is shown as
+you type them. A type with compute has a controller, and the armoury has an
+editor for the program it runs: every line is priced in ticks as it is
+written, from the same tariff the server charges, and the total is held
+against the per-turn cap the type's compute buys, so a program that does not
+fit its type is seen before a turn says so. The server checks the program
+when it is set and names the line it refused.
 
-It also tells you what the turn did. Every unit is drawn with the health it
-has left against the health its type was built with, so a unit a blow from
-destruction does not look like a fresh one. Under the board is an account of
-the turn in the order it happened — who engaged whom, every attack and the
-damage it dealt, and every unit destroyed — with the turns before it a click
-away. The squares that were fought on are marked on the board itself, with
-what the fighting cost you there and where a unit fell.
+The record tells you what every turn did. Every unit is drawn with the
+health it has left against the health its type was built with, so a unit a
+blow from destruction does not look like a fresh one. Under the board is an
+account of the turn in the order it happened — who engaged whom, every
+attack and the damage it dealt, and every unit destroyed — and, for your own
+units, what their controllers thought: the order each gave, the ticks it
+spent and the energy that cost it. The squares that were fought on are
+marked on the board itself, with what the fighting cost you there and where
+a unit fell.
 
 That account is the server's, not the browser's. It is written for each seat
 when the turn resolves, out of what that seat could see while it was being
@@ -174,44 +185,50 @@ says so before the button rather than after it.
 
 Committing publishes the board, and that is how the lobby tells a game with a
 setup still to do from one whose setup is done: both read as "setting up"
-until a turn resolves, because players are still deploying, but only the
-first is offered a setup screen.
+until the last seat commits, because players are still deploying, but only
+the first is offered a setup screen.
 
-Committing a setup takes you to the board, where the army you committed is
-drawn faintly where you put it: it is published orders until the first turn
-resolves, and stands on no board until then. The lobby sends a seat that has
-committed to the board rather than back to its armoury, and the armoury says
-the setup is committed rather than offering forms whose every answer would be
-refused.
+Committing a setup is the last thing a player does. The page then says which
+seats are still being waited for, and the moment the last of them commits
+the whole game is resolved and the replay opens at its first turn. The lobby
+sends a seat that has committed to the replay rather than back to its
+armoury, and the armoury says the setup is committed rather than offering
+forms whose every answer would be refused.
 
 One of your units carries your flag, designated during setup and fixed when
 you commit it. Every player can see which square each flag is on and whose it
 is, whoever they have met — and nothing else about the unit standing there, so
 you know where to go rather than what you will meet. Lose your carrier and you
-are out of the game: your units stay where they are as terrain, taking no
-orders and striking nothing, and the last player left wins. A setup without a
-carrier is refused, because a player who cannot lose a flag is playing a
-different game from everybody else at the table. This is a breaking change:
-a game set up before flags existed cannot be opened, so finish one by
-starting it again.
+are out of the game: your units stay where they are as terrain, their
+controllers stopped and striking nothing, and the last player left wins. A
+setup without a carrier is refused, because a player who cannot lose a flag
+is playing a different game from everybody else at the table. A game set up
+before flags, or before controllers, existed cannot be opened, so finish one
+by starting it again.
 
 Beside the board is a roster: your own units with what each has left against
 what it was built with, and every enemy design you have met with the
 statistics its owner built it with. That memory outlives the contact that
-taught it — an enemy you touched last turn is off your board this turn, and
-the design you learned from it stays. Only the design: no square, no unit
-name, no count, because a memory of a design is not a memory of a position.
-The watching observer gets the same roster for every player, which is where
-its statistics come from now that it has no orders tray.
+taught it, and it is also what your army's map keeps: a square your units
+have stood on, and an enemy they fought where they fought it, each stamped
+with the turn. Only the design and the square: nothing of how an enemy
+thinks. The watching observer gets the same roster for every player.
 
-A unit under orders is drawn with a red arrow out of it and into the square it
-is headed for, so what a turn is about to do can be checked at a glance before
-it is committed. Hovering a unit gives its statistics — yours or an enemy's —
-and, for your own, how to order it from the keyboard.
+The replay draws the whole board after every turn, because a replay is
+watched once the game is over and nothing on it can still be acted on. What
+it does not show is anybody's program: contact discloses a type's attack,
+health and energy and nothing of how it thinks, and a trace is its owner's
+and the observer's. Press `K` and the board is drawn instead as your army
+knew it after that turn — the squares your units had stood on, the enemies
+they had fought where they fought them, and everything else unknown — which
+is the board your controllers were actually reading. Hovering a unit gives
+its statistics, yours or an enemy's.
 
-It is playable from the keyboard: arrow keys move about the board, `Enter`
-selects the unit under the cursor, an arrow key then orders it that way, and
-`c` commits.
+It is watched from the keyboard: `←` and `→` step a turn, `Space` plays
+and pauses, `+` and `-` change the speed, `Home` and `End` go to the first
+and last turn, `K` toggles the known board, `W` `A` `S` `D` move the cursor
+about the board, `Enter` selects the unit under it and `Esc` clears the
+selection.
 
 If the server stops answering — restarted under an open tab, a laptop closed,
 a network gone — the page says so and keeps trying, backing off as it goes,
@@ -219,13 +236,17 @@ and picks up where it left off when the server comes back. Nothing committed
 is lost by it.
 
 Everything the browser can do, a command line can do: the interface is a
-client of the served contract and so are the roles. `show events` is the
-account of what the turns did that the browser draws under its board, `show
-designs` the enemy designs you have met, `show flags` where every flag is,
-`show units` the statistics of every unit you can see, `set flag` the
-designation the armoury makes with a button, and `remove player` the seat the
-administrator's screen removes with another. A test holds the two to each other, so a view added to
-one and not the other fails the suite.
+client of the served contract and so are the roles. `set program` gives a
+type the program the armoury's editor writes, read from a file; `show
+program` lists it with the ticks each line costs; `show turn <n>` is one turn
+of the record as the replay draws it, `show turn <n> known` the board as your
+army knew it, and `next` and `prev` step through the record. `show events` is
+the account of what the turns did, `show designs` the enemy designs you have
+met, `show flags` where every flag is, `show units` the statistics of every
+unit you can see, `set flag` the designation the armoury makes with a button,
+and `remove player` the seat the administrator's screen removes with another.
+A test holds the two to each other, so a view added to one and not the other
+fails the suite.
 
 ## Playing in the same room
 
@@ -435,9 +456,9 @@ window and not after.
 
 **One account may hold several seats in one game.** That is deliberate: it is
 how one person plays both sides to try the game out without needing a second
-person. Each seat stays a separate identity — its own army, its own orders,
-its own view, and its own place at the commit barrier — so holding both is no
-way round the fog of war. Because a seat is not implied by the account, it
+person. Each seat stays a separate identity — its own army, its own programs,
+its own view, and its own setup to commit — so holding both is no way round
+the fog of war. Because a seat is not implied by the account, it
 stays in the address: `/games/1/players/2/...` is seat 2, and two browser tabs
 can be two seats.
 
@@ -582,30 +603,35 @@ looks exactly like passing. `pip install -e` points them at `src/`.
 
 ## Playing a series
 
-`matches/` plays games between bots through the real roles - one `bgcserver`
-resolving turns, one `bgcclient` per seat kept open for the whole game, an
-observer read only to write the log - and each bot is handed its own seat's
-view and nothing else. A game is played on the game's own defaults: nothing
-names a board size or a budget, so it is the 8 x 8 board, 250 points a seat,
-and the stock army each seat opens with, which a doctrine may keep or take
-back and rebuild through the ordinary setup commands.
+`matches/` plays games between doctrines through the real roles - one
+`bgcserver` that registers the seats and commits, one `bgcclient` per seat
+that sets its army up and commits, and the record read back through the
+same client once the game has resolved. A doctrine is a file under
+`matches/bots/`: the types it fields with their four statistics, the
+program each type's units run, where its units stand and which carries the
+flag - or nothing but programs, for a doctrine that keeps the stock army
+and only tells it how to think. Once both seats have committed there is
+nothing left for anybody to decide: the game plays itself to its end, and
+the harness writes down what the record says. A game is played on the
+game's own defaults: nothing names a board size or a budget, so it is the
+8 x 8 board, 320 points a seat, and the stock army each seat opens with.
 
 ```
-python matches/arena.py --game 221 --p1 matches/bots/flag_hunt.py \
-                        --p2 matches/bots/lancers.py     # one game
-matches/series.sh                                        # games 201-220
-PARALLEL=4 matches/series.sh 205 206                     # some, at once
+python matches/arena.py --game 221 --p1 matches/bots/flag_hunt.yaml \
+                        --p2 matches/bots/lancers.yaml   # one game
+matches/series.sh                                        # games 221-240
+PARALLEL=4 matches/series.sh 225 226                     # some, at once
 ```
 
-Each game writes `matches/logs/game_<n>.log` - the orders each turn, the
-board after it, every refusal, the outcome and the final units - beside the
-three roles' transcripts and a turn-by-turn history in JSON. The series are
-written up in `matches/RESULTS-*.md`; the current one is
-`matches/RESULTS-DEFAULT-BOARD.md`, and the earlier ones say at their head
-which rules they were played under. `tests/test_match_harness.py` holds the
-harness to giving a bot only its own view and checks every doctrine's army
-against the game's own rules; `pytest -m slow tests/test_match_harness.py`
-plays two short games through the real roles as well.
+Each game writes `matches/logs/game_<n>.log` - each seat's setup, the
+board after every turn, what every turn did, every refusal, the outcome and
+the final units - beside the roles' transcripts and a turn-by-turn history
+in JSON. The series are written up in `matches/RESULTS-*.md`; the current
+one is `matches/RESULTS-PROGRAMMED.md`, and the earlier ones say at their
+head which rules they were played under. `tests/test_match_harness.py`
+checks every doctrine's army and programs against the game's own rules
+without playing a game; `pytest -m slow tests/test_match_harness.py` plays
+a short game through the real roles as well.
 
 # Console scripts
 
@@ -621,25 +647,32 @@ number and refuses one outside that range.
 
 Each resolves a game against the directory you run it in, as `games/_<gameno>`.
 
-Inside a session, `show board`, `show types`, `show units`, `show players` and
-`show pending` print tables. Ending the command in `json` — `show units json` —
-prints the same thing as one JSON document instead, so a session can be driven
-by something other than a person:
+Inside a session, `show board`, `show types`, `show units`, `show players`,
+`show pending`, `show program <type>` and `show turn <n>` print tables.
+Ending the command in `json` — `show units json` — prints the same thing as
+one JSON document instead, so a session can be driven by something other
+than a person:
 
 ```
-bgcclient> show units
-PLAYER  NAME  TYPE   SYMBOL  ATTACK  HEALTH  ENERGY  X  Y  STATE    DIRECTION
-     1  x1    Cross  X            1       1      10  0  0  holding  -
+bgcclient> show types
+PLAYER  NAME   SYMBOL  ATTACK  HEALTH  ENERGY  COMPUTE  PROGRAM  COST
+     1  Cross  X            1      10      10        2  yes        23
 ```
+
+A type's program is written in a file and given to the type with
+`set program <type> <file>`, during setup. `show program <type>` lists it
+back with the ticks each line costs and the per-turn cap the type's compute
+buys; `GAME_RULES.md` R10 is the instruction set and the tariff.
 
 # Completion
 
 Inside a session, Tab completes what can be typed next. That is the commands
 the role you are running accepts, the `show` subjects it may ask for, the
-trailing `json`, the four directions — and the names only the game knows: your
-own units for `move`, and the types you have defined for `add unit`. A unit you
-deployed a moment ago completes without a reload. `load board` and `load
-player` complete paths.
+trailing `json` — and the names only the game knows: your own units for
+`remove unit` and `set flag`, and the types you have defined for `add unit`,
+`set program` and `show program`. A unit you deployed a moment ago completes
+without a reload. `load board`, `load player` and `set program` complete
+paths.
 
 You get line editing and within-session history with it: arrow keys, Ctrl-A,
 and up-arrow to recall what you typed before.

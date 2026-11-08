@@ -127,7 +127,7 @@ def test_a_whole_game_from_an_empty_directory(client, base_path, backend):
     _command(client, seats['ada'], 1, {'kind': 'set_flag', 'unit': 'a1'})
     _command(client, seats['bob'], 2, {'kind': 'set_flag', 'unit': 'b1'})
 
-    # --- and both commit; the turn resolves on the second
+    # --- and both commit; the game resolves to its end on the second
     ada_commit = client.post(f'/games/{GAME}/players/1/commit',
                              headers=seats['ada'])
     assert ada_commit.status_code == 202
@@ -137,7 +137,8 @@ def test_a_whole_game_from_an_empty_directory(client, base_path, backend):
                              headers=seats['bob'])
     assert bob_commit.status_code == 200
     assert bob_commit.get_json()['resolved'] is True
-    assert bob_commit.get_json()['turn_number'] == 1
+    assert bob_commit.get_json()['turn_number'] >= 1
+    assert bob_commit.get_json()['outcome'] is not None
 
 
 def _play_a_turn(client):

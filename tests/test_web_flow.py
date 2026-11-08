@@ -2,8 +2,9 @@
 
 The interface is a client of the served contract and of nothing else, so this
 drives that contract the way the page does: registering, signing in, listing
-games, taking a seat, designing a type, deploying, ordering, committing,
-waiting, and reading what the turn did.
+games, taking a seat, designing a type, writing its program, deploying,
+committing, waiting for the other setups, and reading the record of the game
+the controllers then played.
 
 If something the page needs cannot be done here, that is a gap in the
 contract rather than a reason for a private route - which is the whole reason
@@ -110,6 +111,31 @@ class Page:
         return self.client.get(
             f'/games/{gameno}/players/{number}/wait/commit?budget={budget}')
 
+    # --- the record, and a type's program
+    def list_turns(self, gameno, number):
+        return self.client.get(f'/games/{gameno}/players/{number}/turns')
+
+    def read_turn(self, gameno, number, turn, known=False, seat=None):
+        query = []
+        if known:
+            query.append('known=1')
+        if seat is not None:
+            query.append(f'seat={seat}')
+        return self.client.get(
+            f'/games/{gameno}/players/{number}/turns/{turn}'
+            + ('?' + '&'.join(query) if query else ''))
+
+    def read_program(self, gameno, number, type_name):
+        return self.client.get(
+            f'/games/{gameno}/players/{number}/programs/{type_name}')
+
+    def program_tariff(self):
+        return self.client.get('/_/program')
+
+    def check_program(self, program, compute):
+        return self.client.post('/_/program/check',
+                                json={'program': program, 'compute': compute})
+
 
 def _administrator(app):
     page = Page(app)
@@ -137,10 +163,20 @@ def _set_up(admin, gameno=GAME, seats=(1, 2), size=(4, 4)):
 
 
 def _deploy(page, gameno, number, symbol, square, health=8, energy=10,
-            flag=True):
+            flag=True, compute=0, program=None, attack=1):
+    """One type and a unit of it, as the armoury defines and deploys them.
+
+    `program` gives the type a controller, with `compute` to run it: what a
+    player writes in the editor and sends with `set_program`.
+    """
     assert page.perform(gameno, number, {
         'kind': 'add_type', 'name': f'T{number}', 'symbol': symbol,
-        'attack': 1, 'health': health, 'energy': energy}).status_code == 204
+        'attack': attack, 'health': health, 'energy': energy,
+        'compute': compute}).status_code == 204
+    if program is not None:
+        assert page.perform(gameno, number, {
+            'kind': 'set_program', 'type_name': f'T{number}',
+            'program': program}).status_code == 204
     assert page.perform(gameno, number, {
         'kind': 'add_unit', 'type_name': f'T{number}', 'name': f'u{number}',
         'x': square[0], 'y': square[1]}).status_code == 204
@@ -187,7 +223,7 @@ def test_a_whole_game_through_the_pages_own_calls(app, base_path):
     assert mine['spent'] == 19          # 1 + 8 + 10
     assert mine['left'] == 81
 
-    # both commit; the turn resolves on the second
+    # both commit; the game is played to its end on the second
     first = ada.commit(GAME, 1)
     assert first.status_code == 202
     assert first.get_json()['waiting_on'] == [2]
@@ -195,75 +231,82 @@ def test_a_whole_game_through_the_pages_own_calls(app, base_path):
     second = bob.commit(GAME, 2)
     assert second.status_code == 200
     assert second.get_json()['resolved'] is True
-    assert second.get_json()['turn_number'] == 1
+    # two units with no controller stand still, so the state repeats on
+    # turn 2 and the game stops there, undecided
+    assert second.get_json()['turn_number'] == 2
+    assert second.get_json()['outcome']['decided'] is False
+    assert second.get_json()['waiting_on'] == []
 
-    # the wait endpoint the page polls says the turn is done
+    # the wait endpoint the page polls says the setup was taken
     waited = ada.wait_for_turn(GAME, 1).get_json()
     assert waited['resolved'] is True
-    assert waited['turn_number'] == 1
 
-    # and an order can be given for the next turn
-    assert ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1',
-                                 'direction': EAST}).status_code == 204
-    ordered = [unit for unit
-               in ada.read_view(GAME, 1, 'units').get_json()['units']
-               if unit['name'] == 'u1'][0]
-    assert ordered['direction'] == 'east'
+    # and the record is there to replay: every turn, read one at a time
+    turns = ada.list_turns(GAME, 1).get_json()['turns']
+    assert turns == [0, 1, 2]
+    final = ada.read_turn(GAME, 1, 2).get_json()['turn']
+    assert final['turn'] == 2
+    # the board after the turn, whole: both units, as `visibility` grants
+    # once the game is finished
+    assert final['board']['rows'][0][0] == 'X'
+    assert final['board']['rows'][3][3] == 'O'
+    assert {unit['name'] for unit in final['units']} == {'u1', 'u2'}
+    assert final['outcome']['decided'] is False
 
-    # the game is now being played, which the lobby says
-    playing = [entry for entry in ada.list_games().get_json()['games']
-               if entry['gameno'] == GAME][0]
-    assert playing['state'] == registry.BEING_PLAYED
-    assert playing['turn_number'] == 1
+    # the game is over, which the lobby says
+    played = [entry for entry in ada.list_games().get_json()['games']
+              if entry['gameno'] == GAME][0]
+    assert played['state'] == registry.UNDECIDED
+    assert played['turn_number'] == 2
 
 
-def test_a_committed_move_is_still_readable_from_the_pending_view(app):
-    """What the board draws its committed arrows from, once the turn is locked.
-
-    While a player is ordering, the order rides on the units view: the server
-    replays their draft, so a unit ordered east reads back `direction: east`
-    and the board draws an arrow. Committing publishes the draft and clears
-    it, and the units view is the resolved board of last turn - so it carries
-    no unresolved order, and the arrows would vanish. The committed orders are
-    in the pending view, which is where the board reads them back to keep
-    drawing them.
-    """
+def test_a_program_is_written_listed_and_read_back(app):
+    """What the armoury's editor does: the tariff, the check, the send, and
+    the listing it draws beside the text."""
     admin = _administrator(app)
     _set_up(admin)
-    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada = _player(app, 'ada')
     ada.claim_seat(GAME, 1)
-    bob.claim_seat(GAME, 2)
-    _deploy(ada, GAME, 1, 'X', (0, 0))
-    _deploy(bob, GAME, 2, 'O', (3, 3))
-    ada.commit(GAME, 1)
-    bob.commit(GAME, 2)                       # the first turn resolves
 
-    # a second turn: ada orders u1 east. Before committing, the order is on
-    # the units view, which is what draws the arrow in flight
-    assert ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1',
-                                 'direction': EAST}).status_code == 204
-    before = [unit for unit
-              in ada.read_view(GAME, 1, 'units').get_json()['units']
-              if unit['name'] == 'u1'][0]
-    assert before['direction'] == 'east'
+    # the tariff the editor prices each line by, and checks a mnemonic
+    # against, is the server's own
+    tariff = ada.program_tariff().get_json()
+    assert tariff['ticks']['MOVE'] == 1 and tariff['ticks']['SAY'] == 5
+    assert tariff['ticks_per_compute'] == 10
 
-    # ada commits; bob has not, so the turn is committed and unresolved
-    assert ada.commit(GAME, 1).status_code == 202
+    # a line the set refuses is named before anything is sent...
+    refused = ada.check_program('SELF\nFLY away\n', 3).get_json()
+    assert refused == {'ok': False, 'line': 2,
+                       'message': 'FLY is not an instruction'}
+    # ...and an accepted program is listed with its ticks and cap
+    listed = ada.check_program('SELF\nMOVE south\n', 3).get_json()
+    assert listed['ok'] is True and listed['cap'] == 30
+    assert [(line['line'], line['ticks']) for line in listed['lines']] == [
+        (1, 1), (2, 1)]
 
-    # the units view has let the order go - it is the resolved board, and the
-    # move has not resolved - so the arrow would vanish from a board drawn
-    # from it alone
-    after = [unit for unit
-             in ada.read_view(GAME, 1, 'units').get_json()['units']
-             if unit['name'] == 'u1'][0]
-    assert after['direction'] is None
+    assert ada.perform(GAME, 1, {
+        'kind': 'add_type', 'name': 'Runner', 'symbol': 'r',
+        'attack': 1, 'health': 4, 'energy': 10, 'compute': 3}).status_code == 204
+    assert ada.perform(GAME, 1, {
+        'kind': 'set_program', 'type_name': 'Runner',
+        'program': 'SELF\nMOVE south\n'}).status_code == 204
+    types = ada.read_view(GAME, 1, 'types').get_json()['types']
+    runner = [entry for entry in types if entry['name'] == 'Runner'][0]
+    assert runner['compute'] == 3 and runner['program'] is True
+    assert runner['cost'] == 1 + 4 + 10 + 3
 
-    # but the pending view still carries the committed move, from the square
-    # the unit still stands on: this is what the board draws the arrow from
-    pending = ada.read_view(GAME, 1, 'pending').get_json()['pending']
-    mine = [entry for entry in pending if entry['unit'] == 'u1'][0]
-    assert mine['order'] == 'move east'
-    assert (mine['x'], mine['y']) == (0, 0)
+    back = ada.read_program(GAME, 1, 'Runner').get_json()['program']
+    assert back['program'] == 'SELF\nMOVE south\n'
+    assert back['total'] == 2 and back['cap'] == 30
+
+    # a type with no compute has no controller to program
+    assert ada.perform(GAME, 1, {
+        'kind': 'add_type', 'name': 'Wall', 'symbol': 'W',
+        'attack': 0, 'health': 10, 'energy': 0, 'compute': 0}).status_code == 204
+    refused = ada.perform(GAME, 1, {'kind': 'set_program', 'type_name': 'Wall',
+                                    'program': 'HOLD'})
+    assert refused.status_code == 400
+    assert 'no controller' in refused.get_json()['error']
 
 
 def test_a_seat_reads_where_it_may_deploy(app):
@@ -385,69 +428,74 @@ def test_a_game_played_partly_through_a_role_is_readable_by_the_page(
 
     # the page reads the resolved game
     state = ada.read_state('shared', 1).get_json()
-    assert state['turn_number'] == 1
+    assert state['turn_number'] >= 1
+    assert state['outcome'] is not None
     assert [unit['name'] for unit
             in ada.read_view('shared', 1, 'units').get_json()['units']] == ['u1']
 
 
-def test_what_the_last_turn_refused_is_readable(app):
-    """`rejected` is where the page's "last turn" panel comes from."""
+def test_what_a_turn_refused_is_read_from_the_record(app):
+    """`rejected` on a turn of the record is where the replay's report
+    comes from: this seat's own units, and nobody else's."""
     admin = _administrator(app)
     _set_up(admin, size=(2, 2))
     ada, bob = _player(app, 'ada'), _player(app, 'bob')
     ada.claim_seat(GAME, 1)
     bob.claim_seat(GAME, 2)
-    _deploy(ada, GAME, 1, 'X', (0, 0))
+    # ada's controller walks north off the top of the board every turn and
+    # is refused for it; bob's stands still
+    _deploy(ada, GAME, 1, 'X', (0, 0), compute=1, program='MOVE north')
     _deploy(bob, GAME, 2, 'O', (1, 1))
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
-    # north off the top of the board: refused while it is applied
-    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': NORTH})
-    ada.commit(GAME, 1)
-    bob.commit(GAME, 2)
-
-    state = ada.read_state(GAME, 1).get_json()
-    assert isinstance(state['rejected'], list)
-    assert any(entry['unit'] == 'u1' for entry in state['rejected'])
+    second = ada.read_turn(GAME, 1, 2).get_json()['turn']
+    assert [entry['unit'] for entry in second['rejected']] == ['u1']
     assert all({'unit', 'x', 'y', 'reason'} <= set(entry)
-               for entry in state['rejected'])
+               for entry in second['rejected'])
+    assert 'leave the board' in second['rejected'][0]['reason']
+    # nothing of ada's was refused on the setup turn
+    assert ada.read_turn(GAME, 1, 1).get_json()['turn']['rejected'] == []
+    # and bob is told nothing of ada's refusal
+    assert bob.read_turn(GAME, 2, 2).get_json()['turn']['rejected'] == []
 
 
-def test_what_the_last_turn_did_is_readable(app):
-    """The feed is where the page's account of the turn comes from.
+def test_what_a_turn_did_is_read_from_the_record(app):
+    """The turn's events are where the replay's account of it comes from.
 
-    Two units on a 2x2 board, one ordered into the other: the page has to be
-    able to say who struck whom, for how much, and on which square - none of
-    which it could say before, so a player watched their units lose health
-    for reasons the server knew and never mentioned.
+    Two units on a 2x2 board, one's controller walking it into the other:
+    the page has to be able to say who struck whom, for how much, and on
+    which square - and which turn it was.
     """
     admin = _administrator(app)
     _set_up(admin, size=(2, 2))
     ada, bob = _player(app, 'ada'), _player(app, 'bob')
     ada.claim_seat(GAME, 1)
     bob.claim_seat(GAME, 2)
-    _deploy(ada, GAME, 1, 'X', (0, 0))
+    _deploy(ada, GAME, 1, 'X', (0, 0), compute=1, program='MOVE south')
     _deploy(bob, GAME, 2, 'O', (0, 1))
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
-    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': SOUTH})
-    ada.commit(GAME, 1)
-    bob.commit(GAME, 2)
-
-    answer = ada.read_events(GAME, 1)
-    assert answer.status_code == 200
-    events = answer.get_json()['events']
-
-    attacks = [entry for entry in events if entry['kind'] == 'attacked']
+    second = ada.read_turn(GAME, 1, 2).get_json()['turn']
+    attacks = [entry for entry in second['events']
+               if entry['kind'] == 'attacked']
     assert attacks, 'the page was told nothing about the fight'
     for attack in attacks:
         assert {'unit', 'target', 'damage'} <= set(attack['detail'])
         assert (attack['detail']['x'], attack['detail']['y']) == (0, 1)
         assert attack['text']
         assert attack['fighting'] is True
-    assert {entry['turn'] for entry in events} <= {1, 2}
+        assert attack['turn'] == 2
+    # and the controller's trace for the turn: ada's own, and nothing of
+    # bob's thinking
+    assert [trace['unit'] for trace in second['traces']] == ['u1']
+    assert second['traces'][0]['order'] == SOUTH
+    assert bob.read_turn(GAME, 2, 2).get_json()['turn']['traces'] == []
+    # the observer reads every seat's
+    observer = _observer(app)
+    everyone = observer.read_turn(GAME, 1000, 2).get_json()['turn']
+    assert {trace['unit'] for trace in everyone['traces']} == {'u1'}
 
 
 def test_a_seat_is_told_only_what_it_could_see(app):
@@ -583,12 +631,9 @@ def test_a_fallen_flag_is_on_no_square(app):
     ada, bob = _player(app, 'ada'), _player(app, 'bob')
     ada.claim_seat(GAME, 1)
     bob.claim_seat(GAME, 2)
-    _deploy(ada, GAME, 1, 'X', (0, 0), health=8, energy=20)
+    _deploy(ada, GAME, 1, 'X', (0, 0), health=8, energy=20, compute=1,
+            program='MOVE south')
     _deploy(bob, GAME, 2, 'O', (0, 1), health=1, energy=3)
-    ada.commit(GAME, 1)
-    bob.commit(GAME, 2)
-
-    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': SOUTH})
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
@@ -667,6 +712,8 @@ def test_a_first_turn_that_refuses_every_deployment_is_shown_as_decided(
     assert state['turn_number'] == 1
     assert state['outcome'] == {'decided': True, 'winner': None, 'turn': 1}
     assert ada.read_view(GAME, 1, 'units').get_json()['units'] == []
+    # the record holds the one turn there was, and the replay opens on it
+    assert ada.list_turns(GAME, 1).get_json()['turns'] == [0, 1]
     # and the page's own reading of "you are out": a flag that is not
     # standing, for a carrier that never reached a square
     flags = ada.read_view(GAME, 1, 'flags').get_json()['flags']
@@ -863,21 +910,23 @@ def test_a_type_met_is_remembered_after_contact_is_lost(app):
     ada, bob = _player(app, 'ada'), _player(app, 'bob')
     ada.claim_seat(GAME, 1)
     bob.claim_seat(GAME, 2)
-    # little energy each, so the contest ends undecided and both survive it -
-    # a fight to the death would end the game and there would be no turn
+    # ada's controller walks south into bob on the first turn of play and,
+    # with too little energy to strike, falls back: contact, then none. A
+    # fight to the death would end the game and there would be no turn
     # afterwards in which contact could be lost
-    _deploy(ada, GAME, 1, 'X', (0, 1), energy=3)
+    _deploy(ada, GAME, 1, 'X', (0, 1), energy=3, compute=1,
+            program='SELF\nSET r1, 3\nJIF lt r3, r1, rest\nMOVE south\n'
+                    'HALT\nrest: HOLD')
     _deploy(bob, GAME, 2, 'O', (0, 2), energy=3)
     ada.commit(GAME, 1)
     bob.commit(GAME, 2)
 
-    # nothing met yet: they were deployed out of contact
-    assert ada.read_view(GAME, 1, 'designs').get_json()['designs'] == []
-
-    # ada walks into bob, which is contact
-    ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1', 'direction': SOUTH})
-    ada.commit(GAME, 1)
-    bob.commit(GAME, 2)
+    # nothing met on the setup turn: they were deployed out of contact
+    first = ada.read_turn(GAME, 1, 1).get_json()['turn']
+    assert first['board']['rows'][2][0] == 'O', 'the record shows all'
+    second = ada.read_turn(GAME, 1, 2).get_json()['turn']
+    assert any(entry['kind'] == 'undecided' for entry in second['events']), (
+        'the contest decided nothing and both fell back')
 
     met = ada.read_view(GAME, 1, 'designs').get_json()['designs']
     assert [entry['name'] for entry in met] == ['T2']
@@ -885,14 +934,9 @@ def test_a_type_met_is_remembered_after_contact_is_lost(app):
     assert met[0]['attack'] == 1 and met[0]['health'] == 8
     assert met[0]['first_seen'] == 2
 
-    # a turn with no contact: the types view forgets, and this does not
-    ada.commit(GAME, 1)
-    bob.commit(GAME, 2)
-
     types = {entry['name']
              for entry in ada.read_view(GAME, 1, 'types').get_json()['types']}
     assert 'T1' in types, 'their own design is theirs whatever is in contact'
-    assert 'T2' not in types, 'the types view is what is in contact now'
     assert set(army.types()) <= types, 'and the catalogue they were given'
     still = ada.read_view(GAME, 1, 'designs').get_json()['designs']
     assert [entry['name'] for entry in still] == ['T2']
@@ -1054,8 +1098,10 @@ def test_every_command_the_page_sends_can_be_typed():
     built = set(re.findall(r"kind: '(\w+)'", source))
     typed = {usage.kind for usage in USAGES}
     # `set_new_game` is the HTTP tier's own setter and has no line to type:
-    # the local flow calls it directly rather than sending it
-    missing = sorted(built - typed - {'set_new_game'})
+    # the local flow calls it directly rather than sending it. `set_program`
+    # is typed as `set program <type> <file>`, which reads the file and sends
+    # the text
+    missing = sorted(built - typed - {'set_new_game', 'set_program'})
     assert not missing, (
         f'the page sends {", ".join(missing)} and the grammar has no line '
         'for it')
@@ -1190,7 +1236,7 @@ def test_a_seat_registered_without_a_budget_gets_the_default(app):
     mine = [entry for entry
             in ada.read_view(GAME, 1, 'players').get_json()['players']
             if entry['player'] == 1][0]
-    assert mine['budget'] == Player.DEFAULT_BUDGET == 250
+    assert mine['budget'] == Player.DEFAULT_BUDGET == 320
     assert mine['spent'] == army.cost(), 'and it paid for the default army'
     assert len(ada.read_view(GAME, 1, 'units').get_json()['units']) == 16
 
@@ -1232,27 +1278,43 @@ def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
     # what the tray shows: the budget, and what the army left of it
     players = ada.read_view(GAME, 1, 'players').get_json()['players']
     mine = [entry for entry in players if entry['player'] == 1][0]
-    assert (mine['spent'], mine['left']) == (army.cost(), 250 - army.cost())
+    assert (mine['spent'], mine['left']) == (army.cost(), 320 - army.cost())
+
+    # every default type with compute carries a program the editor can read
+    for entry in types:
+        if entry['compute'] > 0:
+            assert entry['program'] is True, entry['name']
+            back = ada.read_program(GAME, 1, entry['name']).get_json()
+            assert back['program']['lines'], entry['name']
+            assert back['program']['cap'] == 10 * entry['compute']
 
     # press commit, both seats. The first is accepted and waits; the second
-    # is the one the turn resolves on
+    # is the one the game is played out on
     assert ada.commit(GAME, 1).status_code == 202
-    assert bob.commit(GAME, 2).status_code in (200, 202)
+    last = bob.commit(GAME, 2)
+    assert last.status_code == 200
     ada.wait_for_turn(GAME, 1, budget=2)
 
     state = ada.read_state(GAME, 1).get_json()
-    assert state['turn_number'] == 1, 'the game is under way'
+    assert state['outcome'] is not None, 'the game has been played'
     assert state['new_game'] is False, 'and setup is behind them'
 
-    # and a first order can be given, on a board holding both armies
-    assert ada.perform(GAME, 1, {'kind': 'move', 'unit': 'pawn1',
-                                 'direction': 3}).status_code == 204
+    # the first turn of play is in the record, and both armies moved on it
+    second = ada.read_turn(GAME, 1, 2).get_json()['turn']
+    moved = [entry for entry in second['events'] if entry['kind'] == 'moved']
+    assert moved, 'the stock army walks on the first turn of play'
+    # this seat's traces are its own controllers' and nobody else's
+    assert {trace['player'] for trace in second['traces']} == {1}
+    assert len(second['traces']) == 14, 'two walls think nothing'
 
-    # and the feed is this seat's own. Both armies are the same array, named
-    # alike, so this is only true because an event says whose units it names
-    feed = ada.read_view(GAME, 1, 'events').get_json()['events']
-    assert len(feed) == 16, 'their own placements, and not the other sixteen'
-    assert all(entry['detail'].get('players') == '1' for entry in feed)
+    # the feed of the setup turn is this seat's own. Both armies are the
+    # same array, named alike, so this is only true because an event says
+    # whose units it names
+    first = ada.read_turn(GAME, 1, 1).get_json()['turn']
+    assert len(first['events']) == 16, (
+        'their own placements, and not the other sixteen')
+    assert all(entry['detail'].get('players') == '1'
+               for entry in first['events'])
 
 
 # --- clearing a setup, exactly as the armoury clears it
@@ -1393,8 +1455,9 @@ def test_a_placement_the_server_refuses_leaves_the_page_to_put_it_back(app):
     assert (back['x'], back['y']) == (0, 0)
 
 
-def test_a_drop_beside_a_unit_is_the_move_the_compass_sends(app):
-    """The drag is another way to give one order, not another kind of order."""
+def test_nothing_is_ordered_once_the_game_is_resolved(app):
+    """A drag on the replay board changes nothing: there is no order to
+    give, and the service has no command for one."""
     admin = _administrator(app)
     _set_up(admin)
     ada, bob = _player(app, 'ada'), _player(app, 'bob')
@@ -1403,12 +1466,61 @@ def test_a_drop_beside_a_unit_is_the_move_the_compass_sends(app):
     _deploy(ada, GAME, 1, 'X', (0, 0))
     _deploy(bob, GAME, 2, 'O', (3, 3))
     assert ada.commit(GAME, 1).status_code == 202
-    assert bob.commit(GAME, 2).status_code in (200, 202)
-    ada.wait_for_turn(GAME, 1, budget=2)
+    assert bob.commit(GAME, 2).status_code == 200
 
-    # a unit at (0, 0) dropped on (0, 1) is `move south`, which is what the
-    # page works out from the squares before it sends anything
-    assert ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1',
-                                 'direction': SOUTH}).status_code == 204
-    ordered = ada.read_view(GAME, 1, 'units').get_json()['units'][0]
-    assert ordered['direction'] == 'south'
+    refused = ada.perform(GAME, 1, {'kind': 'move', 'unit': 'u1',
+                                    'direction': SOUTH})
+    assert refused.status_code == 400
+    assert 'no such command' in refused.get_json()['error']
+
+
+# --- the record, as the replay reads it
+
+
+def test_the_board_as_an_army_knew_it(app):
+    """`known` draws the board from the seat's own map, and the observer
+    chooses whose."""
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    _deploy(ada, GAME, 1, 'X', (0, 0), compute=1, program='MOVE south')
+    _deploy(bob, GAME, 2, 'O', (3, 3))
+    ada.commit(GAME, 1)
+    bob.commit(GAME, 2)
+
+    known = ada.read_turn(GAME, 1, 2, known=True).get_json()['turn']
+    rows = known['board']['rows']
+    assert rows[1][0] == 'X', 'where its own unit stands after the turn'
+    assert rows[0][0] == known['board']['empty'], 'walked, so known empty'
+    assert rows[3][3] == '?', 'never visited, never met: unknown'
+    assert known['known'] == 1
+    assert known['map']['visited'] == [[0, 0, 1], [0, 1, 2]]
+
+    # the whole board again on request
+    whole = ada.read_turn(GAME, 1, 2).get_json()['turn']
+    assert whole['board']['rows'][3][3] == 'O'
+    assert whole['known'] is None
+
+    # the observer names whose knowledge it wants
+    observer = _observer(app)
+    theirs = observer.read_turn(GAME, 1000, 2, known=True,
+                                seat=2).get_json()['turn']
+    assert theirs['known'] == 2
+    assert theirs['board']['rows'][3][3] == 'O'
+    assert theirs['board']['rows'][0][0] == '?'
+    # a seat may not ask for another seat's knowledge
+    mine = ada.read_turn(GAME, 1, 2, known=True, seat=2).get_json()['turn']
+    assert mine['known'] == 1
+
+
+def test_a_turn_the_record_does_not_hold_is_404(app):
+    admin = _administrator(app)
+    _set_up(admin)
+    ada, bob = _player(app, 'ada'), _player(app, 'bob')
+    ada.claim_seat(GAME, 1)
+    bob.claim_seat(GAME, 2)
+    # before the game is resolved the record holds the setup turn alone
+    assert ada.list_turns(GAME, 1).get_json()['turns'] == [0]
+    assert ada.read_turn(GAME, 1, 1).status_code == 404

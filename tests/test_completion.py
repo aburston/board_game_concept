@@ -59,14 +59,14 @@ class TestWordsOfTheLanguage:
     def test_show_offers_its_subjects(self):
         assert candidates('show ', roles.SERVER) == [
             'board', 'designs', 'events', 'flags', 'pending', 'placement',
-            'players', 'types', 'units']
+            'players', 'program', 'turn', 'types', 'units']
 
     def test_a_subject_offers_the_json_form(self):
         assert candidates('show units ', roles.CLIENT) == ['json']
         assert candidates('show units j', roles.CLIENT) == ['json']
 
-    def test_a_player_is_offered_the_flag_to_set(self):
-        assert candidates('set ', roles.CLIENT) == ['flag']
+    def test_a_player_is_offered_the_flag_and_the_program_to_set(self):
+        assert candidates('set ', roles.CLIENT) == ['flag', 'program']
         assert candidates('set ', roles.SERVER) == ['board']
 
     def test_set_add_and_load_offer_their_subjects(self):
@@ -75,10 +75,16 @@ class TestWordsOfTheLanguage:
         assert candidates('add ', roles.CLIENT) == ['type', 'unit']
         assert candidates('load ', roles.SERVER) == ['board', 'player']
 
-    def test_move_offers_the_directions_after_a_unit(self):
-        assert candidates('move alpha ', roles.CLIENT) == [
-            'east', 'north', 'south', 'west']
-        assert candidates('move alpha s', roles.CLIENT) == ['south']
+    def test_a_turn_offers_the_known_board_after_its_number(self):
+        assert candidates('show turn 3 ', roles.CLIENT) == ['known']
+        assert candidates('show turn 3 k', roles.CLIENT) == ['known']
+        assert candidates('show turn ', roles.CLIENT) == []
+
+    def test_there_is_no_order_to_complete(self):
+        for role in (roles.CLIENT, roles.SERVER, roles.OBSERVER):
+            assert 'move' not in candidates('', role)
+            assert 'hold' not in candidates('', role)
+            assert candidates('move alpha ', role) == []
 
     def test_an_optional_number_offers_nothing(self):
         # `add player <number> [<budget>]`: an optional slot completes the way
@@ -96,14 +102,15 @@ class TestTheRoleDecides:
     def test_the_observer_is_offered_nothing_that_writes(self):
         offered = candidates('', roles.OBSERVER)
 
-        assert 'move' not in offered
+        assert 'set' not in offered
         assert 'add' not in offered
         assert 'commit' not in offered
         # the account commands change no game: the observer signs in and
         # changes its own password like anybody else, and still writes
-        # nothing to the game it is watching
-        assert offered == ['exit', 'help', 'login', 'logout', 'passwd',
-                           'reload', 'show', 'whoami']
+        # nothing to the game it is watching; stepping through the record
+        # changes nothing either
+        assert offered == ['exit', 'help', 'login', 'logout', 'next',
+                           'passwd', 'prev', 'reload', 'show', 'whoami']
 
     def test_a_show_subject_a_role_does_not_have_is_not_offered(self):
         assert 'events' in candidates('show ', roles.CLIENT)
@@ -115,15 +122,26 @@ class TestTheRoleDecides:
     def test_the_server_is_not_offered_a_player_command(self):
         offered = candidates('', roles.SERVER)
 
-        assert 'move' not in offered
+        assert 'set' in offered and candidates('set ', roles.SERVER) == [
+            'board']
         assert candidates('add ', roles.SERVER) == ['player']
 
 
 class TestNamesFromTheGame:
 
-    def test_move_offers_the_players_own_units(self, tmp_path):
-        assert candidates('move ', roles.CLIENT, names(tmp_path)) == [
+    def test_a_unit_slot_offers_the_players_own_units(self, tmp_path):
+        source = names(tmp_path)
+        assert candidates('set flag ', roles.CLIENT, source) == [
             'able', 'alpha']
+        assert candidates('remove unit ', roles.CLIENT, source) == [
+            'able', 'alpha']
+
+    def test_a_program_is_set_on_and_shown_for_the_players_own_types(
+            self, tmp_path):
+        source = names(tmp_path)
+        offered = candidates('set program ', roles.CLIENT, source)
+        assert 'tank' in offered and 'raider' not in offered
+        assert 'tank' in candidates('show program ', roles.CLIENT, source)
 
     def test_add_unit_offers_the_players_own_types(self, tmp_path):
         offered = candidates('add unit ', roles.CLIENT, names(tmp_path))
@@ -133,7 +151,7 @@ class TestNamesFromTheGame:
 
     def test_another_players_unit_of_a_similar_name_is_not_offered(self,
                                                                   tmp_path):
-        offered = candidates('move alp', roles.CLIENT, names(tmp_path))
+        offered = candidates('set flag alp', roles.CLIENT, names(tmp_path))
 
         assert offered == ['alpha']
 
@@ -145,7 +163,7 @@ class TestNamesFromTheGame:
         session = a_game(tmp_path).session(1)
         session.getBoard().getUnitByName('alpha')[0].setDestroyed(True)
 
-        offered = candidates('move ', roles.CLIENT, GameNames(session, 1))
+        offered = candidates('set flag ', roles.CLIENT, GameNames(session, 1))
 
         assert offered == ['able']
 
@@ -171,13 +189,13 @@ class TestNamesFromTheGame:
         source = GameNames(session, 1)
         games.define_type(session, AddType(name='tank', symbol='T', attack=3,
                                            health=5, energy=10))
-        before = candidates('move ', roles.CLIENT, source)
+        before = candidates('set flag ', roles.CLIENT, source)
         # row 1 is player 1's: a two-player board is halved by rows
         games.deploy_unit(session, AddUnit(type_name='tank', name='bravo',
                                            x=2, y=1))
 
         assert before == []
-        assert candidates('move ', roles.CLIENT, source) == ['bravo']
+        assert candidates('set flag ', roles.CLIENT, source) == ['bravo']
 
     def test_only_the_catalogue_is_offered_before_anything_is_built(
             self, tmp_path):
@@ -186,12 +204,12 @@ class TestNamesFromTheGame:
         harness.create(4, 4, [1, 2])
         source = GameNames(harness.session(1), 1)
 
-        assert candidates('move ', roles.CLIENT, source) == []
+        assert candidates('set flag ', roles.CLIENT, source) == []
         assert set(candidates('add unit ', roles.CLIENT, source)) == set(
             army.types())
 
     def test_a_name_slot_without_a_source_offers_nothing(self):
-        assert candidates('move ', roles.CLIENT) == []
+        assert candidates('set flag ', roles.CLIENT) == []
         assert candidates('add unit ', roles.CLIENT) == []
 
 
@@ -270,7 +288,9 @@ class TestNothingToOffer:
         source = names(tmp_path)
 
         assert candidates('show units json ', roles.CLIENT, source) == []
-        assert candidates('move alpha north ', roles.CLIENT, source) == []
+        assert candidates('set flag alpha ', roles.CLIENT, source) == []
+        assert candidates('show turn 3 known json ', roles.CLIENT,
+                          source) == []
 
 
 class TestCompletingChangesNothing:
@@ -291,7 +311,7 @@ class TestCompletingChangesNothing:
         source = GameNames(session, 1)
         before = self.snapshot(tmp_path)
 
-        for line in ('', 'move ', 'add unit ', 'show ', 'move alpha '):
+        for line in ('', 'set flag ', 'add unit ', 'show ', 'set program '):
             for _ in range(3):
                 candidates(line, roles.CLIENT, source)
 
@@ -304,7 +324,7 @@ class TestCompletingChangesNothing:
         session = harness.session(1)
         session.getBoard().getUnitByName('alpha')[0].setDestroyed(True)
 
-        candidates('move ', roles.CLIENT, GameNames(session, 1))
+        candidates('set flag ', roles.CLIENT, GameNames(session, 1))
 
         assert session.getBoard().getUnitByName('alpha')[0].destroyed
 

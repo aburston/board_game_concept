@@ -62,10 +62,10 @@ def test_a_type_that_can_move_needs_energy_for_at_least_one_move():
     # a move costs a quarter of the type's health, so energy below that is a
     # design that could never move at all
     with pytest.raises(AssertionError) as refused:
-        UnitType('Heavy', 'H', 1, 6, 1)
+        UnitType('Heavy', 'H', 1, 6, 1, 1)
     assert 'energy' in str(refused.value) and 'movement cost' in str(refused.value)
 
-    exactly_enough = UnitType('Heavy', 'H', 1, 6, 2)
+    exactly_enough = UnitType('Heavy', 'H', 1, 6, 2, 1)
     assert exactly_enough.move_cost == 2, 'one move and then it must rest'
 
 

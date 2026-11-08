@@ -37,6 +37,7 @@ _UNIT_COLUMNS = (
     'attack', 'health', 'energy',
     'type_attack', 'type_health', 'type_energy',
     'x', 'y', 'state', 'direction', 'destroyed', 'on_board', 'flag',
+    'type_compute', 'meter', 'asleep', 'controller',
 )
 
 
@@ -267,10 +268,18 @@ class SqliteGameRepository(GameRepository):
     def read_player(self, number):
         if not self._db_ready():
             return None
-        rows = self._get(
-            'SELECT name, symbol, attack, health, energy '
-            'FROM unit_types WHERE player_number=? ORDER BY name',
-            (int(number),)).fetchall()
+        try:
+            rows = self._get(
+                'SELECT name, symbol, attack, health, energy, compute, '
+                'program FROM unit_types WHERE player_number=? ORDER BY name',
+                (int(number),)).fetchall()
+        except sqlite3.OperationalError as e:
+            # a database written before units had controllers has no such
+            # columns, and the game it holds was played by hand
+            raise UnreadableGame(
+                f"the types for player {number} in {self.db_path} carry no "
+                f"compute: this game was set up before units ran programs "
+                f"and cannot be opened", e) from e
         try:
             row = self._get(
                 'SELECT player_number, budget FROM memberships '
@@ -291,7 +300,8 @@ class SqliteGameRepository(GameRepository):
             types[r['name']] = {
                 'name': r['name'], 'symbol': r['symbol'],
                 'attack': r['attack'], 'health': r['health'],
-                'energy': r['energy'],
+                'energy': r['energy'], 'compute': r['compute'],
+                'program': r['program'],
             }
         budget = None if row is None else row['budget']
         if budget is None:
@@ -316,10 +326,13 @@ class SqliteGameRepository(GameRepository):
         for name, type_data in (types or {}).items():
             connection.execute(
                 'INSERT INTO unit_types (player_number, name, symbol, '
-                'attack, health, energy) VALUES (?, ?, ?, ?, ?, ?)',
+                'attack, health, energy, compute, program) '
+                'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                 (int(number), name, type_data['symbol'],
                  int(type_data['attack']), int(type_data['health']),
-                 int(type_data['energy'])))
+                 int(type_data['energy']),
+                 int(type_data.get('compute') or 0),
+                 type_data.get('program') or None))
 
     # --- what a player can see
 
@@ -330,11 +343,20 @@ class SqliteGameRepository(GameRepository):
         # materialised file, produced fresh from the source every read
         if not self._db_ready():
             return []
-        return [_unit_row_to_dict(row) for row in self._get(
+        units = [_unit_row_to_dict(row) for row in self._get(
             f"SELECT units.id, {', '.join('units.' + c for c in _UNIT_COLUMNS)} "
             "FROM units JOIN sightings ON sightings.seen_unit_id=units.id "
             "WHERE sightings.viewer=? ORDER BY units.id",
             (int(number),)).fetchall()]
+        # a seat is entitled to its own units' controllers and nobody
+        # else's: an enemy's compute, meter, memory and inbox are not in the
+        # view a seat is handed
+        for unit in units:
+            if int(unit['player']) != int(number):
+                for key in ('type_compute', 'meter', 'asleep', 'memory',
+                            'inbox'):
+                    unit.pop(key, None)
+        return units
 
     def write_view(self, number, document):
         self.ensure()
@@ -562,6 +584,28 @@ class SqliteGameRepository(GameRepository):
                  None if entry.get('y') is None else int(entry['y']),
                  int(bool(entry.get('standing')))))
 
+    # --- the record of every turn
+
+    def read_turn(self, turn):
+        if not self._db_ready():
+            return None
+        row = self._get('SELECT record FROM turns WHERE turn_no=?',
+                        (int(turn),)).fetchone()
+        return None if row is None else json.loads(row['record'])
+
+    def write_turn(self, turn, record):
+        self.ensure()
+        self._get().execute(
+            'INSERT INTO turns (turn_no, record) VALUES (?, ?) '
+            'ON CONFLICT(turn_no) DO UPDATE SET record=excluded.record',
+            (int(turn), json.dumps(record, sort_keys=True)))
+
+    def turn_numbers(self):
+        if not self._db_ready():
+            return []
+        return [row['turn_no'] for row in self._get(
+            'SELECT turn_no FROM turns ORDER BY turn_no').fetchall()]
+
     # --- what a seat has met
 
     def read_known_types(self, number):
@@ -634,7 +678,8 @@ class _Transaction:
 
 def _unit_row_to_dict(row):
     """One `units` (or `orders`) row as the dict the service layer expects."""
-    return {
+    controller = json.loads(row['controller']) if row['controller'] else {}
+    made = {
         'id': row['id'],
         'player': row['owner'],
         'type': row['type_name'],
@@ -652,6 +697,24 @@ def _unit_row_to_dict(row):
         'on_board': bool(row['on_board']),
         'flag': bool(row['flag']),
     }
+    if row['type_compute'] is not None:
+        made['type_compute'] = row['type_compute']
+        made['meter'] = row['meter'] or 0
+        made['asleep'] = row['asleep'] or 0
+        made['memory'] = controller.get('memory') or []
+        made['inbox'] = controller.get('inbox') or []
+    return made
+
+
+def _controller_columns(unit):
+    """The controller's four columns from a unit record, or nulls where the
+    record carries none."""
+    if 'type_compute' not in unit:
+        return (None, None, None, None)
+    return (int(unit['type_compute']), int(unit.get('meter') or 0),
+            int(unit.get('asleep') or 0),
+            json.dumps({'memory': unit.get('memory') or [],
+                        'inbox': unit.get('inbox') or []}))
 
 
 def _insert_unit(connection, unit):
@@ -666,7 +729,8 @@ def _insert_unit(connection, unit):
          int(unit['x']), int(unit['y']),
          int(unit['state']), int(unit['direction']),
          int(bool(unit['destroyed'])), int(bool(unit['on_board'])),
-         int(bool(unit['flag']))))
+         int(bool(unit['flag'])),
+         *_controller_columns(unit)))
 
 
 def _insert_order(connection, player_number, index, unit):
@@ -681,7 +745,8 @@ def _insert_order(connection, player_number, index, unit):
          int(unit['x']), int(unit['y']),
          int(unit['state']), int(unit['direction']),
          int(bool(unit['destroyed'])), int(bool(unit['on_board'])),
-         int(bool(unit['flag']))))
+         int(bool(unit['flag'])),
+         *_controller_columns(unit)))
 
 
 # every table `schema.sql` creates, read once and kept

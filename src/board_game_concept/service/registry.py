@@ -23,6 +23,7 @@ from .errors import GameError
 SETTING_UP = 'setting up'
 BEING_PLAYED = 'being played'
 DECIDED = 'decided'
+UNDECIDED = 'undecided'
 UNREADABLE = 'unreadable'
 
 # how a game's directory is named under `games/`
@@ -116,9 +117,15 @@ def _state(turn_number, outcome):
     administrator's commit that ends setup is not a turn and does not number
     one, so a game whose board is set but which nobody has moved in is still
     being set up.
+
+    A game is resolved to its end the moment its last setup is committed, so
+    one at rest is normally either being set up or over - decided, or stopped
+    undecided because its state repeated or the turn cap was reached. One
+    with turns and no outcome is a resolution that was cut short, and is
+    still being played.
     """
     if outcome:
-        return DECIDED
+        return DECIDED if outcome.get('decided', True) else UNDECIDED
     if turn_number >= 1:
         return BEING_PLAYED
     return SETTING_UP

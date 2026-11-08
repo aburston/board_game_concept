@@ -1,0 +1,39 @@
+# Bulwark: a wall across the frontier, and four Heavies behind it.
+#
+# Eight Walls (attack 0, health 10, no energy and so no controller, ten
+# points each) along the row against the frontier close the half: nothing
+# gets in without breaking one, and under one strike a turn a Wall takes a
+# Line four turns, a Runner five and a Heavy two, with the attacker falling
+# back after every strike that does not finish it (R5.8). Behind the line,
+# four Heavies sleep until their army's map shows an enemy within two
+# squares, and go that far to meet it. A Keep carries the flag at the edge,
+# with a Runner and a Scout beside it that hold.
+#
+# 281 points. Nobody hunts: this doctrine cannot take a flag, only keep
+# one, and what it tests is whether a flag can be kept on this board at all.
+name: Bulwark
+doctrine: 8 x Wall across the frontier row + 4 x Heavy behind + Keep with the flag, Runner, Scout; nobody hunts
+rebuild: true
+types:
+  - {name: Wall, symbol: W, attack: 0, health: 10, energy: 0, compute: 0}
+  - {name: Heavy, symbol: H, attack: 5, health: 10, energy: 15, compute: 4, program: programs/guard8.asm}
+  - {name: Keep, symbol: K, attack: 1, health: 10, energy: 5, compute: 8, program: programs/warden.asm}
+  - {name: Runner, symbol: r, attack: 2, health: 4, energy: 10, compute: 5, program: programs/hold.asm}
+  - {name: Scout, symbol: o, attack: 0, health: 2, energy: 12, compute: 6, program: programs/hold.asm}
+units:
+  - [Wall, wall1, 0, 3]
+  - [Wall, wall2, 1, 3]
+  - [Wall, wall3, 2, 3]
+  - [Wall, wall4, 3, 3]
+  - [Wall, wall5, 4, 3]
+  - [Wall, wall6, 5, 3]
+  - [Wall, wall7, 6, 3]
+  - [Wall, wall8, 7, 3]
+  - [Heavy, heavy1, 1, 2]
+  - [Heavy, heavy2, 3, 2]
+  - [Heavy, heavy3, 4, 2]
+  - [Heavy, heavy4, 6, 2]
+  - [Keep, keep1, 3, 0]
+  - [Runner, runner1, 4, 0]
+  - [Scout, scout1, 0, 0]
+flag: keep1

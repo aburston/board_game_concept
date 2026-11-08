@@ -80,3 +80,104 @@ def test_a_move_that_was_carried_out_reports_nothing(tmp_path):
     harness = a_game(tmp_path)
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     assert reasons(harness, 1) == []
+
+
+def test_a_player_is_told_nothing_about_a_namesake_they_do_not_own(tmp_path):
+    """Two players, the same two names each, and one undecided contest.
+
+    The stock army gives both players the same sixteen names, and the report
+    used to match a rejection by name: whoever owned a `pawn1` was told about
+    every `pawn1` in the contest, at their own unit's square, so a unit that
+    did nothing was named as refused and a move was refused twice. Whose unit
+    an entry is about is decided by its owner (`visibility`, R6.8).
+    """
+    harness = GameHarness(tmp_path)
+    harness.create(4, 4, [1, 2])
+    # the pawns walk at each other and meet on (1, 2) with too little energy
+    # left to strike, so the contest decides nothing; the keeps never move
+    harness.deploy(1, [('P', 'p', 5, 5, 5, 1, 'MOVE south'),
+                       ('K', 'k', 1, 10, 5)],
+                   [('P', 'pawn1', 1, 1), ('K', 'keep1', 3, 0)],
+                   flag='keep1')
+    harness.deploy(2, [('P', 'q', 5, 5, 5, 1, 'MOVE north'),
+                       ('K', 'j', 1, 10, 5)],
+                   [('P', 'pawn1', 1, 3), ('K', 'keep1', 0, 3)],
+                   flag='keep1')
+    harness.resolve()                    # turn 1: the units are placed
+    harness.resolve()                    # turn 2: the pawns step and meet
+
+    for number, home in ((1, (1, 1)), (2, (1, 3))):
+        rejected = harness.rejections(number)
+        assert [(entry['unit'], entry['x'], entry['y'])
+                for entry in rejected] == [('pawn1', *home)], (number, rejected)
+        assert all('undecided' in entry['reason'] for entry in rejected)
+
+
+# --- the report is read from the record, a turn at a time
+
+
+def test_the_record_holds_what_each_player_was_told(tmp_path):
+    """What a player is shown for a turn of the replay is what the resolution
+    told them when it ran: the same refusals, read from the turn's record,
+    each the player's own unit and nobody else's."""
+    from board_game_concept.service import replay
+
+    harness = GameHarness(tmp_path)
+    harness.create(4, 4, [1, 2])
+    harness.deploy(1, [('P', 'p', 5, 5, 5, 1, 'MOVE south'),
+                       ('K', 'k', 1, 10, 5)],
+                   [('P', 'pawn1', 1, 1), ('K', 'keep1', 3, 0)],
+                   flag='keep1')
+    harness.deploy(2, [('P', 'q', 5, 5, 5, 1, 'MOVE north'),
+                       ('K', 'j', 1, 10, 5)],
+                   [('P', 'pawn1', 1, 3), ('K', 'keep1', 0, 3)],
+                   flag='keep1')
+    harness.resolve()
+    harness.resolve()                    # turn 2: the undecided contest
+
+    record = harness.turn_record(2)
+    for number in (1, 2):
+        told = [(entry['unit'], entry['x'], entry['y'], entry['reason'])
+                for entry in harness.rejections(number)]
+        read = [(entry['unit'], entry['x'], entry['y'], entry['reason'])
+                for entry in replay.rejections_in(record, number)]
+        assert read == told, number
+        assert len(read) == 1 and read[0][0] == 'pawn1'
+    # a session entitled to the whole game reads every player's
+    everyone = replay.rejections_in(record, 0, sees_everything=True)
+    assert sorted(entry['player'] for entry in everyone) == [1, 2]
+    # and a turn on which nothing was refused holds no refusals
+    assert replay.rejections_in(harness.turn_record(1), 1) == []
+
+
+def test_a_turns_rejections_are_that_turns_alone(tmp_path):
+    """Turn 2's refusal is not shown with turn 3's, and a unit destroyed is
+    reported on no later turn."""
+    from board_game_concept.service import replay
+
+    harness = GameHarness(tmp_path)
+    harness.create(4, 4, [1, 2])
+    # a pawn that walks off the top of the board on turn 2 and is refused
+    # for it, and a lance that walks south into the keep and kills it on
+    # turn 3, taking the game: the keep is destroyed and reported no more
+    harness.deploy(1, [('P', 'p', 1, 4, 10, 1, 'MOVE north'),
+                       ('L', 'l', 10, 4, 40, 1, 'MOVE south'),
+                       ('K', 'k', 1, 10, 5)],
+                   [('P', 'pawn1', 3, 0), ('L', 'lance1', 0, 1),
+                    ('K', 'keep1', 2, 0)],
+                   flag='keep1')
+    harness.deploy(2, [('K', 'j', 1, 10, 5)],
+                   [('K', 'keep1', 0, 3)], flag='keep1')
+    server = harness.play()
+    assert server.getOutcome()['winner'] == 1
+
+    second = replay.rejections_in(harness.turn_record(2), 1)
+    assert [entry['unit'] for entry in second] == ['pawn1']
+    assert 'leave the board' in second[0]['reason']
+    third = replay.rejections_in(harness.turn_record(3), 1)
+    assert [entry['unit'] for entry in third] == ['pawn1'], (
+        "turn 3's own refusal, and not turn 2's as well")
+    # player 2's keep fell on the turn the game ended; nothing is reported
+    # about it to player 2 on that turn, and there are no later turns
+    final = harness.turn_record(server.getTurnNumber())
+    assert replay.rejections_in(final, 2) == []

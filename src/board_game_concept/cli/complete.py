@@ -20,7 +20,7 @@ saves, commits or asks the repository for anything.
 import os
 import glob
 
-from .grammar import (DIRECTION, DIRECTIONS, Optional, PATH, Slot, TYPE, UNIT)
+from .grammar import Optional, PATH, Slot, TYPE, UNIT
 from .help import usages_for
 from . import views
 
@@ -96,8 +96,6 @@ def _for_element(element, prefix, source):
 
 def _for_slot(kind, prefix, source):
     """The candidates for a slot, by what it stands for."""
-    if kind == DIRECTION:
-        return tuple(DIRECTIONS)
     if kind == PATH:
         return _paths(prefix)
     if source is not None:

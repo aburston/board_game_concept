@@ -10,19 +10,22 @@ once rather than reaching somebody's game.
 import math
 
 from board_game_concept.domain import army, placement
+from board_game_concept.domain.program import TICKS, Program, cap
 from board_game_concept.domain.unit import UnitType
 
+from game_harness import GameHarness
 
-# name: attack, health, energy, cost, move fare
+
+# name: attack, health, energy, compute, cost, move fare
 EXPECTED = {
-    'Wall':   (0, 10,  0, 10, 3),
-    'Scout':  (0,  2, 12, 14, 1),
-    'Pawn':   (1,  4,  2,  7, 1),
-    'Runner': (2,  4, 10, 16, 1),
-    'Line':   (3,  6, 12, 21, 2),
-    'Lance':  (8,  2, 10, 20, 1),
-    'Keep':   (1, 10,  5, 16, 3),
-    'Heavy':  (5, 10, 15, 30, 3),
+    'Wall':   (0, 10,  0, 0, 10, 3),
+    'Scout':  (0,  2, 12, 6, 20, 1),
+    'Pawn':   (1,  4,  2, 2,  9, 1),
+    'Runner': (2,  4, 10, 5, 21, 1),
+    'Line':   (3,  6, 12, 4, 25, 2),
+    'Lance':  (8,  2, 10, 4, 24, 1),
+    'Keep':   (1, 10,  5, 8, 24, 3),
+    'Heavy':  (5, 10, 15, 4, 34, 3),
 }
 
 
@@ -38,20 +41,22 @@ def test_every_catalogue_type_is_one_the_rules_allow():
 
 
 def test_the_catalogue_statistics_are_the_ones_published():
-    for name, (attack, health, energy, _cost, _fare) in EXPECTED.items():
+    for name, (attack, health, energy, compute, _cost,
+               _fare) in EXPECTED.items():
         record = army.types()[name]
-        assert (record['attack'], record['health'], record['energy']) == (
-            attack, health, energy), name
+        assert (record['attack'], record['health'], record['energy'],
+                record['compute']) == (attack, health, energy, compute), name
 
 
 def test_each_type_costs_the_sum_of_its_statistics():
-    for name, (_a, _h, _e, cost, _fare) in EXPECTED.items():
+    """All four of them: compute is bought like attack, health and energy."""
+    for name, (_a, _h, _e, _c, cost, _fare) in EXPECTED.items():
         assert army.types()[name]['obj'].cost == cost, name
 
 
 def test_each_type_pays_the_move_fare_published_for_it():
     """A quarter of the type's health, rounded up, as for any type."""
-    for name, (_a, health, _e, _cost, fare) in EXPECTED.items():
+    for name, (_a, health, _e, _c, _cost, fare) in EXPECTED.items():
         unit_type = army.types()[name]['obj']
         assert unit_type.move_cost == fare, name
         assert fare == math.ceil(health / 4), name
@@ -93,7 +98,7 @@ def test_the_array_holds_sixteen_units():
 
 
 def test_the_array_costs_what_is_published():
-    assert army.cost() == 242
+    assert army.cost() == 304
 
 
 def test_the_array_uses_only_catalogue_types():
@@ -198,3 +203,57 @@ def test_the_array_avoids_the_neutral_row():
         for _type, name, _x, y in army.placements(number, [1, 2], 8, 9):
             assert y != middle, (number, name)
             assert y in allowed, (number, name, y)
+
+
+# --- the default programs
+
+
+def test_every_default_program_parses():
+    """A type with compute carries a program, and one without carries none."""
+    for name, record in army.types().items():
+        if record['compute'] == 0:
+            assert record['program'] is None, name
+            continue
+        program = Program(record['program'])
+        assert program.instructions, name
+
+
+def a_stock_game(tmp_path):
+    """Two unchanged stock armies, committed as seeded and played to the end."""
+    harness = GameHarness(tmp_path)
+    harness.create(army.DEFAULT_SIZE_X, army.DEFAULT_SIZE_Y, [1, 2])
+    assert harness.session(1).clientSave()
+    assert harness.session(2).clientSave()
+    harness.play()
+    return harness
+
+
+def test_each_default_program_fits_its_cap_on_every_turn(tmp_path):
+    """A controller that runs out of ticks gives no order, so a default
+    program that overran its type's cap would field a unit that stands
+    still on the turn it mattered. Every trace of a stock-army game is
+    within the cap, and none was halted."""
+    harness = a_stock_game(tmp_path)
+    compute = {name: record['compute']
+               for name, record in army.types().items()}
+    type_of = {name: type_name for _depth, _x, type_name, name in army.ARRAY}
+    repository = harness.repository()
+    turns = repository.turn_numbers()
+    assert turns[-1] >= 2
+    seen = set()
+    for turn in turns:
+        for trace in repository.read_turn(turn)['traces']:
+            limit = cap(compute[type_of[trace['unit']]])
+            assert trace['ticks'] <= limit, (turn, trace)
+            # a controller is also stopped where the meter would take energy
+            # its unit no longer has, which a spent unit comes to late in a
+            # game; the cap stops one only in the last few ticks before it
+            if trace['halted'] is not None:
+                assert trace['ticks'] <= limit - max(TICKS.values()), (
+                    turn, trace)
+            seen.add(type_of[trace['unit']])
+    # every thinking type the array fields was seen thinking; the Lance is
+    # in the catalogue and not in the array
+    fielded = {type_name for _depth, _x, type_name, _name in army.ARRAY}
+    assert seen == {name for name, c in compute.items()
+                    if c > 0 and name in fielded}

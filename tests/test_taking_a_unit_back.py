@@ -13,7 +13,7 @@ import pytest
 
 from board_game_concept.domain import Player
 from board_game_concept.service import games
-from board_game_concept.service.commands import (AddType, AddUnit, Move,
+from board_game_concept.service.commands import (AddType, AddUnit,
                                                  RemoveUnit, SetFlag)
 from board_game_concept.service.errors import GameError
 
@@ -166,8 +166,8 @@ def test_taking_back_survives_the_session_being_reopened(tmp_path):
     assert names(reopened) == ['u2']
 
 
-def test_an_order_is_not_a_deployment(tmp_path):
-    """A unit under orders in a played game is refused for being in play."""
+def test_a_unit_in_play_is_not_a_deployment(tmp_path):
+    """A unit in a played game is refused for being in play."""
     harness, client = a_setup(tmp_path)
     games.perform(client, AddUnit(type_name='T', name='u1', x=0, y=0))
     games.perform(client, SetFlag(unit='u1'))
@@ -175,86 +175,5 @@ def test_an_order_is_not_a_deployment(tmp_path):
     harness.resolve()
 
     playing = harness.session(1)
-    games.perform(playing, Move(unit='u1', direction=3))
     with pytest.raises(GameError):
         games.perform(playing, RemoveUnit(name='u1'))
-
-
-# --- taking back an order, which is the same idea a turn later
-
-
-def a_played_game(tmp_path):
-    """One player, one unit, past setup: there are orders to give now."""
-    harness, client = a_setup(tmp_path)
-    games.perform(client, AddUnit(type_name='T', name='u1', x=1, y=1))
-    games.perform(client, SetFlag(unit='u1'))
-    client.clientSave()
-    harness.resolve()
-    return harness
-
-
-def test_an_order_can_be_taken_back(tmp_path):
-    from board_game_concept.service.commands import Hold
-    harness = a_played_game(tmp_path)
-
-    client = harness.session(1)
-    games.perform(client, Move(unit='u1', direction=3))
-    assert client.getBoard().getUnitByName('u1')[0].direction == 3
-
-    games.perform(client, Hold(unit='u1'))
-
-    unit = client.getBoard().getUnitByName('u1')[0]
-    assert unit.direction == 0, 'it holds no direction'
-    assert unit.state == 2, 'and is holding rather than moving'
-
-
-def test_a_unit_whose_order_was_taken_back_does_not_move(tmp_path):
-    from board_game_concept.service.commands import Hold
-    harness = a_played_game(tmp_path)
-
-    client = harness.session(1)
-    games.perform(client, Move(unit='u1', direction=3))
-    games.perform(client, Hold(unit='u1'))
-    client.clientSave()
-    harness.resolve()
-
-    unit = harness.units()['u1']
-    assert (unit.x, unit.y) == (1, 1), 'it stayed where it was'
-
-
-def test_a_unit_whose_order_was_taken_back_rests(tmp_path):
-    """Holding is the absence of an order, so it rests like any quiet unit."""
-    from board_game_concept.service.commands import Hold
-    harness = a_played_game(tmp_path)
-    # spend a point first, so resting has something to give back: energy
-    # never goes above what the type was designed with
-    harness.turn({1: [('u1', 3)]})
-    before = harness.units()['u1'].energy
-    assert before < 10, 'the move cost it something'
-
-    client = harness.session(1)
-    games.perform(client, Move(unit='u1', direction=3))
-    games.perform(client, Hold(unit='u1'))
-    client.clientSave()
-    harness.resolve()
-
-    assert harness.units()['u1'].energy == before + 1
-
-
-def test_taking_back_an_order_before_the_first_turn_says_so(tmp_path):
-    from board_game_concept.service.commands import Hold
-    _harness, client = a_setup(tmp_path)
-    games.perform(client, AddUnit(type_name='T', name='u1', x=0, y=0))
-
-    with pytest.raises(GameError) as refused:
-        games.perform(client, Hold(unit='u1'))
-    assert 'first turn' in str(refused.value)
-
-
-def test_taking_back_an_order_for_a_unit_that_is_not_there(tmp_path):
-    from board_game_concept.service.commands import Hold
-    harness = a_played_game(tmp_path)
-    client = harness.session(1)
-
-    with pytest.raises(GameError):
-        games.perform(client, Hold(unit='nobody'))

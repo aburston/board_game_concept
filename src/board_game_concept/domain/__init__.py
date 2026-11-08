@@ -8,6 +8,9 @@ from . import account
 from . import budget
 from . import placement
 from . import army
+from . import army_map
+from . import program
 
 __all__ = ['Empty', 'Event', 'Player', 'UnitType', 'Board', 'Account', 'Kind',
-           'account', 'army', 'budget', 'placement', 'describe']
+           'account', 'army', 'army_map', 'budget', 'placement', 'program',
+           'describe']
