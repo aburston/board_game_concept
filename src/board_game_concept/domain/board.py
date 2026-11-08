@@ -3,6 +3,8 @@ import copy
 from .square import Empty
 from .events import Event, owners
 from .unit import (UnitType, resolveCollision, resolveContest)
+from .army_map import ArmyMap
+from . import program as controller
 
 
 class _Grid:
@@ -52,6 +54,16 @@ class Board:
         self.units = []
         self.unit_dict = {}
         self.types = {}
+        # what each army knows of the board, by player number: kept here
+        # because it is updated by the resolution and read by the controllers
+        # the resolution runs, and nowhere else
+        self.maps = {}
+        # the number of the last turn resolved on this board; the next
+        # `commit` resolves the one after unless told otherwise
+        self.turn = 0
+        # what every controller did on the last turn resolved, as plain
+        # records, for whoever keeps the record of the game
+        self.traces = []
         # whose flag had fallen when the turn now being resolved began, read
         # once at the top of `commit`. Empty between resolutions, so a board
         # that has never been committed answers "nobody is out" rather than
@@ -130,6 +142,9 @@ class Board:
         unit.direction = UnitType.NONE
         unit.seen_by = []
         unit.moved_from = None
+        # a controller's state of its own: the copy above would share the
+        # type's memory and inbox with every other unit of the type
+        unit.resetController()
         self._settle(unit, x, y)
         self.units.append(unit)
         self.unit_dict.setdefault(name, []).append(unit)
@@ -279,13 +294,19 @@ class Board:
                 return False
         return True
 
-    def commit(self):
+    def commit(self, turn=None):
         """Resolve the turn, and report what happened while doing it.
 
-        Four phases: units waiting to be deployed are placed, then every move
-        is planned against the board as the turn began and applied together,
-        then every square more than one unit finished in is fought out, and
-        then every unit that did none of it recovers a point of energy.
+        Five phases: every awake controller runs against the board as the
+        turn began and gives its unit's order, then units waiting to be
+        deployed are placed, then every move is planned against that same
+        board and applied together, then every square more than one unit
+        finished in is fought out, and then every unit that did none of it
+        recovers a point of energy.
+
+        `turn` is the number of the turn being resolved, which the sensors
+        report and the map stamps; left out, it is the one after the last
+        this board resolved.
 
         Movement used to be each unit resolving itself against a live board, so
         what a unit found at its destination depended on who had already moved.
@@ -296,26 +317,40 @@ class Board:
         whether they are shown, logged or dropped.
         """
         events = []
+        if turn is None:
+            turn = self.turn + 1
+        # whose flag had already fallen when the turn began. A unit of theirs
+        # is terrain for the whole of this resolution: it thinks nothing,
+        # plans no move and lands no attack, and being read once here rather
+        # than per unit is what stops a flag falling mid-turn from silencing
+        # an army that was still in the game when the turn started
+        self.out = {number for number in self._playerNumbers()
+                    if self.flagFallen(number)}
+        # what every standing unit held before the turn ran, so that resting
+        # can tell the ones that paid for nothing - no fare, no strike, no
+        # energy to the meter - from the ones that did. Taken before the
+        # controllers run, because thinking is the first thing a unit pays for
+        before = {unit: unit.energy for unit in self.units
+                  if unit.on_board and not unit.destroyed}
+        for unit in self.units:
+            unit.woken = False
+
+        # the controllers, against the board as the turn began: the previous
+        # turn's contacts are still on every unit, which is what `CONTACT`
+        # reads, so they are cleared after the thinking and not before
+        self._think(events, turn)
+
         # clear the seen_by list and the previous turn's origin square in each
         # unit on the board
         for unit in self.units:
             if unit.on_board:
                 unit.seen_by = []
                 unit.moved_from = None
-        # what each unit that was given no order held before the turn ran, so
-        # that resting can tell the ones that did nothing from the ones that
-        # were made to fight. Taken here because the movement phase consumes
-        # the order it is read from (R3.3)
-        resting = {unit: unit.energy for unit in self.units
-                   if unit.on_board and not unit.destroyed
-                   and unit.state != UnitType.MOVING}
-        # whose flag had already fallen when the turn began. A unit of theirs
-        # is terrain for the whole of this resolution: it plans no move and
-        # lands no attack, and being read once here rather than per unit is
-        # what stops a flag falling mid-turn from silencing an army that was
-        # still in the game when the turn started
-        self.out = {number for number in self._playerNumbers()
-                    if self.flagFallen(number)}
+        # the units that were given no order - by a controller, or by nobody -
+        # and what they held, for the rest phase. Taken here because the
+        # movement phase consumes the order it is read from (R3.3)
+        resting = {unit: before[unit] for unit in self.units
+                   if unit in before and unit.state != UnitType.MOVING}
 
         # who has struck whom, for the whole turn rather than for one square.
         # A unit strikes each other unit once a turn, and a turn holds more
@@ -326,9 +361,161 @@ class Board:
         self._deploy(events)
         pairs, free = self._move(events)
         self._fight(events, pairs, free, struck)
+        # what every army learned this turn, from where its units stand and
+        # what they fought; read by the controllers next turn and never this
+        for number in self._playerNumbers():
+            self.maps.setdefault(number, ArmyMap()).observe(
+                self.units, number, turn)
+        self._wake(events)
         self._rest(events, resting)
         self._reportFallenFlags(events)
+        self.turn = turn
         return events
+
+    # ------------------------------------------------------------ thinking
+
+    def _think(self, events, turn):
+        """Run every awake controller against the board as the turn began.
+
+        One snapshot per army, built before any controller runs, so that no
+        controller sees another's order, message or move from this turn.
+        Messages said this turn are delivered after every controller has
+        run, in a settled order, and are read next turn.
+        """
+        self.traces = []
+        snapshots = {}
+        pending = []
+        flags = {number: (unit.x, unit.y)
+                 for number, unit in self.flagBearers().items()
+                 if unit.on_board and not unit.destroyed}
+        standing = [unit for unit in self.units
+                    if unit.on_board and not unit.destroyed
+                    and unit.state != UnitType.INITIAL]
+        by_player = {}
+        for unit in standing:
+            by_player.setdefault(unit.player.number, {})[unit.name] = (
+                unit.x, unit.y)
+        # considered in a settled order. Nothing a controller does is visible
+        # to another until next turn, so the order cannot matter; it is
+        # settled anyway, so the trace reads the same every time
+        for unit in sorted(standing, key=lambda u: (u.player.number, u.name)):
+            if unit.type_compute <= 0 or unit.program is None:
+                continue
+            number = unit.player.number
+            if self.isOut(number):
+                continue
+            if unit.asleep > 0:
+                unit.asleep -= 1
+                self._trace(events, unit, slept=True)
+                continue
+            if number not in snapshots:
+                snapshots[number] = controller.Snapshot(
+                    turn, self.size_x, self.size_y, number,
+                    by_player.get(number, {}), flags,
+                    self.maps.setdefault(number, ArmyMap()))
+            me = {
+                'x': unit.x, 'y': unit.y, 'health': unit.health,
+                'energy': unit.energy, 'flag': unit.flag,
+                'number': self._numberAmongType(unit),
+            }
+            result = controller.run(
+                unit.program, snapshots[number], me, self._contact(unit),
+                unit.memory, unit.inbox, unit.type_compute, unit.energy,
+                unit.meter)
+            unit.energy -= result.charged
+            unit.meter = result.meter
+            if result.order == 'hold':
+                unit.hold()
+            elif result.order is not None:
+                unit.move(result.order)
+            if result.sleep:
+                unit.asleep = result.sleep
+            dropped = []
+            for sequence, (to, *words) in enumerate(result.said):
+                recipients = self._recipients(unit, to)
+                if not recipients:
+                    dropped.append([to, *words])
+                    continue
+                for recipient in recipients:
+                    pending.append((turn, unit.name, sequence, recipient,
+                                    tuple(words)))
+            self._trace(events, unit, result=result, dropped=dropped)
+        # delivered in a settled order: the turn sent, the sender's name, and
+        # the order the sender said them
+        for turn_sent, sender, sequence, recipient, words in sorted(
+                pending, key=lambda m: (m[0], m[1], m[2], m[3].name)):
+            recipient.inbox.append(words)
+
+    def _recipients(self, sender, to):
+        """The friendly controllers a message reaches, or none."""
+        number = sender.player.number
+        friends = [unit for unit in self.units
+                   if unit.player is not None
+                   and unit.player.number == number
+                   and unit.on_board and not unit.destroyed
+                   and unit.type_compute > 0]
+        if to == 'all':
+            return [unit for unit in friends if unit is not sender]
+        return [unit for unit in friends if unit.name == to]
+
+    def _numberAmongType(self, unit):
+        """This unit's place, from 0, among its type's units in name order.
+
+        Counted over every unit of the type the player has had, destroyed or
+        not, so a number does not change as units fall.
+        """
+        names = sorted(other.name for other in self.units
+                       if other.player is not None
+                       and other.player.number == unit.player.number
+                       and other.type_name == unit.type_name)
+        return names.index(unit.name)
+
+    def _contact(self, unit):
+        """The enemy this unit fought last turn, nearest first, or None."""
+        enemies = [seen for seen in unit.seen_by
+                   if seen.player is not None
+                   and seen.player.number != unit.player.number
+                   and seen.on_board and not seen.destroyed]
+        if not enemies:
+            return None
+        square = controller.nearest_of(
+            [(seen.x, seen.y) for seen in enemies], (unit.x, unit.y))
+        seen = next(e for e in enemies if (e.x, e.y) == square)
+        return (seen.x, seen.y, seen.type_attack, seen.type_health)
+
+    def _trace(self, events, unit, result=None, dropped=(), slept=False):
+        """Record what a controller did, for its owner and the observer."""
+        trace = {
+            'unit': unit.name,
+            'player': unit.player.number,
+            'slept': slept,
+            'woken': False,
+            'ticks': 0 if result is None else result.ticks,
+            'energy': 0 if result is None else result.charged,
+            'order': None if result is None else result.order,
+            'said': [] if result is None else [list(m) for m in result.said],
+            'dropped': list(dropped),
+            'sleep': None if result is None else result.sleep,
+            'halted': None if result is None else result.halted,
+        }
+        self.traces.append(trace)
+        unit.trace = trace
+
+    def _wake(self, events):
+        """End the sleep of every unit that was in a fight this turn."""
+        for unit in self.units:
+            if not unit.woken:
+                continue
+            if unit.asleep > 0:
+                unit.asleep = 0
+                if getattr(unit, 'trace', None) is not None:
+                    unit.trace['woken'] = True
+                events.append(Event('woken', unit=unit.name,
+                                    players=owners(unit)))
+        for trace in self.traces:
+            events.append(Event('thought', players=str(trace['player']),
+                                **{k: v for k, v in trace.items()
+                                   if k != 'player'}))
 
     def _playerNumbers(self):
         """Every player number the board holds a unit for."""

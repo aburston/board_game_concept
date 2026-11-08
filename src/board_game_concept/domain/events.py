@@ -81,7 +81,23 @@ DESCRIPTIONS = {
     'emptied': lambda d: f"({d['x']}, {d['y']}) is left empty",
     'removed': lambda d: f"{d['unit']} leaves the board",
     'rested': lambda d: f"{d['unit']} rests and recovers to {d['energy']} energy",
+    'thought': lambda d: _thought(d),
 }
+
+
+def _thought(d):
+    """How a controller's turn reads: what it spent and what it decided."""
+    if d.get('slept'):
+        return (f"{d['unit']} sleeps"
+                + (", and is woken" if d.get('woken') else ""))
+    said = f", says {len(d['said'])}" if d.get('said') else ""
+    halted = (f", halts at line {d['halted']}" if d.get('halted') is not None
+              else "")
+    order = d.get('order')
+    decided = ("holds" if order in (None, 'hold')
+               else f"moves {order}")
+    return (f"{d['unit']} thinks for {d['ticks']} ticks, pays "
+            f"{d['energy']}, {decided}{said}{halted}")
 
 
 # the kinds that say a blow was struck. A board marks these squares, and

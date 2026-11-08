@@ -1,6 +1,7 @@
 from .square import Empty
 from .events import Event, owners
 from .player import Player
+from .program import Program
 
 
 # Unit
@@ -29,7 +30,8 @@ class UnitType:
     # the energy its type was designed with
     REST_GAIN = 1
 
-    def __init__(self, name, symbol, attack, health, energy):
+    def __init__(self, name, symbol, attack, health, energy, compute=0,
+                 program=None):
         self.name = name
         self.type_name = name
 
@@ -73,6 +75,19 @@ class UnitType:
             "a type with no energy can have no attack: an attack it could "
             "never pay for is a wall charged for a weapon")
 
+        # the fourth statistic: how much thinking one energy buys. A unit's
+        # controller spends ticks, ten times this many of them to the energy,
+        # and a type with none has no controller at all - a wall, or a turret
+        # that stands, strikes back and rests, and is never ordered. A type
+        # with no energy has nothing to think with, so it has no compute
+        # either: a wall is a wall
+        self.compute = compute
+        assert isinstance(compute, int) and not isinstance(compute, bool), (
+            "compute must be an integer value")
+        assert 0 <= compute <= 10, "compute must be a value from 0 to 10"
+        assert (energy > 0 or compute == 0), (
+            "a type with no energy has no controller: compute must be 0")
+
         # the design this unit was made from, kept alongside the values play
         # wears down. `type_name` was already preserved through the copy for
         # the same reason; a unit's current health is not its type's health,
@@ -88,6 +103,20 @@ class UnitType:
         self.type_attack = attack
         self.type_health = health
         self.type_energy = energy
+        self.type_compute = compute
+
+        # the program every unit of this type runs, parsed once and shared by
+        # the copies, which never write to it. Given as text or as a
+        # `Program`; a type with no controller carries none, because a
+        # program on it could never run and a player who set one has
+        # misunderstood what they bought
+        if isinstance(program, str):
+            program = Program(program)
+        if program is not None and len(program) == 0:
+            program = None
+        assert (program is None or compute > 0), (
+            "a type with no compute has no controller and carries no program")
+        self.program = program
 
         # a move costs a unit a quarter of its health in energy, so a type
         # designed with less energy than that could never afford a single move
@@ -98,7 +127,10 @@ class UnitType:
         # abolish it. The exemption is energy rather than attack, so that a
         # scout - no attack, but energy to walk on - is held to it like
         # anything else that means to move
-        assert (energy == 0 or energy >= self.move_cost), (
+        # A type with no compute is not held to it either: nothing can order
+        # it to move, so a fare it could never pay is no loss - a turret of
+        # one energy strikes back and rests, and was never going anywhere
+        assert (energy == 0 or compute == 0 or energy >= self.move_cost), (
             f"a type that can move must have at least its movement cost in "
             f"energy: health {health} costs {self.move_cost} to move, so it "
             f"needs energy {self.move_cost} or more, not {energy}")
@@ -122,6 +154,28 @@ class UnitType:
         # square this unit vacated during the current turn's preCommit phase,
         # so that an undecided contest can send it back where it came from
         self.moved_from = None
+        self.resetController()
+
+    def resetController(self):
+        """Give this unit a controller's state of its own.
+
+        A unit is a shallow copy of its type, so anything mutable the type
+        held would be shared by every unit of it. Each unit gets its own
+        meter, sleep, memory and inbox here - the program itself is shared,
+        and never written to.
+        """
+        # ticks accumulated towards the next energy the meter will charge
+        self.meter = 0
+        # turns the controller is switched off for; a blow sets it to 0
+        self.asleep = 0
+        # whether this unit was in a fight this turn, which ends a sleep
+        self.woken = False
+        # the unit's own word store, kept for the game
+        self.memory = {}
+        # messages delivered and not yet read, oldest first, as (w1, w2, w3)
+        self.inbox = []
+        # what the controller did on the last turn it ran, for the record
+        self.trace = None
 
     @property
     def cost(self):
@@ -133,7 +187,8 @@ class UnitType:
         one is not free. Computed rather than stored: a second copy of a number
         the type already holds can only ever disagree with it.
         """
-        return self.type_attack + self.type_health + self.type_energy
+        return (self.type_attack + self.type_health + self.type_energy
+                + self.type_compute)
 
     @property
     def move_cost(self):
@@ -374,6 +429,10 @@ def exchangeAttacks(contestants, events=None, out=(), struck=None,
     """
     struck = struck if struck is not None else set()
     standing = [unit for unit in contestants if not unit.destroyed]
+    for unit in standing:
+        # being in a fight wakes a sleeping controller, whatever the fight
+        # does to the unit: the exchange itself is on the ordinary terms
+        unit.woken = True
     if len(standing) >= 2:
         # who is going to strike, and what it will land, is decided against
         # the square as the exchange begins - so charging one unit cannot

@@ -62,8 +62,8 @@ def test_a_scout_is_held_to_the_fare_like_anything_that_moves():
     # health 8 costs 2 a square, so 1 energy could never buy a move: the
     # exemption is for a type with no energy at all, not for one with no attack
     with pytest.raises(AssertionError):
-        UnitType('Scout', 'S', 0, 8, 1)
-    walks = UnitType('Scout', 'S', 0, 8, 2)
+        UnitType('Scout', 'S', 0, 8, 1, 1)
+    walks = UnitType('Scout', 'S', 0, 8, 2, 1)
     assert walks.move_cost == 2
 
 
