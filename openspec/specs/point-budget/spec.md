@@ -26,7 +26,7 @@ The system SHALL give every player a point budget when they are registered,
 and SHALL fix it for the life of the game. The budget SHALL be an integer from
 1 to 1000. Where the administrator does not name one, the budget SHALL be 320.
 
-The default is 320 because a player is given a default army that costs 304,
+The default is 320 because a player is given a default army that costs 308,
 and a budget that only just covers it would leave nothing to edit with: every
 change would have to begin by taking something back.
 

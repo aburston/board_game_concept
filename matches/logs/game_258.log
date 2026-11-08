@@ -1,0 +1,3585 @@
+=== game 258: p1 Flag Hunt vs p2 Bulwark
+  board 8x8, p1: 320 points, rows 0-3, p2: 320 points, rows 4-7
+  p1 Flag Hunt: the stock army with the programs the catalogue gives it; the Runners, Lines and Heavies hunt the enemy flag, the Pawns advance, the Scouts explore
+  p2 Bulwark: 8 x Wall across the frontier row + 4 x Heavy behind + Keep with the flag, Runner, Scout; nobody hunts
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: keeps the army as given, programs and all
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Wall W 0 10 0 0; add type Heavy H 5 10 15 4; set program Heavy guard8.asm; add type Keep K 1 10 5 8; set program Keep warden.asm; add type Runner r 2 4 10 5; set program Runner hold.asm; add type Scout o 0 2 12 6; set program Scout hold.asm; add unit Wall wall1 0 4; add unit Wall wall2 1 4; add unit Wall wall3 2 4; add unit Wall wall4 3 4; add unit Wall wall5 4 4; add unit Wall wall6 5 4; add unit Wall wall7 6 4; add unit Wall wall8 7 4; add unit Heavy heavy1 1 5; add unit Heavy heavy2 3 5; add unit Heavy heavy3 4 5; add unit Heavy heavy4 6 5; add unit Keep keep1 3 7; add unit Runner runner1 4 7; add unit Scout scout1 0 7; set flag keep1
+  -- turn 1
+    p1: places its army
+    p2: places its army
+      pawn1 is placed at (0, 1)
+      pawn2 is placed at (1, 1)
+      line1 is placed at (2, 1)
+      heavy1 is placed at (3, 1)
+      heavy2 is placed at (4, 1)
+      line2 is placed at (5, 1)
+      pawn3 is placed at (6, 1)
+      pawn4 is placed at (7, 1)
+      runner1 is placed at (0, 0)
+      scout1 is placed at (1, 0)
+      wall1 is placed at (2, 0)
+      keep1 is placed at (3, 0)
+      keep2 is placed at (4, 0)
+      wall2 is placed at (5, 0)
+      scout2 is placed at (6, 0)
+      runner2 is placed at (7, 0)
+      wall1 is placed at (0, 4)
+      wall2 is placed at (1, 4)
+      wall3 is placed at (2, 4)
+      wall4 is placed at (3, 4)
+      wall5 is placed at (4, 4)
+      wall6 is placed at (5, 4)
+      wall7 is placed at (6, 4)
+      wall8 is placed at (7, 4)
+      heavy1 is placed at (1, 5)
+      heavy2 is placed at (3, 5)
+      heavy3 is placed at (4, 5)
+      heavy4 is placed at (6, 5)
+      keep1 is placed at (3, 7)
+      runner1 is placed at (4, 7)
+      scout1 is placed at (0, 7)
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|W|W|W|W|W|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| |H|H| |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 1: in play 14 v 7  (walls: 2 v 8)
+  -- turn 2
+    p1: heavy1 moves south; heavy2 moves south; keep1 holds; keep2 holds; line1 moves south; line2 moves south; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 holds; runner2 holds; scout1 holds; scout2 holds
+    p2: heavy1 holds; heavy2 holds; heavy3 holds; heavy4 holds; keep1 holds; runner1 holds; scout1 holds
+      pawn1 moves to (0, 2)
+      pawn2 moves to (1, 2)
+      line1 moves to (2, 2)
+      heavy1 moves to (3, 2)
+      heavy2 moves to (4, 2)
+      line2 moves to (5, 2)
+      pawn3 moves to (6, 2)
+      pawn4 moves to (7, 2)
+      heavy1 thinks for 26 ticks, pays 0, moves south
+      heavy2 thinks for 26 ticks, pays 0, moves south
+      keep1 thinks for 1 ticks, pays 0, holds
+      keep2 thinks for 1 ticks, pays 0, holds
+      line1 thinks for 26 ticks, pays 0, moves south
+      line2 thinks for 26 ticks, pays 0, moves south
+      pawn1 thinks for 19 ticks, pays 0, moves south
+      pawn2 thinks for 19 ticks, pays 0, moves south
+      pawn3 thinks for 19 ticks, pays 0, moves south
+      pawn4 thinks for 19 ticks, pays 0, moves south
+      runner1 thinks for 32 ticks, pays 0, holds
+      runner2 thinks for 32 ticks, pays 0, holds
+      scout1 thinks for 51 ticks, pays 0, holds
+      scout2 thinks for 51 ticks, pays 0, holds
+      heavy1 thinks for 11 ticks, pays 0, holds
+      heavy2 thinks for 11 ticks, pays 0, holds
+      heavy3 thinks for 11 ticks, pays 0, holds
+      heavy4 thinks for 11 ticks, pays 0, holds
+      keep1 thinks for 1 ticks, pays 0, holds
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|W|W|W|W|W|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| |H|H| |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 2: in play 14 v 7  (walls: 2 v 8)
+  -- turn 3
+    p1: heavy1 moves south; heavy2 moves south; keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves south; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 sleeps; runner2 sleeps; scout1 sleeps; scout2 sleeps
+    p2: heavy1 sleeps; heavy2 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      line1 moves to (2, 3)
+      heavy1 moves to (3, 3)
+      heavy2 moves to (4, 3)
+      line2 moves to (5, 3)
+      heavy1 thinks for 26 ticks, pays 1, moves south
+      heavy2 thinks for 26 ticks, pays 1, moves south
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      line2 thinks for 26 ticks, pays 1, moves south
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn2 thinks for 8 ticks, pays 0, holds
+      pawn3 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner1 sleeps
+      runner2 sleeps
+      scout1 sleeps
+      scout2 sleeps
+      heavy1 sleeps
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      pawn2 rests and recovers to 2 energy
+      pawn3 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|p|p| | | | |p|p|
++-+-+-+-+-+-+-+-+
+| | |L|H|H|L| | |
++-+-+-+-+-+-+-+-+
+|W|W|W|W|W|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| |H|H| |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 3: in play 14 v 7  (walls: 2 v 8)
+  -- turn 4
+    p1: heavy1 moves south; heavy2 moves south; keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves south; pawn1 sleeps; pawn2 sleeps; pawn3 sleeps; pawn4 sleeps; runner1 moves south; runner2 moves south; scout1 moves south; scout2 moves south
+    p2: heavy1 holds; heavy2 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      line1 engages wall3 at (2, 4)
+      heavy1 engages wall4 at (3, 4)
+      heavy2 engages wall5 at (4, 4)
+      line2 engages wall6 at (5, 4)
+      runner1 moves to (0, 1)
+      scout1 moves to (1, 1)
+      scout2 moves to (6, 1)
+      runner2 moves to (7, 1)
+      (2, 4) is contested by 2 units
+      line1 attacks wall3 for 3
+      the contest at (2, 4) is undecided between line1,wall3
+      line1 falls back to (2, 3)
+      wall3 holds (2, 4)
+      (3, 4) is contested by 2 units
+      heavy1 attacks wall4 for 5
+      the contest at (3, 4) is undecided between heavy1,wall4
+      heavy1 falls back to (3, 3)
+      wall4 holds (3, 4)
+      (4, 4) is contested by 2 units
+      heavy2 attacks wall5 for 5
+      the contest at (4, 4) is undecided between heavy2,wall5
+      heavy2 falls back to (4, 3)
+      wall5 holds (4, 4)
+      (5, 4) is contested by 2 units
+      line2 attacks wall6 for 3
+      the contest at (5, 4) is undecided between line2,wall6
+      line2 falls back to (5, 3)
+      wall6 holds (5, 4)
+      heavy1 thinks for 26 ticks, pays 0, moves south
+      heavy2 thinks for 26 ticks, pays 0, moves south
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 0, moves south
+      line2 thinks for 26 ticks, pays 0, moves south
+      pawn1 sleeps
+      pawn2 sleeps
+      pawn3 sleeps
+      pawn4 sleeps
+      runner1 thinks for 26 ticks, pays 1, moves south
+      runner2 thinks for 26 ticks, pays 1, moves south
+      scout1 thinks for 35 ticks, pays 1, moves south
+      scout2 thinks for 35 ticks, pays 1, moves south
+      heavy1 thinks for 11 ticks, pays 0, holds
+      heavy2 thinks for 11 ticks, pays 0, holds
+      heavy3 thinks for 11 ticks, pays 0, holds
+      heavy4 thinks for 11 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+    p1: - line1 at (2,3): the contest at (2, 4) was undecided
+    p2: - wall3 at (2,4): the contest at (2, 4) was undecided
+    p1: - heavy1 at (3,3): the contest at (3, 4) was undecided
+    p2: - wall4 at (3,4): the contest at (3, 4) was undecided
+    p1: - heavy2 at (4,3): the contest at (4, 4) was undecided
+    p2: - wall5 at (4,4): the contest at (4, 4) was undecided
+    p1: - line2 at (5,3): the contest at (5, 4) was undecided
+    p2: - wall6 at (5,4): the contest at (5, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+|r|o| | | | |o|r|
++-+-+-+-+-+-+-+-+
+|p|p| | | | |p|p|
++-+-+-+-+-+-+-+-+
+| | |L|H|H|L| | |
++-+-+-+-+-+-+-+-+
+|W|W|W|W|W|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| |H|H| |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 4: in play 14 v 7  (walls: 2 v 8)
+  -- turn 5
+    p1: heavy1 holds (halts at line 4); heavy2 holds (halts at line 4); keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 holds; runner2 holds; scout1 moves east; scout2 moves west
+    p2: heavy1 sleeps; heavy2 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 moves to (0, 3)
+      pawn2 moves to (1, 3)
+      pawn3 moves to (6, 3)
+      pawn4 moves to (7, 3)
+      scout1 moves to (2, 1)
+      scout2 moves to (5, 1)
+      heavy1 thinks for 1 ticks, pays 0, holds, halts at line 4
+      heavy2 thinks for 1 ticks, pays 0, holds, halts at line 4
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 1, holds
+      line2 thinks for 6 ticks, pays 1, holds
+      pawn1 thinks for 19 ticks, pays 1, moves south
+      pawn2 thinks for 19 ticks, pays 1, moves south
+      pawn3 thinks for 19 ticks, pays 1, moves south
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      runner1 thinks for 32 ticks, pays 0, holds
+      runner2 thinks for 32 ticks, pays 0, holds
+      scout1 thinks for 47 ticks, pays 1, moves east
+      scout2 thinks for 54 ticks, pays 1, moves west
+      heavy1 sleeps
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      heavy1 rests and recovers to 1 energy
+      heavy2 rests and recovers to 1 energy
+      runner1 rests and recovers to 9 energy
+      runner2 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+|r| |o| | |o| |r|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|W|W|W|W|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| |H|H| |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 5: in play 14 v 7  (walls: 2 v 8)
+  -- turn 6
+    p1: heavy1 holds; heavy2 holds; keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 sleeps; runner2 sleeps; scout1 moves south; scout2 moves south
+    p2: heavy1 holds; heavy2 moves north; heavy3 moves north; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 moves to (2, 2)
+      scout2 moves to (5, 2)
+      heavy2 engages wall4 at (3, 4)
+      heavy3 engages wall5 at (4, 4)
+      (3, 4) is contested by 2 units
+      heavy2 attacks wall4 for 5
+      wall4 is destroyed
+      heavy2 holds (3, 4)
+      (4, 4) is contested by 2 units
+      heavy3 attacks wall5 for 5
+      wall5 is destroyed
+      heavy3 holds (4, 4)
+      heavy1 thinks for 6 ticks, pays 1, holds
+      heavy2 thinks for 6 ticks, pays 1, holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn2 thinks for 8 ticks, pays 0, holds
+      pawn3 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner1 sleeps
+      runner2 sleeps
+      scout1 thinks for 35 ticks, pays 0, moves south
+      scout2 thinks for 35 ticks, pays 0, moves south
+      heavy1 thinks for 14 ticks, pays 0, holds
+      heavy2 thinks for 23 ticks, pays 1, moves north
+      heavy3 thinks for 23 ticks, pays 1, moves north
+      heavy4 thinks for 14 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      pawn2 rests and recovers to 1 energy
+      line1 rests and recovers to 2 energy
+      line2 rests and recovers to 2 energy
+      pawn3 rests and recovers to 1 energy
+      pawn4 rests and recovers to 1 energy
+      runner1 rests and recovers to 10 energy
+      runner2 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+|r| | | | | | |r|
++-+-+-+-+-+-+-+-+
+| | |o| | |o| | |
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|W|W|H|H|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 6: in play 14 v 7  (walls: 2 v 6)
+  -- turn 7
+    p1: heavy1 sleeps; heavy2 sleeps; keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 sleeps; pawn2 sleeps; pawn3 sleeps; pawn4 sleeps; runner1 moves south; runner2 moves south; scout1 moves west; scout2 moves east
+    p2: heavy1 sleeps; heavy2 holds; heavy3 holds; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      runner1 moves to (0, 2)
+      scout1 moves to (1, 2)
+      scout2 moves to (6, 2)
+      runner2 moves to (7, 2)
+      heavy1 sleeps
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 sleeps
+      pawn2 sleeps
+      pawn3 sleeps
+      pawn4 sleeps
+      runner1 thinks for 26 ticks, pays 1, moves south
+      runner2 thinks for 26 ticks, pays 1, moves south
+      scout1 thinks for 42 ticks, pays 1, moves west
+      scout2 thinks for 42 ticks, pays 1, moves east
+      heavy1 sleeps
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      pawn2 rests and recovers to 2 energy
+      line1 rests and recovers to 3 energy
+      heavy1 rests and recovers to 1 energy
+      heavy2 rests and recovers to 1 energy
+      line2 rests and recovers to 3 energy
+      pawn3 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
+      heavy2 rests and recovers to 7 energy
+      heavy3 rests and recovers to 7 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|r|o| | | | |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|W|W|H|H|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 7: in play 14 v 7  (walls: 2 v 6)
+  -- turn 8
+    p1: heavy1 holds; heavy2 holds; keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 holds; runner2 holds; scout1 moves east; scout2 moves west
+    p2: heavy1 holds; heavy2 sleeps; heavy3 sleeps; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      pawn2 engages wall2 at (1, 4)
+      pawn3 engages wall7 at (6, 4)
+      pawn4 engages wall8 at (7, 4)
+      scout1 moves to (2, 2)
+      scout2 moves to (5, 2)
+      (0, 4) is contested by 2 units
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (1, 4) is contested by 2 units
+      the contest at (1, 4) is undecided between pawn2,wall2
+      pawn2 falls back to (1, 3)
+      wall2 holds (1, 4)
+      (6, 4) is contested by 2 units
+      the contest at (6, 4) is undecided between pawn3,wall7
+      pawn3 falls back to (6, 3)
+      wall7 holds (6, 4)
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 19 ticks, pays 1, moves south
+      pawn2 thinks for 19 ticks, pays 1, moves south
+      pawn3 thinks for 19 ticks, pays 1, moves south
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      runner1 thinks for 32 ticks, pays 0, holds
+      runner2 thinks for 32 ticks, pays 0, holds
+      scout1 thinks for 47 ticks, pays 1, moves east
+      scout2 thinks for 54 ticks, pays 1, moves west
+      heavy1 thinks for 14 ticks, pays 1, holds
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 thinks for 14 ticks, pays 1, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 4 energy
+      heavy1 rests and recovers to 2 energy
+      heavy2 rests and recovers to 2 energy
+      line2 rests and recovers to 4 energy
+      runner1 rests and recovers to 9 energy
+      runner2 rests and recovers to 9 energy
+      heavy2 rests and recovers to 8 energy
+      heavy3 rests and recovers to 8 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - pawn2 at (1,3): the contest at (1, 4) was undecided
+    p2: - wall2 at (1,4): the contest at (1, 4) was undecided
+    p1: - pawn3 at (6,3): the contest at (6, 4) was undecided
+    p2: - wall7 at (6,4): the contest at (6, 4) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|r| |o| | |o| |r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|W|W|H|H|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 8: in play 14 v 7  (walls: 2 v 6)
+  -- turn 9
+    p1: heavy1 sleeps; heavy2 sleeps; keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 sleeps; runner2 sleeps; scout1 moves east; scout2 moves east
+    p2: heavy1 sleeps; heavy2 moves north; heavy3 moves north; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 moves to (3, 2)
+      scout2 moves to (6, 2)
+      heavy2 engages heavy1 at (3, 3)
+      heavy3 engages heavy2 at (4, 3)
+      (3, 3) is contested by 2 units
+      heavy2 attacks heavy1 for 5
+      the contest at (3, 3) is undecided between heavy1,heavy2
+      heavy2 falls back to (3, 4)
+      heavy1 holds (3, 3)
+      (4, 3) is contested by 2 units
+      heavy3 attacks heavy2 for 5
+      the contest at (4, 3) is undecided between heavy2,heavy3
+      heavy3 falls back to (4, 4)
+      heavy2 holds (4, 3)
+      heavy1 sleeps
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn2 thinks for 8 ticks, pays 0, holds
+      pawn3 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner1 sleeps
+      runner2 sleeps
+      scout1 thinks for 47 ticks, pays 1, moves east
+      scout2 thinks for 47 ticks, pays 1, moves east
+      heavy1 sleeps
+      heavy2 thinks for 23 ticks, pays 0, moves north
+      heavy3 thinks for 23 ticks, pays 0, moves north
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      pawn2 rests and recovers to 1 energy
+      line1 rests and recovers to 5 energy
+      heavy1 rests and recovers to 3 energy
+      heavy2 rests and recovers to 3 energy
+      line2 rests and recovers to 5 energy
+      pawn3 rests and recovers to 1 energy
+      pawn4 rests and recovers to 1 energy
+      runner1 rests and recovers to 10 energy
+      runner2 rests and recovers to 10 energy
+      heavy1 rests and recovers to 15 energy
+      heavy4 rests and recovers to 15 energy
+    p1: - heavy1 at (3,3): the contest at (3, 3) was undecided
+    p2: - heavy2 at (3,4): the contest at (3, 3) was undecided
+    p1: - heavy2 at (4,3): the contest at (4, 3) was undecided
+    p2: - heavy3 at (4,4): the contest at (4, 3) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|r| | |o| | |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|W|W|H|H|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 9: in play 14 v 7  (walls: 2 v 6)
+  -- turn 10
+    p1: heavy1 holds; heavy2 holds; keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 sleeps; pawn2 sleeps; pawn3 sleeps; pawn4 sleeps; runner1 moves east; runner2 holds; scout1 moves east; scout2 moves west
+    p2: heavy1 moves north; heavy2 holds (halts at line 47); heavy3 holds (halts at line 47); heavy4 moves north; keep1 sleeps; runner1 holds; scout1 holds
+      scout2 stays at (6, 2): not enough energy to move
+      runner1 moves to (1, 2)
+      scout1 moves to (4, 2)
+      heavy1 engages wall2 at (1, 4)
+      heavy4 engages wall7 at (6, 4)
+      (1, 4) is contested by 2 units
+      heavy1 attacks wall2 for 5
+      the contest at (1, 4) is undecided between heavy1,wall2
+      heavy1 falls back to (1, 5)
+      wall2 holds (1, 4)
+      (6, 4) is contested by 2 units
+      heavy4 attacks wall7 for 5
+      the contest at (6, 4) is undecided between heavy4,wall7
+      heavy4 falls back to (6, 5)
+      wall7 holds (6, 4)
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 sleeps
+      pawn2 sleeps
+      pawn3 sleeps
+      pawn4 sleeps
+      runner1 thinks for 33 ticks, pays 1, moves east
+      runner2 thinks for 32 ticks, pays 1, holds
+      scout1 thinks for 47 ticks, pays 0, moves east
+      scout2 thinks for 54 ticks, pays 1, moves west
+      heavy1 thinks for 23 ticks, pays 0, moves north
+      heavy2 thinks for 5 ticks, pays 0, holds, halts at line 47
+      heavy3 thinks for 5 ticks, pays 0, holds, halts at line 47
+      heavy4 thinks for 23 ticks, pays 0, moves north
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      pawn2 rests and recovers to 2 energy
+      line1 rests and recovers to 6 energy
+      heavy1 rests and recovers to 4 energy
+      heavy2 rests and recovers to 4 energy
+      line2 rests and recovers to 6 energy
+      pawn3 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
+      heavy2 rests and recovers to 1 energy
+      heavy3 rests and recovers to 1 energy
+    p1: - scout2 at (6,2): not enough energy to move
+    p2: - heavy1 at (1,5): the contest at (1, 4) was undecided
+    p2: - wall2 at (1,4): the contest at (1, 4) was undecided
+    p2: - heavy4 at (6,5): the contest at (6, 4) was undecided
+    p2: - wall7 at (6,4): the contest at (6, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| |r| | |o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|W|W|H|H|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 10: in play 14 v 7  (walls: 2 v 6)
+  -- turn 11
+    p1: heavy1 sleeps; heavy2 sleeps; keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves south; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 moves east; runner2 sleeps; scout1 holds; scout2 holds
+    p2: heavy1 holds; heavy2 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      pawn2 engages wall2 at (1, 4)
+      line1 engages wall3 at (2, 4)
+      line2 engages wall6 at (5, 4)
+      pawn3 engages wall7 at (6, 4)
+      pawn4 engages wall8 at (7, 4)
+      runner1 moves to (2, 2)
+      (0, 4) is contested by 2 units
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (1, 4) is contested by 2 units
+      the contest at (1, 4) is undecided between pawn2,wall2
+      pawn2 falls back to (1, 3)
+      wall2 holds (1, 4)
+      (2, 4) is contested by 2 units
+      line1 attacks wall3 for 3
+      the contest at (2, 4) is undecided between line1,wall3
+      line1 falls back to (2, 3)
+      wall3 holds (2, 4)
+      (5, 4) is contested by 2 units
+      line2 attacks wall6 for 3
+      the contest at (5, 4) is undecided between line2,wall6
+      line2 falls back to (5, 3)
+      wall6 holds (5, 4)
+      (6, 4) is contested by 2 units
+      the contest at (6, 4) is undecided between pawn3,wall7
+      pawn3 falls back to (6, 3)
+      wall7 holds (6, 4)
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      heavy1 sleeps
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      line2 thinks for 26 ticks, pays 1, moves south
+      pawn1 thinks for 19 ticks, pays 1, moves south
+      pawn2 thinks for 19 ticks, pays 1, moves south
+      pawn3 thinks for 19 ticks, pays 1, moves south
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      runner1 thinks for 33 ticks, pays 1, moves east
+      runner2 sleeps
+      scout1 thinks for 6 ticks, pays 0, holds
+      scout2 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 1, holds
+      heavy3 thinks for 6 ticks, pays 1, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      heavy1 rests and recovers to 5 energy
+      heavy2 rests and recovers to 5 energy
+      scout1 rests and recovers to 1 energy
+      scout2 rests and recovers to 1 energy
+      runner2 rests and recovers to 10 energy
+      heavy1 rests and recovers to 8 energy
+      heavy4 rests and recovers to 8 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - pawn2 at (1,3): the contest at (1, 4) was undecided
+    p2: - wall2 at (1,4): the contest at (1, 4) was undecided
+    p1: - line1 at (2,3): the contest at (2, 4) was undecided
+    p2: - wall3 at (2,4): the contest at (2, 4) was undecided
+    p1: - line2 at (5,3): the contest at (5, 4) was undecided
+    p2: - wall6 at (5,4): the contest at (5, 4) was undecided
+    p1: - pawn3 at (6,3): the contest at (6, 4) was undecided
+    p2: - wall7 at (6,4): the contest at (6, 4) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |r| |o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|W|W|H|H|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 11: in play 14 v 7  (walls: 2 v 6)
+  -- turn 12
+    p1: heavy1 holds; heavy2 holds; keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 moves east; runner2 holds; scout1 sleeps; scout2 sleeps
+    p2: heavy1 sleeps; heavy2 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      runner1 moves to (3, 2)
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn2 thinks for 8 ticks, pays 0, holds
+      pawn3 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner1 thinks for 33 ticks, pays 0, moves east
+      runner2 thinks for 32 ticks, pays 1, holds
+      scout1 sleeps
+      scout2 sleeps
+      heavy1 sleeps
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      pawn2 rests and recovers to 1 energy
+      line1 rests and recovers to 1 energy
+      heavy1 rests and recovers to 6 energy
+      heavy2 rests and recovers to 6 energy
+      line2 rests and recovers to 1 energy
+      pawn3 rests and recovers to 1 energy
+      pawn4 rests and recovers to 1 energy
+      scout1 rests and recovers to 2 energy
+      scout2 rests and recovers to 2 energy
+      heavy1 rests and recovers to 9 energy
+      heavy2 rests and recovers to 1 energy
+      heavy3 rests and recovers to 1 energy
+      heavy4 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|W|W|H|H|W|W|W|
++-+-+-+-+-+-+-+-+
+| |H| | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 12: in play 14 v 7  (walls: 2 v 6)
+  -- turn 13
+    p1: heavy1 sleeps; heavy2 sleeps; keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 sleeps; pawn2 sleeps; pawn3 sleeps; pawn4 sleeps; runner1 holds; runner2 sleeps; scout1 moves east; scout2 moves west
+    p2: heavy1 moves north; heavy2 holds; heavy3 holds; heavy4 moves north; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 joins the contest at (5, 2)
+      scout2 joins the contest at (5, 2)
+      heavy1 engages wall2 at (1, 4)
+      heavy4 engages wall7 at (6, 4)
+      (1, 4) is contested by 2 units
+      heavy1 attacks wall2 for 5
+      wall2 is destroyed
+      heavy1 holds (1, 4)
+      (5, 2) is contested by 2 units
+      the contest at (5, 2) is undecided between scout1,scout2
+      scout1 falls back to (4, 2)
+      scout2 falls back to (6, 2)
+      (5, 2) is left empty
+      (6, 4) is contested by 2 units
+      heavy4 attacks wall7 for 5
+      wall7 is destroyed
+      heavy4 holds (6, 4)
+      heavy1 sleeps
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 sleeps
+      pawn2 sleeps
+      pawn3 sleeps
+      pawn4 sleeps
+      runner1 thinks for 32 ticks, pays 1, holds
+      runner2 sleeps
+      scout1 thinks for 47 ticks, pays 1, moves east
+      scout2 thinks for 54 ticks, pays 1, moves west
+      heavy1 thinks for 23 ticks, pays 1, moves north
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 23 ticks, pays 1, moves north
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      pawn2 rests and recovers to 2 energy
+      line1 rests and recovers to 2 energy
+      heavy1 rests and recovers to 7 energy
+      heavy2 rests and recovers to 7 energy
+      line2 rests and recovers to 2 energy
+      pawn3 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
+      runner2 rests and recovers to 10 energy
+      heavy2 rests and recovers to 2 energy
+      heavy3 rests and recovers to 2 energy
+    p1: - scout1 at (4,2): the contest at (5, 2) was undecided
+    p1: - scout2 at (6,2): the contest at (5, 2) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W|H|H|W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 13: in play 14 v 7  (walls: 2 v 4)
+  -- turn 14
+    p1: heavy1 holds; heavy2 holds; keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 sleeps; runner2 holds; scout1 holds; scout2 holds
+    p2: heavy1 holds; heavy2 sleeps; heavy3 sleeps; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      pawn2 engages heavy1 at (1, 4)
+      pawn3 engages heavy4 at (6, 4)
+      pawn4 engages wall8 at (7, 4)
+      (0, 4) is contested by 2 units
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (1, 4) is contested by 2 units
+      the contest at (1, 4) is undecided between heavy1,pawn2
+      pawn2 falls back to (1, 3)
+      heavy1 holds (1, 4)
+      (6, 4) is contested by 2 units
+      the contest at (6, 4) is undecided between heavy4,pawn3
+      pawn3 falls back to (6, 3)
+      heavy4 holds (6, 4)
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      heavy1 is woken by the blow
+      heavy4 is woken by the blow
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 thinks for 19 ticks, pays 1, moves south
+      pawn2 thinks for 19 ticks, pays 1, moves south
+      pawn3 thinks for 19 ticks, pays 1, moves south
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      runner1 sleeps
+      runner2 thinks for 32 ticks, pays 0, holds
+      scout1 thinks for 6 ticks, pays 0, holds
+      scout2 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 3 energy
+      heavy1 rests and recovers to 8 energy
+      heavy2 rests and recovers to 8 energy
+      line2 rests and recovers to 3 energy
+      runner1 rests and recovers to 5 energy
+      scout1 rests and recovers to 1 energy
+      scout2 rests and recovers to 1 energy
+      heavy1 rests and recovers to 1 energy
+      heavy2 rests and recovers to 3 energy
+      heavy3 rests and recovers to 3 energy
+      heavy4 rests and recovers to 1 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - pawn2 at (1,3): the contest at (1, 4) was undecided
+    p2: - heavy1 at (1,4): the contest at (1, 4) was undecided
+    p1: - pawn3 at (6,3): the contest at (6, 4) was undecided
+    p2: - heavy4 at (6,4): the contest at (6, 4) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W|H|H|W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 14: in play 14 v 7  (walls: 2 v 4)
+  -- turn 15
+    p1: heavy1 sleeps; heavy2 sleeps; keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 holds; runner2 sleeps; scout1 sleeps; scout2 sleeps
+    p2: heavy1 holds; heavy2 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      heavy1 sleeps
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn2 thinks for 8 ticks, pays 0, holds
+      pawn3 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner1 thinks for 32 ticks, pays 1, holds
+      runner2 sleeps
+      scout1 sleeps
+      scout2 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      pawn2 rests and recovers to 1 energy
+      line1 rests and recovers to 4 energy
+      heavy1 rests and recovers to 9 energy
+      heavy2 rests and recovers to 9 energy
+      line2 rests and recovers to 4 energy
+      pawn3 rests and recovers to 1 energy
+      pawn4 rests and recovers to 1 energy
+      scout1 rests and recovers to 2 energy
+      scout2 rests and recovers to 2 energy
+      heavy1 rests and recovers to 2 energy
+      heavy2 rests and recovers to 4 energy
+      heavy3 rests and recovers to 4 energy
+      heavy4 rests and recovers to 2 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W|H|H|W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 15: in play 14 v 7  (walls: 2 v 4)
+  -- turn 16
+    p1: heavy1 moves south; heavy2 moves south; keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 sleeps; pawn2 sleeps; pawn3 sleeps; pawn4 sleeps; runner1 sleeps; runner2 holds; scout1 moves east; scout2 moves west
+    p2: heavy1 sleeps; heavy2 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      heavy1 engages heavy2 at (3, 4)
+      heavy2 engages heavy3 at (4, 4)
+      scout1 joins the contest at (5, 2)
+      scout2 joins the contest at (5, 2)
+      (3, 4) is contested by 2 units
+      heavy1 attacks heavy2 for 5
+      the contest at (3, 4) is undecided between heavy1,heavy2
+      heavy1 falls back to (3, 3)
+      heavy2 holds (3, 4)
+      (4, 4) is contested by 2 units
+      heavy2 attacks heavy3 for 5
+      the contest at (4, 4) is undecided between heavy2,heavy3
+      heavy2 falls back to (4, 3)
+      heavy3 holds (4, 4)
+      (5, 2) is contested by 2 units
+      the contest at (5, 2) is undecided between scout1,scout2
+      scout1 falls back to (4, 2)
+      scout2 falls back to (6, 2)
+      (5, 2) is left empty
+      heavy1 thinks for 26 ticks, pays 1, moves south
+      heavy2 thinks for 26 ticks, pays 1, moves south
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 sleeps
+      pawn2 sleeps
+      pawn3 sleeps
+      pawn4 sleeps
+      runner1 sleeps
+      runner2 thinks for 32 ticks, pays 1, holds
+      scout1 thinks for 47 ticks, pays 1, moves east
+      scout2 thinks for 54 ticks, pays 1, moves west
+      heavy1 sleeps
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      pawn2 rests and recovers to 2 energy
+      line1 rests and recovers to 5 energy
+      line2 rests and recovers to 5 energy
+      pawn3 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
+      runner1 rests and recovers to 5 energy
+      heavy1 rests and recovers to 3 energy
+      heavy2 rests and recovers to 5 energy
+      heavy3 rests and recovers to 5 energy
+      heavy4 rests and recovers to 3 energy
+    p1: - heavy1 at (3,3): the contest at (3, 4) was undecided
+    p2: - heavy2 at (3,4): the contest at (3, 4) was undecided
+    p1: - heavy2 at (4,3): the contest at (4, 4) was undecided
+    p2: - heavy3 at (4,4): the contest at (4, 4) was undecided
+    p1: - scout1 at (4,2): the contest at (5, 2) was undecided
+    p1: - scout2 at (6,2): the contest at (5, 2) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W|H|H|W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 16: in play 14 v 7  (walls: 2 v 4)
+  -- turn 17
+    p1: heavy1 holds; heavy2 holds; keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 holds; runner2 sleeps; scout1 holds; scout2 holds
+    p2: heavy1 holds; heavy2 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      pawn2 engages heavy1 at (1, 4)
+      pawn3 engages heavy4 at (6, 4)
+      pawn4 engages wall8 at (7, 4)
+      (0, 4) is contested by 2 units
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (1, 4) is contested by 2 units
+      the contest at (1, 4) is undecided between heavy1,pawn2
+      pawn2 falls back to (1, 3)
+      heavy1 holds (1, 4)
+      (6, 4) is contested by 2 units
+      the contest at (6, 4) is undecided between heavy4,pawn3
+      pawn3 falls back to (6, 3)
+      heavy4 holds (6, 4)
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      heavy1 is woken by the blow
+      heavy4 is woken by the blow
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 19 ticks, pays 1, moves south
+      pawn2 thinks for 19 ticks, pays 1, moves south
+      pawn3 thinks for 19 ticks, pays 1, moves south
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      runner1 thinks for 32 ticks, pays 0, holds
+      runner2 sleeps
+      scout1 thinks for 6 ticks, pays 0, holds
+      scout2 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 1, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 1, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 6 energy
+      heavy1 rests and recovers to 1 energy
+      heavy2 rests and recovers to 1 energy
+      line2 rests and recovers to 6 energy
+      runner1 rests and recovers to 6 energy
+      scout1 rests and recovers to 1 energy
+      scout2 rests and recovers to 1 energy
+      runner2 rests and recovers to 10 energy
+      heavy2 rests and recovers to 6 energy
+      heavy3 rests and recovers to 6 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - pawn2 at (1,3): the contest at (1, 4) was undecided
+    p2: - heavy1 at (1,4): the contest at (1, 4) was undecided
+    p1: - pawn3 at (6,3): the contest at (6, 4) was undecided
+    p2: - heavy4 at (6,4): the contest at (6, 4) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W|H|H|W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 17: in play 14 v 7  (walls: 2 v 4)
+  -- turn 18
+    p1: heavy1 sleeps; heavy2 sleeps; keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves south; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 sleeps; runner2 holds; scout1 sleeps; scout2 sleeps
+    p2: heavy1 holds; heavy2 sleeps; heavy3 sleeps; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      line1 engages wall3 at (2, 4)
+      line2 engages wall6 at (5, 4)
+      (2, 4) is contested by 2 units
+      line1 attacks wall3 for 3
+      the contest at (2, 4) is undecided between line1,wall3
+      line1 falls back to (2, 3)
+      wall3 holds (2, 4)
+      (5, 4) is contested by 2 units
+      line2 attacks wall6 for 3
+      the contest at (5, 4) is undecided between line2,wall6
+      line2 falls back to (5, 3)
+      wall6 holds (5, 4)
+      heavy1 sleeps
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      line2 thinks for 26 ticks, pays 1, moves south
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn2 thinks for 8 ticks, pays 0, holds
+      pawn3 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner1 sleeps
+      runner2 thinks for 32 ticks, pays 1, holds
+      scout1 sleeps
+      scout2 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      pawn2 rests and recovers to 1 energy
+      heavy1 rests and recovers to 2 energy
+      heavy2 rests and recovers to 2 energy
+      pawn3 rests and recovers to 1 energy
+      pawn4 rests and recovers to 1 energy
+      runner1 rests and recovers to 7 energy
+      scout1 rests and recovers to 2 energy
+      scout2 rests and recovers to 2 energy
+      heavy1 rests and recovers to 3 energy
+      heavy2 rests and recovers to 7 energy
+      heavy3 rests and recovers to 7 energy
+      heavy4 rests and recovers to 3 energy
+    p1: - line1 at (2,3): the contest at (2, 4) was undecided
+    p2: - wall3 at (2,4): the contest at (2, 4) was undecided
+    p1: - line2 at (5,3): the contest at (5, 4) was undecided
+    p2: - wall6 at (5,4): the contest at (5, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W|H|H|W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 18: in play 14 v 7  (walls: 2 v 4)
+  -- turn 19
+    p1: heavy1 holds; heavy2 holds; keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 sleeps; pawn2 sleeps; pawn3 sleeps; pawn4 sleeps; runner1 holds; runner2 sleeps; scout1 moves east; scout2 moves west
+    p2: heavy1 sleeps; heavy2 holds; heavy3 holds; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 joins the contest at (5, 2)
+      scout2 joins the contest at (5, 2)
+      (5, 2) is contested by 2 units
+      the contest at (5, 2) is undecided between scout1,scout2
+      scout1 falls back to (4, 2)
+      scout2 falls back to (6, 2)
+      (5, 2) is left empty
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 sleeps
+      pawn2 sleeps
+      pawn3 sleeps
+      pawn4 sleeps
+      runner1 thinks for 32 ticks, pays 1, holds
+      runner2 sleeps
+      scout1 thinks for 47 ticks, pays 1, moves east
+      scout2 thinks for 54 ticks, pays 1, moves west
+      heavy1 sleeps
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      pawn2 rests and recovers to 2 energy
+      line1 rests and recovers to 1 energy
+      heavy1 rests and recovers to 3 energy
+      heavy2 rests and recovers to 3 energy
+      line2 rests and recovers to 1 energy
+      pawn3 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
+      runner2 rests and recovers to 10 energy
+      heavy1 rests and recovers to 4 energy
+      heavy2 rests and recovers to 8 energy
+      heavy3 rests and recovers to 8 energy
+      heavy4 rests and recovers to 4 energy
+    p1: - scout1 at (4,2): the contest at (5, 2) was undecided
+    p1: - scout2 at (6,2): the contest at (5, 2) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W|H|H|W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 19: in play 14 v 7  (walls: 2 v 4)
+  -- turn 20
+    p1: heavy1 sleeps; heavy2 sleeps; keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 sleeps; runner2 holds; scout1 holds; scout2 holds
+    p2: heavy1 holds; heavy2 sleeps; heavy3 sleeps; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      pawn2 engages heavy1 at (1, 4)
+      pawn3 engages heavy4 at (6, 4)
+      pawn4 engages wall8 at (7, 4)
+      (0, 4) is contested by 2 units
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (1, 4) is contested by 2 units
+      the contest at (1, 4) is undecided between heavy1,pawn2
+      pawn2 falls back to (1, 3)
+      heavy1 holds (1, 4)
+      (6, 4) is contested by 2 units
+      the contest at (6, 4) is undecided between heavy4,pawn3
+      pawn3 falls back to (6, 3)
+      heavy4 holds (6, 4)
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      heavy1 is woken by the blow
+      heavy4 is woken by the blow
+      heavy1 sleeps
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 19 ticks, pays 1, moves south
+      pawn2 thinks for 19 ticks, pays 1, moves south
+      pawn3 thinks for 19 ticks, pays 1, moves south
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      runner1 sleeps
+      runner2 thinks for 32 ticks, pays 0, holds
+      scout1 thinks for 6 ticks, pays 0, holds
+      scout2 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 2 energy
+      heavy1 rests and recovers to 4 energy
+      heavy2 rests and recovers to 4 energy
+      line2 rests and recovers to 2 energy
+      runner1 rests and recovers to 7 energy
+      scout1 rests and recovers to 1 energy
+      scout2 rests and recovers to 1 energy
+      heavy1 rests and recovers to 5 energy
+      heavy2 rests and recovers to 9 energy
+      heavy3 rests and recovers to 9 energy
+      heavy4 rests and recovers to 5 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - pawn2 at (1,3): the contest at (1, 4) was undecided
+    p2: - heavy1 at (1,4): the contest at (1, 4) was undecided
+    p1: - pawn3 at (6,3): the contest at (6, 4) was undecided
+    p2: - heavy4 at (6,4): the contest at (6, 4) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W|H|H|W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 20: in play 14 v 7  (walls: 2 v 4)
+  -- turn 21
+    p1: heavy1 holds; heavy2 holds; keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 holds; pawn2 holds; pawn3 holds; pawn4 holds; runner1 holds; runner2 sleeps; scout1 sleeps; scout2 sleeps
+    p2: heavy1 holds; heavy2 moves north; heavy3 moves north; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      heavy2 engages heavy1 at (3, 3)
+      heavy3 engages heavy2 at (4, 3)
+      (3, 3) is contested by 2 units
+      heavy2 attacks heavy1 for 5
+      heavy1 is destroyed
+      heavy2 holds (3, 3)
+      (4, 3) is contested by 2 units
+      heavy3 attacks heavy2 for 5
+      heavy2 is destroyed
+      heavy3 holds (4, 3)
+      heavy1 is woken by the blow
+      heavy2 is woken by the blow
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn2 thinks for 8 ticks, pays 0, holds
+      pawn3 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner1 thinks for 32 ticks, pays 1, holds
+      runner2 sleeps
+      scout1 sleeps
+      scout2 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 23 ticks, pays 1, moves north
+      heavy3 thinks for 23 ticks, pays 1, moves north
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      pawn2 rests and recovers to 1 energy
+      line1 rests and recovers to 3 energy
+      line2 rests and recovers to 3 energy
+      pawn3 rests and recovers to 1 energy
+      pawn4 rests and recovers to 1 energy
+      scout1 rests and recovers to 2 energy
+      scout2 rests and recovers to 2 energy
+      heavy1 rests and recovers to 6 energy
+      heavy4 rests and recovers to 6 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| |o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W| | |W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 21: in play 12 v 7  (walls: 2 v 4)
+  -- turn 22
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 sleeps; pawn2 sleeps; pawn3 sleeps; pawn4 sleeps; runner1 sleeps; runner2 holds; scout1 moves south; scout2 moves west
+    p2: heavy1 sleeps; heavy2 holds; heavy3 holds; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 engages heavy3 at (4, 3)
+      scout2 moves to (5, 2)
+      (4, 3) is contested by 2 units
+      the contest at (4, 3) is undecided between heavy3,scout1
+      scout1 falls back to (4, 2)
+      heavy3 holds (4, 3)
+      heavy3 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 sleeps
+      pawn2 sleeps
+      pawn3 sleeps
+      pawn4 sleeps
+      runner1 sleeps
+      runner2 thinks for 32 ticks, pays 1, holds
+      scout1 thinks for 35 ticks, pays 1, moves south
+      scout2 thinks for 54 ticks, pays 1, moves west
+      heavy1 sleeps
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      pawn2 rests and recovers to 2 energy
+      line1 rests and recovers to 4 energy
+      line2 rests and recovers to 4 energy
+      pawn3 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
+      runner1 rests and recovers to 7 energy
+      heavy1 rests and recovers to 7 energy
+      heavy2 rests and recovers to 1 energy
+      heavy3 rests and recovers to 1 energy
+      heavy4 rests and recovers to 7 energy
+    p1: - scout1 at (4,2): the contest at (4, 3) was undecided
+    p2: - heavy3 at (4,3): the contest at (4, 3) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o|o| |r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|W|H|W| | |W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 22: in play 12 v 7  (walls: 2 v 4)
+  -- turn 23
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 moves south; runner2 sleeps; scout1 holds; scout2 holds
+    p2: heavy1 holds; heavy2 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      pawn2 engages heavy1 at (1, 4)
+      pawn3 engages heavy4 at (6, 4)
+      pawn4 engages wall8 at (7, 4)
+      runner1 engages heavy2 at (3, 3)
+      (0, 4) is contested by 2 units
+      pawn1 attacks wall1 for 1
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (1, 4) is contested by 2 units
+      heavy1 attacks pawn2 for 5
+      pawn2 is destroyed
+      pawn2 attacks heavy1 for 1
+      heavy1 holds (1, 4)
+      (3, 3) is contested by 2 units
+      runner1 attacks heavy2 for 2
+      the contest at (3, 3) is undecided between heavy2,runner1
+      runner1 falls back to (3, 2)
+      heavy2 holds (3, 3)
+      (6, 4) is contested by 2 units
+      heavy4 attacks pawn3 for 5
+      pawn3 is destroyed
+      pawn3 attacks heavy4 for 1
+      heavy4 holds (6, 4)
+      (7, 4) is contested by 2 units
+      pawn4 attacks wall8 for 1
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      heavy1 is woken by the blow
+      heavy4 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 thinks for 19 ticks, pays 0, moves south
+      pawn2 thinks for 19 ticks, pays 0, moves south
+      pawn3 thinks for 19 ticks, pays 0, moves south
+      pawn4 thinks for 19 ticks, pays 0, moves south
+      runner1 thinks for 26 ticks, pays 0, moves south
+      runner2 sleeps
+      scout1 thinks for 6 ticks, pays 0, holds
+      scout2 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 sleeps
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 5 energy
+      line2 rests and recovers to 5 energy
+      scout1 rests and recovers to 1 energy
+      scout2 rests and recovers to 1 energy
+      runner2 rests and recovers to 10 energy
+      heavy2 rests and recovers to 2 energy
+      heavy3 rests and recovers to 2 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - runner1 at (3,2): the contest at (3, 3) was undecided
+    p2: - heavy2 at (3,3): the contest at (3, 3) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o|o| |r|
++-+-+-+-+-+-+-+-+
+|p| |L|H|H|L| |p|
++-+-+-+-+-+-+-+-+
+|W|H|W| | |W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 23: in play 10 v 7  (walls: 2 v 4)
+  -- turn 24
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 holds (halts at line 3); pawn4 holds (halts at line 3); runner1 moves south; runner2 moves west; scout1 sleeps; scout2 sleeps
+    p2: heavy1 holds; heavy2 holds; heavy3 sleeps; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      runner1 engages heavy2 at (3, 3)
+      runner2 moves to (6, 2)
+      (3, 3) is contested by 2 units
+      runner1 attacks heavy2 for 2
+      the contest at (3, 3) is undecided between heavy2,runner1
+      runner1 falls back to (3, 2)
+      heavy2 holds (3, 3)
+      heavy2 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 0 ticks, pays 0, holds, halts at line 3
+      pawn4 thinks for 0 ticks, pays 0, holds, halts at line 3
+      runner1 thinks for 26 ticks, pays 1, moves south
+      runner2 thinks for 33 ticks, pays 1, moves west
+      scout1 sleeps
+      scout2 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      line1 rests and recovers to 6 energy
+      line2 rests and recovers to 6 energy
+      pawn4 rests and recovers to 1 energy
+      scout1 rests and recovers to 2 energy
+      scout2 rests and recovers to 2 energy
+      heavy1 rests and recovers to 3 energy
+      heavy2 rests and recovers to 3 energy
+      heavy3 rests and recovers to 3 energy
+      heavy4 rests and recovers to 3 energy
+    p1: - runner1 at (3,2): the contest at (3, 3) was undecided
+    p2: - heavy2 at (3,3): the contest at (3, 3) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o|o|r| |
++-+-+-+-+-+-+-+-+
+|p| |L|H|H|L| |p|
++-+-+-+-+-+-+-+-+
+|W|H|W| | |W|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 24: in play 10 v 7  (walls: 2 v 4)
+  -- turn 25
+    p1: keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves south; pawn1 holds; pawn4 holds; runner1 holds; runner2 moves south; scout1 holds; scout2 holds
+    p2: heavy1 sleeps; heavy2 holds; heavy3 holds; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      line1 engages wall3 at (2, 4)
+      line2 engages wall6 at (5, 4)
+      runner2 moves to (6, 3)
+      (2, 4) is contested by 2 units
+      line1 attacks wall3 for 3
+      wall3 is destroyed
+      line1 holds (2, 4)
+      (5, 4) is contested by 2 units
+      line2 attacks wall6 for 3
+      wall6 is destroyed
+      line2 holds (5, 4)
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      line2 thinks for 26 ticks, pays 1, moves south
+      pawn1 thinks for 8 ticks, pays 1, holds
+      pawn4 thinks for 8 ticks, pays 1, holds
+      runner1 thinks for 6 ticks, pays 0, holds
+      runner2 thinks for 26 ticks, pays 0, moves south
+      scout1 thinks for 55 ticks, pays 1, holds
+      scout2 thinks for 55 ticks, pays 1, holds
+      heavy1 sleeps
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      runner1 rests and recovers to 1 energy
+      heavy1 rests and recovers to 4 energy
+      heavy2 rests and recovers to 4 energy
+      heavy3 rests and recovers to 4 energy
+      heavy4 rests and recovers to 4 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o|o| | |
++-+-+-+-+-+-+-+-+
+|p| | |H|H| |r|p|
++-+-+-+-+-+-+-+-+
+|W|H|L| | |L|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 25: in play 10 v 7  (walls: 2 v 2)
+  -- turn 26
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 sleeps; pawn4 sleeps; runner1 sleeps; runner2 moves south; scout1 sleeps; scout2 sleeps
+    p2: heavy1 holds; heavy2 sleeps; heavy3 sleeps; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      runner2 engages heavy4 at (6, 4)
+      (6, 4) is contested by 2 units
+      runner2 attacks heavy4 for 2
+      the contest at (6, 4) is undecided between heavy4,runner2
+      runner2 falls back to (6, 3)
+      heavy4 holds (6, 4)
+      heavy4 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 sleeps
+      pawn4 sleeps
+      runner1 sleeps
+      runner2 thinks for 26 ticks, pays 1, moves south
+      scout1 sleeps
+      scout2 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      line1 rests and recovers to 1 energy
+      line2 rests and recovers to 1 energy
+      pawn4 rests and recovers to 1 energy
+      runner1 rests and recovers to 2 energy
+      scout1 rests and recovers to 2 energy
+      scout2 rests and recovers to 2 energy
+      heavy1 rests and recovers to 5 energy
+      heavy2 rests and recovers to 5 energy
+      heavy3 rests and recovers to 5 energy
+      heavy4 rests and recovers to 5 energy
+    p1: - runner2 at (6,3): the contest at (6, 4) was undecided
+    p2: - heavy4 at (6,4): the contest at (6, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o|o| | |
++-+-+-+-+-+-+-+-+
+|p| | |H|H| |r|p|
++-+-+-+-+-+-+-+-+
+|W|H|L| | |L|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 26: in play 10 v 7  (walls: 2 v 2)
+  -- turn 27
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 holds; pawn4 holds; runner1 holds; runner2 moves south; scout1 holds; scout2 moves south
+    p2: heavy1 sleeps; heavy2 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      scout2 moves to (5, 3)
+      runner2 engages heavy4 at (6, 4)
+      (6, 4) is contested by 2 units
+      runner2 attacks heavy4 for 2
+      the contest at (6, 4) is undecided between heavy4,runner2
+      runner2 falls back to (6, 3)
+      heavy4 holds (6, 4)
+      heavy4 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner1 thinks for 6 ticks, pays 0, holds
+      runner2 thinks for 26 ticks, pays 0, moves south
+      scout1 thinks for 55 ticks, pays 1, holds
+      scout2 thinks for 35 ticks, pays 0, moves south
+      heavy1 sleeps
+      heavy2 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 1, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      line1 rests and recovers to 2 energy
+      line2 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
+      runner1 rests and recovers to 3 energy
+      heavy1 rests and recovers to 6 energy
+      heavy2 rests and recovers to 6 energy
+      heavy3 rests and recovers to 6 energy
+    p1: - runner2 at (6,3): the contest at (6, 4) was undecided
+    p2: - heavy4 at (6,4): the contest at (6, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| | | |
++-+-+-+-+-+-+-+-+
+|p| | |H|H|o|r|p|
++-+-+-+-+-+-+-+-+
+|W|H|L| | |L|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 27: in play 10 v 7  (walls: 2 v 2)
+  -- turn 28
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 sleeps; pawn4 sleeps; runner1 sleeps; runner2 holds; scout1 sleeps; scout2 holds
+    p2: heavy1 holds; heavy2 sleeps; heavy3 sleeps; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 sleeps
+      pawn4 sleeps
+      runner1 sleeps
+      runner2 thinks for 6 ticks, pays 0, holds
+      scout1 sleeps
+      scout2 thinks for 55 ticks, pays 1, holds
+      heavy1 thinks for 6 ticks, pays 1, holds
+      heavy2 sleeps
+      heavy3 sleeps
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 3 energy
+      line2 rests and recovers to 3 energy
+      runner1 rests and recovers to 4 energy
+      scout1 rests and recovers to 2 energy
+      runner2 rests and recovers to 1 energy
+      heavy2 rests and recovers to 7 energy
+      heavy3 rests and recovers to 7 energy
+      heavy4 rests and recovers to 5 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r|o| | | |
++-+-+-+-+-+-+-+-+
+|p| | |H|H|o|r|p|
++-+-+-+-+-+-+-+-+
+|W|H|L| | |L|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 28: in play 10 v 7  (walls: 2 v 2)
+  -- turn 29
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 moves south; pawn4 moves south; runner1 moves south; runner2 sleeps; scout1 moves east; scout2 sleeps
+    p2: heavy1 sleeps; heavy2 holds; heavy3 holds; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      pawn4 engages wall8 at (7, 4)
+      runner1 engages heavy2 at (3, 3)
+      scout1 moves to (5, 2)
+      (0, 4) is contested by 2 units
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (3, 3) is contested by 2 units
+      heavy2 attacks runner1 for 5
+      runner1 is destroyed
+      runner1 attacks heavy2 for 2
+      heavy2 is destroyed
+      (3, 3) is left empty
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      heavy2 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 19 ticks, pays 1, moves south
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      runner1 thinks for 26 ticks, pays 0, moves south
+      runner2 sleeps
+      scout1 thinks for 47 ticks, pays 0, moves east
+      scout2 sleeps
+      heavy1 sleeps
+      heavy2 thinks for 6 ticks, pays 1, holds
+      heavy3 thinks for 6 ticks, pays 1, holds
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 4 energy
+      line2 rests and recovers to 4 energy
+      scout2 rests and recovers to 1 energy
+      runner2 rests and recovers to 2 energy
+      heavy1 rests and recovers to 6 energy
+      heavy4 rests and recovers to 6 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |o| | |
++-+-+-+-+-+-+-+-+
+|p| | | |H|o|r|p|
++-+-+-+-+-+-+-+-+
+|W|H|L| | |L|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 29: in play 9 v 6  (walls: 2 v 2)
+  -- turn 30
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 holds; pawn4 holds; runner2 holds; scout1 moves east; scout2 holds
+    p2: heavy1 holds; heavy3 sleeps; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 stays at (5, 2): not enough energy to move
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      runner2 thinks for 6 ticks, pays 0, holds
+      scout1 thinks for 47 ticks, pays 1, moves east
+      scout2 thinks for 55 ticks, pays 1, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      line1 rests and recovers to 5 energy
+      line2 rests and recovers to 5 energy
+      pawn4 rests and recovers to 1 energy
+      runner2 rests and recovers to 3 energy
+      heavy1 rests and recovers to 7 energy
+      heavy3 rests and recovers to 7 energy
+      heavy4 rests and recovers to 7 energy
+    p1: - scout1 at (5,2): not enough energy to move
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |o| | |
++-+-+-+-+-+-+-+-+
+|p| | | |H|o|r|p|
++-+-+-+-+-+-+-+-+
+|W|H|L| | |L|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 30: in play 9 v 6  (walls: 2 v 2)
+  -- turn 31
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 sleeps; pawn4 sleeps; runner2 sleeps; scout1 holds; scout2 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 sleeps
+      pawn4 sleeps
+      runner2 sleeps
+      scout1 thinks for 6 ticks, pays 0, holds
+      scout2 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      line1 rests and recovers to 6 energy
+      line2 rests and recovers to 6 energy
+      pawn4 rests and recovers to 2 energy
+      scout1 rests and recovers to 1 energy
+      scout2 rests and recovers to 1 energy
+      runner2 rests and recovers to 4 energy
+      heavy1 rests and recovers to 8 energy
+      heavy3 rests and recovers to 8 energy
+      heavy4 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |o| | |
++-+-+-+-+-+-+-+-+
+|p| | | |H|o|r|p|
++-+-+-+-+-+-+-+-+
+|W|H|L| | |L|H|W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 31: in play 9 v 6  (walls: 2 v 2)
+  -- turn 32
+    p1: keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves south; pawn1 moves south; pawn4 moves south; runner2 moves south; scout1 sleeps; scout2 holds
+    p2: heavy1 moves north; heavy3 sleeps; heavy4 moves north; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      line1 moves to (2, 5)
+      line2 moves to (5, 5)
+      pawn4 engages wall8 at (7, 4)
+      heavy1 moves to (1, 3)
+      (0, 4) is contested by 2 units
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      runner2 and heavy4 collide between (6, 3) and (6, 4)
+      runner2 attacks heavy4 for 2
+      heavy4 attacks runner2 for 5
+      runner2 is destroyed
+      heavy4 holds (6, 3)
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      line2 thinks for 26 ticks, pays 1, moves south
+      pawn1 thinks for 19 ticks, pays 1, moves south
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      runner2 thinks for 26 ticks, pays 1, moves south
+      scout1 sleeps
+      scout2 thinks for 55 ticks, pays 1, holds
+      heavy1 thinks for 23 ticks, pays 0, moves north
+      heavy3 sleeps
+      heavy4 thinks for 23 ticks, pays 0, moves north
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      scout1 rests and recovers to 2 energy
+      heavy3 rests and recovers to 9 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |o| | |
++-+-+-+-+-+-+-+-+
+|p|H| | |H|o|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | |L| | |L| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 32: in play 8 v 6  (walls: 2 v 2)
+  -- turn 33
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 holds; pawn4 holds; scout1 moves west; scout2 sleeps
+    p2: heavy1 holds; heavy3 moves east; heavy4 holds (halts at line 6); keep1 sleeps; runner1 holds; scout1 holds
+      scout1 moves to (4, 2)
+      heavy3 engages scout2 at (5, 3)
+      (5, 3) is contested by 2 units
+      heavy3 attacks scout2 for 5
+      scout2 is destroyed
+      heavy3 holds (5, 3)
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      scout1 thinks for 42 ticks, pays 1, moves west
+      scout2 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 23 ticks, pays 0, moves east
+      heavy4 thinks for 2 ticks, pays 0, holds, halts at line 6
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      line1 rests and recovers to 4 energy
+      line2 rests and recovers to 4 energy
+      pawn4 rests and recovers to 1 energy
+      heavy1 rests and recovers to 6 energy
+      heavy4 rests and recovers to 1 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |o| | | |
++-+-+-+-+-+-+-+-+
+|p|H| | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | |L| | |L| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 33: in play 7 v 6  (walls: 2 v 2)
+  -- turn 34
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 sleeps; pawn4 sleeps; scout1 holds
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 sleeps
+      pawn4 sleeps
+      scout1 thinks for 6 ticks, pays 0, holds
+      heavy1 sleeps
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 1, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 2 energy
+      line1 rests and recovers to 5 energy
+      line2 rests and recovers to 5 energy
+      pawn4 rests and recovers to 2 energy
+      scout1 rests and recovers to 1 energy
+      heavy1 rests and recovers to 7 energy
+      heavy3 rests and recovers to 2 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |o| | | |
++-+-+-+-+-+-+-+-+
+|p|H| | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | |L| | |L| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 34: in play 7 v 6  (walls: 2 v 2)
+  -- turn 35
+    p1: keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves west; pawn1 moves south; pawn4 moves south; scout1 sleeps
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      pawn1 engages wall1 at (0, 4)
+      line1 moves to (2, 6)
+      line2 moves to (4, 5)
+      pawn4 engages wall8 at (7, 4)
+      (0, 4) is contested by 2 units
+      pawn1 attacks wall1 for 1
+      the contest at (0, 4) is undecided between pawn1,wall1
+      pawn1 falls back to (0, 3)
+      wall1 holds (0, 4)
+      (7, 4) is contested by 2 units
+      pawn4 attacks wall8 for 1
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      line2 thinks for 26 ticks, pays 1, moves west
+      pawn1 thinks for 19 ticks, pays 0, moves south
+      pawn4 thinks for 19 ticks, pays 0, moves south
+      scout1 sleeps
+      heavy1 thinks for 6 ticks, pays 1, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      scout1 rests and recovers to 2 energy
+      heavy3 rests and recovers to 3 energy
+      heavy4 rests and recovers to 1 energy
+    p1: - pawn1 at (0,3): the contest at (0, 4) was undecided
+    p2: - wall1 at (0,4): the contest at (0, 4) was undecided
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |o| | | |
++-+-+-+-+-+-+-+-+
+|p|H| | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | |L| | | |
++-+-+-+-+-+-+-+-+
+| | |L| | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 35: in play 7 v 6  (walls: 2 v 2)
+  -- turn 36
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 holds (halts at line 4); pawn4 holds (halts at line 4); scout1 moves west
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 moves to (3, 2)
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 thinks for 2 ticks, pays 0, holds, halts at line 4
+      pawn4 thinks for 2 ticks, pays 0, holds, halts at line 4
+      scout1 thinks for 42 ticks, pays 1, moves west
+      heavy1 sleeps
+      heavy3 thinks for 6 ticks, pays 1, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      line1 rests and recovers to 3 energy
+      line2 rests and recovers to 3 energy
+      pawn4 rests and recovers to 1 energy
+      heavy1 rests and recovers to 7 energy
+      heavy4 rests and recovers to 2 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|p|H| | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | |L| | | |
++-+-+-+-+-+-+-+-+
+| | |L| | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 36: in play 7 v 6  (walls: 2 v 2)
+  -- turn 37
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 holds; pawn4 holds; scout1 holds
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 8 ticks, pays 1, holds
+      pawn4 thinks for 8 ticks, pays 1, holds
+      scout1 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 4 energy
+      line2 rests and recovers to 4 energy
+      scout1 rests and recovers to 1 energy
+      heavy1 rests and recovers to 8 energy
+      heavy3 rests and recovers to 3 energy
+      heavy4 rests and recovers to 3 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|p|H| | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | |L| | | |
++-+-+-+-+-+-+-+-+
+| | |L| | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 37: in play 7 v 6  (walls: 2 v 2)
+  -- turn 38
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn1 sleeps; pawn4 sleeps; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn1 sleeps
+      pawn4 sleeps
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn1 rests and recovers to 1 energy
+      line1 rests and recovers to 5 energy
+      line2 rests and recovers to 5 energy
+      pawn4 rests and recovers to 1 energy
+      scout1 rests and recovers to 2 energy
+      heavy1 rests and recovers to 9 energy
+      heavy3 rests and recovers to 4 energy
+      heavy4 rests and recovers to 4 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|p|H| | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | |L| | | |
++-+-+-+-+-+-+-+-+
+| | |L| | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 38: in play 7 v 6  (walls: 2 v 2)
+  -- turn 39
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn1 holds; pawn4 holds; scout1 moves east
+    p2: heavy1 moves west; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 moves to (4, 2)
+      heavy1 engages pawn1 at (0, 3)
+      (0, 3) is contested by 2 units
+      pawn1 attacks heavy1 for 1
+      heavy1 attacks pawn1 for 5
+      pawn1 is destroyed
+      heavy1 holds (0, 3)
+      pawn1 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn1 thinks for 8 ticks, pays 0, holds
+      pawn4 thinks for 8 ticks, pays 0, holds
+      scout1 thinks for 47 ticks, pays 1, moves east
+      heavy1 thinks for 23 ticks, pays 0, moves west
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 6 energy
+      line2 rests and recovers to 6 energy
+      pawn4 rests and recovers to 2 energy
+      heavy3 rests and recovers to 5 energy
+      heavy4 rests and recovers to 5 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |o| | | |
++-+-+-+-+-+-+-+-+
+|H| | | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | |L| | | |
++-+-+-+-+-+-+-+-+
+| | |L| | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 39: in play 6 v 6  (walls: 2 v 2)
+  -- turn 40
+    p1: keep1 sleeps; keep2 sleeps; line1 moves east; line2 moves south; pawn4 sleeps; scout1 holds
+    p2: heavy1 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      line1 moves to (3, 6)
+      line2 moves to (4, 6)
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves east
+      line2 thinks for 26 ticks, pays 1, moves south
+      pawn4 sleeps
+      scout1 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      scout1 rests and recovers to 1 energy
+      heavy1 rests and recovers to 2 energy
+      heavy3 rests and recovers to 6 energy
+      heavy4 rests and recovers to 6 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |o| | | |
++-+-+-+-+-+-+-+-+
+|H| | | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 40: in play 6 v 6  (walls: 2 v 2)
+  -- turn 41
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; pawn4 moves south; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      pawn4 engages wall8 at (7, 4)
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 falls back to (7, 3)
+      wall8 holds (7, 4)
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 4 energy
+      line2 rests and recovers to 4 energy
+      scout1 rests and recovers to 2 energy
+      heavy1 rests and recovers to 3 energy
+      heavy3 rests and recovers to 7 energy
+      heavy4 rests and recovers to 7 energy
+    p1: - pawn4 at (7,3): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |o| | | |
++-+-+-+-+-+-+-+-+
+|H| | | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 41: in play 6 v 6  (walls: 2 v 2)
+  -- turn 42
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; pawn4 holds; scout1 moves west
+    p2: heavy1 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 moves to (3, 2)
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      pawn4 thinks for 8 ticks, pays 0, holds
+      scout1 thinks for 42 ticks, pays 0, moves west
+      heavy1 thinks for 6 ticks, pays 1, holds
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 5 energy
+      line2 rests and recovers to 5 energy
+      pawn4 rests and recovers to 1 energy
+      heavy3 rests and recovers to 8 energy
+      heavy4 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|H| | | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 42: in play 6 v 6  (walls: 2 v 2)
+  -- turn 43
+    p1: keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves south; pawn4 sleeps; scout1 moves east
+    p2: heavy1 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      scout1 stays at (3, 2): not enough energy to move
+      line1 engages keep1 at (3, 7)
+      line2 engages runner1 at (4, 7)
+      (3, 7) is contested by 2 units
+      keep1 attacks line1 for 1
+      line1 attacks keep1 for 3
+      the contest at (3, 7) is undecided between keep1,line1
+      line1 falls back to (3, 6)
+      keep1 holds (3, 7)
+      (4, 7) is contested by 2 units
+      runner1 attacks line2 for 2
+      the contest at (4, 7) is undecided between line2,runner1
+      line2 falls back to (4, 6)
+      runner1 holds (4, 7)
+      keep1 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 0, moves south
+      line2 thinks for 33 ticks, pays 1, moves south
+      pawn4 sleeps
+      scout1 thinks for 47 ticks, pays 1, moves east
+      heavy1 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps, and is woken
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      pawn4 rests and recovers to 2 energy
+      heavy1 rests and recovers to 3 energy
+      heavy3 rests and recovers to 9 energy
+      heavy4 rests and recovers to 9 energy
+    p1: - scout1 at (3,2): not enough energy to move
+    p1: - line1 at (3,6): the contest at (3, 7) was undecided
+    p2: - keep1 at (3,7): the contest at (3, 7) was undecided
+    p1: - line2 at (4,6): the contest at (4, 7) was undecided
+    p2: - runner1 at (4,7): the contest at (4, 7) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|H| | | | |H|H|p|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 43: in play 6 v 6  (walls: 2 v 2)
+  -- turn 44
+    p1: keep1 sleeps; keep2 sleeps; line1 holds (halts at line 6); line2 holds; pawn4 moves south; scout1 holds
+    p2: heavy1 holds; heavy3 moves east; heavy4 moves east; keep1 holds; runner1 holds; scout1 holds
+      pawn4 engages wall8 at (7, 4)
+      heavy3 moves to (6, 3)
+      heavy4 moves to (7, 3)
+      (7, 4) is contested by 2 units
+      the contest at (7, 4) is undecided between pawn4,wall8
+      pawn4 and heavy4 collide between (7, 4) and (7, 3)
+      heavy4 attacks pawn4 for 5
+      pawn4 is destroyed
+      wall8 holds (7, 4)
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 3 ticks, pays 0, holds, halts at line 6
+      line2 thinks for 6 ticks, pays 0, holds
+      pawn4 thinks for 19 ticks, pays 1, moves south
+      scout1 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 23 ticks, pays 1, moves east
+      heavy4 thinks for 23 ticks, pays 1, moves east
+      keep1 thinks for 1 ticks, pays 0, holds
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 1 energy
+      line2 rests and recovers to 3 energy
+      scout1 rests and recovers to 1 energy
+      heavy1 rests and recovers to 4 energy
+      keep1 rests and recovers to 5 energy
+      runner1 rests and recovers to 9 energy
+    p1: - pawn4 at (7,4): the contest at (7, 4) was undecided
+    p2: - wall8 at (7,4): the contest at (7, 4) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|H| | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 44: in play 5 v 6  (walls: 2 v 2)
+  -- turn 45
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 sleeps; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 1, holds
+      line2 sleeps
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line2 rests and recovers to 4 energy
+      scout1 rests and recovers to 2 energy
+      heavy1 rests and recovers to 5 energy
+      heavy3 rests and recovers to 6 energy
+      heavy4 rests and recovers to 6 energy
+      runner1 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|H| | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 45: in play 5 v 6  (walls: 2 v 2)
+  -- turn 46
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 holds; scout1 holds
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 thinks for 6 ticks, pays 0, holds
+      scout1 thinks for 21 ticks, pays 1, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 1 energy
+      line2 rests and recovers to 5 energy
+      heavy1 rests and recovers to 6 energy
+      heavy3 rests and recovers to 7 energy
+      heavy4 rests and recovers to 7 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|H| | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 46: in play 5 v 6  (walls: 2 v 2)
+  -- turn 47
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 sleeps; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 sleeps
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 6 ticks, pays 0, holds
+      heavy4 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 2 energy
+      line2 rests and recovers to 6 energy
+      scout1 rests and recovers to 2 energy
+      heavy1 rests and recovers to 7 energy
+      heavy3 rests and recovers to 8 energy
+      heavy4 rests and recovers to 8 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|H| | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 47: in play 5 v 6  (walls: 2 v 2)
+  -- turn 48
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 moves south; scout1 sleeps
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      line2 engages runner1 at (4, 7)
+      (4, 7) is contested by 2 units
+      runner1 attacks line2 for 2
+      line2 attacks runner1 for 3
+      the contest at (4, 7) is undecided between line2,runner1
+      line2 falls back to (4, 6)
+      runner1 holds (4, 7)
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 thinks for 33 ticks, pays 1, moves south
+      scout1 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 3 energy
+      scout1 rests and recovers to 3 energy
+      heavy1 rests and recovers to 8 energy
+      heavy3 rests and recovers to 9 energy
+      heavy4 rests and recovers to 9 energy
+    p1: - line2 at (4,6): the contest at (4, 7) was undecided
+    p2: - runner1 at (4,7): the contest at (4, 7) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|H| | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 48: in play 5 v 6  (walls: 2 v 2)
+  -- turn 49
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 holds; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 thinks for 6 ticks, pays 0, holds
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 14 ticks, pays 0, holds
+      heavy4 thinks for 14 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 4 energy
+      line2 rests and recovers to 1 energy
+      scout1 rests and recovers to 4 energy
+      heavy1 rests and recovers to 9 energy
+      heavy3 rests and recovers to 10 energy
+      heavy4 rests and recovers to 10 energy
+      runner1 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+|H| | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 49: in play 5 v 6  (walls: 2 v 2)
+  -- turn 50
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 sleeps; scout1 sleeps
+    p2: heavy1 moves east; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      heavy1 moves to (1, 3)
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 sleeps
+      scout1 sleeps
+      heavy1 thinks for 23 ticks, pays 1, moves east
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 5 energy
+      line2 rests and recovers to 2 energy
+      scout1 rests and recovers to 5 energy
+      heavy3 rests and recovers to 11 energy
+      heavy4 rests and recovers to 11 energy
+      runner1 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| |H| | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 50: in play 5 v 6  (walls: 2 v 2)
+  -- turn 51
+    p1: keep1 sleeps; keep2 sleeps; line1 moves south; line2 holds; scout1 sleeps
+    p2: heavy1 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      line1 engages keep1 at (3, 7)
+      (3, 7) is contested by 2 units
+      keep1 attacks line1 for 1
+      the contest at (3, 7) is undecided between keep1,line1
+      line1 falls back to (3, 6)
+      keep1 holds (3, 7)
+      keep1 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      line2 thinks for 6 ticks, pays 0, holds
+      scout1 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 14 ticks, pays 1, holds
+      heavy4 thinks for 14 ticks, pays 1, holds
+      keep1 sleeps, and is woken
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line2 rests and recovers to 3 energy
+      scout1 rests and recovers to 6 energy
+      heavy1 rests and recovers to 6 energy
+    p1: - line1 at (3,6): the contest at (3, 7) was undecided
+    p2: - keep1 at (3,7): the contest at (3, 7) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| |H| | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 51: in play 5 v 6  (walls: 2 v 2)
+  -- turn 52
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 sleeps; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 holds; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 sleeps
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 thinks for 1 ticks, pays 0, holds
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 3 energy
+      line2 rests and recovers to 4 energy
+      scout1 rests and recovers to 7 energy
+      heavy1 rests and recovers to 7 energy
+      heavy3 rests and recovers to 11 energy
+      heavy4 rests and recovers to 11 energy
+      keep1 rests and recovers to 5 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| |H| | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 52: in play 5 v 6  (walls: 2 v 2)
+  -- turn 53
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 holds; scout1 sleeps
+    p2: heavy1 holds; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 thinks for 6 ticks, pays 0, holds
+      scout1 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 14 ticks, pays 0, holds
+      heavy4 thinks for 14 ticks, pays 0, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 4 energy
+      line2 rests and recovers to 5 energy
+      scout1 rests and recovers to 8 energy
+      heavy1 rests and recovers to 8 energy
+      heavy3 rests and recovers to 12 energy
+      heavy4 rests and recovers to 12 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| |H| | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 53: in play 5 v 6  (walls: 2 v 2)
+  -- turn 54
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; line2 sleeps; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; runner1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      line2 sleeps
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 5 energy
+      line2 rests and recovers to 6 energy
+      scout1 rests and recovers to 9 energy
+      heavy1 rests and recovers to 9 energy
+      heavy3 rests and recovers to 13 energy
+      heavy4 rests and recovers to 13 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| |H| | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L|L| | | |
++-+-+-+-+-+-+-+-+
+|o| | |K|r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 54: in play 5 v 6  (walls: 2 v 2)
+  -- turn 55
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; line2 moves south; scout1 sleeps
+    p2: heavy1 moves east; heavy3 holds; heavy4 holds; keep1 sleeps; runner1 holds; scout1 holds
+      line2 engages runner1 at (4, 7)
+      heavy1 moves to (2, 3)
+      (4, 7) is contested by 2 units
+      runner1 attacks line2 for 2
+      line2 is destroyed
+      line2 attacks runner1 for 3
+      runner1 is destroyed
+      (4, 7) is left empty
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      line2 thinks for 33 ticks, pays 1, moves south
+      scout1 sleeps
+      heavy1 thinks for 23 ticks, pays 1, moves east
+      heavy3 thinks for 14 ticks, pays 0, holds
+      heavy4 thinks for 14 ticks, pays 1, holds
+      keep1 sleeps
+      runner1 thinks for 0 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 6 energy
+      scout1 rests and recovers to 10 energy
+      heavy3 rests and recovers to 14 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | |H| | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 55: in play 4 v 5  (walls: 2 v 2)
+  -- turn 56
+    p1: keep1 sleeps; keep2 sleeps; line1 moves south; scout1 sleeps
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; scout1 holds
+      line1 engages keep1 at (3, 7)
+      (3, 7) is contested by 2 units
+      keep1 attacks line1 for 1
+      line1 attacks keep1 for 3
+      the contest at (3, 7) is undecided between keep1,line1
+      line1 falls back to (3, 6)
+      keep1 holds (3, 7)
+      keep1 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      scout1 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps, and is woken
+      scout1 thinks for 0 ticks, pays 0, holds
+      scout1 rests and recovers to 11 energy
+      heavy1 rests and recovers to 6 energy
+      heavy3 rests and recovers to 15 energy
+      heavy4 rests and recovers to 13 energy
+    p1: - line1 at (3,6): the contest at (3, 7) was undecided
+    p2: - keep1 at (3,7): the contest at (3, 7) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | |H| | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 56: in play 4 v 5  (walls: 2 v 2)
+  -- turn 57
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 14 ticks, pays 1, holds
+      heavy4 thinks for 14 ticks, pays 0, holds
+      keep1 thinks for 1 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 1 energy
+      scout1 rests and recovers to 12 energy
+      heavy1 rests and recovers to 7 energy
+      heavy4 rests and recovers to 14 energy
+      keep1 rests and recovers to 5 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | |H| | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 57: in play 4 v 5  (walls: 2 v 2)
+  -- turn 58
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; scout1 sleeps
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      scout1 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 2 energy
+      heavy1 rests and recovers to 8 energy
+      heavy3 rests and recovers to 15 energy
+      heavy4 rests and recovers to 15 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | |H| | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 58: in play 4 v 5  (walls: 2 v 2)
+  -- turn 59
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 14 ticks, pays 0, holds
+      heavy4 thinks for 14 ticks, pays 0, holds
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 3 energy
+      heavy1 rests and recovers to 9 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | |H| | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 59: in play 4 v 5  (walls: 2 v 2)
+  -- turn 60
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; scout1 sleeps
+    p2: heavy1 moves east; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; scout1 holds
+      heavy1 moves to (3, 3)
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      scout1 sleeps
+      heavy1 thinks for 23 ticks, pays 0, moves east
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 4 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 60: in play 4 v 5  (walls: 2 v 2)
+  -- turn 61
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; scout1 sleeps
+    p2: heavy1 holds; heavy3 holds; heavy4 holds; keep1 sleeps; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      scout1 sleeps
+      heavy1 thinks for 6 ticks, pays 1, holds
+      heavy3 thinks for 14 ticks, pays 0, holds
+      heavy4 thinks for 14 ticks, pays 1, holds
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 5 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 61: in play 4 v 5  (walls: 2 v 2)
+  -- turn 62
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 6 energy
+      heavy1 rests and recovers to 6 energy
+      heavy4 rests and recovers to 15 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 62: in play 4 v 5  (walls: 2 v 2)
+  -- turn 63
+    p1: keep1 sleeps; keep2 sleeps; line1 moves south; scout1 sleeps
+    p2: heavy1 holds; heavy3 holds; heavy4 holds; keep1 sleeps; scout1 holds
+      line1 engages keep1 at (3, 7)
+      (3, 7) is contested by 2 units
+      keep1 attacks line1 for 1
+      line1 attacks keep1 for 3
+      the contest at (3, 7) is undecided between keep1,line1
+      line1 falls back to (3, 6)
+      keep1 holds (3, 7)
+      keep1 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      scout1 sleeps
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 thinks for 14 ticks, pays 1, holds
+      heavy4 thinks for 14 ticks, pays 0, holds
+      keep1 sleeps, and is woken
+      scout1 thinks for 0 ticks, pays 0, holds
+      heavy1 rests and recovers to 7 energy
+    p1: - line1 at (3,6): the contest at (3, 7) was undecided
+    p2: - keep1 at (3,7): the contest at (3, 7) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 63: in play 4 v 5  (walls: 2 v 2)
+  -- turn 64
+    p1: keep1 sleeps; keep2 sleeps; line1 holds; scout1 sleeps
+    p2: heavy1 sleeps; heavy3 sleeps; heavy4 sleeps; keep1 holds; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      scout1 sleeps
+      heavy1 sleeps
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 thinks for 1 ticks, pays 0, holds
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 1 energy
+      heavy1 rests and recovers to 8 energy
+      heavy3 rests and recovers to 15 energy
+      keep1 rests and recovers to 5 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |o| | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 64: in play 4 v 5  (walls: 2 v 2)
+  -- turn 65
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps; scout1 sleeps
+    p2: heavy1 moves north; heavy3 holds; heavy4 holds; keep1 sleeps; scout1 holds
+      heavy1 engages scout1 at (3, 2)
+      (3, 2) is contested by 2 units
+      heavy1 attacks scout1 for 5
+      scout1 is destroyed
+      heavy1 holds (3, 2)
+      scout1 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      scout1 sleeps, and is woken
+      heavy1 thinks for 23 ticks, pays 0, moves north
+      heavy3 thinks for 14 ticks, pays 0, holds
+      heavy4 thinks for 14 ticks, pays 0, holds
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 2 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 65: in play 3 v 5  (walls: 2 v 2)
+  -- turn 66
+    p1: keep1 sleeps; keep2 sleeps; line1 holds
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 3 energy
+      heavy1 rests and recovers to 1 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 66: in play 3 v 5  (walls: 2 v 2)
+  -- turn 67
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 14 ticks, pays 0, holds
+      heavy4 thinks for 14 ticks, pays 1, holds
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 4 energy
+      heavy1 rests and recovers to 2 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 67: in play 3 v 5  (walls: 2 v 2)
+  -- turn 68
+    p1: keep1 sleeps; keep2 sleeps; line1 holds
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 6 ticks, pays 0, holds
+      heavy1 thinks for 6 ticks, pays 1, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 5 energy
+      heavy4 rests and recovers to 15 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 68: in play 3 v 5  (walls: 2 v 2)
+  -- turn 69
+    p1: keep1 sleeps; keep2 sleeps; line1 sleeps
+    p2: heavy1 sleeps; heavy3 holds; heavy4 holds; keep1 sleeps; scout1 holds
+      keep1 sleeps
+      keep2 sleeps
+      line1 sleeps
+      heavy1 sleeps
+      heavy3 thinks for 14 ticks, pays 1, holds
+      heavy4 thinks for 14 ticks, pays 0, holds
+      keep1 sleeps
+      scout1 thinks for 0 ticks, pays 0, holds
+      line1 rests and recovers to 6 energy
+      heavy1 rests and recovers to 2 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |L| | | | |
++-+-+-+-+-+-+-+-+
+|o| | |K| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 69: in play 3 v 5  (walls: 2 v 2)
+  -- turn 70
+    p1: keep1 sleeps; keep2 sleeps; line1 moves south
+    p2: heavy1 holds; heavy3 sleeps; heavy4 sleeps; keep1 sleeps; scout1 holds
+      line1 engages keep1 at (3, 7)
+      (3, 7) is contested by 2 units
+      keep1 attacks line1 for 1
+      line1 attacks keep1 for 3
+      keep1 is destroyed
+      line1 holds (3, 7)
+      keep1 is woken by the blow
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 26 ticks, pays 1, moves south
+      heavy1 thinks for 6 ticks, pays 0, holds
+      heavy3 sleeps
+      heavy4 sleeps
+      keep1 sleeps, and is woken
+      scout1 thinks for 0 ticks, pays 0, holds
+      heavy1 rests and recovers to 3 energy
+      heavy3 rests and recovers to 15 energy
+      keep1 carried player 2's flag, and it has fallen
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |H| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H|H|
++-+-+-+-+-+-+-+-+
+|W| | | | | | |W|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|o| | |L| | | | |
++-+-+-+-+-+-+-+-+
+    p2 is eliminated from turn 70
+    after turn 70: in play 3 v 4  (walls: 2 v 2)
+  game over: player 1 wins on turn 70
+  final units:
+    p1 keep1    Keep    a1 h10 (3,0) hp 10 en 5 flag
+    p1 keep2    Keep    a1 h10 (4,0) hp 10 en 5
+    p1 line1    Line    a3 h6 (3,7) hp 1 en 0
+    p1 wall1    Wall    a0 h10 (2,0) hp 10 en 0
+    p1 wall2    Wall    a0 h10 (5,0) hp 10 en 0
+    p2 heavy1   Heavy   a5 h10 (3,2) hp 8 en 3
+    p2 heavy3   Heavy   a5 h10 (6,3) hp 5 en 15
+    p2 heavy4   Heavy   a5 h10 (7,3) hp 3 en 15
+    p2 scout1   Scout   a0 h2 (0,7) hp 2 en 12
+    p2 wall1    Wall    a0 h10 (0,4) hp 8 en 0
+    p2 wall8    Wall    a0 h10 (7,4) hp 8 en 0

@@ -1,0 +1,171 @@
+## MODIFIED Requirements
+
+### Requirement: Every Registered Player Is Given The Default Catalogue
+
+The system SHALL give every player registered in a game a catalogue of eight
+unit types. Each SHALL be a type as any other, and SHALL cost the sum of its
+four statistics like any other. Each type with compute SHALL carry a default
+program, so that a player who changes nothing fields an army that plays.
+
+No type in the catalogue SHALL be drawn with the glyph an empty square is
+drawn with, because a unit a player cannot tell from a bare square is a unit
+they cannot see on their own board.
+
+The catalogue SHALL be:
+
+| Name   | Symbol | Attack | Health | Energy | Compute | Cost | Move fare | Default program |
+|--------|--------|--------|--------|--------|---------|------|-----------|-----------------|
+| Wall   | `W`    | 0      | 10     | 0      | 0       | 10   | 3         | none: no controller |
+| Scout  | `o`    | 0      | 2      | 12     | 6       | 20   | 1         | explorer: walks to the nearest unknown square, sleeps when there is none |
+| Pawn   | `p`    | 1      | 4      | 2      | 3       | 10   | 1         | vanguard: steps towards the enemy's edge when it can afford a step and a strike, never onto one of its own, and fights what it walks into; sleeps a turn otherwise |
+| Runner | `r`    | 2      | 4      | 10     | 5       | 21   | 1         | hunter: walks to the nearest enemy flag, round its own units, fighting what it meets |
+| Line   | `L`    | 3      | 6      | 12     | 4       | 25   | 2         | hunter |
+| Lance  | `!`    | 8      | 2      | 10     | 4       | 24   | 1         | hunter |
+| Keep   | `K`    | 1      | 10     | 5      | 8       | 24   | 3         | warden: holds its square, sleeping a hundred turns at a time, and strikes back when woken |
+| Heavy  | `H`    | 5      | 10     | 15     | 4       | 34   | 3         | hunter |
+
+The default programs SHALL be written in the instruction set `unit-program`
+defines, SHALL be deterministic, and SHALL each fit the tick cap of the type
+that carries them on every turn. The hunter SHALL sleep when it cannot afford
+both a step and a strike, so that it arrives able to fight, and SHALL sleep a
+turn rather than hold when both ways round stand its own units, so that
+waiting for the way to clear costs nothing. The vanguard SHALL never step
+onto a square one of its own stands on.
+
+Defining a type spends nothing, so the catalogue SHALL cost a player nothing
+until they deploy a unit of one of its types.
+
+The catalogue SHALL be the player's own. A player SHALL be able to redefine
+any of its types under the same name, with a program of their own or none,
+define types of their own alongside it, and never deploy the ones they do not
+want.
+
+#### Scenario: A player is registered
+
+- **WHEN** a player is registered in a game
+- **THEN** they hold the eight catalogue types
+- **AND** each has the statistics and the default program named above
+
+#### Scenario: The catalogue is free until it is used
+
+- **WHEN** a player has been given the catalogue and has deployed nothing
+- **THEN** they have spent none of their budget
+
+#### Scenario: A player redefines a catalogue type
+
+- **WHEN** a player defines a type named `Heavy` with statistics and a program of their own
+- **THEN** the type named `Heavy` holds the statistics and program they gave it
+- **AND** the rest of the catalogue is unchanged
+
+#### Scenario: A player adds to the catalogue
+
+- **WHEN** a player defines a type under a name the catalogue does not use
+- **THEN** they hold that type as well as the eight
+
+#### Scenario: A seat that changes nothing plays
+
+- **WHEN** two players commit the stock army unchanged
+- **THEN** the game is resolved with every unit running its type's default program
+- **AND** at least one unit of each army moves on the first turn of play
+
+#### Scenario: The whole army gets out
+
+- **WHEN** two players commit the stock army unchanged
+- **THEN** every unit of each array with a controller, the Keeps excepted, stands on a square other than the one it was seeded on at some turn within the first twenty turns of play
+
+#### Scenario: A blocked hunter costs nothing
+
+- **WHEN** a unit running the hunter finds one of its own both ways round on a turn
+- **THEN** it sleeps that turn and pays no energy for the thinking beyond the ticks it took to find out
+
+### Requirement: A Two-Player Game Is Given A Default Deployment
+
+The system SHALL deploy a default array of sixteen units for each player of a
+two-player game, and SHALL set that player's flag on one of its Keeps.
+
+The array SHALL be symmetric about the middle of the board: whatever stands in
+a column SHALL stand in that column's mirror. An army that is stronger on one
+flank than the other before anybody has moved is an accident rather than a
+design, and it is what forces a pair of Keeps - an eight-column row has no
+middle square to stand a single one on. Which of the pair carries the flag
+SHALL be fixed by the rules rather than left to the order a list is held in.
+
+The array SHALL be described by depth from the player's own edge of the board,
+and SHALL be laid out the same way for both players, so that each faces a
+mirror of the other. Depth 0 is the row at the player's own edge; depth 1 is
+the row in front of it. Columns SHALL be the same for both players.
+
+| Depth | c0     | c1    | c2   | c3   | c4   | c5   | c6    | c7     |
+|-------|--------|-------|------|------|------|------|-------|--------|
+| 1     | Pawn   | Pawn  | Line | Heavy| Heavy| Line | Pawn  | Pawn   |
+| 0     | Runner | Scout | Wall | Keep | Keep | Wall | Scout | Runner |
+
+The front rank SHALL be made of units whose default programs leave it, so
+that the rank behind is not boxed in by it: nothing in the array's back rank
+SHALL stand behind a unit that never moves. The Walls SHALL stand beside the
+Keeps, where what they cannot do - move - is what a flag's flanks want.
+
+The array SHALL cost 308 points, and SHALL use only types the catalogue holds.
+It SHALL NOT be required to use every one of them: eight pairs of eight
+different types cost more than the default budget covers.
+
+#### Scenario: Both players are given the array
+
+- **WHEN** a two-player game is created and both players are registered
+- **THEN** each player's seat opens holding the sixteen units of the array, deployed
+
+#### Scenario: The array is placed where the player may place
+
+- **WHEN** the array is deployed for a player
+- **THEN** every unit of it stands inside the rows that player may deploy in
+
+#### Scenario: A player is told only about their own army
+
+- **WHEN** a player opens their seat holding the array
+- **THEN** they see their own sixteen units and none of the other player's
+
+#### Scenario: The array is a mirror of itself
+
+- **WHEN** the array is deployed
+- **THEN** the unit in each column of each row is of the same type as the unit in that column's mirror
+
+#### Scenario: A Keep carries the flag
+
+- **WHEN** the array is deployed for a player
+- **THEN** that player's flag is on the Keep in the lower-numbered of the two middle columns
+
+#### Scenario: The array is committed as it stands
+
+- **WHEN** a player commits without changing the array
+- **THEN** the commit is accepted and every unit of the array is published
+
+#### Scenario: Nothing stands behind a unit that never moves
+
+- **WHEN** the array is deployed
+- **THEN** every unit in the back rank with a controller stands behind a unit whose default program moves it
+
+### Requirement: The Default Deployment Is Paid For Like Any Other
+
+The system SHALL charge the default array against the player's budget by the
+rules that charge any deployment. What the player has spent SHALL be derived
+from the board, so a default unit taken back SHALL return its points.
+
+A player given the default budget and the default array SHALL hold 12 points
+they have not spent.
+
+#### Scenario: What the array costs
+
+- **WHEN** a player is given the default array on the default budget
+- **THEN** they have spent 308 points
+- **AND** 12 points remain
+
+#### Scenario: Taking a default unit back returns its points
+
+- **WHEN** a player takes back a Heavy from the default array
+- **THEN** 34 points are returned to them
+
+#### Scenario: A budget too small for the array
+
+- **WHEN** a player is registered with a budget smaller than the array costs
+- **THEN** they are given no default array
+- **AND** they hold the catalogue

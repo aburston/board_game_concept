@@ -69,7 +69,7 @@ added once the game has started.
 **R2.3.1 The point budget.** Each player is registered with a **point budget**,
 which is what bounds the army they may deploy (**R2.9**). It is an integer from
 **1 to 1000**, and is **320** where the administrator does not name one - what
-the default army (**R2.13**) costs, and 16 points over, so that a player can
+the default army (**R2.13**) costs, and 12 points over, so that a player can
 change what they were given without first taking something back. Two
 players of the same game may be given different budgets. A budget is fixed at
 registration: nothing in play raises or lowers it. A player file may carry a
@@ -230,8 +230,8 @@ not want.
 | Name | Symbol | Attack | Health | Energy | Compute | Cost | Move fare | Program |
 |---|---|---|---|---|---|---|---|---|
 | Wall | `W` | 0 | 10 | 0 | 0 | 10 | 3 | none: no controller |
-| Scout | `o` | 0 | 2 | 12 | 6 | 20 | 1 | explorer: walks at the nearest unknown square |
-| Pawn | `p` | 1 | 4 | 2 | 2 | 9 | 1 | sentry: steps onto what struck it, else sleeps |
+| Scout | `o` | 0 | 2 | 12 | 6 | 20 | 1 | explorer: walks at the nearest unknown square, round whatever is in the way, and gives up on one it cannot get nearer to |
+| Pawn | `p` | 1 | 4 | 2 | 3 | 10 | 1 | vanguard: steps at the enemy's edge when it can afford to, never onto its own |
 | Runner | `r` | 2 | 4 | 10 | 5 | 21 | 1 | hunter: walks at the enemy flag |
 | Line | `L` | 3 | 6 | 12 | 4 | 25 | 2 | hunter |
 | Lance | `!` | 8 | 2 | 10 | 4 | 24 | 1 | hunter |
@@ -245,13 +245,13 @@ that plays. `show program <type>` lists any of them; `set program <type>
 
 *The array.* In a **two-player** game each player also opens their seat with
 sixteen of those units already deployed in their own half (**R2.6a**), and
-their flag (**R2.11**) already on the left-hand Keep. It costs **304** of the
+their flag (**R2.11**) already on the left-hand Keep. It costs **308** of the
 320-point budget. Both players get the same layout, mirrored, reading from
 each player's own edge inwards:
 
 ```
-    depth 1   p  p  W  H  H  W  p  p      the slow rank, nearest the enemy
-    depth 0   r  o  L  K  K  L  o  r      the fast rank, and the flag
+    depth 1   p  p  L  H  H  L  p  p      the rank that goes, nearest the enemy
+    depth 0   r  o  W  K  K  W  o  r      the rank that follows, the flag, and its walls
 ```
 
 Both rows are **symmetric about the middle of the board**: what stands in one
@@ -267,6 +267,15 @@ five moves in it and a strike costs five more, so one deployed at the back of
 your half arrives at the fighting line with nothing left to fight with. A
 Runner has ten moves. The units that can afford to travel are the ones that
 can start further back.
+
+Everything in the front rank has a program that leaves it - the Pawns
+advance, the Lines and Heavies hunt - so nothing behind it is boxed in: the
+Runners and Scouts follow the front rank out as the squares in front of
+them clear. The Walls stand in the back rank beside the Keeps, where what a
+wall cannot do, move, is what a flag's flanks want. The first array had the
+Walls in front and the Lines behind, and the first programmed series showed
+what that fielded: two Heavies walked out alone and twelve units stood
+boxed in for the rest of the game.
 
 *When you get no army.* The array is deployed only where it can stand as it
 is: a game of exactly two players, on a board with room for it inside your own
@@ -300,8 +309,8 @@ refused after the commit, as everything else in setup is.
 then `commit`s once. The server holds the game open until **every registered
 player** has committed a setup, and then resolves the whole game in one held
 act: turn after turn, one straight after another, until it is decided
-(**R7.2**), its whole state repeats (**R7.5**) or the turn cap is reached
-(**R7.6**). Nobody is waited for after the last setup commit, nobody gains
+(**R7.2**), its whole state repeats (**R7.5**), nothing has happened for
+fifty turns (**R7.7**) or the turn cap is reached (**R7.6**). Nobody is waited for after the last setup commit, nobody gains
 from committing early or late, and nobody gains from the order the server
 happens to read the setups in. A player whose setup is committed waits for
 the others' and is then shown the result; a player who opens a resolved game
@@ -624,8 +633,10 @@ plays:**
 **R6.1 You always see your own units,** wherever they are.
 
 **R6.2 You see an enemy unit only by fighting it.** Visibility is recorded when
-two units actually *exchange attacks*, whether in a contested square or in a
-head-on collision (**R4.9**). Merely being next to an enemy reveals nothing.
+two units *contest a square*, whether by one walking into the other or in a
+head-on collision (**R4.9**) - and whether or not either can land a blow: two
+Scouts that collide have met, though neither strikes. Merely being next to an
+enemy reveals nothing.
 Contact also reveals that unit's **type**, with the attack, health and energy
 its owner designed it with - and **nothing of how it thinks**: not its
 compute, not its program, not what its controller did. A type's controller
@@ -763,6 +774,16 @@ for that.
 repeating by turn **500** is stopped there and recorded as undecided, saying
 the cap was reached. The cap exists so that a game always ends; it is not a
 rule anybody plays to.
+
+**R7.7 A game in which nothing happens stops, undecided.** When **fifty**
+turns pass in which no unit changes square, no blow is landed, nothing is
+destroyed and no flag falls, the game is stopped and recorded as undecided,
+saying so and naming the last turn on which anything happened. Thinking,
+sleeping and resting are not things happening. A sleeping unit's countdown
+and a controller's meter keep a static board from ever repeating its whole
+state (**R7.5**), and a board nobody has moved or struck on for fifty turns
+is one nobody is watching. Whichever of the three stops - the repeat, the
+quiet, the cap - comes first ends the game.
 
 **R7.3 A game with fewer than two registered players is never decided.** There
 is nobody to be the last player standing against; a solo game is a sandbox.
@@ -950,7 +971,7 @@ bill is the same on every board:
 | `FLAG mine\|enemy` | 2 | where that flag stands into `r0`, `r1`, or -1 if fallen or unknown |
 | `CONTACT` | 2 | the enemy I fought last turn: its square into `r0`, `r1`, its attack and health into `r2`, `r3`; -1 if none |
 | `MAP rX, rY` | 3 | what my army knows of that square into `r0`: 0 unknown, 1 empty, 2 friend, 3 enemy, 4 off the board; with the turn it was learned in `r1` and, for an enemy, its attack and health in `r2`, `r3` |
-| `NEAREST friend\|enemy\|unknown` | 4 | the nearest such square into `r0`, `r1`, or -1 if none; ties by distance, then the lower `y`, then the lower `x` |
+| `NEAREST friend\|enemy\|unknown` | 4 | the nearest such square into `r0`, `r1`, or -1 if none; ties by distance, then the row nearer your own edge of the board, then the lower `x` |
 | `RECV` | 2 | the oldest message in my inbox into `r0`, `r1`, `r2`, or -1 if none |
 | `FLUSH` | 1 | empty my inbox |
 | `SET rX, n` | 1 | a constant into a register |

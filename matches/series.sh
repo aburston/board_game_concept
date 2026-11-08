@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 # Play the seventh series: games 221-240 on the default board under the
 # programmed rules, in the draw the `programmable-units` change fixed before
-# the first game was played.
+# the first game was played; and games 241-245, the five pairings with a
+# stock seat played again under the array the `default-army-that-plays`
+# change gave the game; and game 246, the mirror again once the Scout's
+# explorer went round the enemies it knows of; and game 247, the mirror once
+# more with ties for the nearest square settled towards each seat's own edge;
+# and games 251-270, the eighth series: the whole draw again under the
+# default that plays, the Scout's explorer, the contact rule and the tie-break.
 #
 # Each game is one `arena.py` invocation and writes its own log, so the series
 # can be resumed: a game whose log already ends in an outcome line is skipped.
@@ -40,6 +46,33 @@ DRAW="
 238 fugitive   executioner
 239 flag_hunt  flag_hunt
 240 advance    advance
+241 garrison   garrison
+242 advance    garrison
+243 flag_hunt  garrison
+244 screen     garrison
+245 flag_hunt  flag_hunt
+246 flag_hunt  flag_hunt
+247 flag_hunt  flag_hunt
+251 garrison   garrison
+252 advance    garrison
+253 flag_hunt  garrison
+254 screen     garrison
+255 flag_hunt  lancers
+256 flag_hunt  heavies
+257 flag_hunt  runners
+258 flag_hunt  bulwark
+259 flag_hunt  executioner
+260 flag_hunt  fugitive
+261 lancers    heavies
+262 lancers    runners
+263 lancers    bulwark
+264 heavies    runners
+265 heavies    bulwark
+266 runners    bulwark
+267 executioner lancers
+268 fugitive   executioner
+269 flag_hunt  flag_hunt
+270 advance    advance
 "
 
 played() {

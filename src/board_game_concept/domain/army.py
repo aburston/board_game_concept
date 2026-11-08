@@ -64,8 +64,10 @@ DEFAULT_SIZE_Y = 8
 # sleeps a turn when it cannot afford both the step and the strike it may
 # have to land on arriving. `{need}` is the fare plus the attack of the type
 # that carries it: the one number that differs between the types that hunt.
-# Thirty-three ticks on its longest path, which is why nothing that runs it
-# has less than four compute
+# A hunter blocked both ways has run most of the program to find out, and
+# sleeps a turn rather than pay to hold - a rest costs nothing, and the way
+# may be clear next turn. Thirty-three ticks on its longest path, which is
+# why nothing that runs it has less than four compute
 HUNTER = """
 ; hunt: walk at the nearest enemy flag, round my own units
 SELF                 ; r0 x, r1 y, r3 energy
@@ -120,8 +122,7 @@ JIF zero r0, stay
 JIF pos r4, east
 MOVE west
 HALT
-stay: HOLD           ; both ways stand one of mine: wait for it to move
-HALT
+stay: SLEEP 1        ; both ways stand one of mine: rest until one moves
 rest: SLEEP 1
 """
 
@@ -130,33 +131,118 @@ def hunter(need, target='FLAG enemy'):
     return HUNTER.format(need=need, target=target)
 
 
-# a controller that steps onto the enemy it fought last turn, if it can
-# afford the step and the strike, and otherwise sleeps two turns. Fourteen
-# ticks on its longest path
-SENTRY = """
-; sentry: strike back at what struck me, else sleep
+# the Scout's controller. A Scout strikes nothing, so a step onto an enemy is
+# a contest it cannot win and a fare for nothing. The explorer walks at the
+# nearest square its army does not know, trying four steps in turn - down
+# the column towards it, along the row towards it, and a step aside each
+# way - and takes the first onto a square its map calls unknown or empty,
+# never onto one of its own, an enemy it knows of, or off the board. It
+# remembers how near it has got to what it is looking for: twenty turns
+# without getting nearer means the unknown is behind something it cannot
+# pass, and it sleeps a hundred turns rather than pace for ever, which is
+# what kept a game alive to the cap. Nothing left to find, it sleeps too.
+# Forty-eight ticks on its longest path, against a Scout's cap of sixty;
+# `{need}` is its fare, since it has no strike to pay for. Directions are
+# numbers here - north 1, east 2, south 3, west 4 - so a step down the
+# column is 2 plus the sign of dy and along the row 3 minus the sign of dx
+EXPLORER = """
+; explore: walk at the nearest unknown square, round what is in the way
 SELF                 ; r0 x, r1 y, r3 energy
 MOV r6, r0
 MOV r7, r1
-MOV r4, r3
-CONTACT              ; r0, r1 = the enemy I fought, or -1
-JIF neg r0, rest
-SUB r4, {need}
-JIF neg r4, rest
-SUB r0, r6
-SUB r1, r7
-JIF zero r0, vert
-JIF pos r0, east
-MOVE west
+SUB r3, {need}
+JIF neg r3, rest
+NEAREST unknown      ; r0, r1 = where, r2 = how far, or -1
+JIF neg r0, none
+MOV r4, r0
+MOV r5, r1
+LOAD r3, 1           ; the nearest I have been to one, or 0 at the start
+JIF zero r3, nearer
+JIF lt r2, r3, nearer
+LOAD r3, 2           ; turns without getting nearer
+ADD r3, 1
+STORE r3, 2
+SET r0, 20
+JIF lt r0, r3, none  ; too long: it is behind something I cannot pass
+JMP go
+nearer: STORE r2, 1
+SET r3, 0
+STORE r3, 2
+go: SUB r4, r6       ; dx
+SUB r5, r7           ; dy
+SIGN r4
+SIGN r5
+MOV r2, r7           ; first: down the column towards it
+ADD r2, r5
+MAP r6, r2           ; r0 = what stands there: 0 unknown, 1 empty
+SET r3, 2
+JIF lt r0, r3, gocol
+MOV r2, r6           ; second: along the row towards it
+ADD r2, r4
+MAP r2, r7
+SET r3, 2
+JIF lt r0, r3, gorow
+MOV r2, r6           ; third: a step aside, east
+ADD r2, 1
+MAP r2, r7
+SET r3, 2
+JIF lt r0, r3, goeast
+MOV r2, r6           ; fourth: a step aside, west
+SUB r2, 1
+MAP r2, r7
+SET r3, 2
+JIF lt r0, r3, gowest
+JMP rest             ; nowhere to step this turn
+gocol: SET r0, 2
+ADD r0, r5
+MOVE r0
 HALT
-east: MOVE east
+gorow: SET r0, 3
+SUB r0, r4
+MOVE r0
 HALT
-vert: JIF pos r1, south
+goeast: MOVE east
+HALT
+gowest: MOVE west
+HALT
+none: SLEEP 100      ; nothing left to find that I can reach
+rest: SLEEP 1
+"""
+
+
+def explorer(need=1):
+    return EXPLORER.format(need=need)
+
+
+# a controller for the front rank: step towards the enemy's edge whenever a
+# step and the strike that may follow are affordable, never onto one of my
+# own, and fight whatever the step meets. `{need}` is the fare plus the
+# attack, as for the hunter. The enemy's row is kept in r6, which no sensor
+# writes - SELF fills r0 to r5. Nineteen ticks on its longest path, so it
+# fits a Pawn's cap of thirty with room to think every turn it is awake
+VANGUARD = """
+; vanguard: step at the enemy's edge when I can afford the step and a strike
+FLAG enemy           ; r0, r1 = the enemy flag, or -1
+JIF neg r0, stay
+MOV r6, r1           ; the enemy's row
+SELF                 ; r0 x, r1 y, r3 energy
+SUB r3, {need}
+JIF neg r3, rest
+SUB r6, r1           ; dy to the enemy's edge
+JIF zero r6, stay
+SIGN r6
+MOV r2, r1
+ADD r2, r6           ; the row in front of me
+MAP r0, r2           ; r0 = what my army knows stands there
+SUB r0, 2
+JIF zero r0, stay    ; one of mine: wait for it
+JIF pos r6, south
 MOVE north
 HALT
 south: MOVE south
 HALT
-rest: SLEEP 2
+stay: SLEEP 1
+rest: SLEEP 1
 """
 
 # a controller that holds its square and sleeps as long as it may, waking
@@ -170,8 +256,8 @@ CATALOGUE = (
     # not `#`: that is the glyph an empty square is drawn with, and a wall
     # drawn as one is a wall a player cannot see on their own board
     ('Wall',   'W', 0, 10,  0, 0, None),
-    ('Scout',  'o', 0,  2, 12, 6, hunter(1, 'NEAREST unknown')),
-    ('Pawn',   'p', 1,  4,  2, 2, SENTRY.format(need=2)),
+    ('Scout',  'o', 0,  2, 12, 6, explorer()),
+    ('Pawn',   'p', 1,  4,  2, 3, VANGUARD.format(need=2)),
     ('Runner', 'r', 2,  4, 10, 5, hunter(3)),
     ('Line',   'L', 3,  6, 12, 4, hunter(5)),
     ('Lance',  '!', 8,  2, 10, 4, hunter(9)),
@@ -181,9 +267,15 @@ CATALOGUE = (
 
 
 # the sixteen units, as (depth, column, type name, unit name). Depth 1 is the
-# row in front of the player's own edge and takes the units that cannot afford
-# to travel; depth 0 is the edge itself and takes the ones that can, and the
-# Keep that carries the flag.
+# row in front of the player's own edge and takes the units whose programs
+# leave it - the Pawns, the Lines and the Heavies - so that nothing in the
+# row behind stands behind a unit that never moves; depth 0 is the edge
+# itself and takes the Runners and Scouts, which follow the front rank out,
+# the Keeps, one of which carries the flag, and the Walls beside them, where
+# what a wall cannot do - move - is what a flag's flanks want. The first
+# array had the Walls in front and the Lines behind, and the programmed
+# series showed what that fields: the two Heavies walk out alone and twelve
+# units stand boxed in for the rest of the game.
 #
 # Both rows are **symmetric about the middle of the board**: what stands in
 # column x stands in column 7 - x as well. A lopsided army reads as a mistake,
@@ -195,18 +287,18 @@ CATALOGUE = (
 ARRAY = (
     (1, 0, 'Pawn', 'pawn1'),
     (1, 1, 'Pawn', 'pawn2'),
-    (1, 2, 'Wall', 'wall1'),
+    (1, 2, 'Line', 'line1'),
     (1, 3, 'Heavy', 'heavy1'),
     (1, 4, 'Heavy', 'heavy2'),
-    (1, 5, 'Wall', 'wall2'),
+    (1, 5, 'Line', 'line2'),
     (1, 6, 'Pawn', 'pawn3'),
     (1, 7, 'Pawn', 'pawn4'),
     (0, 0, 'Runner', 'runner1'),
     (0, 1, 'Scout', 'scout1'),
-    (0, 2, 'Line', 'line1'),
+    (0, 2, 'Wall', 'wall1'),
     (0, 3, 'Keep', 'keep1'),
     (0, 4, 'Keep', 'keep2'),
-    (0, 5, 'Line', 'line2'),
+    (0, 5, 'Wall', 'wall2'),
     (0, 6, 'Scout', 'scout2'),
     (0, 7, 'Runner', 'runner2'),
 )

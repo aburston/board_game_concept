@@ -74,6 +74,27 @@ class TestSensors:
         _, r = go('FLAG enemy', snap=snap)
         assert r[:2] == [1, 3]
 
+    def test_a_tie_is_settled_towards_the_seats_own_edge(self):
+        """The same squares read from the other end of the board: a seat
+        whose edge is the last row prefers the row nearer it, so the two
+        seats of a mirror make mirrored choices."""
+        snap = snapshot(flags={1: (0, 0), 2: (3, 5), 3: (5, 3), 4: (1, 3)})
+        snap.edge = 7
+        _, r = go('FLAG enemy', snap=snap)
+        assert r[:2] == [3, 5]
+        army = ArmyMap()
+        for x in range(8):
+            for y in range(8):
+                army.visited[(x, y)] = 1
+        del army.visited[(3, 1)]
+        del army.visited[(3, 5)]
+        snap = snapshot(army_map=army)
+        _, r = go('NEAREST unknown', snap=snap)
+        assert r[:2] == [3, 1]
+        snap.edge = 7
+        _, r = go('NEAREST unknown', snap=snap)
+        assert r[:2] == [3, 5]
+
     def test_map_kinds(self):
         army = ArmyMap()
         army.visited[(2, 2)] = 3

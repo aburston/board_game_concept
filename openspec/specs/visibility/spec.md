@@ -58,15 +58,24 @@ where to go rather than what will be met.
 
 ### Requirement: Contact Establishes Visibility
 
-The system SHALL record mutual visibility between units that engage each other
-in combat. A unit SHALL be recorded as seen at most once by any one unit,
-however many attacks the two exchange while resolving the turn.
+The system SHALL record mutual visibility between units that contest a
+square, whether or not either lands a blow: a unit that walks into another,
+or collides with it head on, has met it, even when neither has an attack to
+strike with or the energy to pay for one. A unit SHALL be recorded as seen at
+most once by any one unit, however many attacks the two exchange while
+resolving the turn.
 
 #### Scenario: Combat reveals both units
 
 - **WHEN** two units attack each other in a contested square
 - **THEN** each unit records the other as seen
 - **AND** each unit's owner can subsequently list the other unit
+
+#### Scenario: A contest without a blow reveals both units
+
+- **WHEN** two units that cannot strike contest a square
+- **THEN** each unit records the other as seen
+- **AND** each army's map holds the other's square as an enemy's
 
 #### Scenario: A drawn-out fight reveals each unit once
 

@@ -50,8 +50,8 @@ The catalogue SHALL be:
 | Name   | Symbol | Attack | Health | Energy | Compute | Cost | Move fare | Default program |
 |--------|--------|--------|--------|--------|---------|------|-----------|-----------------|
 | Wall   | `W`    | 0      | 10     | 0      | 0       | 10   | 3         | none: no controller |
-| Scout  | `o`    | 0      | 2      | 12     | 6       | 20   | 1         | explorer: walks to the nearest unknown square, sleeps when there is none |
-| Pawn   | `p`    | 1      | 4      | 2      | 2       | 9    | 1         | sentry: steps onto an enemy it fought last turn if it can afford to, else sleeps two turns |
+| Scout  | `o`    | 0      | 2      | 12     | 6       | 20   | 1         | explorer: walks to the nearest unknown square, stepping round its own units, the enemies its army knows of and the board's edge, a step aside when the way is blocked; sleeps when there is nothing left to find, or when twenty turns have not brought it nearer to what it is looking for |
+| Pawn   | `p`    | 1      | 4      | 2      | 3       | 10   | 1         | vanguard: steps towards the enemy's edge when it can afford a step and a strike, never onto one of its own, and fights what it walks into; sleeps a turn otherwise |
 | Runner | `r`    | 2      | 4      | 10     | 5       | 21   | 1         | hunter: walks to the nearest enemy flag, round its own units, fighting what it meets |
 | Line   | `L`    | 3      | 6      | 12     | 4       | 25   | 2         | hunter |
 | Lance  | `!`    | 8      | 2      | 10     | 4       | 24   | 1         | hunter |
@@ -61,7 +61,10 @@ The catalogue SHALL be:
 The default programs SHALL be written in the instruction set `unit-program`
 defines, SHALL be deterministic, and SHALL each fit the tick cap of the type
 that carries them on every turn. The hunter SHALL sleep when it cannot afford
-both a step and a strike, so that it arrives able to fight.
+both a step and a strike, so that it arrives able to fight, and SHALL sleep a
+turn rather than hold when both ways round stand its own units, so that
+waiting for the way to clear costs nothing. The vanguard SHALL never step
+onto a square one of its own stands on.
 
 Defining a type spends nothing, so the catalogue SHALL cost a player nothing
 until they deploy a unit of one of its types.
@@ -99,6 +102,16 @@ want.
 - **THEN** the game is resolved with every unit running its type's default program
 - **AND** at least one unit of each army moves on the first turn of play
 
+#### Scenario: The whole army gets out
+
+- **WHEN** two players commit the stock army unchanged
+- **THEN** every unit of each array with a controller, the Keeps excepted, stands on a square other than the one it was seeded on at some turn within the first twenty turns of play
+
+#### Scenario: A blocked hunter costs nothing
+
+- **WHEN** a unit running the hunter finds one of its own both ways round on a turn
+- **THEN** it sleeps that turn and pays no energy for the thinking beyond the ticks it took to find out
+
 ### Requirement: A Two-Player Game Is Given A Default Deployment
 
 The system SHALL deploy a default array of sixteen units for each player of a
@@ -118,51 +131,52 @@ the row in front of it. Columns SHALL be the same for both players.
 
 | Depth | c0     | c1    | c2   | c3   | c4   | c5   | c6    | c7     |
 |-------|--------|-------|------|------|------|------|-------|--------|
-| 1     | Pawn   | Pawn  | Wall | Heavy| Heavy| Wall | Pawn  | Pawn   |
-| 0     | Runner | Scout | Line | Keep | Keep | Line | Scout | Runner |
+| 1     | Pawn   | Pawn  | Line | Heavy| Heavy| Line | Pawn  | Pawn   |
+| 0     | Runner | Scout | Wall | Keep | Keep | Wall | Scout | Runner |
 
-The array SHALL cost 242 points, and SHALL use only types the catalogue holds.
+The front rank SHALL be made of units whose default programs leave it, so
+that the rank behind is not boxed in by it: nothing in the array's back rank
+SHALL stand behind a unit that never moves. The Walls SHALL stand beside the
+Keeps, where what they cannot do - move - is what a flag's flanks want.
+
+The array SHALL cost 308 points, and SHALL use only types the catalogue holds.
 It SHALL NOT be required to use every one of them: eight pairs of eight
 different types cost more than the default budget covers.
 
-Every unit in the array SHALL fall inside the placement area the player is
-allowed to deploy in, so that the array can be committed as it stands.
-
 #### Scenario: Both players are given the array
 
-- **WHEN** a two-player game has been created and both players registered
-- **THEN** each player holds sixteen units laid out as above
-- **AND** the lower-numbered player's depth 0 is the board's first row
-- **AND** the other player's depth 0 is the board's last row
+- **WHEN** a two-player game is created and both players are registered
+- **THEN** each player's seat opens holding the sixteen units of the array, deployed
 
 #### Scenario: The array is placed where the player may place
 
-- **WHEN** a player is given the default array
-- **THEN** every unit of it stands inside that player's placement area
+- **WHEN** the array is deployed for a player
+- **THEN** every unit of it stands inside the rows that player may deploy in
 
 #### Scenario: A player is told only about their own army
 
-- **WHEN** a turn is resolved and each player reads what it did
-- **THEN** neither is told where the other's units were placed
+- **WHEN** a player opens their seat holding the array
+- **THEN** they see their own sixteen units and none of the other player's
 
 #### Scenario: The array is a mirror of itself
 
-- **WHEN** a player is given the default array
-- **THEN** the type standing in each column is the type standing in that
-  column's mirror
+- **WHEN** the array is deployed
+- **THEN** the unit in each column of each row is of the same type as the unit in that column's mirror
 
 #### Scenario: A Keep carries the flag
 
-- **WHEN** a player is given the default array
-- **THEN** their flag stands on one of its Keeps
-- **AND** which one is the same in every game
-- **AND** the setup can be committed without any further decision
+- **WHEN** the array is deployed for a player
+- **THEN** that player's flag is on the Keep in the lower-numbered of the two middle columns
 
 #### Scenario: The array is committed as it stands
 
-- **WHEN** both players commit the setup they were given, unedited
-- **THEN** both setups are accepted
-- **AND** the game reaches its first turn
+- **WHEN** a player commits without changing the array
+- **THEN** the commit is accepted and every unit of the array is published
+
+#### Scenario: Nothing stands behind a unit that never moves
+
+- **WHEN** the array is deployed
+- **THEN** every unit in the back rank with a controller stands behind a unit whose default program moves it
 
 ### Requirement: The Default Deployment Is Given Once And Then Left Alone
 
@@ -235,14 +249,14 @@ The system SHALL charge the default array against the player's budget by the
 rules that charge any deployment. What the player has spent SHALL be derived
 from the board, so a default unit taken back SHALL return its points.
 
-A player given the default budget and the default array SHALL hold 16 points
+A player given the default budget and the default array SHALL hold 12 points
 they have not spent.
 
 #### Scenario: What the array costs
 
 - **WHEN** a player is given the default array on the default budget
-- **THEN** they have spent 304 points
-- **AND** 16 points remain
+- **THEN** they have spent 308 points
+- **AND** 12 points remain
 
 #### Scenario: Taking a default unit back returns its points
 

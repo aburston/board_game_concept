@@ -61,8 +61,10 @@ touching the parts that do not care.
   and `NEAREST`.
 - **`army.py`** - what a new game and a newly registered player start with:
   the default board, the catalogue of eight types each with a program that
-  fits its compute, and the sixteen-unit stock array, described by depth from
-  the player's own edge.
+  fits its compute - the hunter, the vanguard, the explorer and the warden -
+  and the sixteen-unit stock array, described by depth from the player's own
+  edge: a front rank whose programs all leave it, and a back rank that
+  follows, with the Walls beside the Keeps.
 - **`placement.py`** - where a player may deploy during setup: the two
   halves of a two-player board, the neutral row of an odd one, and the whole
   board for any other count.
@@ -293,8 +295,9 @@ developer tooling, so it is run as `python -m board_game_concept.test_suite`.
    nothing - is in the record against the unit that gave it, rather than
    taking the turn down.
 5. The game ends when a flag falls and one player is left standing, which
-   decides it; or when the board repeats a state it has been in before, or
-   the turn cap is reached, which leaves it undecided. The outcome is
+   decides it; or when the board repeats a state it has been in before,
+   nothing has happened for fifty turns, or the turn cap is reached, which
+   leaves it undecided. The outcome is
    published and every role shows it and the record.
 
 ## Storage

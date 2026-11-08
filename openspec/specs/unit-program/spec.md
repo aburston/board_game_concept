@@ -132,7 +132,7 @@ registers, memory and inbox; nothing SHALL yield a random number or the clock.
 #### Scenario: Nearest is settled by position
 
 - **WHEN** two squares are equally near
-- **THEN** every `NEAREST` and `FLAG enemy` answers the one with the lower y, then the lower x
+- **THEN** every `NEAREST` and `FLAG enemy` answers the one in the row nearer the seat's own edge of the board - row 0 for the player placed nearer it, the last row for the other - then the one with the lower x, so that the two seats of a mirror make mirrored choices
 
 #### Scenario: A sensor's cost does not depend on its answer
 

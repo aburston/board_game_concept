@@ -20,7 +20,7 @@ from game_harness import GameHarness
 EXPECTED = {
     'Wall':   (0, 10,  0, 0, 10, 3),
     'Scout':  (0,  2, 12, 6, 20, 1),
-    'Pawn':   (1,  4,  2, 2,  9, 1),
+    'Pawn':   (1,  4,  2, 3, 10, 1),
     'Runner': (2,  4, 10, 5, 21, 1),
     'Line':   (3,  6, 12, 4, 25, 2),
     'Lance':  (8,  2, 10, 4, 24, 1),
@@ -98,7 +98,7 @@ def test_the_array_holds_sixteen_units():
 
 
 def test_the_array_costs_what_is_published():
-    assert army.cost() == 304
+    assert army.cost() == 308
 
 
 def test_the_array_uses_only_catalogue_types():
@@ -257,3 +257,97 @@ def test_each_default_program_fits_its_cap_on_every_turn(tmp_path):
     fielded = {type_name for _depth, _x, type_name, _name in army.ARRAY}
     assert seen == {name for name, c in compute.items()
                     if c > 0 and name in fielded}
+
+
+# --- the default plays
+
+
+def test_a_hunter_blocked_both_ways_sleeps_rather_than_holds():
+    """A hunter that finds one of its own on both ways round has run most of
+    its program to find out; it rests the turn rather than pay to hold."""
+    from board_game_concept.domain.army_map import ArmyMap
+    from board_game_concept.domain.program import Program, Snapshot, run
+    program = Program(army.types()['Runner']['program'])
+    # me at (2, 0), the flag at (3, 7): the column is blocked by wall1 at
+    # (2, 1) and the row by keep1 at (3, 0), as the old array stood
+    snap = Snapshot(2, 8, 8, 1, {'me': (2, 0), 'wall1': (2, 1),
+                                 'keep1': (3, 0)},
+                    {1: (3, 0), 2: (3, 7)}, ArmyMap())
+    me = {'x': 2, 'y': 0, 'health': 4, 'energy': 10, 'flag': False,
+          'number': 0}
+    result = run(program, snap, me, None, {}, [], 5, 10, 0)
+    assert result.order is None
+    assert result.sleep == 1
+
+
+def test_the_whole_army_gets_out(tmp_path):
+    """In the mirror of two unchanged arrays every unit with a controller
+    but the Keeps leaves the square it was seeded on inside twenty turns of
+    play: the front rank goes, and nothing behind it is boxed in."""
+    harness = a_stock_game(tmp_path)
+    repository = harness.repository()
+    seeded = {}
+    for unit in repository.read_turn(1)['units']:
+        seeded[(unit['player'], unit['name'])] = (unit['x'], unit['y'])
+    moved = set()
+    for turn in repository.turn_numbers():
+        if turn > 21:
+            break
+        for unit in repository.read_turn(turn)['units']:
+            key = (unit['player'], unit['name'])
+            if key in seeded and (unit['x'], unit['y']) != seeded[key]:
+                moved.add(key)
+        for entry in repository.read_turn(turn)['events']:
+            if entry['kind'] == 'destroyed':
+                # a unit destroyed where it was seeded is not boxed in
+                moved |= {key for key in seeded
+                          if key[1] == entry['detail'].get('unit')}
+    expected = {(player, name) for player in (1, 2)
+                for _depth, _x, type_name, name in army.ARRAY
+                if type_name not in ('Wall', 'Keep')}
+    assert expected <= moved, sorted(expected - moved)
+
+
+def test_a_scout_goes_round_an_enemy_it_knows_of_rather_than_into_it():
+    """A Scout strikes nothing, so a step onto a known enemy is a contest
+    it cannot win and a fare for nothing: two Scouts facing each other
+    across the frontier used to bump for fifty turns until the quiet stop
+    took the game. The explorer goes round what its map shows."""
+    from board_game_concept.domain.army_map import ArmyMap
+    from board_game_concept.domain.program import Program, Snapshot, run
+    program = Program(army.types()['Scout']['program'])
+    known = ArmyMap()
+    # everything round me is known but the row beyond the enemy
+    for x in range(8):
+        for y in range(0, 4):
+            known.visited[(x, y)] = 1
+    known.enemies[(1, 4)] = (60, 0, 2)
+    snap = Snapshot(61, 8, 8, 1, {'me': (1, 3)}, {1: (3, 0), 2: (3, 7)},
+                    known)
+    me = {'x': 1, 'y': 3, 'health': 2, 'energy': 2, 'flag': False,
+          'number': 0}
+    result = run(program, snap, me, None, {}, [], 6, 2, 0)
+    # the nearest unknown is (1, 4) itself or the square beyond; either way
+    # the step is not south onto the enemy
+    assert result.order != 3, result
+    assert result.halted is None
+
+
+def test_the_mirror_comes_out_a_mirror(tmp_path):
+    """Two unchanged arrays face each other across the board, and nothing
+    in the rules or the programs tells north from south: every turn of the
+    record is its own reflection, unit for unit, to the end."""
+    harness = a_stock_game(tmp_path)
+    repository = harness.repository()
+    size_y = army.DEFAULT_SIZE_Y
+    for turn in repository.turn_numbers():
+        units = {}
+        for unit in repository.read_turn(turn)['units']:
+            units[(unit['player'], unit['name'])] = unit
+        for (player, name), unit in units.items():
+            other = units[(3 - player, name)]
+            assert unit.get('destroyed') == other.get('destroyed'), (turn, name)
+            if unit.get('destroyed'):
+                continue
+            assert (unit['x'], unit['y']) == (other['x'], size_y - 1 - other['y']), (turn, name)
+            assert (unit['health'], unit['energy']) == (other['health'], other['energy']), (turn, name)

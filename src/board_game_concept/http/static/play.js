@@ -803,12 +803,15 @@ export function outcomeText(outcome, seat) {
   if (typeof outcome === 'string') return outcome;
   const turn = outcome.turn ? ` on turn ${outcome.turn}` : '';
   if (outcome.decided === false) {
+    const since = outcome.since !== undefined && outcome.since !== null;
     const why = outcome.reason === 'repeated'
-      ? `its state repeated${outcome.since !== undefined
-        && outcome.since !== null
+      ? `its state repeated${since
         ? ` (as it stood after turn ${outcome.since})` : ''}`
-      : (outcome.reason === 'cap' ? 'the turn cap was reached'
-                                  : 'it could not go on');
+      : outcome.reason === 'quiet'
+        ? `nothing happened for fifty turns${since
+          ? ` (since turn ${outcome.since})` : ''}`
+        : (outcome.reason === 'cap' ? 'the turn cap was reached'
+                                    : 'it could not go on');
     return `The game stopped undecided${turn}: ${why}.`;
   }
   if (outcome.winner === null || outcome.winner === undefined) {

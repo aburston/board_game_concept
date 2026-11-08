@@ -90,7 +90,7 @@ game. A type costs the sum of its four statistics — `add type Cross X 1
 from it costs that again, so a 100-point budget buys four Crosses and
 refuses a fifth. Defining a type is free; deploying is what spends, and a
 destroyed unit is not refunded. The stock army a seat opens with costs
-304 of the default 320. `show types` prints each type's `COST` and
+308 of the default 320. `show types` prints each type's `COST` and
 `show players` prints your `BUDGET`, `SPENT` and `LEFT`.
 
 A player file handed to `load player` may carry a `budget:` key; one
@@ -627,7 +627,7 @@ Each game writes `matches/logs/game_<n>.log` - each seat's setup, the
 board after every turn, what every turn did, every refusal, the outcome and
 the final units - beside the roles' transcripts and a turn-by-turn history
 in JSON. The series are written up in `matches/RESULTS-*.md`; the current
-one is `matches/RESULTS-PROGRAMMED.md`, and the earlier ones say at their
+one is `matches/RESULTS-ARMY-THAT-PLAYS.md`, and the earlier ones say at their
 head which rules they were played under. `tests/test_match_harness.py`
 checks every doctrine's army and programs against the game's own rules
 without playing a game; `pytest -m slow tests/test_match_harness.py` plays

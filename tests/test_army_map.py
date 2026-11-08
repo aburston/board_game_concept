@@ -105,3 +105,20 @@ def test_a_fallen_unit_reports_nothing_more():
     board.commit(turn=3)
     board.commit(turn=4)
     assert board.maps[1].at(0, 2) == stamped
+
+
+def test_two_units_that_cannot_strike_still_meet():
+    """Two Scouts step into each other: no blow is landed, since neither
+    has an attack, but each has met the other and the map says so. Without
+    this an army learned nothing from a collision and walked its Scout into
+    the same enemy every turn it could afford to."""
+    scout = UnitType('S', 's', 0, 2, 12, 6, 'MOVE south')
+    other = UnitType('T', 't', 0, 2, 12, 6, 'MOVE north')
+    board, players = setup(
+        (1, [(scout, [('s1', 0, 1)])]),
+        (2, [(other, [('t1', 0, 2)])]))
+    board.commit(turn=1)                 # the two collide between the rows
+    assert board.maps[1].at(0, 2)[0] == MAP_ENEMY
+    assert board.maps[2].at(0, 1)[0] == MAP_ENEMY
+    s1 = unit(board, players, 1, 's1')
+    assert [seen.name for seen in s1.seen_by] == ['t1']

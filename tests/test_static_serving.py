@@ -497,6 +497,7 @@ def test_the_replay_opens_at_the_final_turn_with_the_result():
     assert 'stopped undecided' in outcome
     assert 'its state repeated' in outcome
     assert 'the turn cap was reached' in outcome
+    assert 'nothing happened for fifty turns' in outcome
 
 
 def test_the_army_knew_toggle_and_whose():

@@ -447,6 +447,17 @@ def exchangeAttacks(contestants, events=None, out=(), struck=None,
         # does to the unit: the exchange itself is on the ordinary terms
         unit.woken = True
     if len(standing) >= 2:
+        # each contestant is seen by every other it shared the square with,
+        # recorded once, whether or not a blow is landed: two units that
+        # cannot strike - a Scout and a Scout, a Wall and a spent Heavy -
+        # have still met, and an army that learned nothing from a collision
+        # walked into the same unit every turn it could afford to
+        for unit in standing:
+            for other in standing:
+                if other is unit:
+                    continue
+                if other not in unit.seen_by:
+                    unit.seen_by.append(other)
         # who is going to strike, and what it will land, is decided against
         # the square as the exchange begins - so charging one unit cannot
         # spare another, and destroying one cannot stop its own blow. The
@@ -482,13 +493,6 @@ def exchangeAttacks(contestants, events=None, out=(), struck=None,
                     continue
                 struck.add((_mark(unit), _mark(target)))
                 blows.append((unit, target))
-                # each contestant is seen by every other it shared the square
-                # with, recorded once: a unit listed twice is a unit reported
-                # twice to the players who saw it
-                if target not in unit.seen_by:
-                    unit.seen_by.append(target)
-                if unit not in target.seen_by:
-                    target.seen_by.append(unit)
         for unit, target in blows:
             if events is not None:
                 events.append(Event(

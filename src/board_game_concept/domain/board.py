@@ -4,6 +4,7 @@ from .square import Empty
 from .events import Event, owners
 from .unit import (UnitType, resolveCollision, resolveContest)
 from .army_map import ArmyMap
+from . import placement
 from . import program as controller
 
 
@@ -425,7 +426,8 @@ class Board:
                 snapshots[number] = controller.Snapshot(
                     turn, self.size_x, self.size_y, number,
                     by_player.get(number, {}), flags,
-                    self.maps.setdefault(number, ArmyMap()))
+                    self.maps.setdefault(number, ArmyMap()),
+                    edge=self._edge(number))
             me = {
                 'x': unit.x, 'y': unit.y, 'health': unit.health,
                 'energy': unit.energy, 'flag': unit.flag,
@@ -483,6 +485,15 @@ class Board:
                        and other.type_name == unit.type_name)
         return names.index(unit.name)
 
+    def _edge(self, number):
+        """The row of this player's own edge of the board: 0 for the player
+        placed nearer row 0 and the last row for the other, as the placement
+        halves have it. A tie for the nearest square is settled towards it,
+        so the two seats of a mirror make mirrored choices."""
+        numbers = {u.player.number for u in self.units if u.player is not None}
+        rows = placement.rows(number, numbers, self.size_y)
+        return 0 if rows and rows[0] == 0 else self.size_y - 1
+
     def _contact(self, unit):
         """The enemy this unit fought last turn, nearest first, or None."""
         enemies = [seen for seen in unit.seen_by
@@ -492,7 +503,8 @@ class Board:
         if not enemies:
             return None
         square = controller.nearest_of(
-            [(seen.x, seen.y) for seen in enemies], (unit.x, unit.y))
+            [(seen.x, seen.y) for seen in enemies], (unit.x, unit.y),
+            self._edge(unit.player.number))
         seen = next(e for e in enemies if (e.x, e.y) == square)
         return (seen.x, seen.y, seen.type_attack, seen.type_health)
 
