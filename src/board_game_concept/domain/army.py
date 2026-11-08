@@ -59,10 +59,13 @@ DEFAULT_SIZE_Y = 8
 # `tests/test_default_army.py` holds it to
 
 # a controller that goes for the nearest enemy flag by the shortest route
-# round its own units, and sleeps a turn when it cannot afford both the step
-# and the strike it may have to land on arriving. `{need}` is the fare plus
-# the attack of the type that carries it: the one number that differs
-# between the types that hunt. Twenty-eight ticks on its longest path
+# round its own units - a square one of its own stands on is never stepped
+# onto, because a contest is fought with whoever is in the square - and
+# sleeps a turn when it cannot afford both the step and the strike it may
+# have to land on arriving. `{need}` is the fare plus the attack of the type
+# that carries it: the one number that differs between the types that hunt.
+# Thirty-three ticks on its longest path, which is why nothing that runs it
+# has less than four compute
 HUNTER = """
 ; hunt: walk at the nearest enemy flag, round my own units
 SELF                 ; r0 x, r1 y, r3 energy
@@ -76,44 +79,48 @@ SUB r0, r6           ; dx
 SUB r1, r7           ; dy
 MOV r4, r0
 MOV r5, r1
+SIGN r4              ; which way along the row, or 0
+SIGN r5              ; which way down the column, or 0
 ABS r0
 ABS r1
 JIF lt r0, r1, vfirst
-SIGN r4
-JIF zero r4, vonly
-MOV r2, r6
+MOV r2, r6           ; along the row first: what stands where I would step
 ADD r2, r4
-MAP r2, r7           ; what stands where I would step
-SET r3, 2
-JIF eq r0, r3, vonly ; one of mine: go round
+MAP r2, r7           ; 2 is one of mine - or my own square, when dx is 0
+SUB r0, 2
+JIF zero r0, vonly
 JIF pos r4, east
 MOVE west
 HALT
 east: MOVE east
 HALT
-vfirst: SIGN r5
-JIF zero r5, honly
-MOV r2, r7
+vfirst: MOV r2, r7   ; down the column first
 ADD r2, r5
 MAP r6, r2
-SET r3, 2
-JIF eq r0, r3, honly
+SUB r0, 2
+JIF zero r0, honly
 JIF pos r5, south
 MOVE north
 HALT
 south: MOVE south
 HALT
-vonly: SIGN r5
-JIF zero r5, stay
+vonly: MOV r2, r7    ; the row is blocked: the column, if it is clear
+ADD r2, r5
+MAP r6, r2
+SUB r0, 2
+JIF zero r0, stay
 JIF pos r5, south
 MOVE north
 HALT
-honly: SIGN r4
-JIF zero r4, stay
+honly: MOV r2, r6    ; the column is blocked: the row, if it is clear
+ADD r2, r4
+MAP r2, r7
+SUB r0, 2
+JIF zero r0, stay
 JIF pos r4, east
 MOVE west
 HALT
-stay: HOLD
+stay: HOLD           ; both ways stand one of mine: wait for it to move
 HALT
 rest: SLEEP 1
 """
@@ -167,7 +174,7 @@ CATALOGUE = (
     ('Pawn',   'p', 1,  4,  2, 2, SENTRY.format(need=2)),
     ('Runner', 'r', 2,  4, 10, 5, hunter(3)),
     ('Line',   'L', 3,  6, 12, 4, hunter(5)),
-    ('Lance',  '!', 8,  2, 10, 3, hunter(9)),
+    ('Lance',  '!', 8,  2, 10, 4, hunter(9)),
     ('Keep',   'K', 1, 10,  5, 8, WARDEN),
     ('Heavy',  'H', 5, 10, 15, 4, hunter(8)),
 )

@@ -230,19 +230,23 @@ keep to count as evidence, as the `match-series` capability.
 
 | Requirement | Held by |
 |---|---|
-| `match-series` — A Game Is Played Through The Real Roles | `matches/arena.py` launches the three roles as subprocesses of the running interpreter and types at their prompts; `test_match_harness.py`'s slow tests play a game that way and read what the roles said |
-| `match-series` — A Bot Is Given Its Own View And Nothing Else | `test_match_harness.py`, for the six subjects a view is assembled from and the error when one is missing; the harness reads the observer only after both seats have ordered, and passes nothing from it to a bot |
-| `match-series` — A Series Is Played On The Game's Defaults | `test_match_harness.py`'s slow test, which plays Garrison against Garrison and reads `8x8`, `250` and the halves back from the log; the harness sends `add player` and `commit` and nothing else |
-| `match-series` — The Outcome Is Read From The Game | `test_match_harness.py`, for status read from the players subject and logged the turn it changes, and for a wall not being counted in play |
-| `match-series` — Every Game Leaves A Record That Can Be Checked | the log, the three transcripts and the history each game writes under `matches/logs/`; the series script skips a game whose log ends in an outcome |
-| `match-series` — A Series Write-Up Says What It Was Played Under | `matches/RESULTS-DEFAULT-BOARD.md` at its head; the five earlier write-ups carry the superseded notice |
+| `match-series` — A Game Is Played Through The Real Roles | `matches/arena.py` launches the roles as subprocesses of the running interpreter and types at their prompts: `bgcserver` registers the seats and commits, each `bgcclient` types its doctrine's setup and commits, and the record is read back at a `bgcobserver` prompt once the game is over; `test_match_harness.py`'s slow test plays a game that way and reads what the roles said |
+| `match-series` — A Bot Is Given Its Own View And Nothing Else | `test_match_harness.py`, for the six subjects a seat's view is assembled from and the error when one is missing, for a doctrine being data and nothing under `bots/` being code, and for the same file setting up the same seat with the same commands twice; the harness reads the record only after the outcome |
+| `match-series` — A Series Is Played On The Game's Defaults | `test_match_harness.py`'s slow test, which plays Garrison against Garrison and reads `8x8`, `320` and the halves back from the log; the harness sends `add player` and `commit` and nothing else |
+| `match-series` — The Outcome Is Read From The Game | `test_match_harness.py`, for a seat's status read from the record's own list of the eliminated, for a wall not being counted in play, and for Garrison against Garrison stopping undecided on its first repeated state - in process, and through the roles |
+| `match-series` — Every Game Leaves A Record That Can Be Checked | the log, the roles' transcripts and the history each game writes under `matches/logs/`; `matches/check_records.py` reads them back, and the slow test runs it on the game it played; the series script skips a game whose log ends in an outcome |
+| `match-series` — A Series Write-Up Says What It Was Played Under | `matches/RESULTS-PROGRAMMED.md` at its head; the six earlier write-ups carry the superseded notice |
 
-The doctrines are held to the game before a game is played: every rebuilt
-army is run through `UnitType`, costed against the budget, placed inside its
+The doctrines are held to the game before a game is played: every type a
+doctrine fields is run through `UnitType` with its program, every program
+through `Program`, the army costed against the budget, placed inside its
 half of an 8 x 8 board with no square twice, and checked for exactly one
-carrier; every doctrine is called twice on one view and must answer the same,
-and nothing under `matches/bots/` may name `random`, `time`, `id(` or
-`hash(`.
+carrier; and each doctrine is then played against the Garrison in process,
+through the same service calls the client makes, and every turn's traces
+read for a controller stopped at its cap - the one thing a listing cannot
+prove, because a program's longest path is not its straight run. A
+controller stopped for want of energy is the fight's doing and is told
+apart by the unit's energy as the turn began.
 
 One thing the harness could not take from the game: `bgcserver -g <n>` on a
 number nobody has created opens an *unsized* game, and the 8 x 8 default of

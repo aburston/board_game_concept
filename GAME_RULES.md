@@ -234,7 +234,7 @@ not want.
 | Pawn | `p` | 1 | 4 | 2 | 2 | 9 | 1 | sentry: steps onto what struck it, else sleeps |
 | Runner | `r` | 2 | 4 | 10 | 5 | 21 | 1 | hunter: walks at the enemy flag |
 | Line | `L` | 3 | 6 | 12 | 4 | 25 | 2 | hunter |
-| Lance | `!` | 8 | 2 | 10 | 3 | 23 | 1 | hunter |
+| Lance | `!` | 8 | 2 | 10 | 4 | 24 | 1 | hunter |
 | Keep | `K` | 1 | 10 | 5 | 8 | 24 | 3 | warden: sleeps, and strikes back when woken |
 | Heavy | `H` | 5 | 10 | 15 | 4 | 34 | 3 | hunter |
 
