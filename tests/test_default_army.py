@@ -10,7 +10,10 @@ once rather than reaching somebody's game.
 import math
 
 from board_game_concept.domain import army, placement
+from board_game_concept.domain.program import TICKS, Program, cap
 from board_game_concept.domain.unit import UnitType
+
+from game_harness import GameHarness
 
 
 # name: attack, health, energy, compute, cost, move fare
@@ -200,3 +203,57 @@ def test_the_array_avoids_the_neutral_row():
         for _type, name, _x, y in army.placements(number, [1, 2], 8, 9):
             assert y != middle, (number, name)
             assert y in allowed, (number, name, y)
+
+
+# --- the default programs
+
+
+def test_every_default_program_parses():
+    """A type with compute carries a program, and one without carries none."""
+    for name, record in army.types().items():
+        if record['compute'] == 0:
+            assert record['program'] is None, name
+            continue
+        program = Program(record['program'])
+        assert program.instructions, name
+
+
+def a_stock_game(tmp_path):
+    """Two unchanged stock armies, committed as seeded and played to the end."""
+    harness = GameHarness(tmp_path)
+    harness.create(army.DEFAULT_SIZE_X, army.DEFAULT_SIZE_Y, [1, 2])
+    assert harness.session(1).clientSave()
+    assert harness.session(2).clientSave()
+    harness.play()
+    return harness
+
+
+def test_each_default_program_fits_its_cap_on_every_turn(tmp_path):
+    """A controller that runs out of ticks gives no order, so a default
+    program that overran its type's cap would field a unit that stands
+    still on the turn it mattered. Every trace of a stock-army game is
+    within the cap, and none was halted."""
+    harness = a_stock_game(tmp_path)
+    compute = {name: record['compute']
+               for name, record in army.types().items()}
+    type_of = {name: type_name for _depth, _x, type_name, name in army.ARRAY}
+    repository = harness.repository()
+    turns = repository.turn_numbers()
+    assert turns[-1] >= 2
+    seen = set()
+    for turn in turns:
+        for trace in repository.read_turn(turn)['traces']:
+            limit = cap(compute[type_of[trace['unit']]])
+            assert trace['ticks'] <= limit, (turn, trace)
+            # a controller is also stopped where the meter would take energy
+            # its unit no longer has, which a spent unit comes to late in a
+            # game; the cap stops one only in the last few ticks before it
+            if trace['halted'] is not None:
+                assert trace['ticks'] <= limit - max(TICKS.values()), (
+                    turn, trace)
+            seen.add(type_of[trace['unit']])
+    # every thinking type the array fields was seen thinking; the Lance is
+    # in the catalogue and not in the array
+    fielded = {type_name for _depth, _x, type_name, _name in army.ARRAY}
+    assert seen == {name for name, c in compute.items()
+                    if c > 0 and name in fielded}

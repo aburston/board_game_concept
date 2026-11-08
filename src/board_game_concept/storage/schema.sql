@@ -84,10 +84,12 @@ CREATE TABLE IF NOT EXISTS units (
     on_board      INTEGER NOT NULL,
     flag          INTEGER NOT NULL,
     -- the controller: the type's compute, the meter, the sleep left, and
-    -- `controller` as JSON holding the memory and the inbox
-    type_compute  INTEGER NOT NULL,
-    meter         INTEGER NOT NULL DEFAULT 0,
-    asleep        INTEGER NOT NULL DEFAULT 0,
+    -- `controller` as JSON holding the memory and the inbox. Null where the
+    -- record carries none: whether a unit may lack one is the service's
+    -- rule to hold, not the table's
+    type_compute  INTEGER,
+    meter         INTEGER,
+    asleep        INTEGER,
     controller    TEXT
 );
 

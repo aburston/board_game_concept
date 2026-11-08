@@ -9,6 +9,7 @@ does not end the game and the turns can keep coming.
 """
 
 from board_game_concept.domain import Player, UnitType
+from board_game_concept.domain.events import players_in
 
 from game_harness import GameHarness
 
@@ -92,3 +93,32 @@ def test_a_survivor_can_take_the_cell_a_unit_died_on(tmp_path):
     assert (units['x1'].x, units['x1'].y) == (0, 2)
     assert units['o1'].destroyed
     assert not units['o1'].on_board
+
+
+# --- two stock armies, played to the end
+
+
+def test_two_stock_armies_play_to_an_end(tmp_path):
+    """Two unchanged stock armies reach an outcome or an undecided stop, and
+    both of them move on the first turn of play: the default programs field
+    an army that plays, not one that stands where it was seeded."""
+    from board_game_concept.domain import army
+
+    harness = GameHarness(tmp_path)
+    harness.create(army.DEFAULT_SIZE_X, army.DEFAULT_SIZE_Y, [1, 2])
+    assert harness.session(1).clientSave()
+    assert harness.session(2).clientSave()
+    server = harness.play()
+
+    outcome = server.getOutcome()
+    assert outcome is not None
+    assert outcome['decided'] in (True, False)
+    assert outcome['turn'] == server.getTurnNumber()
+
+    # turn 1 places the armies; turn 2 is the first turn of play
+    second = harness.turn_record(2)
+    moved = set()
+    for entry in second['events']:
+        if entry['kind'] == 'moved':
+            moved |= players_in(entry['detail'])
+    assert moved == {1, 2}, second['events']

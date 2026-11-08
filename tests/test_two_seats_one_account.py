@@ -85,7 +85,9 @@ def test_one_account_plays_both_sides_of_a_whole_turn(client, ada):
     second = client.post(f'/games/{GAME}/players/2/commit', headers=ada)
     assert second.status_code == 200, second.get_json()
     assert second.get_json()['resolved'] is True
-    assert second.get_json()['turn_number'] == 1
+    # the last setup commit plays the game to its end
+    assert second.get_json()['turn_number'] >= 1
+    assert second.get_json()['outcome'] is not None
 
 
 def test_each_seat_holds_only_its_own_units(client, ada):

@@ -142,6 +142,8 @@ def test_a_player_is_registered_with_the_default_budget(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [1])
     assert harness.session(1).getPlayerObj(1).budget == Player.DEFAULT_BUDGET
+    # the budget that pays for the stock array's compute with sixteen to spare
+    assert Player.DEFAULT_BUDGET == 320
 
 
 def test_a_player_is_registered_with_the_budget_they_were_given(tmp_path):

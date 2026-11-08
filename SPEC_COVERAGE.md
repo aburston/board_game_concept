@@ -949,7 +949,7 @@ that reason. Not fixed here: the change plays games and changes no rule. The
 fix is for the local flow to create a game the registry's way when the
 number is new, and belongs with `game-server`.
 
-### 32. The rejected-orders list is matched by unit name, not by owner — open
+### 32. The rejected-orders list is matched by unit name, not by owner — fixed
 
 `visibility` says a player is told what a turn did to their own units, and
 nothing of what other players did to each other, and that whose units an
@@ -973,6 +973,14 @@ that did nothing is named as refused, and a move is refused twice.
 
 Reproduction: games 202 and 205 of `matches/RESULTS-DEFAULT-BOARD.md`; any
 stock army against any other, once a move ends in an undecided contest.
+
+Fixed by the `programmable-units` change. The `undecided` event now names
+each survivor with its owner, and the report looks each one up as that
+owner's unit rather than by name alone; a refusal names the owner of the
+unit it refused the same way. `tests/test_turn_reporting.py` holds two
+players with a `pawn1` and a `keep1` each to one undecided contest between
+the pawns, and each player is told of their own pawn once and of nothing
+else.
 
 Found by playing the `default-board-series`. Not fixed here, for the same
 reason as 31. The fix is for the rejection record to carry the owner and be
