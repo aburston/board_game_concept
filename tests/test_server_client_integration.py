@@ -196,7 +196,7 @@ class TestServerClientIntegration(unittest.TestCase):
         client1.read_until('bgcclient> ')
 
         client1.send_line('commit')
-        client1.read_until('waiting for turn to complete...')
+        client1.read_until('waiting for player(s) 2 to commit their setup')
 
         client2 = self.start_client('test-01', 2)
         client2.read_until('bgcclient> ')
@@ -212,12 +212,14 @@ class TestServerClientIntegration(unittest.TestCase):
         client2.read_until('bgcclient> ')
 
         client2.send_line('commit')
-        client2.read_until('waiting for turn to complete...')
+        # the last setup commit plays the game to its end: units with no
+        # controller stand still, so the state repeats and the game stops
+        client2.read_until('game over: undecided on turn 2', timeout=30)
 
-        # The server should transition out of wait-for-commit after both
-        # players have committed.
+        # the server resolved the game, logged the final board, and exited
         server.read_until('board: {', timeout=30)
         self.assertIn('board:', server.output)
+        self.assertIn('game over: undecided on turn 2', server.output)
 
     def read_until_count(self, proc, substring, count, timeout=90):
         deadline = time.monotonic() + timeout
@@ -236,11 +238,19 @@ class TestServerClientIntegration(unittest.TestCase):
                 f"Timed out waiting for {count} occurrences of '{substring}'. "
                 f"Current output:\n{proc.output}")
 
+    def program_file(self, name, text):
+        """A program where the clients run, for `set program`."""
+        path = TEST_DIR / name
+        path.write_text(text)
+        self.addCleanup(lambda: path.unlink(missing_ok=True))
+        return name
+
     def test_two_units_moving_onto_the_same_square_resolve_the_turn(self):
-        # issue #2: two units too spent to attack, ordered onto the same square,
-        # used to spin forever in the server's commit and block every player.
-        # The server prints "commit complete" once per resolved turn: the
-        # interactive setup, then the deployment, then the contested move.
+        # issue #2: two units too spent to attack, walking onto the same
+        # square, used to spin forever in the server's commit and block every
+        # player. Their controllers walk them at each other every turn they
+        # can pay for it; the contest decides nothing, they fall back, rest,
+        # and do it again - until the state repeats and the game stops
         server = self.start_server(['-g', 'test-01'])
         server.read_until('bgcserver> ')
 
@@ -253,48 +263,37 @@ class TestServerClientIntegration(unittest.TestCase):
         server.send_line('commit')
         server.read_until('wait for player commit')
 
+        south = self.program_file('south.asm', 'MOVE south\n')
+        north = self.program_file('north.asm', 'MOVE north\n')
+
         # attack 5 with energy 1: enough energy to move once, never enough to
         # attack, so neither unit can win the square
         client1 = self.start_client('test-01', 1)
         client1.read_until('bgcclient> ')
-        client1.send_line('add type Spent S 5 1 1')
+        client1.send_line('add type Spent S 5 1 1 1')
         client1.read_until('bgcclient> ')
+        client1.send_line(f'set program Spent {south}')
+        self.read_until_count(client1, 'bgcclient> ', 3)
         client1.send_line('add unit Spent s1 0 0')
         client1.send_line('set flag s1')
-        client1.read_until('bgcclient> ')
+        self.read_until_count(client1, 'bgcclient> ', 5)
         client1.send_line('commit')
-        client1.read_until('waiting for turn to complete...')
+        client1.read_until('waiting for player(s) 2 to commit their setup')
 
         client2 = self.start_client('test-01', 2)
         client2.read_until('bgcclient> ')
-        client2.send_line('add type Spent T 5 1 1')
+        client2.send_line('add type Spent T 5 1 1 1')
         client2.read_until('bgcclient> ')
+        client2.send_line(f'set program Spent {north}')
+        self.read_until_count(client2, 'bgcclient> ', 3)
         client2.send_line('add unit Spent t1 0 2')
         client2.send_line('set flag t1')
-        client2.read_until('bgcclient> ')
+        self.read_until_count(client2, 'bgcclient> ', 5)
         client2.send_line('commit')
-        client2.read_until('waiting for turn to complete...')
 
-        # the deployment turn resolves
-        self.read_until_count(server, 'commit complete', 2)
-
-        # now order both units onto the middle square
-        client1b = self.start_client('test-01', 1)
-        client1b.read_until('bgcclient> ')
-        client1b.send_line('move s1 south')
-        client1b.read_until('bgcclient> ')
-        client1b.send_line('commit')
-        client1b.read_until('waiting for turn to complete...')
-
-        client2b = self.start_client('test-01', 2)
-        client2b.read_until('bgcclient> ')
-        client2b.send_line('move t1 north')
-        client2b.read_until('bgcclient> ')
-        client2b.send_line('commit')
-        client2b.read_until('waiting for turn to complete...')
-
-        # the contested turn resolves rather than spinning
-        self.read_until_count(server, 'commit complete', 3)
+        # the game resolves to its end rather than spinning
+        server.read_until('game over: undecided', timeout=60)
+        self.assertEqual(0, server.proc.wait(timeout=10))
 
         # nobody won the contested square: both units fell back to where they
         # started, and neither was destroyed
@@ -338,7 +337,7 @@ class TestServerClientIntegration(unittest.TestCase):
         client1.send_line('set flag x1')
         client1.read_until('bgcclient> ')
         client1.send_line('commit')
-        client1.read_until('waiting for turn to complete...')
+        client1.read_until('waiting for player(s) 2, 3 to commit their setup')
 
         # player 2 asks for it too, and is told at the prompt
         client2 = self.start_client('test-01', 2)
@@ -359,7 +358,7 @@ class TestServerClientIntegration(unittest.TestCase):
         client2.send_line('set flag o1')
         self.read_until_count(client2, 'bgcclient> ', 6)
         client2.send_line('commit')
-        client2.read_until('waiting for turn to complete...')
+        client2.read_until('waiting for player(s) 3 to commit their setup')
 
         client3 = self.start_client('test-01', 3)
         client3.read_until('bgcclient> ')
@@ -369,11 +368,11 @@ class TestServerClientIntegration(unittest.TestCase):
         client3.send_line('set flag s1')
         client3.read_until('bgcclient> ')
         client3.send_line('commit')
-        client3.read_until('waiting for turn to complete...')
 
-        # the turn resolves, and every army is on the board: nothing was lost
+        # the game resolves, and every army is on the board: nothing was lost
         # to the clash, because it was never committed
-        self.read_until_count(server, 'commit complete', 2)
+        server.read_until('game over', timeout=60)
+        self.assertEqual(0, server.proc.wait(timeout=10))
 
         units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
         units = yaml.safe_load(units_file.read_text())['units']
@@ -411,7 +410,7 @@ class TestServerClientIntegration(unittest.TestCase):
         client1.send_line('set flag x1')
         client1.read_until('bgcclient> ')
         client1.send_line('commit')
-        client1.read_until('waiting for turn to complete...')
+        client1.read_until('waiting for player(s) 2 to commit their setup')
 
         # corrupt player 1's published order while the server is still waiting
         # on player 2, so it is read exactly once, as published
@@ -428,10 +427,11 @@ class TestServerClientIntegration(unittest.TestCase):
         client2.send_line('set flag o1')
         client2.read_until('bgcclient> ')
         client2.send_line('commit')
-        client2.read_until('waiting for turn to complete...')
 
-        # the turn still resolves, without the invalid order
-        self.read_until_count(server, 'commit complete', 2)
+        # the game still resolves, without the invalid order: player 1's
+        # only unit carried their flag, so the game is player 2's at once
+        server.read_until('game over: player 2 wins on turn 1', timeout=60)
+        self.assertEqual(0, server.proc.wait(timeout=10))
 
         units_file = GAMES_DIR / '_test-01' / 'data' / 'units.yaml'
         units = yaml.safe_load(units_file.read_text())['units']
@@ -493,48 +493,38 @@ class TestServerClientIntegration(unittest.TestCase):
         server.send_line('commit')
         server.read_until('wait for player commit')
 
+        south = self.program_file('south.asm', 'MOVE south\n')
+        north = self.program_file('north.asm', 'MOVE north\n')
+
         # attack 1 against health 3 and 10: several rounds of attrition before
-        # the cross wins the square
+        # the cross wins the square. Their controllers walk them into the
+        # same square every turn, so they fight until one falls
         client1 = self.start_client('test-01', 1)
         client1.read_until('bgcclient> ')
-        client1.send_line('add type Cross X 1 10 100')
+        client1.send_line('add type Cross X 1 10 100 1')
         client1.read_until('bgcclient> ')
+        client1.send_line(f'set program Cross {south}')
+        self.read_until_count(client1, 'bgcclient> ', 3)
         client1.send_line('add unit Cross x1 0 0')
         client1.send_line('set flag x1')
-        client1.read_until('bgcclient> ')
+        self.read_until_count(client1, 'bgcclient> ', 5)
         client1.send_line('commit')
-        client1.read_until('waiting for turn to complete...')
+        client1.read_until('waiting for player(s) 2 to commit their setup')
 
         client2 = self.start_client('test-01', 2)
         client2.read_until('bgcclient> ')
-        client2.send_line('add type Naught O 1 3 100')
+        client2.send_line('add type Naught O 1 3 100 1')
         client2.read_until('bgcclient> ')
+        client2.send_line(f'set program Naught {north}')
+        self.read_until_count(client2, 'bgcclient> ', 3)
         client2.send_line('add unit Naught o1 0 2')
         client2.send_line('set flag o1')
-        client2.read_until('bgcclient> ')
+        self.read_until_count(client2, 'bgcclient> ', 5)
         client2.send_line('commit')
-        client2.read_until('waiting for turn to complete...')
 
-        # the deployment turn resolves
-        self.read_until_count(server, 'commit complete', 2)
-
-        # order the units into the same square, so that they fight
-        client1b = self.start_client('test-01', 1)
-        client1b.read_until('bgcclient> ')
-        client1b.send_line('move x1 south')
-        client1b.read_until('bgcclient> ')
-        client1b.send_line('commit')
-        client1b.read_until('waiting for turn to complete...')
-
-        client2b = self.start_client('test-01', 2)
-        client2b.read_until('bgcclient> ')
-        client2b.send_line('move o1 north')
-        client2b.read_until('bgcclient> ')
-        client2b.send_line('commit')
-        client2b.read_until('waiting for turn to complete...')
-
-        # the fight resolves
-        self.read_until_count(server, 'commit complete', 3)
+        # the fight resolves, and the game with it
+        server.read_until('game over: player 1 wins', timeout=60)
+        self.assertEqual(0, server.proc.wait(timeout=10))
 
         # the view written for the winner names the enemy it fought once
         players_dir = GAMES_DIR / '_test-01' / 'players'
@@ -724,34 +714,52 @@ class TestWorkSurvivesASession(unittest.TestCase):
         revived.send_line('commit')
         revived.read_until('commit complete')
 
-    def test_a_client_killed_mid_turn_gets_its_order_back(self):
-        client = self.with_an_army()
-        self.typed(client, 'bgcclient> ', 'move x1 north')
-        client.terminate()
+    def program_file(self, name, text):
+        path = TEST_DIR / name
+        path.write_text(text)
+        self.addCleanup(lambda: path.unlink(missing_ok=True))
+        return name
+
+    def test_a_client_killed_mid_setup_gets_its_program_back(self):
+        self.established_game(players=(1,))
+        hunt = self.program_file('hunt.asm', 'MOVE north\nHALT\n')
+
+        doomed = self.start_client('test-01', 1)
+        self.wait_for(doomed, 'bgcclient> ', 1)
+        self.typed(doomed, 'bgcclient> ', 'add type Runner r 1 5 10 2')
+        self.typed(doomed, 'bgcclient> ', f'set program Runner {hunt}')
+        doomed.terminate()
 
         revived = self.start_client('test-01', 1)
         self.wait_for(revived, 'bgcclient> ', 1)
 
-        listed = self.shown(revived, 'bgcclient> ', 'show units')
-        self.assertIn('moving', listed)
-        self.assertIn('north', listed)
+        listed = self.shown(revived, 'bgcclient> ', 'show program Runner')
+        self.assertIn('MOVE north', listed)
+        self.assertIn('compute 2', listed)
 
-    def test_a_restored_order_can_be_changed_before_committing(self):
-        client = self.with_an_army()
-        self.typed(client, 'bgcclient> ', 'move x1 north')
-        client.terminate()
+    def test_a_restored_program_can_be_changed_before_committing(self):
+        self.established_game(players=(1,))
+        first = self.program_file('first.asm', 'MOVE north\n')
+        second = self.program_file('second.asm', 'MOVE south\n')
+
+        doomed = self.start_client('test-01', 1)
+        self.wait_for(doomed, 'bgcclient> ', 1)
+        self.typed(doomed, 'bgcclient> ', 'add type Runner r 1 5 10 2')
+        self.typed(doomed, 'bgcclient> ', f'set program Runner {first}')
+        doomed.terminate()
 
         revived = self.start_client('test-01', 1)
         self.wait_for(revived, 'bgcclient> ', 1)
-        # the turn the deployment resolved into, so that what is waited for
-        # below is the turn the *move* resolves into and not that one
-        deployed_on = self.published_turn()
-        self.typed(revived, 'bgcclient> ', 'move x1 south')
+        self.typed(revived, 'bgcclient> ', f'set program Runner {second}')
+        self.typed(revived, 'bgcclient> ', 'add unit Runner r1 1 1')
+        self.typed(revived, 'bgcclient> ', 'set flag r1')
         revived.send_line('commit')
         revived.read_until('commit complete')
+        revived.read_until('game over', timeout=60)
 
-        # only the later order was taken: the unit moved south from (1, 1)
-        self.assertEqual(self.published_square('x1', after=deployed_on), (1, 2))
+        # only the later program was kept: the unit walked south from (1, 1)
+        # to the edge of the four-row board, where the game's state repeats
+        self.assertEqual(self.published_square('r1', after=1), (1, 3))
 
     def test_a_server_killed_during_setup_gets_its_setup_back(self):
         doomed = self.start_server('test-01')
@@ -793,10 +801,10 @@ class TestWorkSurvivesASession(unittest.TestCase):
         other.send_line('commit')
         other.read_until('commit complete')
 
-        # player 1 has drafted and not committed, so the turn stays open
+        # player 1 has drafted and not committed, so the game stays open
         time.sleep(1)
-        self.assertEqual(server.output.count('commit complete'), 1)
+        self.assertNotIn('game resolved', server.output)
 
         drafting.send_line('commit')
         drafting.read_until('commit complete')
-        self.wait_for(server, 'commit complete', 2)
+        self.wait_for(server, 'game resolved', 1)

@@ -11,9 +11,14 @@ administrator is entitled to the whole game.
 
 #### Scenario: The administrator reads a turn
 
-- **WHEN** the administrator runs `show turn 5` on a resolved game
+- **WHEN** the administrator starts `bgcserver` with `--replay` against a resolved game and runs `show turn 5`
 - **THEN** the board after turn 5 is drawn with every unit
 - **AND** every seat's controller traces for turn 5 are listed
+
+#### Scenario: Reading the record is asked for
+
+- **WHEN** the administrator starts `bgcserver` against a resolved game without `--replay`
+- **THEN** it reports the outcome and exits, as the unattended cycle does
 
 ## MODIFIED Requirements
 

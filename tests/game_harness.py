@@ -14,7 +14,7 @@ import os
 from board_game_concept import Game, YamlGameRepository
 from board_game_concept.service import games
 from board_game_concept.service.commands import (
-    AddPlayer, AddType, AddUnit, Move, RemoveUnit, SetBoard, SetFlag)
+    AddPlayer, AddType, AddUnit, RemoveUnit, SetBoard, SetFlag)
 from board_game_concept.storage.serialise import units_document
 
 # "the first unit deployed", told apart from `None`, which means no flag at all
@@ -181,10 +181,20 @@ class GameHarness:
     # --- playing it
 
     def order(self, player_number, orders):
-        """Order this player's units and commit. `orders` are `(unit, direction)`."""
+        """Order this player's units and commit. `orders` are `(unit, direction)`.
+
+        A player gives no orders any more - every move is a controller's -
+        so the units are ordered here the way a controller orders them, on
+        the client's own board, and published as the client publishes its
+        setup. The fixtures that hold the rules of movement and combat drive
+        one turn at a time this way.
+        """
         client = self.session(player_number)
+        board = client.getBoard()
+        player = client.getPlayerObj(player_number)
         for unit_name, direction in orders:
-            games.order_move(client, Move(unit=unit_name, direction=direction))
+            unit = board.getUnitByName(unit_name, player)[0]
+            unit.move(direction)
         assert client.clientSave()
         return client
 

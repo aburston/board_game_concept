@@ -9,14 +9,24 @@ if __package__ is None:
 
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.accounts import handle_account_command
-from board_game_concept.cli.show import perform_show, show_units
+from board_game_concept.cli.show import Replay, perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.render import print_dropped
-from board_game_concept.cli.session import (describe_outcome, load_game,
+from board_game_concept.cli.session import (describe_outcome,
+                                            describe_waiting, load_game,
                                             make_accounts, make_session,
-                                            read_command, report)
+                                            read_command, read_program_file,
+                                            report)
 from board_game_concept.service import identity
+from board_game_concept.service.commands import SetProgram
 from board_game_concept.service.errors import GameError
+
+# what a player may do to their setup, and may not once it is committed or
+# the game is over
+SETUP_COMMANDS = ('commit', 'add_type', 'add_unit', 'remove_unit', 'set_flag',
+                  'set_program_file')
+GAME_OVER = ("the game is over: your setup is committed and every turn has "
+             "been played")
 
 ROLE = roles.CLIENT
 
@@ -109,42 +119,37 @@ def main(argv=None):
     # load the data
     while True:
 
-        # load/reload the gamedata
-        load_game(data)
+        # load/reload the gamedata. Patiently: a game is resolved to its
+        # end under one hold the moment the last setup is committed, and a
+        # client woken by that finds the game held until it is over
+        load_game(data, patient=True)
+        replay = Replay(data)
 
-        # what this session shows is read where it is shown, so that a unit
-        # deployed or ordered since the game was loaded is in it
-        unprocessed_moves = data.getUnprocessedMoves()
-
-        # wait 5 seconds if there are unprocessed moves and then reload
-        if unprocessed_moves:
-            print("waiting for turn to complete...")
-            # blocks until the server has taken the orders, rather than
+        outcome = data.getOutcome()
+        # this player's setup is published and the game is not yet resolved:
+        # the last setup is still to come, and the game is played to its end
+        # the moment it does. Nothing is asked of this player until then
+        if outcome is None and data.getUnprocessedMoves():
+            print(f"setup committed; {describe_waiting(data.waitingOn())}")
+            # blocks until the resolution has taken the setup, rather than
             # sleeping and looking again
             data.waitForTurn()
-            # restart the loop
+            # restart the loop, which reads the game as the resolution left it
             continue
 
-        # a decided game, or one this player has been wiped out of, takes no
-        # more orders. Everything that only displays still works
-        outcome = data.getOutcome()
+        # a resolved game, or one this player has been wiped out of, takes no
+        # more setup. Everything that reads still works, and the record is
+        # there to be read: a resolved game opens at its final turn
         out_of_it = outcome is not None or data.isEliminated(player_number)
         if outcome is not None:
             print(describe_outcome(outcome))
+            replay.final()
         elif out_of_it:
             print(f"player {player_number} is out of the game")
 
         # anything of this player's own that could not be put back when their
         # draft was restored, said before they are asked for anything else
         print_dropped(data.getDropped())
-
-        # report anything the server refused when it resolved the last turn
-        rejected = data.getRejected()
-        if rejected:
-            print(f"{len(rejected)} order(s) rejected last turn:")
-            for order in rejected:
-                print(f"  - {order['unit']} at "
-                      f"({order['x']},{order['y']}): {order['reason']}")
 
         # interactive mode
         while True:
@@ -166,12 +171,15 @@ def main(argv=None):
                 sys.exit(0)
 
             if command.kind == 'show':
-                perform_show(data, command)
+                perform_show(data, command, replay)
                 continue
 
-            if out_of_it and command.kind in ('commit', 'move', 'add_type',
-                                              'add_unit'):
-                print("the game is over" if outcome is not None
+            if command.kind in ('next', 'prev'):
+                replay.step(1 if command.kind == 'next' else -1)
+                continue
+
+            if out_of_it and command.kind in SETUP_COMMANDS:
+                print(GAME_OVER if outcome is not None
                       else "you are out of the game")
                 continue
 
@@ -191,18 +199,34 @@ def main(argv=None):
                     break
                 continue
 
+            if command.kind == 'set_program_file':
+                # the file is read here, on the player's side, and its text
+                # is what reaches the game - a session talking to a server
+                # never names a path the server owns
+                try:
+                    text = read_program_file(command.path)
+                    data.perform(SetProgram(type_name=command.type_name,
+                                            program=text))
+                except GameError as error:
+                    report(error)
+                    continue
+                perform_show(data, commands_show_program(command.type_name))
+                continue
+
             # everything else is the service layer's to carry out or refuse,
-            # and to remember: an order that is not committed yet is written
+            # and to remember: setup that is not committed yet is written
             # down as it is given, so ending the session does not lose it
             try:
                 data.perform(command)
             except GameError as error:
                 report(error)
                 continue
-            if command.kind == 'move':
-                # the order is read back so the player can see it took, as the
-                # same table `show units` would have given them
-                show_units(data)
+
+
+def commands_show_program(type_name):
+    """The `show program` that lists a program back after it is set."""
+    from board_game_concept.service.commands import Show
+    return Show(subject='program', name=type_name)
 
 
 if __name__ == "__main__":

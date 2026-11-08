@@ -310,60 +310,6 @@ def remove_unit(data, command):
     board.take_back(unit)
 
 
-def order_move(data, command):
-    """Order one of this player's units to move."""
-    board = data.getBoard()
-    if board is None:
-        raise GameError("board must be loaded in order to move units")
-    if data.getNewGame():
-        raise GameError(
-            "can't move units until after the first turn is complete")
-    # scoped to this player, so that an opponent holding a unit of the same
-    # name cannot make a player's own order unanswerable. `board-model` allows
-    # two players to reuse a name, and the unscoped lookup returned whichever
-    # was registered first
-    player_obj = data.getPlayerObj(data.player_number)
-    try:
-        unit = board.getUnitByName(command.unit, player_obj)[0]
-    except Exception as e:
-        raise GameError(f"error moving unit {e}") from e
-    if data.player_number != unit.player.number:
-        raise GameError("can't move units belonging to other players")
-    if not unit.on_board:
-        raise GameError("can't move units not on the board")
-    unit.move(command.direction)
-
-
-def hold_unit(data, command):
-    """Take back an order given to one of this player's units this turn.
-
-    An order is not final until the turn is committed - `turn-commit` says a
-    turn is decided all at once, and until then a player is still deciding.
-    There was no way to change your mind about one: a unit ordered north was
-    ordered north, and the only way out was to commit the turn and let it
-    happen.
-
-    Holding is the absence of an order rather than an order of its own, so
-    this puts the unit back to having none: it takes no direction, pays no
-    fare, and rests like any other unit that was given nothing to do.
-    """
-    board = data.getBoard()
-    if board is None:
-        raise GameError("board must be loaded in order to order units")
-    if data.getNewGame():
-        raise GameError(
-            "there are no orders to take back until the first turn is "
-            "complete")
-    player_obj = data.getPlayerObj(data.player_number)
-    try:
-        unit = board.getUnitByName(command.unit, player_obj)[0]
-    except Exception as e:
-        raise GameError(f"error holding unit {e}") from e
-    if data.player_number != unit.player.number:
-        raise GameError("can't order units belonging to other players")
-    unit.hold()
-
-
 def set_flag(data, command):
     """Designate which of this player's units carries their flag.
 
@@ -409,14 +355,12 @@ ACTIONS = {
     'add_player': add_player,
     'remove_player': remove_player,
     'remove_unit': remove_unit,
-    'hold': hold_unit,
     'load_board': load_board,
     'load_player': load_player,
     'add_type': define_type,
     'add_unit': deploy_unit,
     'set_flag': set_flag,
     'set_program': set_program,
-    'move': order_move,
     'set_new_game': set_new_game,
 }
 

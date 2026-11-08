@@ -31,14 +31,27 @@ class ClientTestCase(CliTestCase):
         return client
 
     def in_play(self):
-        """Past setup: the player has committed and the turn has resolved."""
+        """Past setup: the player has committed and the game has been played.
+
+        The sole player's commit satisfies the barrier, the server resolves
+        the whole game - one unit with no controller stands where it was put,
+        so the state repeats on turn 2 and the game stops undecided - and
+        the client is shown the result and the final turn.
+        """
         client = self.with_a_unit(flag=True)
         client.send_line('commit')
         client.read_until('commit complete')
-        # the sole player's commit satisfies the barrier and the server
-        # signals the client, so this returns as soon as the turn is resolved
+        client.read_until('game over', timeout=60)
         client.read_until_count(CLIENT_PROMPT, 5, timeout=60)
         return client
+
+    def program_file(self, text, name='program_under_test.asm'):
+        """A program written where the client runs, for `set program`."""
+        from cli_harness import TEST_DIR
+        path = TEST_DIR / name
+        path.write_text(text)
+        self.addCleanup(lambda: path.unlink(missing_ok=True))
+        return name
 
 
 class CarryingTheFlag(ClientTestCase):
@@ -70,7 +83,7 @@ class CarryingTheFlag(ClientTestCase):
     def test_designating_after_the_setup_is_committed(self):
         client = self.in_play()
         client.send_line('set flag x1')
-        client.read_until('the flag is fixed for the game')
+        client.read_until('the game is over: your setup is committed')
 
     def test_showing_the_flags(self):
         client = self.in_play()
@@ -142,7 +155,7 @@ class DefiningUnitTypes(ClientTestCase):
         # the table also lists the catalogue this player was registered with,
         # so the type just defined is looked for rather than counted to
         rows = [line.split() for line in lines[1:]]
-        assert ['1', 'Cross', 'X', '1', '1', '10', '12'] in rows
+        assert ['1', 'Cross', 'X', '1', '1', '10', '0', 'no', '12'] in rows
 
     def test_wrong_argument_count(self):
         client = self.player_client()
@@ -190,7 +203,9 @@ class DefiningUnitTypes(ClientTestCase):
         client = self.player_client()
         # health 6 costs 2 to move, so 1 energy is a design that could never
         # take a step
-        client.send_line('add type Heavy H 3 6 1')
+        # ...for a type that thinks. One with no compute is a turret, and
+        # exempt
+        client.send_line('add type Heavy H 3 6 1 1')
         client.read_until('error adding unit type: a type that can move must '
                           'have at least its movement cost in energy')
 
@@ -203,7 +218,19 @@ class DefiningUnitTypes(ClientTestCase):
     def test_defining_a_type_after_setup(self):
         client = self.in_play()
         client.send_line('add type Later L 1 1 10')
-        client.read_until("can't add types after first turn")
+        client.read_until('the game is over: your setup is committed')
+
+    def test_defining_a_type_with_compute(self):
+        client = self.player_client()
+        client.send_line('add type Runner r 2 4 10 5')
+        client.read_until_count(CLIENT_PROMPT, 2)
+        lines = self.shown_table(client, CLIENT_PROMPT, 'types')
+        assert 'COMPUTE' in lines[0].split()
+        runner = [line.split() for line in lines[1:]
+                  if line.split()[1] == 'Runner'][0]
+        assert runner[lines[0].split().index('COMPUTE')] == '5'
+        # compute is bought like the other three: 2 + 4 + 10 + 5
+        assert runner[lines[0].split().index('COST')] == '21'
 
 
 class DeployingUnits(ClientTestCase):
@@ -253,7 +280,7 @@ class DeployingUnits(ClientTestCase):
     def test_deploying_after_setup(self):
         client = self.in_play()
         client.send_line('add unit Cross x9 2 2')
-        client.read_until("can't add units after first turn")
+        client.read_until('the game is over: your setup is committed')
 
     def test_deploying_more_than_the_budget_can_pay_for(self):
         client = self.player_client(players=((1, 30),))
@@ -271,37 +298,88 @@ class DeployingUnits(ClientTestCase):
         client.read_until_count(CLIENT_PROMPT, 5)
 
 
-class OrderingMovement(ClientTestCase):
+class SettingAProgram(ClientTestCase):
+    """`set program <type> <file>` and `show program <type>`."""
 
-    def test_ordering_a_move(self):
+    HUNT = 'SELF\nFLAG enemy\nJIF neg r0, rest\nMOVE south\nHALT\nrest: SLEEP 2\n'
+
+    def a_thinking_type(self):
+        client = self.player_client()
+        client.send_line('add type Runner r 2 4 10 3')
+        client.read_until_count(CLIENT_PROMPT, 2)
+        return client
+
+    def test_setting_a_program(self):
+        client = self.a_thinking_type()
+        path = self.program_file(self.HUNT)
+        lines = self.shown(client, CLIENT_PROMPT,
+                           f'set program Runner {path}').splitlines()
+        # the program is listed back with the tick cost of each line
+        assert lines[0] == ('Runner: compute 3, 30 ticks per energy, '
+                            'cap 30 ticks a turn')
+        assert lines[1].split() == ['LINE', 'TICKS', 'PROGRAM']
+        assert lines[2].split()[:3] == ['1', '1', 'SELF']
+        assert lines[-1] == 'a straight run costs 6 ticks'
+
+    def test_a_program_with_a_bad_line(self):
+        client = self.a_thinking_type()
+        good = self.program_file(self.HUNT)
+        client.send_line(f'set program Runner {good}')
+        client.read_until_count(CLIENT_PROMPT, 3)
+        bad = self.program_file('SELF\nFLY away\n', name='bad.asm')
+        client.send_line(f'set program Runner {bad}')
+        client.read_until('line 2')
+        # the type's program is as it was
+        shown = self.shown(client, CLIENT_PROMPT, 'show program Runner')
+        assert 'FLAG enemy' in shown and 'FLY' not in shown
+
+    def test_a_program_on_a_type_with_no_controller(self):
+        client = self.with_a_unit()          # Cross has compute 0
+        path = self.program_file(self.HUNT)
+        client.send_line(f'set program Cross {path}')
+        client.read_until('has compute 0, so it has no controller')
+
+    def test_a_program_after_commit(self):
         client = self.in_play()
-        lines = self.shown(client, CLIENT_PROMPT, 'move x1 north').splitlines()
-        # the order is read back as the units table, showing it took
-        assert lines[0].split() == [
-            'PLAYER', 'NAME', 'TYPE', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
-            'X', 'Y', 'STATE', 'DIRECTION', 'FLAG']
-        # `FLAG` is last now, and this unit carries one
-        assert lines[1].split()[-3:] == ['moving', 'north', 'yes']
+        path = self.program_file(self.HUNT)
+        client.send_line(f'set program Cross {path}')
+        client.read_until('the game is over: your setup is committed')
+
+    def test_a_file_that_cannot_be_read(self):
+        client = self.a_thinking_type()
+        client.send_line('set program Runner nowhere.asm')
+        client.read_until('cannot read the program file nowhere.asm')
+
+    def test_reading_a_program_back(self):
+        client = self.a_thinking_type()
+        path = self.program_file(self.HUNT)
+        client.send_line(f'set program Runner {path}')
+        client.read_until_count(CLIENT_PROMPT, 3)
+        lines = self.shown(client, CLIENT_PROMPT,
+                           'show program Runner').splitlines()
+        assert lines[0] == ('Runner: compute 3, 30 ticks per energy, '
+                            'cap 30 ticks a turn')
+        # a jump costs a tick, a HALT nothing, and the label line is its
+        # instruction's
+        by_line = {line.split()[0]: line.split()[1] for line in lines[2:-1]}
+        assert by_line['3'] == '1' and by_line['5'] == '0'
+        assert lines[-1] == 'a straight run costs 6 ticks'
+
+    def test_a_type_without_a_program(self):
+        client = self.a_thinking_type()
+        shown = self.shown(client, CLIENT_PROMPT, 'show program Runner')
+        assert 'no program' in shown
 
     def test_wrong_argument_count(self):
         client = self.player_client()
-        client.send_line('move x1')
-        client.read_until('must provide 2 args for move')
+        client.send_line('set program Runner')
+        client.read_until('must provide a type and the file holding its '
+                          'program')
 
-    def test_moving_before_the_first_turn_resolves(self):
-        client = self.player_client()
+    def test_there_is_no_move_command(self):
+        client = self.in_play()
         client.send_line('move x1 north')
-        client.read_until("can't move units until after the first turn is complete")
-
-    def test_moving_a_unit_that_does_not_exist(self):
-        client = self.in_play()
-        client.send_line('move nosuch north')
-        client.read_until('error moving unit')
-
-    def test_invalid_direction(self):
-        client = self.in_play()
-        client.send_line('move x1 nowhere')
-        client.read_until('invalid direction nowhere')
+        client.read_until('invalid command')
 
 
 class ClientDisplayCommands(ClientTestCase):
@@ -317,11 +395,12 @@ class ClientDisplayCommands(ClientTestCase):
         client.read_until_count(CLIENT_PROMPT, 2)
         lines = self.shown_table(client, CLIENT_PROMPT, 'types')
         assert lines[0].split() == [
-            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY', 'COST']
+            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
+            'COMPUTE', 'PROGRAM', 'COST']
         rows = [line.split() for line in lines[1:]]
-        assert ['1', 'Cross', 'X', '1', '1', '10', '12'] in rows
-        assert ['1', 'Heavy', 'H', '5', '10', '15', '30'] in rows, (
-            'the catalogue is listed alongside it')
+        assert ['1', 'Cross', 'X', '1', '1', '10', '0', 'no', '12'] in rows
+        assert ['1', 'Heavy', 'H', '5', '10', '15', '4', 'yes', '34'] in rows, (
+            'the catalogue is listed alongside it, compute and program too')
 
     def test_showing_units(self):
         client = self.with_a_unit()
@@ -345,7 +424,7 @@ class ClientDisplayCommands(ClientTestCase):
             'PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT']
         # a player reads their own points, and a `-` where another player's
         # record was never theirs to read
-        assert ['1', 'active', '250', '0', '250'] in [
+        assert ['1', 'active', '320', '0', '320'] in [
             line.split() for line in lines[1:]]
 
     def test_another_players_points_are_not_shown(self):
@@ -423,13 +502,97 @@ class CommittingATurn(ClientTestCase):
         client = self.with_a_unit(flag=True)
         client.send_line('commit')
         client.read_until('commit complete')
-        client.read_until('waiting for turn to complete...')
+        # the sole player's was the last setup outstanding, so the game is
+        # resolved and the client shows its result and final turn
+        client.read_until('game over: undecided on turn 2', timeout=60)
+        client.read_until('turn 2')
+        client.read_until_count(CLIENT_PROMPT, 5, timeout=60)
+
+    def test_committing_waits_for_the_other_setups(self):
+        self.server = self.established_game(players=(1, 2))
+        client = self.start_client('test-01', 1)
+        client.read_until(CLIENT_PROMPT)
+        client.send_line('add type Cross X 1 1 10')
+        client.read_until_count(CLIENT_PROMPT, 2)
+        client.send_line('add unit Cross x1 0 0')
+        client.read_until_count(CLIENT_PROMPT, 3)
+        client.send_line('set flag x1')
+        client.read_until_count(CLIENT_PROMPT, 4)
+        client.send_line('commit')
+        client.read_until('commit complete')
+        client.read_until('waiting for player(s) 2 to commit their setup')
 
     def test_reloading_after_resolution(self):
         client = self.in_play()
-        # back at the prompt, taking orders again
+        # back at the prompt, with the game to read
         client.send_line('show board')
         client.read_until('X')
+
+
+class WatchingTheReplay(ClientTestCase):
+    """`show turn <n>`, `next`, `prev` and `show turn <n> known`."""
+
+    def test_opening_a_resolved_game(self):
+        self.in_play()
+        again = self.start_client('test-01', 1)
+        again.read_until('game over: undecided on turn 2')
+        again.read_until('turn 2')
+        again.read_until(CLIENT_PROMPT)
+
+    def test_reading_a_turn(self):
+        client = self.in_play()
+        shown = self.shown(client, CLIENT_PROMPT, 'show turn 1')
+        lines = shown.splitlines()
+        assert lines[0] == 'turn 1'
+        # the board after turn 1, with the unit on it
+        assert '|X| | | |' in lines
+        # what the turn did to the player's units
+        assert 'x1 is placed at (0, 0)' in shown
+
+    def test_stepping_through(self):
+        client = self.in_play()
+        self.shown(client, CLIENT_PROMPT, 'show turn 1')
+        assert self.shown(client, CLIENT_PROMPT, 'next').splitlines()[0] \
+            == 'turn 2'
+        assert self.shown(client, CLIENT_PROMPT, 'prev').splitlines()[0] \
+            == 'turn 1'
+        # the record begins with the setup resolution, turn 0, and ends
+        # where the game did
+        assert self.shown(client, CLIENT_PROMPT, 'prev').splitlines()[0] \
+            == 'turn 0'
+        assert 'the record has no turn -1; it holds turns 0 to 2' in \
+            self.shown(client, CLIENT_PROMPT, 'prev')
+
+    def test_what_my_army_knew(self):
+        client = self.in_play()
+        lines = self.shown(client, CLIENT_PROMPT,
+                           'show turn 1 known').splitlines()
+        # the player's unit where it stands, the rest of the board unknown
+        assert '|X|?|?|?|' in lines
+        assert any(line.split()[:1] == ['?'] for line in lines)
+
+    def test_a_turn_the_record_does_not_hold(self):
+        client = self.in_play()
+        shown = self.shown(client, CLIENT_PROMPT, 'show turn 9')
+        assert 'the record has no turn 9; it holds turns 0 to 2' in shown
+
+    def test_before_the_game_is_resolved(self):
+        self.server = self.established_game(players=(1, 2))
+        client = self.start_client('test-01', 1)
+        client.read_until(CLIENT_PROMPT)
+        client.send_line('show turn 1')
+        client.read_until('the game has not been resolved: waiting for '
+                          'player(s) 1, 2 to commit their setup')
+        client.send_line('next')
+        client.read_until_count('the game has not been resolved', 2)
+
+    def test_the_turn_as_json(self):
+        import json
+        client = self.in_play()
+        document = json.loads(self.shown(client, CLIENT_PROMPT,
+                                         'show turn 1 json'))
+        assert document['turn']['turn'] == 1
+        assert document['turn']['board']['rows'][0][0] == 'X'
 
 
 class ReportingRejectedOrders(ClientTestCase):

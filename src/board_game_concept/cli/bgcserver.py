@@ -14,11 +14,12 @@ from board_game_concept.storage.serialise import units_document
 from board_game_concept.storage.yaml_repository import dump_units
 from board_game_concept.cli import complete, roles
 from board_game_concept.cli.accounts import handle_account_command
-from board_game_concept.cli.show import perform_show
+from board_game_concept.cli.show import Replay, perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (add_backend_argument,
                                             add_server_argument,
-                                            describe_outcome, load_game,
+                                            describe_outcome,
+                                            describe_waiting, load_game,
                                             make_accounts, make_session,
                                             read_command, report)
 from board_game_concept.service.errors import GameError
@@ -49,6 +50,10 @@ def main(argv=None):
         '--game-number',
         required=True,
         help='specify the game number')
+    parser.add_argument(
+        '-r', '--replay', action='store_true',
+        help='open a resolved game at the prompt to read its record, '
+             'rather than report its outcome and exit')
     add_backend_argument(parser)
     add_server_argument(parser)
     args = parser.parse_args(argv[1:])
@@ -77,18 +82,25 @@ def main(argv=None):
     while True:
 
         # load the gamedata
-        load_game(data)
+        load_game(data, patient=True)
+        replay = Replay(data)
 
         # anything the administrator drafted that could not be put back
         print_dropped(data.getDropped())
 
         new_game = data.getNewGame()
 
-        # a decided game has no turn left to resolve, and waiting for commits
-        # that will never come is how the cycle used to run forever
+        # a resolved game has no turn left to resolve, and waiting for commits
+        # that will never come is how the cycle used to run forever. The
+        # administrator asked for the record is given it at the prompt; the
+        # server run unattended reports the outcome and exits
         outcome = data.getOutcome()
         if outcome is not None:
             print(describe_outcome(outcome))
+            if not args.replay:
+                sys.exit(0)
+            replay.final()
+            _read_the_record(data, replay, accounts)
             sys.exit(0)
 
         # interactive mode
@@ -110,7 +122,11 @@ def main(argv=None):
                 sys.exit(0)
 
             if command.kind == 'show':
-                perform_show(data, command)
+                perform_show(data, command, replay)
+                continue
+
+            if command.kind in ('next', 'prev'):
+                replay.step(1 if command.kind == 'next' else -1)
                 continue
 
             if command.kind == 'commit':
@@ -146,8 +162,10 @@ def main(argv=None):
         else:
             # asked here rather than acted on from the waiting: the question
             # that authorises a resolution and the resolution itself are one
-            # act, holding the game, so another caller cannot resolve the turn
-            # in between and leave this one resolving a game with no orders
+            # act, holding the game, so another caller cannot resolve the
+            # game in between and leave this one resolving a game with no
+            # setups in it. Once the barrier is met the whole game is
+            # resolved, every turn to its end, waiting for nobody
             resolved = data.resolve_pending()
             if resolved is None:
                 # somebody else resolved it first, which is the barrier doing
@@ -158,9 +176,10 @@ def main(argv=None):
             if not resolved:
                 print("internal server error saving game data")
                 sys.exit(1)
-            print("commit complete")
+            print("game resolved")
 
-        # the turn just resolved may have decided the game
+        # the resolution ends the game: a decision, a repeated state or the
+        # cap, and the server reports which and exits
         outcome = data.getOutcome()
         if outcome is not None:
             print_board(data.getBoard())
@@ -169,16 +188,29 @@ def main(argv=None):
             print(describe_outcome(outcome))
             sys.exit(0)
 
-        # wait for player commits before restarting the load and commit cycle
+        # wait for the last setup commit before resolving the game
+        print(f"setup complete; {describe_waiting(data.waitingOn())}")
         data.waitForPlayerCommit()
 
-        # log board + units. The board is read back rather than kept in a
-        # local: setting or loading a board during setup replaces it, and the
-        # local would still be the old one
-        resolved = data.getBoard()
-        print_board(resolved)
-        if isinstance(data, LocalSession):
-            print(dump_units(units_document(resolved)))
+
+def _read_the_record(data, replay, accounts):
+    """The prompt on a resolved game: the record, and nothing to change."""
+    while True:
+        command = read_command(PROGRAM, ROLE)
+        if command is None:
+            continue
+        if handle_account_command(command, accounts):
+            continue
+        if command.kind == 'help':
+            print_help(ROLE)
+        elif command.kind == 'exit':
+            return
+        elif command.kind == 'show':
+            perform_show(data, command, replay)
+        elif command.kind in ('next', 'prev'):
+            replay.step(1 if command.kind == 'next' else -1)
+        else:
+            print("the game is over")
 
 
 # run main()

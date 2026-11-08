@@ -63,8 +63,12 @@ class InteractiveSetupMode(CliTestCase):
         server.read_until('commit')
         listed = server.output
         for command in ('add player', 'load board', 'load player', 'set board',
-                        'show board', 'show player', 'show types', 'exit'):
+                        'show board', 'show player', 'show types',
+                        'show turn', 'next', 'prev', 'exit'):
             self.assertIn(command, listed)
+        # a player gives no orders, and the grammar has none to offer
+        self.assertFalse(any(line.startswith(('move ', 'hold '))
+                             for line in listed.splitlines()))
 
     def test_exit_ends_the_session(self):
         server = self.start_server()
@@ -264,8 +268,10 @@ class ServerDisplayCommands(CliTestCase):
         server.read_until_count(SERVER_PROMPT, 3)
         lines = self.shown_table(server, SERVER_PROMPT, 'types')
         assert lines[0].split() == [
-            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY', 'COST']
-        assert lines[1].split() == ['1', 'O', 'O', '1', '1', '10', '12']
+            'PLAYER', 'NAME', 'SYMBOL', 'ATTACK', 'HEALTH', 'ENERGY',
+            'COMPUTE', 'PROGRAM', 'COST']
+        assert lines[1].split() == ['1', 'O', 'O', '1', '1', '10', '0', 'no',
+                                    '12']
 
     def test_showing_units(self):
         # the server's prompt is setup, and a loaded player's units only reach
@@ -280,7 +286,7 @@ class ServerDisplayCommands(CliTestCase):
         lines = self.shown_table(server, SERVER_PROMPT, 'players')
         assert lines[0].split() == [
             'PLAYER', 'STATUS', 'BUDGET', 'SPENT', 'LEFT']
-        assert lines[1].split() == ['1', 'active', '250', '0', '250']
+        assert lines[1].split() == ['1', 'active', '320', '0', '320']
 
     def test_showing_pending_orders(self):
         server = self._sized()
@@ -293,7 +299,7 @@ class ServerDisplayCommands(CliTestCase):
         server.read_until_count(SERVER_PROMPT, 3)
         assert self.shown_json(server, SERVER_PROMPT, 'players') == {
             'players': [{'player': 1, 'status': 'active',
-                         'budget': 250, 'spent': 0, 'left': 250}]}
+                         'budget': 320, 'spent': 0, 'left': 320}]}
 
     def test_an_empty_subject_as_json_is_an_empty_list(self):
         server = self._sized()
@@ -343,12 +349,11 @@ class UnattendedTurnCycle(CliTestCase):
         server.read_until('wait for player commit')
         self.assertIsNone(server.proc.poll())
 
-    def test_the_turn_loop_logs_the_board_and_keeps_going(self):
-        # the whole cycle, end to end: the sole player's commit satisfies the
-        # barrier, the server resolves the turn, logs what it resolved, and
-        # goes back to waiting. Nothing checked this before, so a stale
-        # reference here killed the server after the first turn without a
-        # single test noticing
+    def a_resolved_game(self):
+        """The whole cycle, end to end: the sole player's commit satisfies
+        the barrier, the server resolves the game to its end - one unit with
+        no controller stands still, so the state repeats on turn 2 - logs the
+        final board, reports the undecided stop and exits."""
         server = self.established_game(players=(1,))
         server.read_until('wait for player commit')
 
@@ -360,16 +365,59 @@ class UnattendedTurnCycle(CliTestCase):
         client.send_line('set flag x1')
         client.read_until_count('bgcclient> ', 3)
         client.send_line('commit')
+        return server
 
-        # the barrier lifts, the server logs the board it was holding, and
-        # goes round again: resolving the turn and waiting for the next one.
-        # The log runs a turn behind the orders, which is why it is the return
-        # to waiting that says the cycle is still turning
+    def test_the_last_setup_commit_resolves_the_game_and_exits(self):
+        server = self.a_resolved_game()
+
+        server.read_until('game resolved', timeout=60)
         server.read_until('+-+-+-+-+', timeout=60)
-        server.read_until_count('commit complete', 2, timeout=60)
-        server.read_until_count('wait for player commit', 2, timeout=60)
-        self.assertIsNone(server.proc.poll())
+        server.read_until('game over: undecided on turn 2, its state '
+                          'repeated (as it stood after turn 1)', timeout=60)
+        self.assertEqual(0, server.wait_for_exit())
         self.assertNotIn('Traceback', server.errors)
+
+    def test_started_against_a_resolved_game_it_reports_and_exits(self):
+        server = self.a_resolved_game()
+        server.wait_for_exit(timeout=60)
+
+        again = self.start_server('test-01')
+        self.assertEqual(0, again.wait_for_exit())
+        self.assertIn('game over: undecided on turn 2', again.output)
+        self.assertNotIn(SERVER_PROMPT, again.output)
+
+
+class ReadingTheRecord(UnattendedTurnCycle):
+    """`bgcserver --replay`: the administrator reads the record at the
+    prompt, since the administrator is entitled to the whole game."""
+
+    def test_the_administrator_reads_a_turn(self):
+        server = self.a_resolved_game()
+        server.wait_for_exit(timeout=60)
+
+        again = self.start_server_with_args(['-g', 'test-01', '--replay'])
+        again.read_until('game over: undecided on turn 2')
+        # opened at the final turn, with the whole board
+        again.read_until('turn 2')
+        again.read_until(SERVER_PROMPT)
+        shown = self.shown(again, SERVER_PROMPT, 'show turn 1')
+        assert shown.splitlines()[0] == 'turn 1'
+        assert '|X| | | |' in shown.splitlines()
+        assert self.shown(again, SERVER_PROMPT, 'next').splitlines()[0] \
+            == 'turn 2'
+        assert self.shown(again, SERVER_PROMPT, 'prev').splitlines()[0] \
+            == 'turn 1'
+        # and changes nothing
+        assert self.shown(again, SERVER_PROMPT, 'add player 3') == \
+            'the game is over'
+        again.send_line('exit')
+        self.assertEqual(0, again.wait_for_exit())
+
+    def test_the_record_is_refused_while_the_game_is_being_set_up(self):
+        server = self.start_server()
+        server.read_until(SERVER_PROMPT)
+        assert self.shown(server, SERVER_PROMPT, 'show turn 1').startswith(
+            'the game has not been resolved')
 
 
 if __name__ == '__main__':

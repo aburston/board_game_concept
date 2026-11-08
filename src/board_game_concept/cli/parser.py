@@ -14,7 +14,7 @@ is what lets the same parser serve a caller that is not a terminal.
 """
 
 from ..service import commands
-from .grammar import DIRECTIONS, SHOW_FORMAT, SHOW_SUBJECTS
+from .grammar import KNOWN, SHOW_FORMAT, SHOW_SUBJECTS
 
 INVALID_COMMAND = 'invalid command'
 
@@ -77,8 +77,8 @@ class Parser:
             'add': self._parse_add,
             'remove': self._parse_remove,
             'load': self._parse_load,
-            'move': self._parse_move,
-            'hold': self._parse_hold,
+            'next': self._parse_next,
+            'prev': self._parse_prev,
             'login': self._parse_login,
             'logout': self._parse_logout,
             'whoami': self._parse_whoami,
@@ -108,10 +108,26 @@ class Parser:
     def _parse_commit(self):
         return commands.Commit()
 
+    def _parse_next(self):
+        return commands.Next()
+
+    def _parse_prev(self):
+        return commands.Prev()
+
     def _parse_show(self):
         subject = self.tokens.take()
         if subject not in SHOW_SUBJECTS:
             raise ParseError('invalid show command', self.tokens.position)
+        if subject == 'program':
+            # `show program <type> [json]`: a type's program with its ticks
+            if self.tokens.remaining() not in (1, 2):
+                raise ParseError('must provide the name of a type',
+                                 self.tokens.position)
+            name = self.tokens.take()
+            return commands.Show(subject=subject, name=name,
+                                 format=self._format())
+        if subject == 'turn':
+            return self._parse_show_turn()
         # `json` is the one word that may follow a subject. Everything else
         # used to be ignored, which meant a mistyped `show units jsno` quietly
         # printed the table the player had not asked for
@@ -123,13 +139,46 @@ class Parser:
             show_format = SHOW_FORMAT
         return commands.Show(subject=subject, format=show_format)
 
+    def _parse_show_turn(self):
+        """`show turn <n> [known]`: a turn of the record, and whether the
+        board is drawn as it was or as the player's army knew it."""
+        if self.tokens.remaining() not in (1, 2, 3):
+            raise ParseError('must provide a turn number, and optionally '
+                             f'`{KNOWN}`', self.tokens.position)
+        turn = self._integer('the turn must be a number')
+        known = False
+        if self.tokens.peek() == KNOWN:
+            self.tokens.take()
+            known = True
+        return commands.Show(subject='turn', turn=turn, known=known,
+                             format=self._format())
+
+    def _format(self):
+        """The optional trailing `json` of a `show`, and nothing else."""
+        if self.tokens.at_end():
+            return 'table'
+        word = self.tokens.take()
+        if word != SHOW_FORMAT or not self.tokens.at_end():
+            raise ParseError('invalid show command', self.tokens.position)
+        return SHOW_FORMAT
+
     def _parse_set(self):
-        subject = self._subject('set', ('board', 'flag'))
+        subject = self._subject('set', ('board', 'flag', 'program'))
         if subject == 'board':
             return self._parse_set_board()
         if subject == 'flag':
             return self._parse_set_flag()
+        if subject == 'program':
+            return self._parse_set_program()
         raise ParseError('invalid set command', self.tokens.position)
+
+    def _parse_set_program(self):
+        """`set program <type> <file>`, during setup: the program a type's
+        units run, read from the named file."""
+        self._arity(2, 'must provide a type and the file holding its program')
+        type_name = self.tokens.take()
+        return commands.SetProgramFile(type_name=type_name,
+                                       path=self.tokens.take())
 
     def _parse_set_flag(self):
         """`set flag <unit>`, during setup: which unit carries your flag."""
@@ -189,14 +238,24 @@ class Parser:
             number=self._integer('player number must be a number'))
 
     def _parse_add_type(self):
-        self._arity(5, 'must provide 5 args for type')
+        """`add type <name> <symbol> <attack> <health> <energy> [<compute>]`.
+
+        Compute is optional: left out, the type has none - a wall or a
+        turret - which is what every type was before units ran programs.
+        """
+        if self.tokens.remaining() not in (5, 6):
+            raise ParseError('must provide 5 args for type, and optionally '
+                             'its compute', self.tokens.position)
         name = self.tokens.take()
         symbol = self.tokens.take()
-        attack = self._integer('attack, health and energy must be numbers')
-        health = self._integer('attack, health and energy must be numbers')
-        energy = self._integer('attack, health and energy must be numbers')
+        statistics = 'attack, health, energy and compute must be numbers'
+        attack = self._integer(statistics)
+        health = self._integer(statistics)
+        energy = self._integer(statistics)
+        compute = 0 if self.tokens.at_end() else self._integer(statistics)
         return commands.AddType(name=name, symbol=symbol, attack=attack,
-                                health=health, energy=energy)
+                                health=health, energy=energy,
+                                compute=compute)
 
     def _parse_add_unit(self):
         self._arity(4, 'must provide 4 args for unit')
@@ -213,19 +272,6 @@ class Parser:
         if subject == 'board':
             return commands.LoadBoard(path=path)
         return commands.LoadPlayer(path=path)
-
-    def _parse_move(self):
-        self._arity(2, 'must provide 2 args for move')
-        unit = self.tokens.take()
-        word = self.tokens.take()
-        if word not in DIRECTIONS:
-            raise ParseError(f'invalid direction {word}', self.tokens.position)
-        return commands.Move(unit=unit, direction=DIRECTIONS[word])
-
-    def _parse_hold(self):
-        """`hold <unit>`: take back the order it was given this turn."""
-        self._arity(1, 'must provide a unit name')
-        return commands.Hold(unit=self.tokens.take())
 
     def _parse_login(self):
         """`login [<username>]`, and never a password.

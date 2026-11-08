@@ -12,11 +12,12 @@ from board_game_concept.cli import complete, roles
 from board_game_concept.cli.accounts import handle_account_command
 from board_game_concept.service import identity
 from board_game_concept.service.errors import GameError
-from board_game_concept.cli.show import perform_show
+from board_game_concept.cli.show import Replay, perform_show
 from board_game_concept.cli.help import print_help
 from board_game_concept.cli.session import (add_backend_argument,
                                             add_server_argument,
-                                            describe_outcome, load_game,
+                                            describe_outcome,
+                                            describe_waiting, load_game,
                                             make_accounts, make_session,
                                             read_command)
 
@@ -72,13 +73,20 @@ def main(argv=None):
     while True:
 
         # load the gamedata
-        load_game(data)
+        load_game(data, patient=True)
+        replay = Replay(data)
 
+        # a resolved game opens at its final turn, with the record to read;
+        # one that is not resolved yet is still being set up, since a game
+        # is played to its end the moment the last setup is committed
         outcome = data.getOutcome()
         if outcome is not None:
             print(describe_outcome(outcome))
+            replay.final()
         else:
             print(f"turn: {data.getTurnNumber()}")
+            print(f"the game is being set up; "
+                  f"{describe_waiting(data.waitingOn())}")
 
         # interactive mode
         while True:
@@ -97,7 +105,10 @@ def main(argv=None):
                 print_help(ROLE)
 
             elif command.kind == 'show':
-                perform_show(data, command)
+                perform_show(data, command, replay)
+
+            elif command.kind in ('next', 'prev'):
+                replay.step(1 if command.kind == 'next' else -1)
 
             elif command.kind == 'reload':
                 # leave the inner loop, and the game is read again

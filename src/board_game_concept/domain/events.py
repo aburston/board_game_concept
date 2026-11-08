@@ -94,8 +94,9 @@ def _thought(d):
     halted = (f", halts at line {d['halted']}" if d.get('halted') is not None
               else "")
     order = d.get('order')
+    heading = {1: 'north', 2: 'east', 3: 'south', 4: 'west'}.get(order, order)
     decided = ("holds" if order in (None, 'hold')
-               else f"moves {order}")
+               else f"moves {heading}")
     return (f"{d['unit']} thinks for {d['ticks']} ticks, pays "
             f"{d['energy']}, {decided}{said}{halted}")
 

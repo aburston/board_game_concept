@@ -85,3 +85,23 @@ def test_the_record_round_trips():
     assert again.record() == army.record()
     assert again.record() == {'visited': [[1, 2, 3]],
                               'enemies': [[4, 5, 6, 7, 8]]}
+
+
+def test_a_fallen_unit_reports_nothing_more():
+    """A destroyed unit's contacts are never cleared, and it used to go on
+    re-stamping the enemy that killed it every turn."""
+    from board_game_concept.domain.army_map import ArmyMap
+    from test_think_phase import setup, unit
+
+    lance = UnitType('L', 'l', 10, 4, 40, 1, 'MOVE south')
+    keep = UnitType('K', 'k', 10, 10, 50)
+    board, players = setup((1, [(lance, [('l1', 0, 1)])]),
+                           (2, [(keep, [('k1', 0, 2)])]))
+    board.commit(turn=1)
+    board.commit(turn=2)                 # l1 walks in and is struck down
+    me = unit(board, players, 1, 'l1')
+    assert me.destroyed
+    stamped = board.maps[1].at(0, 2)
+    board.commit(turn=3)
+    board.commit(turn=4)
+    assert board.maps[1].at(0, 2) == stamped

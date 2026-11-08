@@ -25,7 +25,8 @@ import requests
 
 from .. import Game
 from ..http import views as views_module
-from ..service import games, identity
+from ..service import games, identity, replay
+from ..service.turn import _awaited_players
 from ..service.commands import SetNewGame, as_record
 from ..service.errors import (GameError, NoSuchGame, NoSuchPlayer,
                               NotAuthenticated, NotAuthorised,
@@ -116,6 +117,26 @@ class Session:
         through here rather than calling `views.<subject>_view` itself, so
         the two backends serve the same JSON.
         """
+        raise NotImplementedError
+
+    # --- the record, once the game is resolved
+
+    def getProgram(self, type_name):
+        """A type's program with its tick listing, as `replay.program_view`
+        shapes it; raises `GameError` for a type this session may not read."""
+        raise NotImplementedError
+
+    def turnNumbers(self):
+        """The turns the record holds, in order."""
+        raise NotImplementedError
+
+    def getTurn(self, turn, known=False):
+        """One turn of the record as this session may read it, or None if
+        the record has no such turn."""
+        raise NotImplementedError
+
+    def waitingOn(self):
+        """The players whose setup commits the game is still waiting for."""
         raise NotImplementedError
 
 
@@ -225,6 +246,27 @@ class LocalSession(Session):
                 self._game.repository.read_known_types(
                     self._game.player_number))
         raise ValueError(f"unknown view: {subject}")
+
+    def getProgram(self, type_name):
+        return replay.program_view(
+            _type_record(self._game, type_name, self.player_number))
+
+    def turnNumbers(self):
+        return list(self._game.repository.turn_numbers())
+
+    def getTurn(self, turn, known=False):
+        record = self._game.repository.read_turn(int(turn))
+        if record is None:
+            return None
+        return replay.turn_view(record, self.player_number,
+                                self._game.seesEverything(), known=known)
+
+    def waitingOn(self):
+        if self._game.getOutcome() is not None:
+            return []
+        committed = set(self._game.repository.committed_players(
+            self._game.getTurnNumber()))
+        return sorted(_awaited_players(self._game) - committed)
 
 
 class HttpSession(Session):
@@ -438,6 +480,28 @@ class HttpSession(Session):
         # each endpoint returns `{<subject>: value}`; hand back the value
         return response.get(subject)
 
+    def getProgram(self, type_name):
+        return self._get(
+            f'/players/{self.player_number}/programs/{type_name}'
+            ).get('program')
+
+    def turnNumbers(self):
+        return self._get(f'/players/{self.player_number}/turns').get(
+            'turns', [])
+
+    def getTurn(self, turn, known=False):
+        response = self._session.get(
+            f'{self.base_url}/games/{self.gameno}/players/'
+            f'{self.player_number}/turns/{int(turn)}',
+            params={'known': '1'} if known else None)
+        if response.status_code == 404:
+            return None
+        _raise_for(response)
+        return response.json().get('turn')
+
+    def waitingOn(self):
+        return list(self._require_state().get('waiting_on') or [])
+
     # --- private
 
     def _require_state(self):
@@ -461,6 +525,26 @@ class HttpSession(Session):
     def _eliminated_from(players):
         return {number for number, info in players.items()
                 if info.get('status') == 'eliminated'}
+
+
+def _type_record(game, type_name, player_number):
+    """The stored record of a type this session may read the program of.
+
+    A player reads their own types; a session that sees everything reads
+    any. An enemy's is never read by a player: contact discloses a type's
+    attack, health and energy and nothing of how it thinks, which is why a
+    seat's game holds no enemy program to begin with.
+    """
+    players = game.getPlayers() or {}
+    if game.seesEverything():
+        owners = sorted(players)
+    else:
+        owners = [player_number] if player_number in players else []
+    for number in owners:
+        record = (players[number].get('types') or {}).get(type_name)
+        if record is not None:
+            return record
+    raise GameError(f"there is no type of yours called {type_name}")
 
 
 class _HttpBoard:

@@ -89,6 +89,7 @@ def types_view(players):
             attack = _as_int(unit_type['attack'])
             health = _as_int(unit_type['health'])
             energy = _as_int(unit_type['energy'])
+            compute = _as_int(unit_type.get('compute')) or 0
             entries.append({
                 'player': number,
                 'name': unit_type['name'],
@@ -96,9 +97,13 @@ def types_view(players):
                 'attack': attack,
                 'health': health,
                 'energy': energy,
+                'compute': compute,
+                # whether the type carries a program; the program itself is
+                # read with `show program`
+                'program': bool(unit_type.get('program')),
                 # what deploying one unit of this type spends, so a player can
                 # read the price beside the design rather than adding it up
-                'cost': attack + health + energy,
+                'cost': attack + health + energy + compute,
             })
     return entries
 

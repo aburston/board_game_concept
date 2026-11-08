@@ -13,9 +13,10 @@ import time
 
 from flask import Flask, jsonify, request
 
+from ..cli import backend as backend_module
 from ..cli import session as session_module
 from ..service import games as game_ops
-from ..service import identity
+from ..service import identity, replay
 from ..service.commands import as_record as _AS_RECORD, from_record
 from ..service.errors import (AccountError, GameDataError, GameError,
                               NoSuchGame, NoSuchPlayer, UnreadableGame)
@@ -176,6 +177,46 @@ def create_app(base_path=None, backend=None, account_store=None):
         if subject in VIEWS_THAT_NEED_A_BOARD and data.getBoard() is None:
             return jsonify({'error': 'no board yet'}), 404
         return jsonify({subject: builder(data)})
+
+    @app.get('/games/<gameno>/players/<int:number>/programs/<type_name>')
+    @acts_as_number
+    def read_program(gameno, number, type_name):
+        """A type's program with its tick listing: a seat's own types, or
+        any type for a session entitled to the whole game."""
+        try:
+            data = _load_game(gameno, number)
+            record = backend_module._type_record(data, type_name,
+                                                 int(number))
+            return jsonify({'program': replay.program_view(record)})
+        except GameDataError as error:
+            return _game_error_response(error)
+        except GameError as error:
+            return jsonify({'error': str(error)}), 404
+
+    @app.get('/games/<gameno>/players/<int:number>/turns')
+    @acts_as_number
+    def list_turns(gameno, number):
+        try:
+            repository = _repository(gameno)
+            return jsonify({'turns': list(repository.turn_numbers())})
+        except GameDataError as error:
+            return _game_error_response(error)
+
+    @app.get('/games/<gameno>/players/<int:number>/turns/<int:turn>')
+    @acts_as_number
+    def read_turn(gameno, number, turn):
+        """One turn of the record as this seat may read it. `?known=1`
+        draws the board from the seat's own army map instead."""
+        try:
+            data = _load_game(gameno, number)
+            record = data.repository.read_turn(int(turn))
+        except GameDataError as error:
+            return _game_error_response(error)
+        if record is None:
+            return jsonify({'error': f'the record has no turn {turn}'}), 404
+        known = request.args.get('known') in ('1', 'true', 'yes')
+        return jsonify({'turn': replay.turn_view(
+            record, int(number), data.seesEverything(), known=known)})
 
     @app.post('/games/<gameno>/players/<int:number>/commands')
     @acts_as_number
@@ -402,9 +443,14 @@ def _commit_payload(data, resolved):
 
 
 def _state_payload(data):
+    committed = set(data.repository.committed_players(data.getTurnNumber()))
     return {
         'turn_number': data.getTurnNumber(),
         'outcome': data.getOutcome(),
+        # whose setup commits the game is still waiting for: nobody's once
+        # it is over
+        'waiting_on': ([] if data.getOutcome() is not None
+                       else sorted(_awaited_players(data) - committed)),
         'new_game': data.getNewGame(),
         'unprocessed_moves': data.getUnprocessedMoves(),
         'rejected': data.getRejected(),

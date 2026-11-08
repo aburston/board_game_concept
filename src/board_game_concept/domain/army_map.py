@@ -34,6 +34,13 @@ class ArmyMap:
         for unit in units:
             if unit.player is None or unit.player.number != player_number:
                 continue
+            if unit.destroyed or not unit.on_board:
+                # a unit that has fallen reports nothing more. Its contacts
+                # are never cleared, since clearing is done to the units on
+                # the board, and a dead unit re-reporting the enemy that
+                # killed it every turn kept a finished game from ever
+                # repeating its state
+                continue
             for seen in unit.seen_by:
                 if seen.player is None or seen.player.number == player_number:
                     continue
