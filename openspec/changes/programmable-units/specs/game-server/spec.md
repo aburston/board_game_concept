@@ -1,0 +1,59 @@
+# Spec Delta
+
+## ADDED Requirements
+
+### Requirement: The Administrator Reads The Record
+
+The system SHALL let the administrator read the record of a resolved game
+via `show turn <n>`, `next` and `prev`, as `player-client` states for a
+player, showing the whole board and every seat's traces, since the
+administrator is entitled to the whole game.
+
+#### Scenario: The administrator reads a turn
+
+- **WHEN** the administrator runs `show turn 5` on a resolved game
+- **THEN** the board after turn 5 is drawn with every unit
+- **AND** every seat's controller traces for turn 5 are listed
+
+## MODIFIED Requirements
+
+### Requirement: Unattended Turn Cycle
+
+The system SHALL, once the administrator has committed setup, wait for every
+registered player's setup commit, and SHALL then resolve the whole game in one
+held act - every turn, one after another, until the game is decided, its
+state repeats, or the turn cap - writing each turn's record as it goes,
+reporting the result, and exiting with a success status. Where the last setup
+commit arrives over HTTP and resolves the game during that request, the server
+SHALL find the game resolved when it is woken and SHALL report the result and
+exit without resolving anything.
+
+#### Scenario: Resolving the game
+
+- **WHEN** the server is running unattended and the last player commits their setup
+- **THEN** it resolves every turn to the game's end
+- **AND** writes each turn's record
+- **AND** reports the winner, the draw, or that the game stopped undecided and why, with the turn number
+- **AND** exits with a success status
+
+#### Scenario: Starting against a game already resolved
+
+- **WHEN** the server is started against a game whose outcome has already been written
+- **THEN** it reports the outcome and exits without resolving a turn
+
+#### Scenario: Save failure during resolution
+
+- **WHEN** the server cannot save game state while resolving
+- **THEN** it reports an internal error and exits with a failure status
+
+#### Scenario: Woken for a game another caller has already resolved
+
+- **WHEN** the server is woken and finds the game resolved
+- **THEN** it does not resolve anything
+- **AND** it reports the result and exits
+
+#### Scenario: Ending the administrator's setup is not held to anyone
+
+- **WHEN** the administrator commits to end setup
+- **THEN** the board and the seats are fixed without waiting for any player
+- **AND** the game is not resolved until every player's setup is committed

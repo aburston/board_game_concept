@@ -104,8 +104,8 @@ this level and stays there.
 - `player-client`: setting a type's program during setup, the listing with its
   tick costs, and watching the replay - `show turn <n>`, `next`, `prev` - in
   place of ordering and committing turns.
-- `game-server`: the commit that resolves the game to its end, and the replay
-  commands.
+- `game-server`: the unattended turn cycle becomes a wait for the last
+  setup commit and one resolution of the whole game; the replay commands.
 - `game-observer`: the replay commands; the observer sees every seat's
   board but no seat's programs or traces.
 - `web-interface`: a program editor with the listing and tick costs in the
