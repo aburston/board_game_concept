@@ -46,7 +46,7 @@
 ## 7. Rules, coverage and documentation
 
 - [x] 7.1 Rewrite `GAME_RULES.md`: compute in R2.4, R2.5 and R2.9; a new R10 for the controller (program, instruction set and ticks, meter, cap, sleep and waking, map, radio, trace); R3 for the think phase and resolution to the end; R6 for the map; R7 for the undecided stops; R8 for the new and removed commands; R9's cost table gains the meter row; verify by grepping for `commit` and `move` in R3 and R8 and finding only the setup commit and the controller's `MOVE`.
-- [ ] 7.2 Update `SPEC_COVERAGE.md` (the `unit-program` row and where each requirement is held, divergence 32 fixed), `MODULE_DESCRIPTION.md` (programming no longer "not built"; the new modules) and `README.md` (writing a program, watching a replay); verify the documented commands run as written.
+- [x] 7.2 Update `SPEC_COVERAGE.md` (the `unit-program` row and where each requirement is held, divergence 32 fixed), `MODULE_DESCRIPTION.md` (programming no longer "not built"; the new modules) and `README.md` (writing a program, watching a replay); verify the documented commands run as written.
 - [ ] 7.3 Run `openspec validate --specs --strict` after syncing; verify it passes.
 
 ## 8. The match harness and the first series
