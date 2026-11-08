@@ -67,6 +67,7 @@ DESCRIPTIONS = {
     'contested': lambda d: f"({d['x']}, {d['y']}) is contested by {d['units']} units",
     'attacked': lambda d: f"{d['unit']} attacks {d['target']} for {d['damage']}",
     'destroyed': lambda d: f"{d['unit']} is destroyed",
+    'woken': lambda d: f"{d['unit']} is woken by the blow",
     'flag_fallen': lambda d: (f"{d['unit']} carried player {d['player']}'s "
                               f"flag, and it has fallen"),
     'retreated': lambda d: f"{d['unit']} falls back to ({d['x']}, {d['y']})",

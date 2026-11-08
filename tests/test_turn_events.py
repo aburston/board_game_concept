@@ -206,3 +206,11 @@ def test_a_unit_that_cannot_pay_the_fare_does_not_move():
     assert attacker.energy == 0
     assert [e.detail['reason'] for e in events if e.kind == 'refused'] == [
         'not enough energy to move']
+
+
+def test_a_unit_woken_by_a_blow_reads_as_one():
+    """Every kind the engine emits has words; a kind without them would be
+    printed as its raw fields in every feed."""
+    from board_game_concept.domain.events import record
+    assert record('woken', {'unit': 'keep1', 'players': '1'})['text'] == \
+        'keep1 is woken by the blow'
