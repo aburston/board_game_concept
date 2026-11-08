@@ -52,7 +52,7 @@
 ## 8. The match harness and the first series
 
 - [x] 8.1 Rework `matches/arena.py` to set two seats up from two type files (statistics, compute, programs, placements, flag), commit, and read the record into `game_<n>.log` and `history.json`; rework `matches/bots/` into type files for the ten doctrines as programs; verify with `tests/test_match_harness.py` reworked that the record checker passes and a Garrison-against-Garrison game stops undecided on its first repeated state.
-- [ ] 8.2 Play games 221-240 on the default board under the new rules with `matches/series.sh`, and write `matches/RESULTS-PROGRAMMED.md` with the rules table, results, what decided them, what the tariff cost each doctrine, and what it does not show; mark `RESULTS-DEFAULT-BOARD.md` superseded; verify every turn named is in its log.
+- [x] 8.2 Play games 221-240 on the default board under the new rules with `matches/series.sh`, and write `matches/RESULTS-PROGRAMMED.md` with the rules table, results, what decided them, what the tariff cost each doctrine, and what it does not show; mark `RESULTS-DEFAULT-BOARD.md` superseded; verify every turn named is in its log.
 
 ## 9. Integration
 
