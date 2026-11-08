@@ -12,7 +12,8 @@ from board_game_concept.cli.grammar import USAGES, Optional, Slot
 from board_game_concept.domain import Player
 from board_game_concept.cli.parser import parse
 from board_game_concept.service import games
-from board_game_concept.service.commands import AddType, AddUnit, Move
+from board_game_concept.service.commands import (AddType, AddUnit,
+                                                 SetProgram)
 from board_game_concept.service.errors import GameError
 from game_harness import GameHarness
 
@@ -20,8 +21,12 @@ from game_harness import GameHarness
 # game: they end it, explain it, read it, or turn the crank. The account
 # commands are here for the same reason - they say who is asking, change no
 # game, and must never be written into a draft, since a draft is replayed
-SESSION_KINDS = {'help', 'exit', 'reload', 'commit', 'show',
-                 'login', 'logout', 'whoami', 'passwd'}
+SESSION_KINDS = {'help', 'exit', 'reload', 'commit', 'show', 'next', 'prev',
+                 'login', 'logout', 'whoami', 'passwd',
+                 # `set program <type> <file>` is the session's too: it reads
+                 # the file, and what reaches the game and the draft is a
+                 # `set_program` holding the program's text
+                 'set_program_file'}
 
 SLOT_WORDS = {
     'unit': 'x1', 'type': 'Cross', 'path': 'players/1.yaml',
@@ -57,6 +62,11 @@ def test_every_write_production_is_something_the_service_layer_carries_out(usage
     assert games.carries_out(command)
 
 
+def test_a_program_is_carried_out_and_a_file_to_read_is_not():
+    assert games.carries_out(SetProgram(type_name='Cross', program='HOLD'))
+    assert not games.carries_out(parse('set program Cross hunt.asm'))
+
+
 def test_reading_a_game_is_not_something_to_carry_out():
     for line in ('show units', 'help', 'exit', 'commit', 'reload'):
         assert not games.carries_out(parse(line))
@@ -87,15 +97,16 @@ def test_a_session_records_what_it_did_in_the_order_it_did_it(tmp_path):
 def test_a_draft_is_stamped_with_the_turn_it_was_made_for(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [1, 2])
-    harness.deploy(1, [('Cross', 'X', 1, 5, 10)], [('Cross', 'x1', 0, 0)])
-    harness.deploy(2, [('Ring', 'O', 1, 5, 10)], [('Ring', 'o1', 3, 3)])
-    harness.resolve()
 
     client = harness.session(1)
-    games.perform(client, Move(unit='x1', direction=1))
+    games.perform(client, AddType(name='Cross', symbol='X', attack=1,
+                                  health=5, energy=10, compute=2))
+    games.perform(client, SetProgram(type_name='Cross', program='HOLD'))
 
     draft = harness.repository().read_draft(1)
-    assert draft['turn'] == client.getTurnNumber()
+    assert draft['turn'] == client.getTurnNumber() == 0
+    assert [record['kind'] for record in draft['commands']] == [
+        'add_type', 'set_program']
 
 
 def test_a_refused_command_is_not_recorded(tmp_path):

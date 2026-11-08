@@ -279,8 +279,11 @@ def test_commit_by_the_last_player_resolves_the_turn(tmp_path):
     assert response.status_code == 200
     payload = response.get_json()
     assert payload['resolved'] is True
-    # the setup turn resolved; `turn_number` advances from 0 to 1
-    assert payload['turn_number'] == 1
+    # the last setup commit plays the game to its end: a unit with no
+    # controller stands still, so the state repeats on turn 2
+    assert payload['turn_number'] == 2
+    assert payload['outcome']['decided'] is False
+    assert payload['waiting_on'] == []
 
 
 def test_commit_that_does_not_close_the_barrier_is_202(tmp_path):
@@ -405,3 +408,106 @@ def test_this_surface_is_guarded(tmp_path):
         response = getattr(raw, method)(path)
         assert response.status_code == 401, path
         assert set(response.get_json()) == {'error'}
+
+
+# --- the program and the record
+
+
+def _a_programmed_game(base_path, gameno='programmed'):
+    """Two players, one thinking type each, played to the end."""
+    admin = Game(SqliteGameRepository(gameno, base_path=str(base_path)), 0)
+    admin.load()
+    game_ops.perform(admin, SetBoard(size_x=4, size_y=4))
+    game_ops.perform(admin, AddPlayer(number=1))
+    game_ops.perform(admin, AddPlayer(number=2))
+    admin.serverSave()
+    web = _client(base_path)
+    for number, symbol, square in ((1, 'X', (0, 0)), (2, 'O', (3, 3))):
+        web.post(f'/games/{gameno}/players/{number}/commands',
+                 json={'kind': 'add_type', 'name': 'Runner', 'symbol': symbol,
+                       'attack': 1, 'health': 4, 'energy': 10, 'compute': 2})
+        web.post(f'/games/{gameno}/players/{number}/commands',
+                 json={'kind': 'set_program', 'type_name': 'Runner',
+                       'program': 'SELF\nSLEEP 3\n'})
+        web.post(f'/games/{gameno}/players/{number}/commands',
+                 json={'kind': 'add_unit', 'type_name': 'Runner',
+                       'name': f'u{number}', 'x': square[0], 'y': square[1]})
+        web.post(f'/games/{gameno}/players/{number}/commands',
+                 json={'kind': 'set_flag', 'unit': f'u{number}'})
+    assert web.post(f'/games/{gameno}/players/1/commit').status_code == 202
+    last = web.post(f'/games/{gameno}/players/2/commit')
+    assert last.status_code == 200, last.get_json()
+    return web
+
+
+def test_a_program_is_set_and_read_back_with_its_listing(tmp_path):
+    _set_up_in_setup(tmp_path)
+    web = _client(tmp_path)
+    web.post('/games/two/players/1/commands',
+             json={'kind': 'add_type', 'name': 'Runner', 'symbol': 'r',
+                   'attack': 1, 'health': 4, 'energy': 10, 'compute': 3})
+    assert web.post('/games/two/players/1/commands',
+                    json={'kind': 'set_program', 'type_name': 'Runner',
+                          'program': 'SELF\nMOVE south\n'}).status_code == 204
+
+    listing = web.get('/games/two/players/1/programs/Runner').get_json()
+    assert listing['program']['compute'] == 3
+    assert listing['program']['cap'] == 30
+    assert [(line['line'], line['ticks']) for line in
+            listing['program']['lines']] == [(1, 1), (2, 1)]
+    assert listing['program']['total'] == 2
+
+
+def test_a_bad_program_is_refused_naming_the_line(tmp_path):
+    _set_up_in_setup(tmp_path)
+    web = _client(tmp_path)
+    web.post('/games/two/players/1/commands',
+             json={'kind': 'add_type', 'name': 'Runner', 'symbol': 'r',
+                   'attack': 1, 'health': 4, 'energy': 10, 'compute': 3})
+    refused = web.post('/games/two/players/1/commands',
+                       json={'kind': 'set_program', 'type_name': 'Runner',
+                             'program': 'SELF\nFLY away\n'})
+    assert refused.status_code == 400
+    assert 'line 2' in refused.get_json()['error']
+
+
+def test_a_seat_reads_its_own_program_and_not_the_other_seats(tmp_path):
+    web = _a_programmed_game(tmp_path)
+    assert web.get('/games/programmed/players/1/programs/Runner'
+                   ).status_code == 200
+    # player 2's type is called Runner too, and is player 2's to read
+    mine = web.get('/games/programmed/players/1/programs/Runner').get_json()
+    assert mine['program']['type'] == 'Runner'
+    assert web.get('/games/programmed/players/1/programs/Nothing'
+                   ).status_code == 404
+
+
+def test_the_record_is_served_a_turn_at_a_time(tmp_path):
+    web = _a_programmed_game(tmp_path)
+    turns = web.get('/games/programmed/players/1/turns').get_json()['turns']
+    assert turns[:3] == [0, 1, 2]
+    second = web.get('/games/programmed/players/1/turns/2').get_json()['turn']
+    assert second['turn'] == 2
+    # the board after the turn is drawn whole
+    assert second['board']['rows'][0][0] == 'X'
+    assert second['board']['rows'][3][3] == 'O'
+    assert web.get('/games/programmed/players/1/turns/999').status_code == 404
+
+
+def test_a_seats_request_for_another_seats_trace_gets_nothing(tmp_path):
+    web = _a_programmed_game(tmp_path)
+    second = web.get('/games/programmed/players/1/turns/2').get_json()['turn']
+    assert {trace['unit'] for trace in second['traces']} == {'u1'}
+    # the observer is given every seat's
+    everyone = web.get('/games/programmed/players/1000/turns/2'
+                       ).get_json()['turn']
+    assert {trace['unit'] for trace in everyone['traces']} == {'u1', 'u2'}
+
+
+def test_the_board_as_an_army_knew_it(tmp_path):
+    web = _a_programmed_game(tmp_path)
+    known = web.get('/games/programmed/players/1/turns/2?known=1'
+                    ).get_json()['turn']
+    rows = known['board']['rows']
+    assert rows[0][0] == 'X'
+    assert rows[3][3] == '?', 'never visited, never met: unknown'

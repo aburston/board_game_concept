@@ -14,7 +14,7 @@ from board_game_concept.cli import views
 from board_game_concept.domain import army
 from board_game_concept.service import games
 from board_game_concept.service.commands import (AddPlayer, AddType, AddUnit,
-                                                 Move, SetBoard, SetFlag)
+                                                 SetBoard, SetFlag, SetProgram)
 from game_harness import GameHarness
 
 CROSS = ('Cross', 'X', 1, 5, 10)
@@ -99,20 +99,21 @@ def test_replaying_deployments_builds_the_board_typing_them_builds(tmp_path):
     assert described(reopened) == described(live)
 
 
-def test_an_order_given_before_a_session_ended_comes_back(tmp_path):
+def test_a_program_set_before_a_session_ended_comes_back(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [1, 2])
-    harness.deploy(1, [CROSS], [('Cross', 'x1', 0, 0)])
-    harness.deploy(2, [RING], [('Ring', 'o1', 3, 3)])
-    harness.resolve()
 
-    ordered = harness.session(1)
-    games.perform(ordered, Move(unit='x1', direction=1))
-    abandon(ordered)
+    drafting = harness.session(1)
+    games.perform(drafting, AddType(name='Runner', symbol='r', attack=1,
+                                    health=4, energy=10, compute=2))
+    games.perform(drafting, SetProgram(type_name='Runner',
+                                       program='MOVE north'))
+    abandon(drafting)
 
     reopened = harness.session(1)
-    restored = reopened.getBoard().getUnitByName('x1')[0]
-    assert views.order_word(restored.state, restored.direction) == 'move north'
+    restored = reopened.getPlayers()[1]['types']['Runner']
+    assert restored['program'] == 'MOVE north'
+    assert restored['obj'].program.text == 'MOVE north'
 
 
 def test_a_game_with_no_draft_loads_as_it_always_did(tmp_path):
@@ -135,19 +136,16 @@ def test_a_game_with_no_draft_loads_as_it_always_did(tmp_path):
 def test_nobody_else_sees_a_drafted_deployment(tmp_path):
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [1, 2])
-    harness.deploy(1, [CROSS], [('Cross', 'x1', 0, 0)])
-    harness.deploy(2, [RING], [('Ring', 'o1', 3, 3)])
-    harness.resolve()
 
-    drafting = harness.session(1)
-    games.perform(drafting, Move(unit='x1', direction=1))
-    abandon(drafting)
+    deployed_without_committing(harness, 1, [CROSS], [('Cross', 'x1', 0, 0)])
 
     for watcher in (0, 2):
         session = harness.session(watcher)
-        ordered = [unit for unit in session.getBoard().units
-                   if views.order_word(unit.state, unit.direction) == 'move north']
-        assert ordered == [], f"session {watcher} was shown a drafted order"
+        assert [unit.name for unit in session.getBoard().units
+                if unit.name == 'x1'] == [], (
+            f"session {watcher} was shown a drafted deployment")
+        assert 'Cross' not in (session.getPlayers().get(1) or {}).get(
+            'types', {}), f"session {watcher} was shown a drafted type"
         assert session.getDraft() == []
 
 
@@ -155,20 +153,15 @@ def test_show_pending_lists_committed_orders_and_not_drafts(tmp_path):
     """Watching an opponent deliberate is information nobody could get before."""
     harness = GameHarness(tmp_path)
     harness.create(4, 4, [1, 2])
-    harness.deploy(1, [CROSS], [('Cross', 'x1', 0, 0)])
-    harness.deploy(2, [RING], [('Ring', 'o1', 3, 3)])
-    harness.resolve()
 
-    drafting = harness.session(1)
-    games.perform(drafting, Move(unit='x1', direction=1))
-    abandon(drafting)
+    deployed_without_committing(harness, 1, [CROSS], [('Cross', 'x1', 0, 0)])
 
     admin = harness.session(0)
     pending = views.pending_view(admin.getPlayers(), admin.getBoard())
     assert pending == []
 
     # once it is committed it is pending, exactly as before this change
-    harness.order(1, [('x1', 1)])
+    assert harness.session(1).clientSave()
     admin = harness.session(0)
     pending = views.pending_view(admin.getPlayers(), admin.getBoard())
     assert [entry['unit'] for entry in pending] == ['x1']
@@ -182,17 +175,18 @@ def test_a_draft_left_from_an_earlier_turn_is_discarded(tmp_path):
     harness.create(4, 4, [1, 2])
     harness.deploy(1, [CROSS], [('Cross', 'x1', 0, 0)])
     harness.deploy(2, [RING], [('Ring', 'o1', 3, 3)])
-    harness.resolve()
+    harness.play()
 
-    # an order drafted for this turn, and then the turn moves on without it
-    drafting = harness.session(1)
-    games.perform(drafting, Move(unit='x1', direction=1))
-    abandon(drafting)
-    harness.turn({1: [], 2: []})
+    # a draft stamped with the setup turn, found once the game has moved on:
+    # work left behind by a session that ended as the game was resolved
+    harness.repository().write_draft(1, {
+        'turn': 0,
+        'commands': [{'kind': 'add_type', 'name': 'Late', 'symbol': 'L',
+                      'attack': 1, 'health': 5, 'energy': 10,
+                      'compute': 0, 'program': None}]})
 
     reopened = harness.session(1)
-    restored = reopened.getBoard().getUnitByName('x1')[0]
-    assert views.order_word(restored.state, restored.direction) == 'hold'
+    assert 'Late' not in reopened.getPlayers()[1]['types']
     assert reopened.getDraft() == []
 
 

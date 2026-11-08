@@ -144,9 +144,9 @@ class ClientOverHttp(CliTestCase):
 
         # player 1 commits first and is left waiting on the barrier
         one.send_line('commit')
-        one.read_until('waiting for turn to complete...')
+        one.read_until('waiting for player(s) 2 to commit their setup')
 
-        # player 2's commit closes it, and the turn resolves in the request
+        # player 2's commit closes it, and the game resolves in the request
         two.send_line('commit')
         two.read_until('commit complete')
         two.read_until_count(CLIENT_PROMPT, 5, timeout=60)
@@ -154,8 +154,10 @@ class ClientOverHttp(CliTestCase):
         # the resolution releases player 1, who is prompted again
         one.read_until_count(CLIENT_PROMPT, 5, timeout=60)
 
+        # nobody wins: two units with no controller stand where they were
+        # put, and the game stops undecided with both still in it
         for client in (one, two):
-            assert 'game over' not in client.output, client.output
+            assert 'game over: undecided' in client.output, client.output
             assert 'out of the game' not in client.output, client.output
 
         # and both units are standing where they were deployed
