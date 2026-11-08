@@ -5,13 +5,15 @@
 ### Requirement: An Army Remembers Where It Has Been And What It Met
 
 The system SHALL keep for each player, beside the view it publishes, a map of
-the board as that player's army knows it - the squares friendly units have
-stood on and when, the enemies they have fought and where and when, and every
-standing flag - as `unit-program` describes, and SHALL give that map to the
-player's controllers and to nobody else's. The map SHALL disclose nothing a
-contact did not disclose at the time: a square is known because a friendly
-unit stood or fought there, and an enemy is on it with the design contact
-revealed. What the map adds is memory, stamped with the turn.
+the board as that player's army knows it, as `unit-program` describes, and
+SHALL give it to the player's controllers and to nobody else's. The map SHALL
+disclose nothing a contact did not disclose at the time: what it adds is
+memory, stamped with the turn.
+
+#### Scenario: What the map holds
+
+- **WHEN** a player's map is read
+- **THEN** it holds the squares friendly units have stood on and when, the enemies they have fought with where and when and the design contact revealed, and every standing flag
 
 #### Scenario: The map is the army's
 

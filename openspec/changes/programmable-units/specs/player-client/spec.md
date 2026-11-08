@@ -5,12 +5,10 @@
 ### Requirement: Setting A Type's Program
 
 The system SHALL let a player set the program of one of their own types
-during setup via `set program <type> <file>`, reading the program from the
-named file, and SHALL show the program back with `show program <type>`: every
-line, with its tick cost beside it, and the total ticks of a straight run,
-the type's compute, and how many ticks one energy buys it. A program the
-instruction set refuses SHALL be refused naming the line, and the type's
-program SHALL be unchanged. Setting a program on a type that is not the
+during setup via `set program <type> <file>`, reading it from the named file,
+and SHALL list it back with `show program <type>` with each line's tick cost.
+A program the instruction set refuses SHALL be refused naming the line, with
+the type's program unchanged. Setting a program on a type that is not the
 player's, or has compute 0, or after the setup is committed, SHALL be refused
 saying why.
 
@@ -39,19 +37,16 @@ saying why.
 #### Scenario: Reading a program back
 
 - **WHEN** the player runs `show program Keep`
-- **THEN** the program is listed line by line with each line's ticks
-- **AND** the listing says the type's compute and how many ticks an energy buys it
+- **THEN** the program is listed line by line with each line's ticks and the total of a straight run
+- **AND** the listing says the type's compute, how many ticks an energy buys it, and the per-turn cap
 
 ### Requirement: Watching The Replay
 
-The system SHALL let a player read the record of a game that has been
-resolved via `show turn <n>`, which draws the board as it stood after turn
-`n` and lists what that turn did to the player's units and what each of their
-controllers did, and via `next` and `prev`, which move one turn on and back.
-`show turn <n> known` SHALL draw the board as the player's army knew it after
-turn `n`. The client SHALL open a resolved game at its final turn, reporting
-the result. These commands SHALL be refused, saying the game has not been
-resolved, while any player's setup is uncommitted.
+The system SHALL let a player read the record of a resolved game via
+`show turn <n>`, `next` and `prev`, and the board as their army knew it via
+`show turn <n> known`. The client SHALL open a resolved game at its final
+turn, reporting the result, and SHALL refuse these commands, saying the game
+has not been resolved, while any player's setup is uncommitted.
 
 #### Scenario: Reading a turn
 

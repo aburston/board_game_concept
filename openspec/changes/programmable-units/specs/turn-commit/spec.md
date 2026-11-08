@@ -6,12 +6,15 @@
 
 The system SHALL run every awake unit's controller against the board as the
 turn began, before deployment, movement and combat, as the first phase of
-resolving a turn. Each controller SHALL read the same snapshot - the board,
-its army's map, the flags and its own inbox as they stood when the turn began
-- so that no controller sees another's order, message or move from the same
-turn. The orders the controllers give SHALL be the turn's orders; there SHALL
-be no other source of movement orders once play has begun. Energy the meter
-charges SHALL be deducted in this phase.
+resolving a turn, every controller reading the same snapshot so that none
+sees another's order, message or move from the same turn. The orders the
+controllers give SHALL be the turn's only orders once play has begun, and the
+energy the meter charges SHALL be deducted in this phase.
+
+#### Scenario: What a controller reads
+
+- **WHEN** a controller runs
+- **THEN** it reads the board, its army's map, the flags and its own inbox as they stood when the turn began
 
 #### Scenario: Controllers run first
 

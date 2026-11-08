@@ -5,13 +5,16 @@
 ### Requirement: An Unchanging Game Stops
 
 The system SHALL stop resolving a game, recording it as undecided, when the
-whole state of the game at the end of a turn is identical to its state at the
-end of an earlier turn - every unit's square, health, energy, memory, meter,
-sleep and inbox, and every army's map - because controllers are deterministic
-and such a game can never change again. The system SHALL also stop, recording
-the game as undecided, when `TURN_CAP` turns have been resolved without a
-decision; `TURN_CAP` SHALL be 500. An undecided game SHALL report the turn it
+whole state of the game after a turn is identical to its state after an
+earlier turn, because controllers are deterministic and such a game can never
+change again, and when `TURN_CAP` turns, which SHALL be 500, have been
+resolved without a decision. An undecided game SHALL report the turn it
 stopped on and why.
+
+#### Scenario: What the state comprises
+
+- **WHEN** two turns' states are compared
+- **THEN** every unit's square, health, energy, memory, meter, sleep and inbox, and every army's map, are what is compared
 
 #### Scenario: Two armies that never move
 

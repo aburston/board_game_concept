@@ -5,14 +5,11 @@
 ### Requirement: A Program Is Written In The Armoury
 
 The system SHALL let a player write or paste the program of one of their
-types in the armoury during setup, SHALL list it back with each line's tick
-cost beside it and the total of a straight run, and SHALL show, from the
-type's compute, how many ticks one energy buys it and the cap on ticks in a
-turn. A line the instruction set refuses SHALL be marked where it stands,
-naming what is wrong, and the program SHALL NOT be sent until every line is
-accepted. The compute statistic SHALL be chosen beside the other three, and
-the armoury SHALL refuse a program on a type whose compute is 0, saying it
-has no controller.
+types in the armoury during setup, listing each line's tick cost beside it
+and what the type's compute buys. A line the instruction set refuses SHALL
+be marked where it stands, and the program SHALL NOT be sent until every
+line is accepted. Compute SHALL be chosen beside the other three statistics,
+and a type whose compute is 0 SHALL be offered no program.
 
 #### Scenario: Writing a program
 
@@ -34,13 +31,11 @@ has no controller.
 ### Requirement: The Game Is Watched As A Replay
 
 The system SHALL show a resolved game as a replay: a scrubber over every turn
-of the record, controls to play, pause, step forward and step back, and a
-speed the viewer chooses. The board at each turn SHALL be drawn from the
-record, with every unit of every player on it, and movement between turns
-SHALL be shown as movement from the old square to the new. The replay SHALL
-open at the final turn, showing the result. While any player's setup is
-uncommitted the interface SHALL say the game is waiting for setups, naming
-whose, and SHALL move to the replay of its own accord when the game resolves.
+of the record, controls to play, pause, step forward and back, and a speed
+the viewer chooses, the board at each turn drawn from the record with every
+unit on it. While any player's setup is uncommitted the interface SHALL say
+it is waiting for setups, naming whose, and SHALL move to the replay of its
+own accord when the game resolves.
 
 #### Scenario: Scrubbing
 
