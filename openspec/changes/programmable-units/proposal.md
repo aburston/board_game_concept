@@ -33,8 +33,8 @@ a turn. A type with compute 0 has no controller: a wall, or a **turret** that
 stands, strikes back and rests.
 
 **Sleep is how a unit rests.** `SLEEP n` switches the controller off for `n`
-turns; a sleeping unit gives no order, pays nothing, and recovers energy under
-the existing rest rule. Being struck wakes it: the exchange is fought on the
+turns, ten at most, so no unit is dormant for free; a sleeping unit gives no
+order, pays nothing, and recovers energy under the existing rest rule. Being struck wakes it: the exchange is fought on the
 ordinary terms, it strikes back if it can pay, and its controller runs again
 next turn.
 

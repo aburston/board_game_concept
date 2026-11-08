@@ -16,8 +16,8 @@ at a prompt each turn.
 Decisions the exploration fixed, which this design takes as given: one
 program per type; compute as a fourth bought statistic with no free
 allowance; ticks accumulate on a meter of `10 × compute` so a small program
-costs a fraction of an energy a turn; `SLEEP` is how a unit rests and a blow
-wakes it; one shared map per army, filled only by standing or fighting on a
+costs a fraction of an energy a turn; `SLEEP` is how a unit rests, lasts at most ten
+turns, and a blow wakes it; one shared map per army, filled only by standing or fighting on a
 square, held for free; a board-wide radio for three-word messages into an
 inbox that persists; the game resolves to its end at the last setup commit
 and is watched as a replay; assembly first.
@@ -104,8 +104,10 @@ which a 2-energy Pawn cannot survive.
 
 ### 5. Sleep and waking are unit state read by the think phase
 
-`unit.asleep` is a countdown. The think phase skips a unit with a positive
-countdown and decrements it. Combat sets `unit.woken = True` on any unit in
+`unit.asleep` is a countdown of at most ten, the parser refusing a larger
+literal. The think phase skips a unit with a positive countdown and
+decrements it; a unit that wants to stay dormant runs `SLEEP` again when it
+wakes, paying a tick each time, which is the point of the bound. Combat sets `unit.woken = True` on any unit in
 a contested square; the rest phase clears the countdown of a woken unit.
 Combat itself is unchanged: a sleeper in a square strikes if it can pay, as
 every unit does today.
@@ -162,7 +164,7 @@ is small.
 
 ### 10. The default programs are the doctrines, shrunk
 
-Garrison is the Keep's warden (`SLEEP` until struck). The hunter is Flag
+Garrison is the Keep's warden (`SLEEP 10`, repeated on waking). The hunter is Flag
 Hunt's `flag_step` with the sidestep: `FLAG enemy`, `SELF`, two `SUB`s and
 two `SIGN`s, `MAP` on the square ahead, a `JIF friend` to try the other axis,
 a check that energy covers fare plus attack else `SLEEP 1`, `MOVE`. The sentry

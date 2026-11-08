@@ -23,7 +23,7 @@ The catalogue SHALL be:
 | Runner | `r`    | 2      | 4      | 10     | 5       | 21   | 1         | hunter: walks to the nearest enemy flag, round its own units, fighting what it meets |
 | Line   | `L`    | 3      | 6      | 12     | 4       | 25   | 2         | hunter |
 | Lance  | `!`    | 8      | 2      | 10     | 3       | 23   | 1         | hunter |
-| Keep   | `K`    | 1      | 10     | 5      | 8       | 24   | 3         | warden: holds its square and sleeps until struck |
+| Keep   | `K`    | 1      | 10     | 5      | 8       | 24   | 3         | warden: holds its square, sleeping ten turns at a time, and strikes back when woken |
 | Heavy  | `H`    | 5      | 10     | 15     | 4       | 34   | 3         | hunter |
 
 The default programs SHALL be written in the instruction set `unit-program`
