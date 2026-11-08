@@ -3,9 +3,11 @@
 # A seat that commits what it was handed plays the catalogue's own
 # controllers: the Runners, Lines and Heavies walk at the enemy flag square,
 # which every player is shown (R6.5), by the shortest route round their own
-# units; the Scouts walk at the nearest square their army does not know;
-# the Pawns strike back at what struck them and otherwise sleep; the Keeps
-# hold until struck. This is what a player who changes nothing fields, and
-# it is the measure every other doctrine is read against.
+# units; the Pawns advance on the enemy's edge whenever they can afford a
+# step and a strike; the Scouts walk at the nearest square their army does
+# not know; the Keeps hold until struck. This is what a player who changes
+# nothing fields, and it is the measure every other doctrine is read
+# against. Games 221-240 were played with the earlier array and a Pawn that
+# was a sentry; games 241 on with this one.
 name: Flag Hunt
-doctrine: the stock army with the programs the catalogue gives it; the Runners, Lines and Heavies hunt the enemy flag, the Scouts the unknown
+doctrine: the stock army with the programs the catalogue gives it; the Runners, Lines and Heavies hunt the enemy flag, the Pawns advance, the Scouts explore

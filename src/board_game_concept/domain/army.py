@@ -64,8 +64,10 @@ DEFAULT_SIZE_Y = 8
 # sleeps a turn when it cannot afford both the step and the strike it may
 # have to land on arriving. `{need}` is the fare plus the attack of the type
 # that carries it: the one number that differs between the types that hunt.
-# Thirty-three ticks on its longest path, which is why nothing that runs it
-# has less than four compute
+# A hunter blocked both ways has run most of the program to find out, and
+# sleeps a turn rather than pay to hold - a rest costs nothing, and the way
+# may be clear next turn. Thirty-three ticks on its longest path, which is
+# why nothing that runs it has less than four compute
 HUNTER = """
 ; hunt: walk at the nearest enemy flag, round my own units
 SELF                 ; r0 x, r1 y, r3 energy
@@ -120,8 +122,7 @@ JIF zero r0, stay
 JIF pos r4, east
 MOVE west
 HALT
-stay: HOLD           ; both ways stand one of mine: wait for it to move
-HALT
+stay: SLEEP 1        ; both ways stand one of mine: rest until one moves
 rest: SLEEP 1
 """
 
@@ -159,6 +160,37 @@ HALT
 rest: SLEEP 2
 """
 
+# a controller for the front rank: step towards the enemy's edge whenever a
+# step and the strike that may follow are affordable, never onto one of my
+# own, and fight whatever the step meets. `{need}` is the fare plus the
+# attack, as for the hunter. The enemy's row is kept in r6, which no sensor
+# writes - SELF fills r0 to r5. Nineteen ticks on its longest path, so it
+# fits a Pawn's cap of thirty with room to think every turn it is awake
+VANGUARD = """
+; vanguard: step at the enemy's edge when I can afford the step and a strike
+FLAG enemy           ; r0, r1 = the enemy flag, or -1
+JIF neg r0, stay
+MOV r6, r1           ; the enemy's row
+SELF                 ; r0 x, r1 y, r3 energy
+SUB r3, {need}
+JIF neg r3, rest
+SUB r6, r1           ; dy to the enemy's edge
+JIF zero r6, stay
+SIGN r6
+MOV r2, r1
+ADD r2, r6           ; the row in front of me
+MAP r0, r2           ; r0 = what my army knows stands there
+SUB r0, 2
+JIF zero r0, stay    ; one of mine: wait for it
+JIF pos r6, south
+MOVE north
+HALT
+south: MOVE south
+HALT
+stay: SLEEP 1
+rest: SLEEP 1
+"""
+
 # a controller that holds its square and sleeps as long as it may, waking
 # to strike back when struck, which is combat's doing and not its own
 WARDEN = """
@@ -171,7 +203,7 @@ CATALOGUE = (
     # drawn as one is a wall a player cannot see on their own board
     ('Wall',   'W', 0, 10,  0, 0, None),
     ('Scout',  'o', 0,  2, 12, 6, hunter(1, 'NEAREST unknown')),
-    ('Pawn',   'p', 1,  4,  2, 2, SENTRY.format(need=2)),
+    ('Pawn',   'p', 1,  4,  2, 3, VANGUARD.format(need=2)),
     ('Runner', 'r', 2,  4, 10, 5, hunter(3)),
     ('Line',   'L', 3,  6, 12, 4, hunter(5)),
     ('Lance',  '!', 8,  2, 10, 4, hunter(9)),
@@ -181,9 +213,15 @@ CATALOGUE = (
 
 
 # the sixteen units, as (depth, column, type name, unit name). Depth 1 is the
-# row in front of the player's own edge and takes the units that cannot afford
-# to travel; depth 0 is the edge itself and takes the ones that can, and the
-# Keep that carries the flag.
+# row in front of the player's own edge and takes the units whose programs
+# leave it - the Pawns, the Lines and the Heavies - so that nothing in the
+# row behind stands behind a unit that never moves; depth 0 is the edge
+# itself and takes the Runners and Scouts, which follow the front rank out,
+# the Keeps, one of which carries the flag, and the Walls beside them, where
+# what a wall cannot do - move - is what a flag's flanks want. The first
+# array had the Walls in front and the Lines behind, and the programmed
+# series showed what that fields: the two Heavies walk out alone and twelve
+# units stand boxed in for the rest of the game.
 #
 # Both rows are **symmetric about the middle of the board**: what stands in
 # column x stands in column 7 - x as well. A lopsided army reads as a mistake,
@@ -195,18 +233,18 @@ CATALOGUE = (
 ARRAY = (
     (1, 0, 'Pawn', 'pawn1'),
     (1, 1, 'Pawn', 'pawn2'),
-    (1, 2, 'Wall', 'wall1'),
+    (1, 2, 'Line', 'line1'),
     (1, 3, 'Heavy', 'heavy1'),
     (1, 4, 'Heavy', 'heavy2'),
-    (1, 5, 'Wall', 'wall2'),
+    (1, 5, 'Line', 'line2'),
     (1, 6, 'Pawn', 'pawn3'),
     (1, 7, 'Pawn', 'pawn4'),
     (0, 0, 'Runner', 'runner1'),
     (0, 1, 'Scout', 'scout1'),
-    (0, 2, 'Line', 'line1'),
+    (0, 2, 'Wall', 'wall1'),
     (0, 3, 'Keep', 'keep1'),
     (0, 4, 'Keep', 'keep2'),
-    (0, 5, 'Line', 'line2'),
+    (0, 5, 'Wall', 'wall2'),
     (0, 6, 'Scout', 'scout2'),
     (0, 7, 'Runner', 'runner2'),
 )

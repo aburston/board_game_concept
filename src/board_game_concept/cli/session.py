@@ -408,12 +408,18 @@ def describe_waiting(waiting):
 def describe_outcome(outcome):
     """How the game ended, as one line for whoever is watching."""
     if outcome.get('decided') is False:
+        reason = outcome.get('reason')
         why = {'repeated': 'its state repeated',
+               'quiet': 'nothing happened for fifty turns',
                'cap': 'the turn cap was reached'}.get(
-            outcome.get('reason'), 'it could not go on')
+            reason, 'it could not go on')
         since = outcome.get('since')
-        again = f" (as it stood after turn {since})" if since is not None \
-            else ''
+        if since is None:
+            again = ''
+        elif reason == 'quiet':
+            again = f" (since turn {since})"
+        else:
+            again = f" (as it stood after turn {since})"
         return (f"game over: undecided on turn {outcome['turn']}, {why}"
                 f"{again}")
     if outcome.get('winner') is None:

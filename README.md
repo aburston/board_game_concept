@@ -90,7 +90,7 @@ game. A type costs the sum of its four statistics — `add type Cross X 1
 from it costs that again, so a 100-point budget buys four Crosses and
 refuses a fifth. Defining a type is free; deploying is what spends, and a
 destroyed unit is not refunded. The stock army a seat opens with costs
-304 of the default 320. `show types` prints each type's `COST` and
+308 of the default 320. `show types` prints each type's `COST` and
 `show players` prints your `BUDGET`, `SPENT` and `LEFT`.
 
 A player file handed to `load player` may carry a `budget:` key; one

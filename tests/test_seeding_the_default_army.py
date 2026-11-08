@@ -164,7 +164,7 @@ def test_the_array_is_charged_like_any_deployment(tmp_path):
     session = harness.session(1)
 
     assert left(session) == Player.DEFAULT_BUDGET - army.cost()
-    assert left(session) == 16
+    assert left(session) == 12
 
 
 def test_a_unit_taken_back_returns_its_points(tmp_path):

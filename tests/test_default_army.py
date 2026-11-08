@@ -20,7 +20,7 @@ from game_harness import GameHarness
 EXPECTED = {
     'Wall':   (0, 10,  0, 0, 10, 3),
     'Scout':  (0,  2, 12, 6, 20, 1),
-    'Pawn':   (1,  4,  2, 2,  9, 1),
+    'Pawn':   (1,  4,  2, 3, 10, 1),
     'Runner': (2,  4, 10, 5, 21, 1),
     'Line':   (3,  6, 12, 4, 25, 2),
     'Lance':  (8,  2, 10, 4, 24, 1),
@@ -98,7 +98,7 @@ def test_the_array_holds_sixteen_units():
 
 
 def test_the_array_costs_what_is_published():
-    assert army.cost() == 304
+    assert army.cost() == 308
 
 
 def test_the_array_uses_only_catalogue_types():
@@ -257,3 +257,73 @@ def test_each_default_program_fits_its_cap_on_every_turn(tmp_path):
     fielded = {type_name for _depth, _x, type_name, _name in army.ARRAY}
     assert seen == {name for name, c in compute.items()
                     if c > 0 and name in fielded}
+
+
+# --- the default plays
+
+
+def test_a_hunter_blocked_both_ways_sleeps_rather_than_holds():
+    """A hunter that finds one of its own on both ways round has run most of
+    its program to find out; it rests the turn rather than pay to hold."""
+    from board_game_concept.domain.army_map import ArmyMap
+    from board_game_concept.domain.program import Program, Snapshot, run
+    program = Program(army.types()['Runner']['program'])
+    # me at (2, 0), the flag at (3, 7): the column is blocked by wall1 at
+    # (2, 1) and the row by keep1 at (3, 0), as the old array stood
+    snap = Snapshot(2, 8, 8, 1, {'me': (2, 0), 'wall1': (2, 1),
+                                 'keep1': (3, 0)},
+                    {1: (3, 0), 2: (3, 7)}, ArmyMap())
+    me = {'x': 2, 'y': 0, 'health': 4, 'energy': 10, 'flag': False,
+          'number': 0}
+    result = run(program, snap, me, None, {}, [], 5, 10, 0)
+    assert result.order is None
+    assert result.sleep == 1
+
+
+def test_the_whole_army_gets_out(tmp_path):
+    """In the mirror of two unchanged arrays every unit with a controller
+    but the Keeps leaves the square it was seeded on inside twenty turns of
+    play: the front rank goes, and nothing behind it is boxed in."""
+    harness = a_stock_game(tmp_path)
+    repository = harness.repository()
+    seeded = {}
+    for unit in repository.read_turn(1)['units']:
+        seeded[(unit['player'], unit['name'])] = (unit['x'], unit['y'])
+    moved = set()
+    for turn in repository.turn_numbers():
+        if turn > 21:
+            break
+        for unit in repository.read_turn(turn)['units']:
+            key = (unit['player'], unit['name'])
+            if key in seeded and (unit['x'], unit['y']) != seeded[key]:
+                moved.add(key)
+        for entry in repository.read_turn(turn)['events']:
+            if entry['kind'] == 'destroyed':
+                # a unit destroyed where it was seeded is not boxed in
+                moved |= {key for key in seeded
+                          if key[1] == entry['detail'].get('unit')}
+    expected = {(player, name) for player in (1, 2)
+                for _depth, _x, type_name, name in army.ARRAY
+                if type_name not in ('Wall', 'Keep')}
+    assert expected <= moved, sorted(expected - moved)
+
+
+def test_the_default_takes_a_flag_nobody_defends(tmp_path):
+    """The unchanged array against the same sixteen units whose every
+    controller halts for nothing wins within a hundred turns."""
+    harness = GameHarness(tmp_path)
+    harness.create(army.DEFAULT_SIZE_X, army.DEFAULT_SIZE_Y, [1, 2])
+    assert harness.session(1).clientSave()
+    garrison = harness.session(2)
+    from board_game_concept.service import games
+    from board_game_concept.service.commands import SetProgram
+    for name, record in army.types().items():
+        if record['compute'] > 0:
+            games.perform(garrison, SetProgram(type_name=name,
+                                               program='HALT'))
+    assert garrison.clientSave()
+    server = harness.play()
+    outcome = server.getOutcome()
+    assert outcome['decided'] is True, outcome
+    assert outcome['winner'] == 1
+    assert outcome['turn'] <= 100, outcome

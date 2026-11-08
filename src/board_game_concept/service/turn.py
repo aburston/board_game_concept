@@ -22,6 +22,16 @@ from .errors import GameError
 # Nobody waits for a turn any more, so it can be generous
 TURN_CAP = 500
 
+# how many turns may pass with nothing happening - no unit changing square,
+# no blow landed, nothing destroyed, no flag fallen - before a game stops
+# undecided. A sleeping unit's countdown and a thinking unit's meter keep a
+# static board from ever repeating its whole state; a board nobody has moved
+# or struck on for this long is one nobody is watching
+QUIET_CAP = 50
+
+# the event kinds that count as something happening
+HAPPENINGS = frozenset(('moved', 'attacked', 'destroyed', 'flag_fallen'))
+
 
 def _types_without_objects(player):
     """A player's types as they are written down, without the live objects.
@@ -663,13 +673,16 @@ def resolve_game(game):
     Called when the last setup is committed, and nobody is waited for from
     here on: every order comes from a unit's controller. Stops when the game
     is decided, when its whole state repeats - the controllers are
-    deterministic, so nothing can ever change again - or at `TURN_CAP`.
-    Each turn is recorded as it goes, so a game is a record to be read.
+    deterministic, so nothing can ever change again - when nothing has
+    happened for `QUIET_CAP` turns, or at `TURN_CAP`. Whichever comes first
+    ends the game. Each turn is recorded as it goes, so a game is a record
+    to be read.
 
     Answers what `resolve` answers: `False` if a turn could not be resolved,
     `True` once the game has been played to its end.
     """
     seen = {}
+    eventful = None
     while True:
         if game.getOutcome() is not None:
             return True
@@ -686,11 +699,27 @@ def resolve_game(game):
             _stop_undecided(game, 'repeated', since=seen[key])
             return True
         seen[key] = turn_number
+        # the turn the armies were placed counts as something happening: it
+        # is the turn the quiet is measured from when nothing ever moves
+        if eventful is None or _something_happened(game, turn_number):
+            eventful = turn_number
+        elif turn_number - eventful >= QUIET_CAP:
+            _stop_undecided(game, 'quiet', since=eventful)
+            return True
         if turn_number >= TURN_CAP:
             _stop_undecided(game, 'cap')
             return True
         if not game.players or not game.repository.committed_players():
             return True
+
+
+def _something_happened(game, turn_number):
+    """Whether this turn's record holds an event that counts as something
+    happening: a unit changing square, a blow, a destruction, a fallen flag.
+    Thinking, sleeping and resting are not among them."""
+    record = game.repository.read_turn(turn_number) or {}
+    return any((entry or {}).get('kind') in HAPPENINGS
+               for entry in record.get('events') or [])
 
 
 def _carry_flag(game, owner, name, order):

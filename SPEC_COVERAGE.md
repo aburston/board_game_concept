@@ -194,6 +194,8 @@ requirement is held:
 | `unit-types` — Unit Type Definition, Validation, Statistic Semantics, Walls And Scouts | `test_type_rule_loading.py` for a stored type that names compute 0 being a wall or a turret that never thought; `test_basic.py` for the floor a type with compute is held to; `test_default_army.py` for the catalogue's scouts and walls fitting the rules; `test_parser.py` and `test_cli_client_surface.py` for the optional fourth statistic at the prompt, its range, and a program refused on a type with no controller |
 | `point-budget` — A Unit Type Costs The Sum Of Its Statistics (compute among them); A Player Is Registered With A Point Budget (320) | `test_default_army.py` for the cost and the array's 304; `test_web_flow.py` and `test_seeding_the_default_army.py` for the default budget |
 | `default-army` — Every Registered Player Is Given The Default Catalogue (with programs); The Default Deployment Is Paid For Like Any Other | `test_default_army.py`: every default program parses and fits its cap on every turn; `test_seeding_the_default_army.py` |
+| `default-army` — The whole army gets out; A blocked hunter costs nothing; Nothing stands behind a unit that never moves (the `default-army-that-plays` change) | `test_default_army.py`: the mirror of two unchanged arrays played in process, every unit but the Keeps off its seeded square inside twenty turns; a hunter blocked both ways ending its turn asleep; the array's layout tests |
+| `game-outcome` — A Quiet Game Stops | `test_resolve_game.py`: two sleepers stop fifty turns after they were placed, a mover resets the count, a blow every tenth turn keeps a game alive, a repeat is found before quiet is; `describe_outcome` and the browser's wording in `test_static_serving.py` |
 | `turn-commit` — The Think Phase | `test_program_executor.py` for what a controller does; `test_full_game.py` for two stock armies playing to an end on what their controllers decide |
 | `turn-commit` — The Game Is Resolved To Its End When Setup Completes | `test_two_player_commit.py`, for the first commit waiting and the second resolving, and the game played to its end without another commit; `test_resolve_game.py` for nobody being waited for afterwards; `test_cli_server_surface.py` for the last setup commit resolving the game and the server exiting |
 | `turn-commit` — Every Turn Is Recorded | `test_resolve_game.py`, which reads every turn of the record back; `test_turn_reporting.py` for the record holding what each player was told, and a turn's rejections being that turn's alone |
@@ -1057,25 +1059,15 @@ filtered by it, as the turn feed already is, and belongs with `turn-commit`.
 
 ## Unspecified, and worth deciding
 
-Two things the programmed series (`matches/RESULTS-PROGRAMMED.md`, games
-221-240) showed, each a design choice rather than a defect:
-
-- **The catalogue's programs field two Heavies and twelve bystanders.** The
-  stock array's back rank is boxed in by its own front rank, the hunter will
-  not step onto one of its own, the Pawns are sentries that never move and
-  the Walls cannot, so a player who commits what they are handed sends two
-  units and pays, every turn, for twelve controllers that think about a
-  route they cannot take. Whether the remedy is a Pawn that advances, a
-  hunter that waits for the way to clear, or an array that leaves the back
-  rank a way out is a decision about `default-army`, not a bug in it.
-- **A sleeping unit's countdown and a controller's meter count as state.**
-  `R7.5` stops a game whose whole state repeats, and the whole state
-  includes them, so a board on which nothing can ever happen again - two
-  Keeps asleep at opposite edges, a boxed-in rank thinking - runs to the cap
-  of 500 turns instead. Four games in the series were static for over 470
-  turns each. Excluding the counters from the comparison, or stopping a game
-  in which nothing has moved or struck for some number of turns, would stop
-  those games in a tenth of the time with the same result.
+Nothing, at present. Two things the programmed series
+(`matches/RESULTS-PROGRAMMED.md`, games 221-240) showed stood here and were
+settled by the `default-army-that-plays` change: the catalogue's programs
+fielded two Heavies and twelve bystanders, because the back rank was boxed
+in by Walls and sentries that never moved - the array now puts the Lines in
+front and the Walls beside the Keeps, and the Pawn is a vanguard that
+advances; and a sleeping unit's countdown kept a static board from ever
+repeating its state, so four games ran 470-odd empty turns to the cap - a
+game in which nothing happens for fifty turns now stops (R7.7).
 
 The two entries that once stood here — units passing through each other,
 and the missing win condition — were settled by the `fix-rules-defects`

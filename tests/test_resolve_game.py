@@ -120,3 +120,67 @@ def test_the_maps_and_the_controllers_survive_a_session(tmp_path,
     assert x1.meter == (4 + 5) * 2            # two turns of nine ticks
     assert server.getBoard().maps[1].at(0, 0)[0] != 0
     assert server.getBoard().turn == 3
+
+
+# --- a quiet game stops
+
+
+SLEEPER = 'SLEEP 100'
+# a unit that moves on turn 41 and otherwise does nothing
+LATE_MOVER = 'TURN\nSET r1, 41\nJIF eq r0, r1, go\nHALT\ngo: MOVE south'
+# a unit that steps at its neighbour every tenth turn, and rests between
+TENTHS = ('TURN\nMOV r6, r0\nSET r1, 10\n'
+          'loop: SUB r6, 10\nJIF neg r6, no\nJIF zero r6, go\nJMP loop\n'
+          'go: MOVE south\nHALT\nno: HOLD')
+
+
+def test_two_sleepers_stop_fifty_turns_after_they_were_placed(tmp_path):
+    harness = a_game(tmp_path, (1, 10, 5, 8, SLEEPER), (1, 10, 5, 8, SLEEPER))
+    server = harness.play()
+    outcome = server.getOutcome()
+    assert outcome['decided'] is False
+    assert outcome['reason'] == 'quiet'
+    # turn 1 placed them, and nothing has happened since
+    assert outcome['since'] == 1
+    assert outcome['turn'] == 1 + turn_service.QUIET_CAP
+
+
+def test_a_unit_that_moves_resets_the_count(tmp_path):
+    harness = a_game(tmp_path, (1, 10, 50, 8, LATE_MOVER),
+                     (1, 10, 5, 8, SLEEPER))
+    server = harness.play()
+    outcome = server.getOutcome()
+    assert outcome['reason'] == 'quiet'
+    assert outcome['since'] == 41
+    assert outcome['turn'] == 41 + turn_service.QUIET_CAP
+
+
+def test_a_blow_every_tenth_turn_keeps_a_game_alive(tmp_path):
+    # two units of ten health a square apart: one steps onto the other every
+    # tenth turn, each strikes the other for one, and the contest is
+    # undecided, so the attacker falls back. Ten blows each destroy both
+    harness = a_game(tmp_path, (1, 10, 100, 8, TENTHS), (1, 10, 5, 8, SLEEPER),
+                     my_unit=('X', 'x1', 0, 2), their_unit=('O', 'o1', 0, 3))
+    server = harness.play()
+    outcome = server.getOutcome()
+    assert outcome.get('reason') != 'quiet', outcome
+    assert outcome['turn'] > 2 * turn_service.QUIET_CAP
+
+
+def test_a_repeated_state_is_found_before_quiet_is(tmp_path):
+    # two units that hold: nothing happens from turn 1, and their meters
+    # come round inside twenty-two turns, so the state repeats well before
+    # the fifty quiet turns are up, and that is the stop the game reports
+    harness = a_game(tmp_path, (1, 4, 10, 2, HOLD), (1, 4, 10, 2, HOLD))
+    server = harness.play()
+    outcome = server.getOutcome()
+    assert outcome['reason'] == 'repeated'
+    assert outcome['turn'] < 1 + turn_service.QUIET_CAP
+
+
+def test_a_quiet_stop_is_described():
+    from board_game_concept.cli.session import describe_outcome
+    assert describe_outcome({'decided': False, 'winner': None, 'turn': 74,
+                             'reason': 'quiet', 'since': 24}) == \
+        'game over: undecided on turn 74, nothing happened for fifty turns ' \
+        '(since turn 24)'
