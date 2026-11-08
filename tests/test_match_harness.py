@@ -28,6 +28,12 @@ from board_game_concept.service.commands import SetProgram
 
 from game_harness import GameHarness
 
+# the arena plays on SQLite, and the in-process games here resolve to
+# their end - five hundred turns, for a pairing that never repeats -
+# which the YAML backend takes minutes over for nothing the SQLite run
+# does not show
+pytestmark = pytest.mark.backend('sqlite')
+
 ROOT = Path(__file__).resolve().parent.parent
 MATCHES = ROOT / 'matches'
 BOTS = MATCHES / 'bots'

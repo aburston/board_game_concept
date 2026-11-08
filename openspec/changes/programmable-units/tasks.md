@@ -56,4 +56,4 @@
 
 ## 9. Integration
 
-- [ ] 9.1 Run `pytest` on both backends and `pytest -m slow`; verify all green.
+- [x] 9.1 Run `pytest` on both backends and `pytest -m slow`; verify all green. (YAML: 1689 passed, 161 skipped; SQLite: 1738 passed plus the 83 harness tests, 103 skipped; `-m slow` 2 passed on each backend.)
