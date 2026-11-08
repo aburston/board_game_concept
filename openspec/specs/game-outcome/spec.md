@@ -98,6 +98,7 @@ having something that can act **and** a flag still standing.
 - **WHEN** a later turn is resolved after a player has been eliminated
 - **THEN** that player remains eliminated
 - **AND** no unit is created for them
+
 ### Requirement: Victory
 
 The system SHALL decide the game in favour of the last player who is not
@@ -145,43 +146,44 @@ leaving it unwinnable.
 
 ### Requirement: Eliminated Players Do Not Hold The Turn Open
 
-The system SHALL stop waiting on an eliminated player's commit, so that a
-player who has been wiped out or has left cannot freeze the game for everyone
-else.
+The system SHALL resolve the game without regard to an eliminated player: their
+units are left standing and inert, their controllers do not run, and nothing
+of theirs is waited for.
 
 #### Scenario: The barrier ignores an eliminated player
 
-- **WHEN** every player who is not eliminated has committed
-- **THEN** the turn is resolved without waiting for any eliminated player
+- **WHEN** a turn is resolved after a player has been eliminated
+- **THEN** none of that player's controllers runs
+- **AND** none of their units is given an order
 
 #### Scenario: An eliminated player's session
 
 - **WHEN** a player opens a session for a game in which they are eliminated
-- **THEN** the session reports that they are out of the game
-- **AND** takes no orders from them
+- **THEN** the session reports that they are out of the game and on which turn
+- **AND** shows them the record
 
 ### Requirement: A Decided Game Accepts No Further Turns
 
-Once the game is decided the system SHALL resolve no further turns and accept no
-further orders, and every session SHALL report the result rather than prompting
-for play.
+Once the game is decided or stopped undecided the system SHALL resolve no
+further turns, and every session SHALL report the result and offer the record.
 
 #### Scenario: The server stops
 
-- **WHEN** the server resolves a turn that decides the game
-- **THEN** it publishes the result
-- **AND** it stops waiting for commits and ends its turn cycle reporting the result
+- **WHEN** a turn decides the game, or the game stops undecided
+- **THEN** the result is recorded
+- **AND** no further turn is resolved
 
 #### Scenario: A client opens a decided game
 
-- **WHEN** a player opens a session for a decided game
+- **WHEN** a player opens a session for a game that has been resolved to its end
 - **THEN** the client reports the result
-- **AND** refuses movement orders and commits
+- **AND** offers the replay
 
 #### Scenario: An observer opens a decided game
 
-- **WHEN** the observer opens a decided game
+- **WHEN** the observer opens a game that has been resolved to its end
 - **THEN** it reports the result alongside the final board
+- **AND** offers the replay
 
 ### Requirement: The Outcome Is Published
 
@@ -234,3 +236,38 @@ published for a turn can be attributed to the turn it describes.
 
 - **WHEN** a game is loaded
 - **THEN** it reports the number of the last turn resolved
+
+### Requirement: An Unchanging Game Stops
+
+The system SHALL stop resolving a game, recording it as undecided, when the
+whole state of the game after a turn is identical to its state after an
+earlier turn, because controllers are deterministic and such a game can never
+change again, and when `TURN_CAP` turns, which SHALL be 500, have been
+resolved without a decision. An undecided game SHALL report the turn it
+stopped on and why.
+
+#### Scenario: What the state comprises
+
+- **WHEN** two turns' states are compared
+- **THEN** every unit's square, health, energy, memory, meter, sleep and inbox, and every army's map, are what is compared
+
+#### Scenario: Two armies that never move
+
+- **WHEN** every controller in the game gives no order and nothing is in contact on turn 2
+- **THEN** the state after turn 2 equals the state after turn 1
+- **AND** the game stops after turn 2, undecided, saying its state repeated
+
+#### Scenario: A cycle
+
+- **WHEN** the state after turn 40 equals the state after turn 34
+- **THEN** the game stops after turn 40, undecided
+
+#### Scenario: The cap
+
+- **WHEN** 500 turns have been resolved and the game is neither decided nor repeating
+- **THEN** the game stops, undecided, saying the cap was reached
+
+#### Scenario: A decided game is not undecided
+
+- **WHEN** a turn decides the game
+- **THEN** it is recorded as decided on that turn, whatever its state

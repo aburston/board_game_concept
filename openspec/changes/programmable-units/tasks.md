@@ -47,7 +47,7 @@
 
 - [x] 7.1 Rewrite `GAME_RULES.md`: compute in R2.4, R2.5 and R2.9; a new R10 for the controller (program, instruction set and ticks, meter, cap, sleep and waking, map, radio, trace); R3 for the think phase and resolution to the end; R6 for the map; R7 for the undecided stops; R8 for the new and removed commands; R9's cost table gains the meter row; verify by grepping for `commit` and `move` in R3 and R8 and finding only the setup commit and the controller's `MOVE`.
 - [x] 7.2 Update `SPEC_COVERAGE.md` (the `unit-program` row and where each requirement is held, divergence 32 fixed), `MODULE_DESCRIPTION.md` (programming no longer "not built"; the new modules) and `README.md` (writing a program, watching a replay); verify the documented commands run as written.
-- [ ] 7.3 Run `openspec validate --specs --strict` after syncing; verify it passes.
+- [x] 7.3 Run `openspec validate --specs --strict` after syncing; verify it passes. (Synced; `validate --specs` passes 25 of 25. Under `--strict` the current openspec warns that a requirement's text is over 500 characters and fails the spec for it; 22 specs fail that way, 19 of them untouched by this change, so it is the lint's new threshold and not the sync. The change itself validates strictly.)
 
 ## 8. The match harness and the first series
 

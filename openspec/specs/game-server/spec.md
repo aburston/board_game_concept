@@ -315,6 +315,7 @@ session continuing and no player registered.
 
 - **WHEN** `load board` or `load player` is given other than one argument
 - **THEN** the server reports that one argument is required
+
 ### Requirement: Server Display Commands
 
 The system SHALL let the administrator inspect the full game state. Each
@@ -363,6 +364,7 @@ command ends in `json`, both as `cli-output` describes them.
 
 - **WHEN** the administrator runs `show flags`
 - **THEN** every player's flag is listed with its owner and its square
+
 ### Requirement: A Refused Setup Commit Is Reported To Whoever Asked
 
 Where a setup cannot be committed - there is no board, or the game is already
@@ -435,30 +437,26 @@ from being opened.
 
 ### Requirement: Unattended Turn Cycle
 
-The system SHALL run continuously once setup is complete, resolving each turn as
-soon as every player still in the game has committed, and SHALL stop once the
-game is decided rather than waiting for commits that will never come.
-
-Being woken SHALL send the server to ask whether the turn may be resolved rather
-than to resolve it: the question is asked where the turn is resolved, as
-`turn-commit` requires. A turn the server may no longer resolve, because another
-caller resolved it first, SHALL send it back to waiting rather than be reported
-as a failure.
+The system SHALL, once the administrator has committed setup, wait for every
+registered player's setup commit, and SHALL then resolve the whole game in one
+held act - every turn, one after another, until the game is decided, its
+state repeats, or the turn cap - writing each turn's record as it goes,
+reporting the result, and exiting with a success status. Where the last setup
+commit arrives over HTTP and resolves the game during that request, the server
+SHALL find the game resolved when it is woken and SHALL report the result and
+exit without resolving anything.
 
 #### Scenario: The turn loop
 
-- **WHEN** the server is running unattended
-- **THEN** it waits for every player still in the game to commit
-- **AND** resolves the turn
-- **AND** writes the resulting board, units, turn number, and per-player views to disk
-- **AND** logs the board and units before waiting again
+- **WHEN** the server is running unattended and the last player commits their setup
+- **THEN** it resolves every turn to the game's end, one after another, waiting for nobody
+- **AND** writes each turn's record
 
 #### Scenario: A turn decides the game
 
-- **WHEN** the server resolves a turn that leaves at most one player not eliminated
-- **THEN** it writes the outcome with the game
-- **AND** reports the winner, or the draw, and the deciding turn number
-- **AND** ends its turn cycle without waiting for further commits
+- **WHEN** a turn leaves at most one player not eliminated, or the game's state repeats, or the cap is reached
+- **THEN** the server writes the outcome with the game
+- **AND** reports the winner, the draw, or the undecided stop and why, with the turn number
 - **AND** exits with a success status
 
 #### Scenario: Starting against a game already decided
@@ -468,17 +466,35 @@ as a failure.
 
 #### Scenario: Save failure during the cycle
 
-- **WHEN** the server cannot save game state while resolving a turn
+- **WHEN** the server cannot save game state while resolving
 - **THEN** it reports an internal error and exits with a failure status
 
 #### Scenario: Woken for a turn another caller has already resolved
 
-- **WHEN** the server is woken and finds the barrier no longer met
-- **THEN** it does not resolve a turn
-- **AND** it reports no error
-- **AND** it waits again rather than exiting or asking immediately
+- **WHEN** the server is woken and finds the game resolved
+- **THEN** it does not resolve anything
+- **AND** it reports the result and exits
 
 #### Scenario: Ending setup is not held to the barrier
 
 - **WHEN** the administrator commits to end setup
-- **THEN** the turn is resolved without waiting for any player to have committed
+- **THEN** the board and the seats are fixed without waiting for any player
+- **AND** the game is not resolved until every player's setup is committed
+
+### Requirement: The Administrator Reads The Record
+
+The system SHALL let the administrator read the record of a resolved game
+via `show turn <n>`, `next` and `prev`, as `player-client` states for a
+player, showing the whole board and every seat's traces, since the
+administrator is entitled to the whole game.
+
+#### Scenario: The administrator reads a turn
+
+- **WHEN** the administrator starts `bgcserver` with `--replay` against a resolved game and runs `show turn 5`
+- **THEN** the board after turn 5 is drawn with every unit
+- **AND** every seat's controller traces for turn 5 are listed
+
+#### Scenario: Reading the record is asked for
+
+- **WHEN** the administrator starts `bgcserver` against a resolved game without `--replay`
+- **THEN** it reports the outcome and exits, as the unattended cycle does

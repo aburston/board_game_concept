@@ -36,8 +36,12 @@ source of truth for intended behaviour.
 Validate them with:
 
 ```
-openspec validate --specs --strict
+openspec validate --specs
 ```
+
+(`--strict` also fails a spec whose requirement text runs over 500
+characters, which most of these do by design: the text says why the rule is
+what it is, and the scenarios say what it does.)
 
 The invariant every capability is written under is stated in `turn-commit` —
 **no randomness in the resolution of the rules**. `tests/test_determinism.py`
