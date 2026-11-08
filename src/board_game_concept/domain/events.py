@@ -78,7 +78,6 @@ DESCRIPTIONS = {
     'undecided': lambda d: (f"the contest at ({d['x']}, {d['y']}) is undecided "
                             f"between {d['units']}"),
     'held': lambda d: f"{d['unit']} holds ({d['x']}, {d['y']})",
-    'shared': lambda d: f"({d['x']}, {d['y']}) is left shared by {d['units']} units",
     'emptied': lambda d: f"({d['x']}, {d['y']}) is left empty",
     'removed': lambda d: f"{d['unit']} leaves the board",
     'rested': lambda d: f"{d['unit']} rests and recovers to {d['energy']} energy",

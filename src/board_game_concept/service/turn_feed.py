@@ -35,7 +35,7 @@ CONTESTS = ('contested', 'collided')
 
 # the kinds that carry their own square
 PLACED = ('deployed', 'moved', 'joined', 'engaged', 'refused', 'retreated',
-          'held', 'undecided', 'emptied', 'shared')
+          'held', 'undecided', 'emptied')
 
 # the kinds reported from inside a contest, which is where they happened.
 # `removed` is not one of them: every destroyed unit is taken off the board
