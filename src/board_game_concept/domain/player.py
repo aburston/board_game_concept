@@ -31,11 +31,12 @@ class Player:
     # and not the rules' to refuse
     #
     # The default is what the default army needs. `domain/army.py` gives every
-    # player of a two-player game an array costing 232, and a budget that only
-    # just covered it would leave nothing to edit with: every change a player
-    # wanted to make would have to begin by taking something back. 250 leaves
-    # 18 points spare, which is a unit or two
-    DEFAULT_BUDGET = 250
+    # player of a two-player game an array costing 304 - compute priced in -
+    # and a budget that only just covered it would leave nothing to edit
+    # with: every change a player wanted to make would have to begin by
+    # taking something back. 320 leaves 16 points spare, which is a unit or
+    # two
+    DEFAULT_BUDGET = 320
     MIN_BUDGET = 1
     MAX_BUDGET = 1000
 

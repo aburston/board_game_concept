@@ -43,7 +43,8 @@ def test_the_layout_is_the_one_the_spec_describes(tmp_path):
     repository.write_board(4, 5)
     repository.write_player(1, {'Cross': {'name': 'Cross', 'symbol': 'X',
                                           'attack': 1, 'health': 1,
-                                          'energy': 10}}, 100)
+                                          'energy': 10, 'compute': 0,
+                                          'program': None}}, 100)
     repository.mark_committed(1)
     repository.write_orders(1, {'units': None})
     repository.write_rejections(1, [])
@@ -163,7 +164,7 @@ def test_a_game_survives_being_written_and_read_again(tmp_path):
     unit_type = UnitType('Cross', 'X', 1, 5, 10)
     game.getPlayers()[1]['types']['Cross'] = {
         'name': 'Cross', 'symbol': 'X', 'attack': 1, 'health': 5,
-        'energy': 10, 'obj': unit_type}
+        'energy': 10, 'compute': 0, 'program': None, 'obj': unit_type}
     game.getBoard().add(Player(1), 2, 3, 'x1', unit_type)
     game.getBoard().commit()
     assert game.serverSave() is True
@@ -276,3 +277,77 @@ def test_a_record_written_without_a_budget_is_refused(tmp_path):
     with pytest.raises(UnreadableGame) as raised:
         repository.read_player(1)
     assert 'budget' in str(raised.value)
+
+
+# --- the record of every turn
+
+
+def a_turn_record(turn):
+    return {
+        'turn': turn,
+        'board': {'size_x': 4, 'size_y': 4},
+        'units': [{'id': 0, 'player': 1, 'name': 'x1', 'type': 'Cross',
+                   'x': 2, 'y': 3, 'health': 5, 'energy': 9,
+                   'type_compute': 3, 'meter': 7, 'asleep': 0,
+                   'memory': [[0, 4]], 'inbox': [[1, 2, 3]]}],
+        'flags': [{'player': 1, 'x': 2, 'y': 3, 'standing': True}],
+        'events': [{'kind': 'thought', 'detail': {'unit': 'x1', 'ticks': 4},
+                    'text': 'x1 thinks', 'fighting': False}],
+        'maps': {'1': {'visited': [[2, 3, turn]], 'enemies': []}},
+        'traces': [{'unit': 'x1', 'player': 1, 'ticks': 4, 'energy': 0,
+                    'order': 3, 'said': [], 'dropped': [], 'slept': False,
+                    'woken': False, 'sleep': None, 'halted': None}],
+        'progress': {'turn': turn, 'eliminated': []},
+    }
+
+
+def test_a_turn_record_round_trips(tmp_path):
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    for turn in (1, 2, 3):
+        repository.write_turn(turn, a_turn_record(turn))
+    assert repository.turn_numbers() == [1, 2, 3]
+    assert repository.read_turn(2) == a_turn_record(2)
+    assert repository.read_turn(9) is None
+    assert os.path.exists(tmp_path / 'games' / '_one' / 'data' / 'turns'
+                          / 'turn_2.yaml')
+
+
+def test_a_turn_record_is_replaced_not_added_to(tmp_path):
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    repository.write_turn(1, a_turn_record(1))
+    changed = a_turn_record(1)
+    changed['progress']['outcome'] = {'decided': False, 'reason': 'cap'}
+    repository.write_turn(1, changed)
+    assert repository.turn_numbers() == [1]
+    assert repository.read_turn(1)['progress']['outcome']['reason'] == 'cap'
+
+
+def test_a_type_with_a_program_round_trips(tmp_path):
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    program = 'SELF\nMOVE south ; walk\n'
+    repository.write_player(1, {'Runner': {
+        'name': 'Runner', 'symbol': 'r', 'attack': 2, 'health': 4,
+        'energy': 10, 'compute': 5, 'program': program}}, 320)
+    read = repository.read_player(1)['types']['Runner']
+    assert read['compute'] == 5
+    assert read['program'] == program
+
+
+def test_a_units_controller_state_round_trips(tmp_path):
+    repository = YamlGameRepository('one', base_path=str(tmp_path))
+    repository.ensure()
+    record = a_turn_record(1)['units'][0]
+    record.update({'symbol': 'X', 'attack': 1, 'type_attack': 1,
+                   'type_health': 5, 'type_energy': 10, 'state': 2,
+                   'direction': 0, 'destroyed': False, 'on_board': True,
+                   'flag': True})
+    repository.write_units({'board': {'size_x': 4, 'size_y': 4},
+                            'turn': 1, 'player': None, 'units': [record]})
+    read = repository.read_units()[0]
+    assert read['type_compute'] == 3
+    assert read['meter'] == 7
+    assert read['memory'] == [[0, 4]]
+    assert read['inbox'] == [[1, 2, 3]]

@@ -45,23 +45,131 @@ DEFAULT_SIZE_Y = 8
 
 
 # the eight types every registered player is given, as (name, symbol, attack,
-# health, energy). Defining a type spends nothing, so the whole catalogue
-# costs a player nothing until they deploy a unit of one of its types.
+# health, energy, compute, program). Defining a type spends nothing, so the
+# whole catalogue costs a player nothing until they deploy a unit of one of
+# its types.
 #
 # The Wall and the Scout are here on purpose. Both are designs the rules allow
 # and nobody builds - attack 0 with no energy, and attack 0 with energy - and
-# a default catalogue is the cheapest way to teach that they exist
+# a default catalogue is the cheapest way to teach that they exist.
+#
+# Every type with a controller carries a default program, so that a player
+# who changes nothing fields an army that plays. Each is written to fit its
+# type's per-turn cap of ten ticks a point of compute on every turn, which
+# `tests/test_default_army.py` holds it to
+
+# a controller that goes for the nearest enemy flag by the shortest route
+# round its own units, and sleeps a turn when it cannot afford both the step
+# and the strike it may have to land on arriving. `{need}` is the fare plus
+# the attack of the type that carries it: the one number that differs
+# between the types that hunt. Twenty-eight ticks on its longest path
+HUNTER = """
+; hunt: walk at the nearest enemy flag, round my own units
+SELF                 ; r0 x, r1 y, r3 energy
+MOV r6, r0
+MOV r7, r1
+SUB r3, {need}       ; a step and a strike
+JIF neg r3, rest
+{target}             ; r0, r1 = where to go, or -1
+JIF neg r0, rest
+SUB r0, r6           ; dx
+SUB r1, r7           ; dy
+MOV r4, r0
+MOV r5, r1
+ABS r0
+ABS r1
+JIF lt r0, r1, vfirst
+SIGN r4
+JIF zero r4, vonly
+MOV r2, r6
+ADD r2, r4
+MAP r2, r7           ; what stands where I would step
+SET r3, 2
+JIF eq r0, r3, vonly ; one of mine: go round
+JIF pos r4, east
+MOVE west
+HALT
+east: MOVE east
+HALT
+vfirst: SIGN r5
+JIF zero r5, honly
+MOV r2, r7
+ADD r2, r5
+MAP r6, r2
+SET r3, 2
+JIF eq r0, r3, honly
+JIF pos r5, south
+MOVE north
+HALT
+south: MOVE south
+HALT
+vonly: SIGN r5
+JIF zero r5, stay
+JIF pos r5, south
+MOVE north
+HALT
+honly: SIGN r4
+JIF zero r4, stay
+JIF pos r4, east
+MOVE west
+HALT
+stay: HOLD
+HALT
+rest: SLEEP 1
+"""
+
+
+def hunter(need, target='FLAG enemy'):
+    return HUNTER.format(need=need, target=target)
+
+
+# a controller that steps onto the enemy it fought last turn, if it can
+# afford the step and the strike, and otherwise sleeps two turns. Fourteen
+# ticks on its longest path
+SENTRY = """
+; sentry: strike back at what struck me, else sleep
+SELF                 ; r0 x, r1 y, r3 energy
+MOV r6, r0
+MOV r7, r1
+MOV r4, r3
+CONTACT              ; r0, r1 = the enemy I fought, or -1
+JIF neg r0, rest
+SUB r4, {need}
+JIF neg r4, rest
+SUB r0, r6
+SUB r1, r7
+JIF zero r0, vert
+JIF pos r0, east
+MOVE west
+HALT
+east: MOVE east
+HALT
+vert: JIF pos r1, south
+MOVE north
+HALT
+south: MOVE south
+HALT
+rest: SLEEP 2
+"""
+
+# a controller that holds its square and sleeps as long as it may, waking
+# to strike back when struck, which is combat's doing and not its own
+WARDEN = """
+; warden: hold the square; a blow wakes me and I strike back
+SLEEP 100
+"""
+
 CATALOGUE = (
     # not `#`: that is the glyph an empty square is drawn with, and a wall
     # drawn as one is a wall a player cannot see on their own board
-    ('Wall',   'W', 0, 10,  0),
-    ('Scout',  'o', 0,  2, 12),
-    ('Pawn',   'p', 1,  4,  2),
-    ('Runner', 'r', 2,  4, 10),
-    ('Line',   'L', 3,  6, 12),
-    ('Lance',  '!', 8,  2, 10),
-    ('Keep',   'K', 1, 10,  5),
-    ('Heavy',  'H', 5, 10, 15),
+    ('Wall',   'W', 0, 10,  0, 0, None),
+    ('Scout',  'o', 0,  2, 12, 6, hunter(1, 'NEAREST unknown')),
+    ('Pawn',   'p', 1,  4,  2, 2, SENTRY.format(need=2)),
+    ('Runner', 'r', 2,  4, 10, 5, hunter(3)),
+    ('Line',   'L', 3,  6, 12, 4, hunter(5)),
+    ('Lance',  '!', 8,  2, 10, 3, hunter(9)),
+    ('Keep',   'K', 1, 10,  5, 8, WARDEN),
+    ('Heavy',  'H', 5, 10, 15, 4, hunter(8)),
 )
 
 
@@ -119,9 +227,13 @@ def types():
             'attack': attack,
             'health': health,
             'energy': energy,
-            'obj': UnitType(name, symbol, attack, health, energy),
+            'compute': compute,
+            'program': program,
+            'obj': UnitType(name, symbol, attack, health, energy, compute,
+                            program),
         }
-        for name, symbol, attack, health, energy in CATALOGUE
+        for name, symbol, attack, health, energy, compute, program
+        in CATALOGUE
     }
 
 
@@ -132,8 +244,9 @@ def cost():
     cannot come apart: a type made dearer or a unit added is charged here at
     once.
     """
-    designs = {name: attack + health + energy
-               for name, _symbol, attack, health, energy in CATALOGUE}
+    designs = {name: attack + health + energy + compute
+               for name, _symbol, attack, health, energy, compute, _program
+               in CATALOGUE}
     return sum(designs[type_name] for _depth, _x, type_name, _name in ARRAY)
 
 

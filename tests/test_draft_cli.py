@@ -45,27 +45,6 @@ class ClientDrafts(CliTestCase):
                          {'kind': 'add_unit', 'type_name': 'Cross',
                           'name': 'x1', 'x': 0, 'y': 0})
 
-    def test_an_order_is_written_down_as_it_is_given(self):
-        self.established_game(players=(1,))
-        client = self.start_client('test-01', 1)
-        client.read_until(CLIENT_PROMPT)
-        client.send_line('add type Cross X 1 1 10')
-        client.read_until_count(CLIENT_PROMPT, 2)
-        client.send_line('add unit Cross x1 0 0')
-        client.read_until_count(CLIENT_PROMPT, 3)
-        client.send_line('set flag x1')
-        client.read_until_count(CLIENT_PROMPT, 4)
-        client.send_line('commit')
-        client.read_until('commit complete')
-        client.read_until_count(CLIENT_PROMPT, 5, timeout=60)
-
-        client.send_line('move x1 north')
-        client.read_until_count(CLIENT_PROMPT, 6)
-
-        draft = draft_of('test-01', 1)
-        self.assertEqual(draft['commands'],
-                         [{'kind': 'move', 'unit': 'x1', 'direction': 1}])
-
     def test_committing_leaves_no_draft_behind(self):
         self.established_game(players=(1,))
         client = self.start_client('test-01', 1)

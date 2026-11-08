@@ -55,7 +55,9 @@ def units_document(board, player=None, in_play_only=False, turn=None):
         'turn': turn,
         'player': None if player is None else player.number,
         'units': [
-            {'id': index, **_unit_record(unit)}
+            {'id': index,
+             **_unit_record(unit, private=(player is None
+                                           or unit.player == player))}
             for index, unit in enumerate(board.units)
             if not (in_play_only and unit.destroyed)
             and _visible_to(unit, player)
@@ -63,10 +65,38 @@ def units_document(board, player=None, in_play_only=False, turn=None):
     }
 
 
-def _unit_record(unit):
-    """One unit as its record fields, less the `id`. Same fields the emitter
-    puts in `unit_fields`, in the same order."""
+def controller_record(unit):
+    """A unit's controller state as plain data: what its owner may know of
+    how it thinks, and what nobody else may."""
     return {
+        'type_compute': unit.type_compute,
+        'meter': unit.meter,
+        'asleep': unit.asleep,
+        'memory': [[key, value] for key, value in sorted(unit.memory.items())],
+        'inbox': [list(words) for words in unit.inbox],
+    }
+
+
+def restore_controller(unit, record):
+    """Put a unit's controller state back from its record."""
+    unit.meter = int(record.get('meter') or 0)
+    unit.asleep = int(record.get('asleep') or 0)
+    unit.memory = {int(key): int(value)
+                   for key, value in (record.get('memory') or [])}
+    unit.inbox = [tuple(int(word) for word in words)
+                  for words in (record.get('inbox') or [])]
+
+
+def _unit_record(unit, private=True):
+    """One unit as its record fields, less the `id`. Same fields the emitter
+    puts in `unit_fields`, in the same order.
+
+    `private` is whether the reader is entitled to the unit's controller:
+    its compute, its meter, its sleep, its memory and its inbox. A seat is
+    shown its own units' and nobody else's, because contact discloses a
+    type's attack, health and energy and nothing of how it thinks.
+    """
+    record = {
         'player': unit.player.number,
         'type': unit.type_name,
         'name': unit.name,
@@ -86,3 +116,6 @@ def _unit_record(unit):
         # up under
         'flag': unit.flag,
     }
+    if private:
+        record.update(controller_record(unit))
+    return record

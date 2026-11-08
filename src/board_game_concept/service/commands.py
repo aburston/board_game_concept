@@ -126,7 +126,24 @@ class SetFlag(Node):
 
 class AddType(Node):
     kind = 'add_type'
-    fields = ('name', 'symbol', 'attack', 'health', 'energy')
+    # compute and the program are defaulted rather than required, so a draft
+    # or a request written without them still reads as the command it was: a
+    # type with no compute has no controller and carries no program
+    fields = ('name', 'symbol', 'attack', 'health', 'energy', 'compute',
+              'program')
+
+    def __init__(self, **values):
+        if values.get('compute') is None:
+            values['compute'] = 0
+        values.setdefault('program', None)
+        super().__init__(**values)
+
+
+class SetProgram(Node):
+    """Give one of this player's types the program its units run."""
+
+    kind = 'set_program'
+    fields = ('type_name', 'program')
 
 
 class AddUnit(Node):

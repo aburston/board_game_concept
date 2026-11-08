@@ -10,10 +10,13 @@ which this delegates to so that callers have one thing to talk to.
 
 from ..domain import Board, Player, UnitType, army, budget
 from ..storage.notify import NullNotifier
-from ..storage.serialise import restore_draft, serialise_draft, units_document
+from ..domain.army_map import ArmyMap
+from ..storage.serialise import (restore_controller, restore_draft,
+                                 serialise_draft, units_document)
 from . import commands, games, identity, turn
 from .errors import (GameDataError, GameError, NoSuchGame, NoSuchPlayer,
                      UnreadableGame)
+from ..domain.program import ProgramError
 
 
 class Game:
@@ -243,6 +246,7 @@ class Game:
         self.rejected = self.repository.read_rejections(self.player_number)
         if self.sees_everything:
             self._restore(self.board, self.repository.read_units())
+            self._restore_maps()
         else:
             # a player's session is built from that player's own published
             # view, and never from the record of every unit on the board. It
@@ -273,6 +277,22 @@ class Game:
             # played into being: one with units standing and no progress
             # record is past its setup whatever the record says
             self.new_game = progress is None and not turn.has_started(self)
+
+    def _restore_maps(self):
+        """Put back what every army knows, from the last turn's record.
+
+        The maps live on the board between turns, and a session that
+        resolves turns needs them as the last turn left them. They are kept
+        with the record of that turn, so a game is read back whole.
+        """
+        if self.board is None:
+            return
+        self.board.turn = self.turn_number
+        record = self.repository.read_turn(self.turn_number)
+        if not record:
+            return
+        for number, kept in (record.get('maps') or {}).items():
+            self.board.maps[int(number)] = ArmyMap.from_record(kept)
 
     def _replay_draft(self):
         """Put back what this session had done and not committed.
@@ -457,17 +477,33 @@ class Game:
                 # a command that can be turned down and the session carry on.
                 # `define_type` catches the same assertions at the prompt; here
                 # they would escape as a bare AssertionError and kill the role
+                if 'compute' not in unit_type:
+                    # a type stored before units had controllers. The game
+                    # it belongs to was set up under rules the game no longer
+                    # has - its turns were ordered by hand - and cannot be
+                    # played on, as a game without budgets or flags cannot
+                    raise UnreadableGame(
+                        f"{self.repository.data_path} holds a type with no "
+                        f"compute: {type_name}. This game was set up before "
+                        f"units ran programs and cannot be opened; start a "
+                        f"new one")
                 try:
                     unit_type['obj'] = UnitType(
                         unit_type['name'],
                         unit_type['symbol'],
                         int(unit_type['attack']),
                         int(unit_type['health']),
-                        int(unit_type['energy']))
+                        int(unit_type['energy']),
+                        int(unit_type.get('compute') or 0),
+                        unit_type.get('program') or None)
                 except (AssertionError, ValueError, TypeError) as e:
                     raise UnreadableGame(
                         f"{self.repository.data_path} holds a type that "
                         f"cannot exist: {type_name}: {e}") from e
+                except ProgramError as e:
+                    raise UnreadableGame(
+                        f"{self.repository.data_path} holds a type whose "
+                        f"program is refused: {type_name}: {e}") from e
                 self.players[number]['types'][unit_type['name']] = unit_type
 
             orders = self.repository.read_orders(number)
@@ -493,6 +529,15 @@ class Game:
             return
         for unit in units:
             number = int(unit['player'])
+            mine = self.sees_everything or number == self.player_number
+            if mine and 'type_compute' not in unit:
+                # a unit stored before units had controllers: a game set up
+                # under rules the game no longer has
+                raise UnreadableGame(
+                    f"{self.repository.data_path} holds a unit with no "
+                    f"controller record: {unit['name']}. This game was set "
+                    f"up before units ran programs and cannot be opened; "
+                    f"start a new one")
             board.add(
                 self.players[number]['obj'],
                 unit['x'], unit['y'],
@@ -503,12 +548,17 @@ class Game:
                 bool(unit['destroyed']),
                 bool(unit['on_board']),
                 restoring=True)
+            restored = board.findUnit(unit['name'],
+                                      self.players[number]['obj'])
+            if restored is None:
+                continue
             # the flag comes back with the unit that carried it
             if unit['flag']:
-                restored = board.findUnit(unit['name'],
-                                          self.players[number]['obj'])
-                if restored is not None:
-                    restored.flag = True
+                restored.flag = True
+            # and so does its controller's state, where the record is this
+            # session's to read: an enemy's is never in its record
+            if mine:
+                restore_controller(restored, unit)
 
     def _type_for(self, number, unit):
         """The type a saved unit was made from.
@@ -526,6 +576,8 @@ class Game:
         attack = int(unit.get('type_attack', unit['attack']))
         health = int(unit.get('type_health', unit['health']))
         energy = int(unit.get('type_energy', unit['energy']))
+        # an enemy's compute is never disclosed, so a type rebuilt from a
+        # sighting has none: it describes what was met, and never thinks
         if not design and attack != 0:
             # a record carrying no `type_*` fields has already lost the design
             # and leaves only what play has worn the unit down to. Current
@@ -544,13 +596,16 @@ class Game:
             # that enemy has left - a floor of the health would report a spent
             # unit as a fresh one
             energy = max(energy, (health + 3) // 4)
-        unit_type = UnitType(unit['type'], unit['symbol'], attack, health, energy)
+        unit_type = UnitType(unit['type'], unit['symbol'], attack, health,
+                             energy, 0)
         types[unit['type']] = {
             'name': unit['type'],
             'symbol': unit['symbol'],
             'attack': attack,
             'health': health,
             'energy': energy,
+            'compute': 0,
+            'program': None,
             'obj': unit_type,
         }
         return unit_type

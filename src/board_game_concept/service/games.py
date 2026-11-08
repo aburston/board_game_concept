@@ -11,6 +11,7 @@ holding only the part that is genuinely theirs - what to say, and to whom.
 
 import yaml
 
+from ..domain.program import ProgramError
 from ..domain import Board, Player, UnitType, army, budget, placement
 from . import identity
 from .errors import GameError
@@ -127,9 +128,17 @@ def load_player(data, command):
     except (TypeError, ValueError) as e:
         raise GameError(f"budget must be a number in {command.path}") from e
     player = _player(number, points)
+    # a player file is configuration rather than stored state, so a type that
+    # names no compute is a type with none - a wall, a turret - and not a game
+    # set up under rules the game no longer has, which is what a *stored*
+    # type with no compute is and `game-persistence` refuses
+    types = player_data.get('types') or {}
+    for unit_type in types.values():
+        unit_type.setdefault('compute', 0)
+        unit_type.setdefault('program', None)
     data.getPlayers()[number] = {
         'obj': player,
-        'types': player_data['types'],
+        'types': types,
         'units': player_data['units'],
     }
 
@@ -150,12 +159,22 @@ def _setup_is_closed(data, what):
 
 
 def define_type(data, command):
-    """Define a unit type for the player whose session this is."""
+    """Define a unit type for the player whose session this is.
+
+    Redefining a type under its own name replaces the whole of it, program
+    included: a redefinition that names no program leaves the type with
+    none, as the `unit-program` spec says.
+    """
     if not data.getNewGame():
         raise GameError(_setup_is_closed(data, 'types'))
+    program = command.program or None
     try:
         obj = UnitType(command.name, command.symbol, command.attack,
-                       command.health, command.energy)
+                       command.health, command.energy, command.compute,
+                       program)
+    except ProgramError as e:
+        raise GameError(f"error adding unit type: the program is refused at "
+                        f"{e}") from e
     except Exception as e:
         raise GameError(f"error adding unit type: {e}") from e
     data.getPlayers()[data.player_number]['types'][command.name] = {
@@ -164,8 +183,53 @@ def define_type(data, command):
         'attack': command.attack,
         'health': command.health,
         'energy': command.energy,
+        'compute': command.compute,
+        'program': program,
         'obj': obj,
     }
+
+
+def set_program(data, command):
+    """Give one of this player's types the program its units run.
+
+    Set during setup and fixed by the commit that ends it, like everything
+    else about a type. The program is checked here, naming the line it is
+    refused at; what it would do is never a reason to refuse it. A type with
+    no compute has no controller, and a program on it is refused for that.
+    """
+    if not data.getNewGame():
+        raise GameError(
+            "your setup is committed, so a program can no longer be set - "
+            "a type's program is fixed for the game")
+    types = data.getPlayers()[data.player_number]['types']
+    record = types.get(command.type_name)
+    if record is None:
+        raise GameError(
+            f"there is no type of yours called {command.type_name}")
+    compute = int(record.get('compute') or 0)
+    if compute <= 0:
+        raise GameError(
+            f"{command.type_name} has compute 0, so it has no controller to "
+            f"run a program")
+    try:
+        obj = UnitType(record['name'], record['symbol'],
+                       int(record['attack']), int(record['health']),
+                       int(record['energy']), compute, command.program)
+    except ProgramError as e:
+        raise GameError(f"the program is refused at {e}") from e
+    except Exception as e:
+        raise GameError(f"error setting program: {e}") from e
+    record['program'] = command.program or None
+    record['obj'] = obj
+    # the units already deployed from this type run the program as well: a
+    # unit is a copy of its type, and the program is the type's
+    board = data.getBoard()
+    if board is not None:
+        for unit in board.units:
+            if (unit.player is not None
+                    and unit.player.number == data.player_number
+                    and unit.type_name == command.type_name):
+                unit.program = obj.program
 
 
 def deploy_unit(data, command):
@@ -208,7 +272,7 @@ def deploy_unit(data, command):
         # kept in step with the view and was the reason a just-deployed unit
         # could not be seen
         board.add(player_obj, command.x, command.y, command.name, unit_type)
-        board.commit()
+        board.settle()
     except Exception as e:
         raise GameError(f"error creating new unit {e}") from e
 
@@ -351,6 +415,7 @@ ACTIONS = {
     'add_type': define_type,
     'add_unit': deploy_unit,
     'set_flag': set_flag,
+    'set_program': set_program,
     'move': order_move,
     'set_new_game': set_new_game,
 }

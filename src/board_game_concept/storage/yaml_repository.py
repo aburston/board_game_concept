@@ -5,7 +5,9 @@ per-player files under `players`, one directory per game number. This is the
 only module that knows any of those names.
 """
 
+import json
 import os
+import re
 
 import yaml
 
@@ -321,6 +323,35 @@ class YamlGameRepository(GameRepository):
 
     # --- what a seat has met
 
+    # --- the record of every turn
+
+    def _turn_file(self, turn):
+        return os.path.join(self.data_path, 'turns', f'turn_{int(turn)}.yaml')
+
+    def read_turn(self, turn):
+        path = self._turn_file(turn)
+        if not os.path.exists(path):
+            return None
+        return self._read_yaml(path, f'the record of turn {turn}')
+
+    def write_turn(self, turn, record):
+        path = self._turn_file(turn)
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
+        with self._replace(path) as file:
+            yaml.safe_dump(record, file, sort_keys=False)
+
+    def turn_numbers(self):
+        folder = os.path.join(self.data_path, 'turns')
+        if not os.path.exists(folder):
+            return []
+        found = []
+        for name in os.listdir(folder):
+            match = re.match(r'^turn_(\d+)\.yaml$', name)
+            if match:
+                found.append(int(match.group(1)))
+        return sorted(found)
+
     def _known_types_file(self, number):
         return os.path.join(self.player_path, f'{number}_types_seen.yaml')
 
@@ -432,6 +463,24 @@ def _unit_line(unit):
         # nothing about the flag is a record every reader has to guess at,
         # and the two other booleans beside it are always written too
         f", flag: {bool(unit.get('flag'))}"
+        # the controller's state, where the reader is entitled to it: a view
+        # written for a seat carries none of it for the other seats' units
+        + (_controller_line(unit) if 'type_compute' in unit else '')
+    )
+
+
+def _controller_line(unit):
+    """A unit's controller state as the tail of its flow mapping.
+
+    Memory and the inbox are lists of lists, written as JSON, which YAML
+    reads as flow sequences.
+    """
+    return (
+        f", type_compute: {unit.get('type_compute')}"
+        f", meter: {unit.get('meter') or 0}"
+        f", asleep: {unit.get('asleep') or 0}"
+        f", memory: {json.dumps(unit.get('memory') or [])}"
+        f", inbox: {json.dumps(unit.get('inbox') or [])}"
     )
 
 

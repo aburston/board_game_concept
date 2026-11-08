@@ -107,15 +107,26 @@ def test_a_game_is_still_being_set_up_after_the_setup_commit(tmp_path):
     assert record['state'] == registry.SETTING_UP
 
 
-def test_a_game_with_a_resolved_turn_is_being_played(tmp_path):
+def test_a_game_whose_setup_is_committed_is_played_to_its_end(tmp_path):
+    """The last setup commit resolves the whole game: two units that never
+    move repeat their state, and the game stops undecided."""
     harness = _harness(tmp_path, 'one')
     harness.create(5, 5, [1, 2])
     _play_a_turn(harness)
 
     record = _find(registry.games(DEFAULT_BACKEND, str(tmp_path)), 'one')
 
-    assert record['state'] == registry.BEING_PLAYED
+    assert record['state'] == registry.UNDECIDED
     assert record['turn_number'] >= 1
+
+
+def test_a_resolution_cut_short_is_still_being_played():
+    # turns resolved and no outcome: a game whose resolution did not finish
+    assert registry._state(3, None) == registry.BEING_PLAYED
+    assert registry._state(3, {'decided': True, 'winner': 1}) == \
+        registry.DECIDED
+    assert registry._state(3, {'decided': False, 'winner': None,
+                               'reason': 'cap'}) == registry.UNDECIDED
 
 
 def test_many_games_are_all_listed_in_order(tmp_path):
@@ -148,7 +159,7 @@ def test_the_listing_reports_the_state_a_change_left(tmp_path):
     _play_a_turn(harness)
 
     assert _find(registry.games(DEFAULT_BACKEND, str(tmp_path)),
-                 'one')['state'] == registry.BEING_PLAYED
+                 'one')['state'] == registry.UNDECIDED
 
 
 def test_an_unreadable_game_does_not_stop_the_others_being_listed(tmp_path):

@@ -394,7 +394,10 @@ def _commit_payload(data, resolved):
         'resolved': bool(resolved),
         'turn_number': data.getTurnNumber(),
         'outcome': data.getOutcome(),
-        'waiting_on': sorted(awaited - committed),
+        # a game that is over waits for nobody: every turn after the last
+        # setup commit was the controllers'
+        'waiting_on': ([] if data.getOutcome() is not None
+                       else sorted(awaited - committed)),
     }
 
 

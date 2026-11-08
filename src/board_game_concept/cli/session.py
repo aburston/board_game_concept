@@ -365,6 +365,15 @@ __all__ = ['COMPILED_DEFAULT_BACKEND', 'GameError', 'add_backend_argument',
 
 def describe_outcome(outcome):
     """How the game ended, as one line for whoever is watching."""
+    if outcome.get('decided') is False:
+        why = {'repeated': 'its state repeated',
+               'cap': 'the turn cap was reached'}.get(
+            outcome.get('reason'), 'it could not go on')
+        since = outcome.get('since')
+        again = f" (as it stood after turn {since})" if since is not None \
+            else ''
+        return (f"game over: undecided on turn {outcome['turn']}, {why}"
+                f"{again}")
     if outcome.get('winner') is None:
         return f"game over: a draw on turn {outcome['turn']}"
     return (f"game over: player {outcome['winner']} wins "

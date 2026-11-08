@@ -13,16 +13,16 @@ from board_game_concept.domain import army, placement
 from board_game_concept.domain.unit import UnitType
 
 
-# name: attack, health, energy, cost, move fare
+# name: attack, health, energy, compute, cost, move fare
 EXPECTED = {
-    'Wall':   (0, 10,  0, 10, 3),
-    'Scout':  (0,  2, 12, 14, 1),
-    'Pawn':   (1,  4,  2,  7, 1),
-    'Runner': (2,  4, 10, 16, 1),
-    'Line':   (3,  6, 12, 21, 2),
-    'Lance':  (8,  2, 10, 20, 1),
-    'Keep':   (1, 10,  5, 16, 3),
-    'Heavy':  (5, 10, 15, 30, 3),
+    'Wall':   (0, 10,  0, 0, 10, 3),
+    'Scout':  (0,  2, 12, 6, 20, 1),
+    'Pawn':   (1,  4,  2, 2,  9, 1),
+    'Runner': (2,  4, 10, 5, 21, 1),
+    'Line':   (3,  6, 12, 4, 25, 2),
+    'Lance':  (8,  2, 10, 3, 23, 1),
+    'Keep':   (1, 10,  5, 8, 24, 3),
+    'Heavy':  (5, 10, 15, 4, 34, 3),
 }
 
 
@@ -38,20 +38,22 @@ def test_every_catalogue_type_is_one_the_rules_allow():
 
 
 def test_the_catalogue_statistics_are_the_ones_published():
-    for name, (attack, health, energy, _cost, _fare) in EXPECTED.items():
+    for name, (attack, health, energy, compute, _cost,
+               _fare) in EXPECTED.items():
         record = army.types()[name]
-        assert (record['attack'], record['health'], record['energy']) == (
-            attack, health, energy), name
+        assert (record['attack'], record['health'], record['energy'],
+                record['compute']) == (attack, health, energy, compute), name
 
 
 def test_each_type_costs_the_sum_of_its_statistics():
-    for name, (_a, _h, _e, cost, _fare) in EXPECTED.items():
+    """All four of them: compute is bought like attack, health and energy."""
+    for name, (_a, _h, _e, _c, cost, _fare) in EXPECTED.items():
         assert army.types()[name]['obj'].cost == cost, name
 
 
 def test_each_type_pays_the_move_fare_published_for_it():
     """A quarter of the type's health, rounded up, as for any type."""
-    for name, (_a, health, _e, _cost, fare) in EXPECTED.items():
+    for name, (_a, health, _e, _c, _cost, fare) in EXPECTED.items():
         unit_type = army.types()[name]['obj']
         assert unit_type.move_cost == fare, name
         assert fare == math.ceil(health / 4), name
@@ -93,7 +95,7 @@ def test_the_array_holds_sixteen_units():
 
 
 def test_the_array_costs_what_is_published():
-    assert army.cost() == 242
+    assert army.cost() == 304
 
 
 def test_the_array_uses_only_catalogue_types():

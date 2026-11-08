@@ -114,10 +114,7 @@ class GameHarness:
         test that wants to see that refusal.
         """
         client = self.session(player_number)
-        for name, symbol, attack, health, energy in types:
-            games.define_type(client, AddType(
-                name=name, symbol=symbol, attack=attack, health=health,
-                energy=energy))
+        self._define(client, types)
         for type_name, unit_name, x, y in units:
             games.deploy_unit(client, AddUnit(
                 type_name=type_name, name=unit_name, x=x, y=y))
@@ -131,6 +128,20 @@ class GameHarness:
             assert client.clientSave()
         return client
 
+    @staticmethod
+    def _define(client, types):
+        """Define types from `(name, symbol, attack, health, energy)` tuples,
+        or seven-tuples that go on to name a compute and a program. A type
+        named with five has no controller, and is what a fixture written
+        before units ran programs means."""
+        for spec in types:
+            name, symbol, attack, health, energy = spec[:5]
+            compute = spec[5] if len(spec) > 5 else 0
+            program = spec[6] if len(spec) > 6 else None
+            games.define_type(client, AddType(
+                name=name, symbol=symbol, attack=attack, health=health,
+                energy=energy, compute=compute, program=program))
+
     def publish_setup(self, player_number, types, units, flag=_FIRST):
         """Publish a setup straight to the repository, past the commit.
 
@@ -143,10 +154,7 @@ class GameHarness:
         makes first.
         """
         client = self.session(player_number)
-        for name, symbol, attack, health, energy in types:
-            games.define_type(client, AddType(
-                name=name, symbol=symbol, attack=attack, health=health,
-                energy=energy))
+        self._define(client, types)
         for type_name, unit_name, x, y in units:
             games.deploy_unit(client, AddUnit(
                 type_name=type_name, name=unit_name, x=x, y=y))
@@ -181,10 +189,25 @@ class GameHarness:
         return client
 
     def resolve(self):
-        """Resolve the turn, as the server does once everyone has committed."""
+        """Resolve one turn, as the server did when turns were ordered by hand.
+
+        The service still resolves a single turn for a session entitled to
+        the whole game, and the fixtures that hold the rules of movement and
+        combat drive one turn at a time through it, ordering units as the
+        controllers would. A played game goes through `play`.
+        """
         server = self.session(0)
         assert server.serverSave()
         return server
+
+    def play(self):
+        """Resolve the game to its end, as the last setup commit does."""
+        server = self.session(0)
+        assert server.resolveWhenReady() is not None
+        return self.session(0)
+
+    def turn_record(self, turn):
+        return self.repository().read_turn(turn)
 
     def turn(self, orders_by_player):
         """One whole turn: every player orders and commits, then the server resolves.

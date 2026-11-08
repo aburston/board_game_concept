@@ -46,7 +46,8 @@ def a_session(repository):
 def test_a_stored_type_that_cannot_afford_a_move_is_refused(tmp_path):
     repository = a_player_file(tmp_path, {
         'Heavy': {'name': 'Heavy', 'symbol': 'H',
-                  'attack': '3', 'health': '6', 'energy': '1'},
+                  'attack': '3', 'health': '6', 'energy': '1',
+                  'compute': '1'},
     })
     with pytest.raises(UnreadableGame) as raised:
         Game(repository, 1).load()
@@ -57,11 +58,40 @@ def test_a_stored_type_that_cannot_afford_a_move_is_refused(tmp_path):
 def test_a_stored_type_that_can_afford_a_move_still_loads(tmp_path):
     repository = a_player_file(tmp_path, {
         'Heavy': {'name': 'Heavy', 'symbol': 'H',
-                  'attack': '3', 'health': '6', 'energy': '2'},
+                  'attack': '3', 'health': '6', 'energy': '2',
+                  'compute': '1'},
     })
     session = Game(repository, 1)
     session.load()
     assert session.players[1]['types']['Heavy']['obj'].move_cost == 2
+
+
+def test_a_stored_type_with_no_compute_is_refused(tmp_path):
+    # a type stored before units had controllers belongs to a game whose
+    # turns were ordered by hand. The game it is in cannot be played on under
+    # the rules the game has now, and the refusal names the game
+    repository = a_player_file(tmp_path, {
+        'Heavy': {'name': 'Heavy', 'symbol': 'H',
+                  'attack': '3', 'health': '6', 'energy': '10'},
+    })
+    with pytest.raises(UnreadableGame) as raised:
+        Game(repository, 1).load()
+    assert 'Heavy' in str(raised.value)
+    assert 'compute' in str(raised.value)
+    assert str(repository.data_path) in str(raised.value)
+
+
+def test_a_stored_type_with_no_compute_never_thought(tmp_path):
+    # ...while a type that names compute 0 is a wall or a turret, a design
+    # that thinks nothing and needs no energy to move, and loads
+    repository = a_player_file(tmp_path, {
+        'Wall': {'name': 'Wall', 'symbol': 'W',
+                 'attack': '0', 'health': '6', 'energy': '0',
+                 'compute': '0'},
+    })
+    session = Game(repository, 1)
+    session.load()
+    assert session.players[1]['types']['Wall']['obj'].type_compute == 0
 
 
 # --- an enemy type rebuilt from a sighting
@@ -106,9 +136,13 @@ def test_a_sighting_that_carries_the_design_is_left_alone(tmp_path):
 
 
 def test_a_carried_design_below_the_rule_is_not_floored(tmp_path):
-    # a design from before the rule, arriving inside a sighting. It is what the
-    # record says it is; the floor does not reach in and rewrite it
+    # a design arriving inside a sighting is what the record says it is; the
+    # floor does not reach in and rewrite it. Nor does the rule refuse it:
+    # contact discloses nothing of how the enemy thinks, so the type is
+    # rebuilt without a controller, and the energy floor is for types that
+    # think (`unit-types`)
     session = a_session(a_player_file(tmp_path, {}))
-    with pytest.raises(AssertionError):
-        session._type_for(1, a_seen_unit(
-            type_attack='3', type_health='6', type_energy='1'))
+    rebuilt = session._type_for(1, a_seen_unit(
+        type_attack='3', type_health='6', type_energy='1'))
+    assert rebuilt.type_energy == 1
+    assert rebuilt.type_compute == 0

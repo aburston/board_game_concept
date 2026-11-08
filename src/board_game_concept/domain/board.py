@@ -372,6 +372,19 @@ class Board:
         self.turn = turn
         return events
 
+    def settle(self):
+        """Place the units waiting to be deployed, and nothing else.
+
+        What a client does to its own board the moment a unit is deployed,
+        so that the unit is seen standing on its square at once. Nothing
+        thinks, moves, fights or rests: those are the turn's, and a turn is
+        resolved by `commit`. Setup is not a turn, which is why a scout
+        deployed during setup does not walk off before the game has begun.
+        """
+        events = []
+        self._deploy(events)
+        return events
+
     # ------------------------------------------------------------ thinking
 
     def _think(self, events, turn):

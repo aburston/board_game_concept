@@ -383,6 +383,19 @@ def _isOut(unit, out):
     return unit.player is not None and unit.player.number in out
 
 
+def survivors_of(units):
+    """The units of an undecided contest as `player:name` pairs, sorted.
+
+    The names alone cannot say whose units they are: two players may both
+    hold a `pawn1`, and the stock army hands both of them sixteen such
+    names. A report that matched by name told each player about the
+    other's contests.
+    """
+    return ','.join(sorted(
+        f"{unit.player.number if unit.player is not None else ''}:{unit.name}"
+        for unit in units))
+
+
 def _mark(unit):
     """How a unit is named in the record of who has struck whom this turn.
 
@@ -581,6 +594,7 @@ def resolveContest(board, x, y, contestants, free, events=None, out=(),
             events.append(Event(
                 'undecided', x=x, y=y,
                 units=','.join(sorted(unit.name for unit in survivors)),
+                survivors=survivors_of(survivors),
                 players=owners(*survivors)))
         # in a settled order, because pushing one survivor back can free the
         # square another was going to fall back to: which of them is put back
@@ -663,4 +677,5 @@ def resolveCollision(first, second, events=None, out=(), struck=None):
         events.append(Event(
             'undecided', x=first.x, y=first.y,
             units=','.join(sorted(unit.name for unit in survivors)),
+            survivors=survivors_of(survivors),
             players=owners(*survivors)))

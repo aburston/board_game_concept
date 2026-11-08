@@ -126,7 +126,7 @@ def _publish_out_of_area(harness, number, name, x, y):
     harness.repository().write_player(
         number,
         {'X': {'name': 'X', 'symbol': 'X', 'attack': 1, 'health': 5,
-               'energy': 50}},
+               'energy': 50, 'compute': 0, 'program': None}},
         client.getPlayerObj(number).budget)
     harness.repository().write_orders(
         number, units_document(board, client.getPlayerObj(number),
