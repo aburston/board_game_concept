@@ -32,19 +32,34 @@ def a_game(tmp_path, mine, theirs, my_unit=('X', 'x1', 0, 0),
     return harness
 
 
+HALT_ONLY = 'HALT'
+
+
 def test_two_armies_that_never_move_stop_where_the_state_repeats(tmp_path):
-    harness = a_game(tmp_path, (1, 4, 10, 2, HOLD), (1, 4, 10, 2, HOLD))
+    harness = a_game(tmp_path, (1, 4, 10, 2, HALT_ONLY),
+                     (1, 4, 10, 2, HALT_ONLY))
     server = harness.play()
     outcome = server.getOutcome()
     assert outcome['decided'] is False
     assert outcome['reason'] == 'repeated'
-    # turn 1 places the units and both rest to full; turn 2 changes nothing
-    # but the meter, turn 3 the same... the state repeats once the meters
-    # have cycled, which with a one-tick program on compute 2 is twenty
-    # turns, and no later than that
-    assert 2 <= outcome["turn"] <= 22
-    assert outcome['since'] < outcome['turn']
+    # turn 1 places the units; a controller that halts for nothing costs no
+    # tick, so turn 2 changes nothing at all and the state has been seen
+    assert outcome['turn'] == 2
+    assert outcome['since'] == 1
     assert server.getTurnNumber() == outcome['turn']
+
+
+def test_a_meter_that_cycles_is_a_repeat_too(tmp_path):
+    # a one-tick program moves the meter every turn, and the state repeats
+    # when the meter has come round: two hundred turns on compute 2, which
+    # is longer than the quiet stop waits - so quiet takes it first, since
+    # nothing happened, and the repeat would have caught it in time otherwise
+    harness = a_game(tmp_path, (1, 4, 10, 2, HOLD), (1, 4, 10, 2, HOLD))
+    server = harness.play()
+    outcome = server.getOutcome()
+    assert outcome['decided'] is False
+    assert outcome['reason'] == 'quiet'
+    assert outcome['turn'] == 1 + turn_service.QUIET_CAP
 
 
 def test_a_decided_game_records_its_deciding_turn(tmp_path):
@@ -168,10 +183,11 @@ def test_a_blow_every_tenth_turn_keeps_a_game_alive(tmp_path):
 
 
 def test_a_repeated_state_is_found_before_quiet_is(tmp_path):
-    # two units that hold: nothing happens from turn 1, and their meters
-    # come round inside twenty-two turns, so the state repeats well before
-    # the fifty quiet turns are up, and that is the stop the game reports
-    harness = a_game(tmp_path, (1, 4, 10, 2, HOLD), (1, 4, 10, 2, HOLD))
+    # two units whose controllers halt for nothing: nothing happens from
+    # turn 1 and nothing changes, so the state repeats on turn 2, well
+    # before the fifty quiet turns are up, and that is the stop reported
+    harness = a_game(tmp_path, (1, 4, 10, 2, HALT_ONLY),
+                     (1, 4, 10, 2, HALT_ONLY))
     server = harness.play()
     outcome = server.getOutcome()
     assert outcome['reason'] == 'repeated'
