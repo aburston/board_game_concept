@@ -452,7 +452,7 @@ def test_a_program_is_set_and_read_back_with_its_listing(tmp_path):
 
     listing = web.get('/games/two/players/1/programs/Runner').get_json()
     assert listing['program']['compute'] == 3
-    assert listing['program']['cap'] == 30
+    assert listing['program']['cap'] == 300
     assert [(line['line'], line['ticks']) for line in
             listing['program']['lines']] == [(1, 1), (2, 1)]
     assert listing['program']['total'] == 2

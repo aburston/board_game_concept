@@ -41,6 +41,7 @@ start:
     STORE r2, r0
     JMP next
 next:
+    CALL sub
     JIF zero r0, next2
 next2:
     JIF notzero r0, next3
@@ -64,6 +65,8 @@ next6:
     SLEEP 100
 done:
     HALT
+sub:
+    RET
 """
 
 
@@ -115,6 +118,23 @@ def test_a_jump_to_a_missing_label_is_refused():
         Program('SELF\nJMP nowhere')
     assert refused.value.line == 2
     assert 'nowhere' in str(refused.value)
+
+
+def test_a_call_to_a_missing_label_is_refused():
+    with pytest.raises(ProgramError) as refused:
+        Program('SELF\nCALL nowhere\nHALT')
+    assert refused.value.line == 2
+    assert 'nowhere' in str(refused.value)
+
+
+def test_a_subroutine_parses_and_is_priced():
+    program = Program('CALL step\nHALT\nstep: SELF\nRET')
+    assert [(n, ticks) for n, _text, ticks in program.listing()] == [
+        (1, 1), (2, 0), (3, 1), (4, 1)]
+    with pytest.raises(ProgramError):
+        Program('RET r0')
+    with pytest.raises(ProgramError):
+        Program('CALL')
 
 
 def test_a_label_defined_twice_is_refused():

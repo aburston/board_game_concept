@@ -2,9 +2,10 @@
 
 A unit type carries a program; every unit of the type runs it, once a turn,
 against what its army knows. The program is a list of instructions for a
-small register machine - eight registers, a memory of words, a handful of
-sensors that read the army's map and a handful of actuators that give the
-unit's order, speak on the radio or send it to sleep. Every instruction has
+small register machine - eight registers, a memory of words, subroutines
+through a return stack, a handful of sensors that read the army's map and a
+handful of actuators that give the unit's order, speak on the radio or send
+it to sleep. Every instruction has
 one tick cost, stated in `TICKS` and nowhere else, and a unit pays for its
 ticks in energy through a meter sized by its compute statistic.
 
@@ -37,14 +38,22 @@ TICKS = {
     'RECV': 2, 'FLUSH': 1,
     'SET': 1, 'MOV': 1, 'ADD': 1, 'SUB': 1, 'ABS': 1, 'SIGN': 1, 'DIST': 1,
     'LOAD': 1, 'STORE': 1,
-    'JMP': 1, 'JIF': 1, 'HALT': 0,
+    'JMP': 1, 'JIF': 1, 'CALL': 1, 'RET': 1, 'HALT': 0,
     'MOVE': 1, 'HOLD': 1, 'SAY': 5, 'SLEEP': 1,
 }
 
 # ticks of thinking one energy buys, per point of compute; also the cap on
 # ticks in one turn, per point of compute, so a turn's thinking never costs
-# more than one energy
-TICKS_PER_COMPUTE = 10
+# more than one energy. A hundred: the first tariff gave ten, and two series
+# showed no controller ever stopped at its cap in play while every default
+# program was written to the last tick of it - the price was paid in what
+# could be written, not in what was played
+TICKS_PER_COMPUTE = 100
+
+# how deep CALL may nest. A seventeenth call halts the controller where it
+# stands, as the cap does, so a program that recurses is stopped where it
+# recursed rather than left to run to the cap
+CALL_DEPTH = 16
 
 DIRECTIONS = {'north': 1, 'east': 2, 'south': 3, 'west': 4}
 
@@ -110,7 +119,7 @@ def _check(op, args, line):
     if op not in TICKS:
         raise ProgramError(line, f"{op} is not an instruction")
     if op in ('SELF', 'TURN', 'EXTENT', 'CONTACT', 'RECV', 'FLUSH', 'HOLD',
-              'HALT'):
+              'HALT', 'RET'):
         _want(args, [], op, line)
     elif op == 'FLAG':
         _want(args, [WORD], op, line)
@@ -128,7 +137,7 @@ def _check(op, args, line):
         _want(args, [REG, REG_OR_INT], op, line)
     elif op in ('ABS', 'SIGN'):
         _want(args, [REG], op, line)
-    elif op == 'JMP':
+    elif op in ('JMP', 'CALL'):
         _want(args, [WORD], op, line)
     elif op == 'JIF':
         if not args or args[0][0] != 'word' or args[0][1] not in CONDITIONS:
@@ -177,7 +186,7 @@ def _parse(text):
         _check(op, args, number)
         instructions.append(Instruction(op, tuple(args), number))
     for instruction in instructions:
-        if instruction.op in ('JMP', 'JIF'):
+        if instruction.op in ('JMP', 'JIF', 'CALL'):
             target = instruction.args[-1][1]
             if target not in labels:
                 raise ProgramError(instruction.line,
@@ -331,6 +340,8 @@ def run(program, snapshot, me, contact, memory, inbox, compute, energy,
     registers = [0] * REGISTERS
     instructions = program.instructions
     pc = 0
+    # where each CALL returns to, for this run and no longer
+    stack = []
 
     def value(arg):
         return registers[arg[1]] if arg[0] == 'reg' else arg[1]
@@ -404,6 +415,20 @@ def run(program, snapshot, me, contact, memory, inbox, compute, energy,
             memory[value(args[1])] = registers[args[0][1]]
         elif op == 'JMP':
             pc = program.labels[args[0][1]]
+        elif op == 'CALL':
+            if len(stack) >= CALL_DEPTH:
+                # too deep: stopped where it recursed, as at the cap, and
+                # the call itself is not charged
+                result.ticks -= cost
+                result.halted = instruction.line
+                break
+            stack.append(pc)
+            pc = program.labels[args[0][1]]
+        elif op == 'RET':
+            if not stack:
+                # nothing to return to: the run is over, as at HALT
+                break
+            pc = stack.pop()
         elif op == 'JIF':
             cond = args[0][1]
             a = registers[args[1][1]]

@@ -315,8 +315,8 @@ class SettingAProgram(ClientTestCase):
         lines = self.shown(client, CLIENT_PROMPT,
                            f'set program Runner {path}').splitlines()
         # the program is listed back with the tick cost of each line
-        assert lines[0] == ('Runner: compute 3, 30 ticks per energy, '
-                            'cap 30 ticks a turn')
+        assert lines[0] == ('Runner: compute 3, 300 ticks per energy, '
+                            'cap 300 ticks a turn')
         assert lines[1].split() == ['LINE', 'TICKS', 'PROGRAM']
         assert lines[2].split()[:3] == ['1', '1', 'SELF']
         assert lines[-1] == 'a straight run costs 6 ticks'
@@ -357,8 +357,8 @@ class SettingAProgram(ClientTestCase):
         client.read_until_count(CLIENT_PROMPT, 3)
         lines = self.shown(client, CLIENT_PROMPT,
                            'show program Runner').splitlines()
-        assert lines[0] == ('Runner: compute 3, 30 ticks per energy, '
-                            'cap 30 ticks a turn')
+        assert lines[0] == ('Runner: compute 3, 300 ticks per energy, '
+                            'cap 300 ticks a turn')
         # a jump costs a tick, a HALT nothing, and the label line is its
         # instruction's
         by_line = {line.split()[0]: line.split()[1] for line in lines[2:-1]}

@@ -272,7 +272,7 @@ def test_a_program_is_written_listed_and_read_back(app):
     # against, is the server's own
     tariff = ada.program_tariff().get_json()
     assert tariff['ticks']['MOVE'] == 1 and tariff['ticks']['SAY'] == 5
-    assert tariff['ticks_per_compute'] == 10
+    assert tariff['ticks_per_compute'] == 100
 
     # a line the set refuses is named before anything is sent...
     refused = ada.check_program('SELF\nFLY away\n', 3).get_json()
@@ -280,7 +280,7 @@ def test_a_program_is_written_listed_and_read_back(app):
                        'message': 'FLY is not an instruction'}
     # ...and an accepted program is listed with its ticks and cap
     listed = ada.check_program('SELF\nMOVE south\n', 3).get_json()
-    assert listed['ok'] is True and listed['cap'] == 30
+    assert listed['ok'] is True and listed['cap'] == 300
     assert [(line['line'], line['ticks']) for line in listed['lines']] == [
         (1, 1), (2, 1)]
 
@@ -297,7 +297,7 @@ def test_a_program_is_written_listed_and_read_back(app):
 
     back = ada.read_program(GAME, 1, 'Runner').get_json()['program']
     assert back['program'] == 'SELF\nMOVE south\n'
-    assert back['total'] == 2 and back['cap'] == 30
+    assert back['total'] == 2 and back['cap'] == 300
 
     # a type with no compute has no controller to program
     assert ada.perform(GAME, 1, {
@@ -1286,7 +1286,7 @@ def test_a_default_game_is_played_from_the_browser_without_setting_it_up(app):
             assert entry['program'] is True, entry['name']
             back = ada.read_program(GAME, 1, entry['name']).get_json()
             assert back['program']['lines'], entry['name']
-            assert back['program']['cap'] == 10 * entry['compute']
+            assert back['program']['cap'] == 100 * entry['compute']
 
     # press commit, both seats. The first is accepted and waits; the second
     # is the one the game is played out on

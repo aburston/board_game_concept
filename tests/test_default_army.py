@@ -351,3 +351,62 @@ def test_the_mirror_comes_out_a_mirror(tmp_path):
                 continue
             assert (unit['x'], unit['y']) == (other['x'], size_y - 1 - other['y']), (turn, name)
             assert (unit['health'], unit['energy']) == (other['health'], other['energy']), (turn, name)
+
+
+# --- the programs restated with subroutines give the same orders
+
+OLD_HUNTER = '\n; hunt: walk at the nearest enemy flag, round my own units\nSELF                 ; r0 x, r1 y, r3 energy\nMOV r6, r0\nMOV r7, r1\nSUB r3, {need}       ; a step and a strike\nJIF neg r3, rest\n{target}             ; r0, r1 = where to go, or -1\nJIF neg r0, rest\nSUB r0, r6           ; dx\nSUB r1, r7           ; dy\nMOV r4, r0\nMOV r5, r1\nSIGN r4              ; which way along the row, or 0\nSIGN r5              ; which way down the column, or 0\nABS r0\nABS r1\nJIF lt r0, r1, vfirst\nMOV r2, r6           ; along the row first: what stands where I would step\nADD r2, r4\nMAP r2, r7           ; 2 is one of mine - or my own square, when dx is 0\nSUB r0, 2\nJIF zero r0, vonly\nJIF pos r4, east\nMOVE west\nHALT\neast: MOVE east\nHALT\nvfirst: MOV r2, r7   ; down the column first\nADD r2, r5\nMAP r6, r2\nSUB r0, 2\nJIF zero r0, honly\nJIF pos r5, south\nMOVE north\nHALT\nsouth: MOVE south\nHALT\nvonly: MOV r2, r7    ; the row is blocked: the column, if it is clear\nADD r2, r5\nMAP r6, r2\nSUB r0, 2\nJIF zero r0, stay\nJIF pos r5, south\nMOVE north\nHALT\nhonly: MOV r2, r6    ; the column is blocked: the row, if it is clear\nADD r2, r4\nMAP r2, r7\nSUB r0, 2\nJIF zero r0, stay\nJIF pos r4, east\nMOVE west\nHALT\nstay: SLEEP 1        ; both ways stand one of mine: rest until one moves\nrest: SLEEP 1\n'
+OLD_EXPLORER = '\n; explore: walk at the nearest unknown square, round what is in the way\nSELF                 ; r0 x, r1 y, r3 energy\nMOV r6, r0\nMOV r7, r1\nSUB r3, {need}\nJIF neg r3, rest\nNEAREST unknown      ; r0, r1 = where, r2 = how far, or -1\nJIF neg r0, none\nMOV r4, r0\nMOV r5, r1\nLOAD r3, 1           ; the nearest I have been to one, or 0 at the start\nJIF zero r3, nearer\nJIF lt r2, r3, nearer\nLOAD r3, 2           ; turns without getting nearer\nADD r3, 1\nSTORE r3, 2\nSET r0, 20\nJIF lt r0, r3, none  ; too long: it is behind something I cannot pass\nJMP go\nnearer: STORE r2, 1\nSET r3, 0\nSTORE r3, 2\ngo: SUB r4, r6       ; dx\nSUB r5, r7           ; dy\nSIGN r4\nSIGN r5\nMOV r2, r7           ; first: down the column towards it\nADD r2, r5\nMAP r6, r2           ; r0 = what stands there: 0 unknown, 1 empty\nSET r3, 2\nJIF lt r0, r3, gocol\nMOV r2, r6           ; second: along the row towards it\nADD r2, r4\nMAP r2, r7\nSET r3, 2\nJIF lt r0, r3, gorow\nMOV r2, r6           ; third: a step aside, east\nADD r2, 1\nMAP r2, r7\nSET r3, 2\nJIF lt r0, r3, goeast\nMOV r2, r6           ; fourth: a step aside, west\nSUB r2, 1\nMAP r2, r7\nSET r3, 2\nJIF lt r0, r3, gowest\nJMP rest             ; nowhere to step this turn\ngocol: SET r0, 2\nADD r0, r5\nMOVE r0\nHALT\ngorow: SET r0, 3\nSUB r0, r4\nMOVE r0\nHALT\ngoeast: MOVE east\nHALT\ngowest: MOVE west\nHALT\nnone: SLEEP 100      ; nothing left to find that I can reach\nrest: SLEEP 1\n'
+
+
+def _snapshots():
+    """Boards a hunter and an explorer meet: open, a friend ahead, an enemy
+    ahead, both ways blocked, nothing to go at."""
+    from board_game_concept.domain.army_map import ArmyMap
+    from board_game_concept.domain.program import Snapshot
+    me = {'x': 2, 'y': 2, 'health': 4, 'energy': 10, 'flag': False,
+          'number': 0}
+    flags = {1: (3, 0), 2: (3, 7)}
+    cases = []
+    cases.append(Snapshot(5, 8, 8, 1, {'me': (2, 2)}, flags, ArmyMap()))
+    cases.append(Snapshot(5, 8, 8, 1, {'me': (2, 2), 'a': (2, 3)}, flags,
+                          ArmyMap()))
+    met = ArmyMap(); met.enemies[(2, 3)] = (4, 5, 10)
+    cases.append(Snapshot(5, 8, 8, 1, {'me': (2, 2)}, flags, met))
+    cases.append(Snapshot(5, 8, 8, 1, {'me': (2, 2), 'a': (2, 3),
+                                       'b': (3, 2)}, flags, ArmyMap()))
+    known = ArmyMap()
+    for x in range(8):
+        for y in range(8):
+            known.visited[(x, y)] = 1
+    cases.append(Snapshot(5, 8, 8, 1, {'me': (2, 2)}, flags, known))
+    cases.append(Snapshot(5, 8, 8, 1, {'me': (2, 2)}, {1: (3, 0)},
+                          ArmyMap()))
+    return me, cases
+
+
+def test_the_hunter_with_a_subroutine_gives_the_same_orders():
+    from board_game_concept.domain.program import Program, run
+    old = Program(OLD_HUNTER.format(need=3, target='FLAG enemy'))
+    new = Program(army.types()['Runner']['program'])
+    me, cases = _snapshots()
+    for snap in cases:
+        before = run(old, snap, me, None, {}, [], 5, 10, 0)
+        after = run(new, snap, me, None, {}, [], 5, 10, 0)
+        assert (before.order, before.sleep) == (after.order, after.sleep)
+        assert after.halted is None
+
+
+def test_the_explorer_with_a_subroutine_gives_the_same_orders():
+    from board_game_concept.domain.program import Program, run
+    old = Program(OLD_EXPLORER.format(need=1))
+    new = Program(army.types()['Scout']['program'])
+    me, cases = _snapshots()
+    for snap in cases:
+        memory_old, memory_new = {}, {}
+        for _turn in range(3):
+            before = run(old, snap, me, None, memory_old, [], 6, 12, 0)
+            after = run(new, snap, me, None, memory_new, [], 6, 12, 0)
+            assert (before.order, before.sleep) == (after.order, after.sleep)
+            assert memory_old == memory_new
+            assert after.halted is None

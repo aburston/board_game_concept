@@ -48,9 +48,10 @@ touching the parts that do not care.
   the design spends, compute included.
 - **`program.py`** - the controller: `Program`, which parses a program and
   refuses one that will not run, and the register machine that runs it.
-  Eight registers, a memory of words, sensors that read the army's map and
-  the unit's own state, actuators that give the unit's order, speak on the
-  radio or send it to sleep. `TICKS` is the tariff - every instruction's
+  Eight registers, a memory of words, subroutines through a return stack
+  that lasts one run, sensors that read the army's map and the unit's own
+  state, actuators that give the unit's order, speak on the radio or send
+  it to sleep. `TICKS` is the tariff - every instruction's
   cost, stated once - and `cap` the ticks a point of compute buys a turn.
   Nothing here reads anything but the snapshot it is handed, so a turn stays
   a pure function of the board.

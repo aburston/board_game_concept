@@ -17,41 +17,38 @@ SIGN r5              ; which way down the column, or 0
 ABS r0
 ABS r1
 JIF lt r0, r1, vfirst
-MOV r2, r6           ; along the row first: what stands where I would step
-ADD r2, r4
-MAP r2, r7           ; 2 is one of mine - or my own square, when dx is 0
-SUB r0, 2
+CALL row             ; along the row first, unless one of mine stands there
 JIF zero r0, vonly
-JIF pos r4, east
+JMP goh
+vfirst: CALL col     ; down the column first
+JIF zero r0, honly
+JMP gov
+vonly: CALL col      ; the row is blocked: the column, if it is clear
+JIF zero r0, stay
+JMP gov
+honly: CALL row      ; the column is blocked: the row, if it is clear
+JIF zero r0, stay
+goh: JIF pos r4, east
 MOVE west
 HALT
 east: MOVE east
 HALT
-vfirst: MOV r2, r7   ; down the column first
-ADD r2, r5
-MAP r6, r2
-SUB r0, 2
-JIF zero r0, honly
-JIF pos r5, south
+gov: JIF pos r5, south
 MOVE north
 HALT
 south: MOVE south
 HALT
-vonly: MOV r2, r7    ; the row is blocked: the column, if it is clear
-ADD r2, r5
-MAP r6, r2
-SUB r0, 2
-JIF zero r0, stay
-JIF pos r5, south
-MOVE north
-HALT
-honly: MOV r2, r6    ; the column is blocked: the row, if it is clear
-ADD r2, r4
-MAP r2, r7
-SUB r0, 2
-JIF zero r0, stay
-JIF pos r4, east
-MOVE west
-HALT
 stay: SLEEP 1        ; both ways stand one of mine: rest until one moves
 rest: SLEEP 1
+; what stands where I would step along the row, or down the column: r0 is
+; 0 for one of mine - or my own square, when the step is nowhere
+row: MOV r2, r6
+ADD r2, r4
+MOV r3, r7
+JMP look
+col: MOV r2, r6
+MOV r3, r7
+ADD r3, r5
+look: MAP r2, r3
+SUB r0, 2
+RET
