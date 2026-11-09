@@ -25,4 +25,4 @@
 
 ## 5. Closing
 
-- [ ] 5.1 Run `pytest` on both backends and `pytest -m slow`; verify all green.
+- [x] 5.1 Run `pytest` on both backends and `pytest -m slow`; verify all green. (SQLite 1851 passed, YAML 1710 passed, slow 2 passed.)
