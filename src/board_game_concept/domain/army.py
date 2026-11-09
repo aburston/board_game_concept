@@ -86,44 +86,41 @@ SIGN r5              ; which way down the column, or 0
 ABS r0
 ABS r1
 JIF lt r0, r1, vfirst
-MOV r2, r6           ; along the row first: what stands where I would step
-ADD r2, r4
-MAP r2, r7           ; 2 is one of mine - or my own square, when dx is 0
-SUB r0, 2
+CALL row             ; along the row first, unless one of mine stands there
 JIF zero r0, vonly
-JIF pos r4, east
+JMP goh
+vfirst: CALL col     ; down the column first
+JIF zero r0, honly
+JMP gov
+vonly: CALL col      ; the row is blocked: the column, if it is clear
+JIF zero r0, stay
+JMP gov
+honly: CALL row      ; the column is blocked: the row, if it is clear
+JIF zero r0, stay
+goh: JIF pos r4, east
 MOVE west
 HALT
 east: MOVE east
 HALT
-vfirst: MOV r2, r7   ; down the column first
-ADD r2, r5
-MAP r6, r2
-SUB r0, 2
-JIF zero r0, honly
-JIF pos r5, south
+gov: JIF pos r5, south
 MOVE north
 HALT
 south: MOVE south
 HALT
-vonly: MOV r2, r7    ; the row is blocked: the column, if it is clear
-ADD r2, r5
-MAP r6, r2
-SUB r0, 2
-JIF zero r0, stay
-JIF pos r5, south
-MOVE north
-HALT
-honly: MOV r2, r6    ; the column is blocked: the row, if it is clear
-ADD r2, r4
-MAP r2, r7
-SUB r0, 2
-JIF zero r0, stay
-JIF pos r4, east
-MOVE west
-HALT
 stay: SLEEP 1        ; both ways stand one of mine: rest until one moves
 rest: SLEEP 1
+; what stands where I would step along the row, or down the column: r0 is
+; 0 for one of mine - or my own square, when the step is nowhere
+row: MOV r2, r6
+ADD r2, r4
+MOV r3, r7
+JMP look
+col: MOV r2, r6
+MOV r3, r7
+ADD r3, r5
+look: MAP r2, r3
+SUB r0, 2
+RET
 """
 
 
@@ -141,7 +138,6 @@ def hunter(need, target='FLAG enemy'):
 # without getting nearer means the unknown is behind something it cannot
 # pass, and it sleeps a hundred turns rather than pace for ever, which is
 # what kept a game alive to the cap. Nothing left to find, it sleeps too.
-# Forty-eight ticks on its longest path, against a Scout's cap of sixty;
 # `{need}` is its fare, since it has no strike to pay for. Directions are
 # numbers here - north 1, east 2, south 3, west 4 - so a step down the
 # column is 2 plus the sign of dy and along the row 3 minus the sign of dx
@@ -172,26 +168,26 @@ go: SUB r4, r6       ; dx
 SUB r5, r7           ; dy
 SIGN r4
 SIGN r5
-MOV r2, r7           ; first: down the column towards it
-ADD r2, r5
-MAP r6, r2           ; r0 = what stands there: 0 unknown, 1 empty
-SET r3, 2
-JIF lt r0, r3, gocol
+MOV r2, r6           ; first: down the column towards it
+MOV r3, r7
+ADD r3, r5
+CALL peek
+JIF notzero r0, gocol
 MOV r2, r6           ; second: along the row towards it
 ADD r2, r4
-MAP r2, r7
-SET r3, 2
-JIF lt r0, r3, gorow
+MOV r3, r7
+CALL peek
+JIF notzero r0, gorow
 MOV r2, r6           ; third: a step aside, east
 ADD r2, 1
-MAP r2, r7
-SET r3, 2
-JIF lt r0, r3, goeast
+MOV r3, r7
+CALL peek
+JIF notzero r0, goeast
 MOV r2, r6           ; fourth: a step aside, west
 SUB r2, 1
-MAP r2, r7
-SET r3, 2
-JIF lt r0, r3, gowest
+MOV r3, r7
+CALL peek
+JIF notzero r0, gowest
 JMP rest             ; nowhere to step this turn
 gocol: SET r0, 2
 ADD r0, r5
@@ -207,6 +203,15 @@ gowest: MOVE west
 HALT
 none: SLEEP 100      ; nothing left to find that I can reach
 rest: SLEEP 1
+; can I step onto (r2, r3)? r0 is 1 for a square my map calls unknown or
+; empty, 0 for one of mine, an enemy I know of, or off the board
+peek: MAP r2, r3
+SET r3, 2
+JIF lt r0, r3, yes
+SET r0, 0
+RET
+yes: SET r0, 1
+RET
 """
 
 

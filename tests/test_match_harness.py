@@ -179,7 +179,7 @@ class TestTheViewADoctrineIsGiven:
 
     def test_a_program_listing_is_not_a_reply(self, arena):
         said = arena.replies(
-            'bgcclient> Lance: compute 3, 30 ticks per energy, cap 30 ticks '
+            'bgcclient> Lance: compute 3, 300 ticks per energy, cap 300 ticks '
             'a turn\n'
             'LINE  TICKS  PROGRAM\n'
             '   1      1  SELF\n'

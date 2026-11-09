@@ -117,7 +117,7 @@ class TestTheMeterOnTheBoard:
 
     def test_a_small_program_over_several_turns(self):
         pawn = UnitType('P', 'p', 1, 4, 10, 2,
-                        'SELF\nSELF\nSELF\nSELF\nSELF\nSELF')     # 6 ticks
+                        '\n'.join(['SELF'] * 60))               # 60 ticks
         board, players = setup((1, [(pawn, [('p1', 0, 0)])]),
                                (2, [(pawn, [('p2', 7, 7)])]))
         energies = []
@@ -127,7 +127,7 @@ class TestTheMeterOnTheBoard:
         # pays on the fourth turn, and rests on the fifth, when the meter
         # did not fill and nothing was ordered
         assert energies == [10, 10, 10, 9, 10]
-        assert unit(board, players, 1, 'p1').meter == 10
+        assert unit(board, players, 1, 'p1').meter == 100
 
     def test_thinking_leaves_less_for_the_fare(self):
         thinker = UnitType('T', 't', 1, 4, 10, 2, 'SELF\nMOVE south')
@@ -135,7 +135,7 @@ class TestTheMeterOnTheBoard:
                                (2, [(thinker, [('t2', 7, 7)])]))
         me = unit(board, players, 1, 't1')
         me.energy = 1
-        me.meter = 19
+        me.meter = 199
         events = board.commit(turn=1)
         assert me.energy == 0
         assert (me.x, me.y) == (0, 0)
@@ -144,8 +144,8 @@ class TestTheMeterOnTheBoard:
         assert refused and 'energy' in refused[0].detail['reason']
 
     def test_a_unit_whose_meter_charged_does_not_rest(self):
-        thinker = UnitType('T', 't', 1, 4, 10, 1, 'SELF\nSELF\nSELF\nSELF\n'
-                           'SELF\nSELF\nSELF\nSELF\nSELF\nSELF')   # 10 ticks
+        thinker = UnitType('T', 't', 1, 4, 10, 1,
+                           '\n'.join(['SELF'] * 100))            # 100 ticks
         board, players = setup((1, [(thinker, [('t1', 0, 0)])]),
                                (2, [(thinker, [('t2', 7, 7)])]))
         me = unit(board, players, 1, 't1')
@@ -170,7 +170,7 @@ class TestTheMeterOnTheBoard:
         me = unit(board, players, 1, 'l1')
         assert (me.x, me.y) == (0, 0)
         assert me.trace['halted'] is not None
-        assert me.trace['ticks'] == 20 and me.trace['energy'] == 1
+        assert me.trace['ticks'] == 200 and me.trace['energy'] == 1
 
 
 class TestTheRadio:

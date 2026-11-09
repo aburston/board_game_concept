@@ -66,9 +66,9 @@ give different units different roles.
 ### Requirement: A Program Is Checked When It Is Set
 
 A program SHALL be checked when it is set: an instruction that is not in the
-set, a malformed operand, or a jump to a label that does not exist SHALL be
-refused, naming the line, and the type's program SHALL be unchanged. A
-program SHALL NOT be refused for what it would do.
+set, a malformed operand, or a jump or call to a label that does not exist
+SHALL be refused, naming the line, and the type's program SHALL be unchanged.
+A program SHALL NOT be refused for what it would do.
 
 #### Scenario: A program with an unknown instruction
 
@@ -79,6 +79,11 @@ program SHALL NOT be refused for what it would do.
 #### Scenario: A jump to nowhere
 
 - **WHEN** a program jumps to a label it does not define
+- **THEN** it is refused, naming the line
+
+#### Scenario: A call to nowhere
+
+- **WHEN** a program calls a label it does not define
 - **THEN** it is refused, naming the line
 
 #### Scenario: A sleep longer than the longest
@@ -119,7 +124,7 @@ registers, memory and inbox; nothing SHALL yield a random number or the clock.
 - **WHEN** a program computes
 - **THEN** `SET r, n`, `MOV r, r`, `ADD r, r|n`, `SUB r, r|n`, `ABS r`, `SIGN r` and `DIST ra, rb` (which sets r0 to the Manhattan distance from my square to (ra, rb)) cost 1 tick each
 - **AND** `LOAD r, a` and `STORE r, a`, with `a` a number or a register naming a memory word, cost 1 each
-- **AND** `JMP label` and `JIF cond, label`, with `cond` one of `zero r`, `notzero r`, `neg r`, `pos r`, `eq r, r`, `lt r, r`, cost 1 each; `HALT` costs 0
+- **AND** `JMP label` and `JIF cond, label`, with `cond` one of `zero r`, `notzero r`, `neg r`, `pos r`, `eq r, r`, `lt r, r`, cost 1 each; `CALL label` and `RET` cost 1 each; `HALT` costs 0
 
 #### Scenario: The actuators
 
@@ -152,17 +157,19 @@ registers, memory and inbox; nothing SHALL yield a random number or the clock.
 ### Requirement: Thinking Is Paid For Through The Meter
 
 The system SHALL keep, for each unit with a controller, a tick meter of
-capacity ten times the type's compute. Ticks a program spends SHALL be added
-to it; each time it reaches capacity the unit SHALL pay 1 energy and the
-meter SHALL be reduced by its capacity, carrying the remainder across turns,
-so that no tick is free and a small program's cost is spread over turns. The
-energy SHALL be charged in the think phase, before movement.
+capacity a hundred times the type's compute. Ticks a program spends SHALL be
+added to it; each time it reaches capacity the unit SHALL pay 1 energy and
+the meter SHALL be reduced by its capacity, carrying the remainder across
+turns, so that no tick is free and a small program's cost is spread over
+turns. The energy SHALL be charged in the think phase, before movement. The
+point price of compute is not changed by what a point buys: a type costs the
+sum of its four statistics as before.
 
 #### Scenario: A small program over several turns
 
-- **WHEN** a unit with compute 2 spends 6 ticks on each of four turns
-- **THEN** it pays 1 energy on the fourth turn, when the meter reaches 20
-- **AND** 4 ticks carry into the fifth turn
+- **WHEN** a unit with compute 2 spends 60 ticks on each of four turns
+- **THEN** it pays 1 energy on the fourth turn, when the meter reaches 200
+- **AND** 40 ticks carry into the fifth turn
 
 #### Scenario: Thinking leaves less for the fare
 
@@ -171,22 +178,22 @@ energy SHALL be charged in the think phase, before movement.
 
 #### Scenario: Compute buys ticks
 
-- **WHEN** two units run the same 30-tick program every turn, one with compute 3 and one with compute 6
+- **WHEN** two units run the same 300-tick program every turn, one with compute 3 and one with compute 6
 - **THEN** the first pays 1 energy a turn and the second 1 energy every two turns
 
 ### Requirement: A Controller Halts At The Cap
 
-A controller SHALL halt for the turn when its program has spent ten times the
-type's compute in ticks within that turn, so that thinking never costs more
-than 1 energy in one turn, and SHALL halt when the meter would charge energy
-the unit does not have. A halted controller SHALL leave the unit with no
-order for the turn, whatever `MOVE` it had run, and the halt SHALL be
-recorded in the unit's trace with the instruction it stopped at.
+A controller SHALL halt for the turn when its program has spent a hundred
+times the type's compute in ticks within that turn, so that thinking never
+costs more than 1 energy in one turn, and SHALL halt when the meter would
+charge energy the unit does not have. A halted controller SHALL leave the
+unit with no order for the turn, whatever `MOVE` it had run, and the halt
+SHALL be recorded in the unit's trace with the instruction it stopped at.
 
 #### Scenario: Thinking within a turn
 
-- **WHEN** a unit with compute 5 spends 50 ticks in one turn
-- **THEN** it pays 1 energy and halts at the fiftieth tick
+- **WHEN** a unit with compute 5 spends 500 ticks in one turn
+- **THEN** it pays 1 energy and halts at the five-hundredth tick
 
 #### Scenario: Thinking when the energy is gone
 
@@ -366,3 +373,41 @@ attack, health and energy, and nothing discloses how it thinks.
 
 - **WHEN** a seat reads the record of a turn
 - **THEN** nothing of any other seat's controllers is in it: not their ticks, their orders, their words or their programs
+
+### Requirement: A Program May Call A Subroutine
+
+A program SHALL be able to run the code at a label as a subroutine and come
+back: `CALL label` (1 tick) continues at the label and remembers the line
+after the call; `RET` (1 tick) continues at the most recently remembered
+line. Calls SHALL nest to a depth of sixteen. A `RET` with no call to
+return to SHALL end the run, as `HALT` does. A seventeenth nested `CALL`
+SHALL halt the controller for the turn, as reaching the cap does, with the
+unit left without an order and the halt recorded in its trace at the
+`CALL`. The return stack SHALL belong to one run of the program and SHALL
+be empty when the next run begins.
+
+#### Scenario: A call and a return
+
+- **WHEN** a program runs `CALL step`, and the code at `step` ends in `RET`
+- **THEN** the instructions at `step` run and the program continues at the line after the `CALL`
+- **AND** the `CALL` and the `RET` cost 1 tick each, and what runs between them costs what it costs
+
+#### Scenario: Calls nest
+
+- **WHEN** a subroutine calls another subroutine
+- **THEN** each `RET` returns to the line after the call that reached it
+
+#### Scenario: A stray return
+
+- **WHEN** a program runs `RET` with no call to return to
+- **THEN** the run ends, as at `HALT`, keeping whatever order it had set
+
+#### Scenario: Calls too deep
+
+- **WHEN** a program's seventeenth nested `CALL` is reached
+- **THEN** the controller halts at that `CALL`, the unit has no order this turn, and the trace records the halt
+
+#### Scenario: The stack does not outlive the run
+
+- **WHEN** a program ends a run inside a subroutine, by `HALT` or `SLEEP`
+- **THEN** the next run begins with nothing to return to

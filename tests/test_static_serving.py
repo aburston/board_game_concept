@@ -437,6 +437,16 @@ def test_the_listing_agrees_with_the_server_line_for_line(client):
         assert [(line['line'], line['ticks']) for line in ours] == [
             (line['line'], line['ticks']) for line in theirs['lines']], name
         assert all(line['error'] is None for line in ours), name
+    # and a subroutine, priced at a tick each end
+    text = 'CALL step\nHALT\nstep: SELF\nRET\n'
+    theirs = client.post('/_/program/check', json={
+        'program': text, 'compute': 1}).get_json()
+    assert theirs['ok'] is True
+    ours = _run_listing(text, tariff)
+    assert [(line['line'], line['ticks']) for line in ours] == [
+        (1, 1), (2, 0), (3, 1), (4, 1)]
+    assert [(line['line'], line['ticks']) for line in theirs['lines']] == [
+        (1, 1), (2, 0), (3, 1), (4, 1)]
 
 
 @pytest.mark.skipif(NODE is None, reason='node is not installed')

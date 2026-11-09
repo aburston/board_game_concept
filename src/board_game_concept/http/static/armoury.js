@@ -538,7 +538,7 @@ function renderDesigner(game) {
     price.classList.toggle('unaffordable',
                            Number.isFinite(left) && total > left);
     const brain = Number(compute.input.value || 0);
-    const perCompute = (state.tariff && state.tariff.ticks_per_compute) || 10;
+    const perCompute = (state.tariff && state.tariff.ticks_per_compute) || 100;
     thinking.textContent = brain > 0
       ? `With compute ${brain} its controller may think ${brain * perCompute} `
         + `ticks a turn, and ${brain * perCompute} ticks of thinking cost it `
@@ -693,7 +693,7 @@ function renderProgramEditor(game) {
   }
   const text = state.program.text || '';
   const tariff = state.tariff || null;
-  const perCompute = (tariff && tariff.ticks_per_compute) || 10;
+  const perCompute = (tariff && tariff.ticks_per_compute) || 100;
   const compute = Number(chosen.compute);
   const cap = compute * perCompute;
 

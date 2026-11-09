@@ -125,8 +125,8 @@ fighting a unit of it (**R6.2**).
   thinking. A unit that takes no action during a turn gets **1** of it back
   (**R3.9**).
 - **compute** — how much the unit's controller may think in a turn, and how
-  cheaply: ten ticks a turn per point, and ten ticks of thinking per point
-  for one energy (**R10.3**). 0 is no controller at all.
+  cheaply: a hundred ticks a turn per point, and a hundred ticks of thinking
+  per point for one energy (**R10.3**). 0 is no controller at all.
 
 **R2.6 Deploying units.** `add unit <type> <name> <x> <y>` creates one unit as a
 copy of one of your own types, at those coordinates. It is refused if:
@@ -893,8 +893,8 @@ because it rounds up.
 | — an exchange it cannot afford in full | **nothing** — it strikes nobody rather than striking some | **R5.4** |
 | — an exchange fought by a wall | **nothing** — a wall never attacks | **R2.10** |
 | Being attacked | **nothing in energy**; damage comes off health | **R5.5** |
-| A turn's thinking | **ticks**, one instruction at a time as the tariff in **R10.2** says; at most `10 × compute` in one turn, and a controller that reaches the cap gives no order | **R10.3** |
-| — the meter | **1 energy for every `10 × compute` ticks** thought, carried across turns, charged the moment the meter fills; a unit with no energy to pay halts at the instruction that would fill it | **R10.3** |
+| A turn's thinking | **ticks**, one instruction at a time as the tariff in **R10.2** says; at most `100 × compute` in one turn, and a controller that reaches the cap gives no order | **R10.3** |
+| — the meter | **1 energy for every `100 × compute` ticks** thought, carried across turns, charged the moment the meter fills; a unit with no energy to pay halts at the instruction that would fill it | **R10.3** |
 | — a turn asleep | **nothing**: a sleeping controller does not run, and the unit rests | **R10.6** |
 | A turn in which a unit did nothing | **gains 1 energy**, never above the energy its type was designed with | **R3.9** |
 | — a turn in which it was given any order, or its meter charged it | **gains nothing**, even if the order cost it nothing | **R3.9** |
@@ -982,6 +982,8 @@ bill is the same on every board:
 | `LOAD rX, rY\|n`, `STORE rX, rY\|n` | 1 | my memory, by address |
 | `JMP label` | 1 | go to a label |
 | `JIF cond r..., label` | 1 | go if `zero`, `notzero`, `neg`, `pos` of one register, or `eq`, `lt` of two |
+| `CALL label` | 1 | run the code at a label as a subroutine, and come back to the next line at its `RET`; calls nest sixteen deep |
+| `RET` | 1 | back to the line after the last `CALL`; with no call to return to, stop thinking as `HALT` does |
 | `HALT` | 0 | stop thinking; the order so far stands |
 | `MOVE north\|east\|south\|west\|rX` | 1 | my order for the turn; a later `MOVE` replaces an earlier |
 | `HOLD` | 1 | no order, said on purpose |
@@ -989,16 +991,29 @@ bill is the same on every board:
 | `SLEEP n` | 1 | sleep for `n` turns, 1 to 100, and stop thinking |
 
 Labels are a word and a colon at the start of a line; `;` begins a comment.
-A jump to a label that is not there is refused with the program.
+A jump or a call to a label that is not there is refused with the program.
+
+A **subroutine** is code at a label that ends in `RET`: `CALL` it from
+anywhere and the program carries on at the line after the call. It shares
+the eight registers and the memory with whatever called it - there are no
+arguments but the registers you leave for it - and the return stack it
+uses lasts one run of the program: a `SLEEP` or a `HALT` inside a
+subroutine ends the run, and the next begins at the top with nothing to
+return to. A seventeenth nested `CALL` halts the controller where it
+stands, as the cap does, so a program that recurses without end is stopped
+where it recursed.
 
 **R10.3 The meter: how thinking is paid for.** A controller may think at most
-**`10 × compute` ticks in one turn**; one that reaches the cap halts where it
+**`100 × compute` ticks in one turn**; one that reaches the cap halts where it
 stands and gives **no order** that turn - whatever it had decided before the
 cap was a thought it did not finish. Every tick thought goes onto the unit's
-**meter**, which holds `10 × compute` ticks and charges the unit **one energy
+**meter**, which holds `100 × compute` ticks and charges the unit **one energy
 each time it fills**, carrying the remainder into the next turn: a program of
-6 ticks a turn on compute 2 pays its first energy on the fourth turn with 4
-ticks carried. A unit whose energy is 0 cannot pay, and its controller halts
+60 ticks a turn on compute 2 pays its first energy on the fourth turn with 40
+ticks carried. The first tariff gave ten ticks a point; two series showed no
+controller ever stopped at its cap while every default program was written
+to the last tick of it, so a point buys ten times the thinking now at the
+same price and the same worst case of one energy a turn. A unit whose energy is 0 cannot pay, and its controller halts
 at the instruction that would fill the meter, giving no order. The meter is
 charged before the turn's moves and strikes, so a unit can think itself out
 of the energy for the move it was about to order; the move is then refused

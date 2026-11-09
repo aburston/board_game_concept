@@ -299,8 +299,8 @@ class WatchingTheReplay(ObserverTestCase):
         observer.read_until(OBSERVER_PROMPT)
         listed = self.shown(observer, OBSERVER_PROMPT,
                             'show program Runner').splitlines()
-        assert listed[0] == ('Runner: compute 3, 30 ticks per energy, '
-                             'cap 30 ticks a turn')
+        assert listed[0] == ('Runner: compute 3, 300 ticks per energy, '
+                             'cap 300 ticks a turn')
         assert listed[1].split() == ['LINE', 'TICKS', 'PROGRAM']
         # the controller ran on turn 2: no enemy flag, so it slept
         shown = self.shown(observer, OBSERVER_PROMPT, 'show turn 2')

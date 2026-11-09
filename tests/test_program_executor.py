@@ -237,22 +237,22 @@ class TestActuators:
 class TestTheMeterAndTheCap:
 
     def test_cap(self):
-        assert cap(2) == 20 and cap(10) == 100
+        assert cap(2) == 200 and cap(10) == 1000
 
     def test_a_small_program_over_several_turns(self):
-        program = Program('SELF\nSELF\nSELF\nSELF\nSELF\nSELF')   # 6 ticks
+        program = Program('\n'.join(['SELF'] * 60))          # 60 ticks
         meter, charged = 0, []
         for _ in range(5):
             result = run(program, snapshot(), ME, None, {}, [], 2, 10, meter)
             charged.append(result.charged)
             meter = result.meter
         assert charged == [0, 0, 0, 1, 0]
-        assert meter == 10                  # 30 ticks, one fill of 20
+        assert meter == 100                 # 300 ticks, one fill of 200
 
     def test_thinking_within_a_turn_halts_at_the_cap(self):
         program = Program('loop:\nSELF\nJMP loop')
         result = run(program, snapshot(), ME, None, {}, [], 5, 10, 0)
-        assert result.ticks == 50
+        assert result.ticks == 500
         assert result.halted is not None
         assert result.charged == 1
         assert result.meter == 0
@@ -265,20 +265,20 @@ class TestTheMeterAndTheCap:
 
     def test_thinking_when_the_energy_is_gone(self):
         program = Program('\n'.join(['SELF'] * 25))        # 25 ticks
-        result = run(program, snapshot(), ME, None, {}, [], 2, 0, 15)
-        # the meter holds 15; the fifth SELF would make 20 and charge 1,
+        result = run(program, snapshot(), ME, None, {}, [], 2, 0, 195)
+        # the meter holds 195; the fifth SELF would make 200 and charge 1,
         # which a unit with 0 energy has not got
         assert result.ticks == 4
         assert result.halted == 5
         assert result.charged == 0
-        assert result.meter == 19
+        assert result.meter == 199
 
     def test_compute_buys_ticks(self):
-        program = Program('\n'.join(['SELF'] * 30))
+        program = Program('\n'.join(['SELF'] * 300))
         slow = run(program, snapshot(), ME, None, {}, [], 3, 10, 0)
         fast = run(program, snapshot(), ME, None, {}, [], 6, 10, 0)
         assert slow.charged == 1 and slow.meter == 0
-        assert fast.charged == 0 and fast.meter == 30
+        assert fast.charged == 0 and fast.meter == 300
 
     def test_no_controller_runs_nothing(self):
         program = Program('MOVE north')
@@ -286,6 +286,55 @@ class TestTheMeterAndTheCap:
         assert result.order is None and result.ticks == 0
         result = run(None, snapshot(), ME, None, {}, [], 5, 10, 7)
         assert result.ticks == 0 and result.meter == 7
+
+
+class TestSubroutines:
+
+    def test_a_call_and_a_return(self):
+        # SELF(1) CALL(1) [SET(1) RET(1)] SET(1) HALT(0)
+        # SELF(1) CALL(1) [SET(1) RET(1)] SET(1) JMP(1); the readback's
+        # STOREs follow the `done` label at the end of the text
+        result, r = go('SELF\nCALL step\nSET r7, 2\nJMP done\n'
+                       'step: SET r6, 1\nRET\ndone:')
+        assert r[6] == 1 and r[7] == 2
+        assert result.ticks == 6 + READBACK
+
+    def test_calls_nest(self):
+        _, r = go('CALL a\nSET r7, 3\nJMP done\n'
+                  'a: SET r4, 1\nCALL b\nSET r5, 1\nRET\n'
+                  'b: SET r6, 1\nRET\ndone:')
+        assert r[4:8] == [1, 1, 1, 3]
+
+    def test_a_stray_return_ends_the_run_keeping_the_order(self):
+        program = Program('MOVE north\nRET\nMOVE south')
+        result = run(program, snapshot(), ME, None, {}, [], 5, 10, 0)
+        assert result.order == 1
+        assert result.halted is None
+        assert result.ticks == 2
+
+    def test_calls_too_deep_halt_the_controller(self):
+        program = Program('MOVE north\nagain: CALL again')
+        result = run(program, snapshot(), ME, None, {}, [], 5, 10, 0)
+        assert result.halted == 2
+        assert result.order is None
+        # sixteen calls were made and charged; the seventeenth was not
+        assert result.ticks == 1 + 16
+
+    def test_the_stack_does_not_outlive_the_run(self):
+        # a run that sleeps inside a subroutine; the next run begins at the
+        # top, and its RET at the top level ends it rather than returning
+        # into last run's call
+        program = Program('LOAD r0, 0\nJIF notzero r0, second\n'
+                          'SET r0, 1\nSTORE r0, 0\nCALL nap\nMOVE south\n'
+                          'HALT\nnap: SLEEP 1\n'
+                          'second: MOVE north\nRET\nMOVE east')
+        memory = {}
+        first = run(program, snapshot(), ME, None, memory, [], 5, 10, 0)
+        assert first.sleep == 1 and first.order is None
+        second = run(program, snapshot(), ME, None, memory, [], 5, 10,
+                     first.meter)
+        assert second.order == 1
+        assert second.halted is None
 
 
 class TestDeterminism:
