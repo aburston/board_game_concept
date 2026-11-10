@@ -44,6 +44,16 @@ rested only where its energy rose.
 - **WHEN** a turn resolves in which a unit struck in a contest
 - **THEN** that unit's energy is its attack lower and two higher than it was, within the energy its type was designed with
 
+#### Scenario: A unit that was attacked but could not pay to fight back
+
+- **WHEN** a turn resolves in which a unit was attacked and could not afford to attack
+- **THEN** that unit recovers two energy like any other
+
+#### Scenario: A unit that thought a little and gave no order
+
+- **WHEN** a turn resolves in which a unit's controller ran, gave no order, and its meter did not fill
+- **THEN** that unit recovers two energy like any other
+
 #### Scenario: A unit whose meter charged
 
 - **WHEN** a turn resolves in which a unit's meter filled and charged 1 energy
