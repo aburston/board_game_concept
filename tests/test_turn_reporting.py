@@ -32,23 +32,26 @@ def test_a_move_off_the_board_is_reported(tmp_path):
 
 
 def test_a_move_nobody_can_pay_for_is_reported(tmp_path):
-    # x2 never moves and keeps its energy: spending x1 down to nothing would
-    # otherwise put player 1 out of the game (R7.1) and end it before the
-    # order this test is about could be refused
+    # x2 never moves and keeps its energy, so that player 1 is never in any
+    # doubt of staying in the game (R7.1) while x1 is walked down
     harness = GameHarness(tmp_path)
     # four rows: player 1 owns rows 0 and 1, so the reserve waits on row 1
     # rather than on row 2, which is player 2's half now
     harness.create(4, 4, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', 5, 5, 50)],
+    # ten health is a fare of three against two back a turn, so every
+    # square walked costs x1 one net, and it reaches a point it cannot pay
+    # the fare from
+    harness.deploy(1, [('X', 'X', 5, 10, 50)],
                    [('X', 'x1', 1, 0), ('X', 'x2', 0, 1)])
     harness.deploy(2, [('O', 'O', 5, 5, 50)], [('O', 'o1', 3, 3)])
     harness.resolve()
 
-    # spend x1 down to nothing
-    for _ in range(50):
+    # walk x1 down to less than a square
+    for _ in range(48):
         harness.turn({1: [('x1', UnitType.EAST if _ % 2 else UnitType.WEST)],
                       2: []})
-    assert harness.units()['x1'].energy == 0
+    x1 = harness.units()['x1']
+    assert x1.energy == 2 and x1.energy < x1.move_cost
 
     harness.turn({1: [('x1', UnitType.EAST)], 2: []})
     assert reasons(harness, 1) == ['not enough energy to move']

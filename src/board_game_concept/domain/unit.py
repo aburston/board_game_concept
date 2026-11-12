@@ -23,12 +23,14 @@ class UnitType:
     MOVING = 1
     NOP = 2
 
-    # what a turn spent doing nothing gives back. Energy used to be spent and
-    # never replenished, which left an exhausted unit a permanent obstacle
-    # and every game a race to the bottom of two pockets. A unit that was
-    # given no order and landed no attack recovers this much, and never past
-    # the energy its type was designed with
-    REST_GAIN = 1
+    # what the end of a turn gives back to every unit standing on the board,
+    # whatever it did during the turn. Energy used to be spent and never
+    # replenished, which left an exhausted unit a permanent obstacle; then it
+    # came back one a turn, and only on a turn the unit did nothing, which
+    # made every programmed unit sleep to afford its next step. Now every
+    # standing unit recovers this much a turn, and never past the energy its
+    # type was designed with
+    REST_GAIN = 2
 
     def __init__(self, name, symbol, attack, health, energy, compute=0,
                  program=None):

@@ -102,11 +102,12 @@ saying it has no controller. **Energy 0 is refused with compute above it**:
 a controller that could never pay for a tick of thinking.
 
 **A type that thinks must hold at least its movement cost in energy.** A
-move costs a unit a quarter of its health, rounded up (**R4.3**), and rest
-gives back 1 a turn (**R3.9**), so a type with less energy than that could
-never afford a single move at any point in its life. `add type Heavy H 3 6 1
-1` is refused, because health 6 costs 2 to move; `add type Heavy H 3 6 2 1`
-is a unit that can cross one square and must then stand still for two turns.
+move costs a unit a quarter of its health, rounded up (**R4.3**), and a unit
+never recovers past the energy its type was designed with (**R3.9**), so a
+type with less energy than its fare could never afford a single move at any
+point in its life. `add type Heavy H 3 6 1 1` is refused, because health 6
+costs 2 to move; `add type Heavy H 3 6 2 1` is a unit that can cross one
+square a turn for ever, since the turn gives its two back.
 A scout is held to this like anything else that means to move. A type with
 **no compute** is exempt: it will never be told to move, so what it holds is
 what it strikes with, and a turret with one energy and a strike it can pay
@@ -122,8 +123,8 @@ fighting a unit of it (**R6.2**).
   energy each of its moves costs (**R4.3**). Health is paid for twice over:
   once at the till, and again every square the unit walks.
 - **energy** — the single resource spent by moving, by attacking and by
-  thinking. A unit that takes no action during a turn gets **1** of it back
-  (**R3.9**).
+  thinking. Every unit standing on the board gets **2** of it back at the
+  end of every turn, whatever it did (**R3.9**).
 - **compute** — how much the unit's controller may think in a turn, and how
   cheaply: a hundred ticks a turn per point, and a hundred ticks of thinking
   per point for one energy (**R10.3**). 0 is no controller at all.
@@ -193,8 +194,8 @@ costs its health and nothing else — a wall of 10 health costs 10 points.
 
 A type with **attack and energy above 0 and compute 0** is a **turret**: it
 has no controller, so it never moves of its own accord, but it strikes back
-at whatever walks into it, pays for the strike as any unit does, and rests
-when it did nothing. A type with **attack 0, energy above it and compute
+at whatever walks into it, pays for the strike as any unit does, and recovers
+two a turn like any unit. A type with **attack 0, energy above it and compute
 above 0** is a **scout**: it goes where its program sends it and lands
 nothing when it arrives, taking whatever is dealt to it. A scout is a unit
 like any other for every other rule - it blocks a square, it can carry the
@@ -341,8 +342,8 @@ none - stays where it is.
 4. **Combat** — every one of those squares is fought out to a conclusion.
 5. **The map** — every army's map is updated from where its units stand and
    what they fought (**R6.9**), and every unit struck is woken (**R10.6**).
-6. **Rest** — every unit that did none of the above gets a point of energy
-   back (**R3.9**).
+6. **Rest** — every unit still standing gets 2 energy back, whatever it did
+   (**R3.9**).
 
 Because destinations are decided before any move is applied, the outcome of a
 turn never depends on the order the units happen to be held in. Every phase
@@ -385,23 +386,26 @@ applied, a move nobody could pay for, a move off the board, and a contest of
 yours that ended undecided. Each names the unit, its square, and the reason -
 and it is your own unit, never another player's of the same name (**R6.8**).
 
-**R3.9 A unit that does nothing recovers 1 energy.** At the end of every turn,
-each unit standing on the board that **was given no order**, **paid for
-nothing** while the turn resolved and **whose meter did not charge it**
-(**R10.3**) gets 1 energy back. It never recovers past the energy its type was
-designed with, and a destroyed unit recovers nothing. A sleeping unit rests
-every turn it sleeps: sleeping is doing nothing at all.
+**R3.9 Every unit recovers 2 energy a turn.** At the end of every turn, each
+unit standing on the board gets 2 energy back, whatever it did during the
+turn: a unit that moved, struck, was struck, thought, was charged by its
+meter (**R10.3**), slept or stood still all recover alike. It never recovers
+past the energy its type was designed with, so a type designed with no energy
+recovers nothing (**R2.10**), and a destroyed unit recovers nothing.
 
-Both halves matter. A unit ordered to move has acted whether or not the move
-happened — one ordered off the board pays nothing (**R4.6**) and still does not
-rest, so walking into the edge is not a way to refuel. A unit that was attacked
-and could not afford to strike back has done nothing at all, and does rest:
-being hit is not an action. A unit whose controller thought and gave no order
-rests unless the thinking itself cost it an energy that turn.
+There are no conditions on it. An order does not cost a unit its recovery —
+one ordered off the board pays nothing (**R4.6**) and recovers like any other
+— and nor does a blow, given or taken. What the rule does is set the pace of
+the game: a unit whose fare and strike together cost it two or less can act
+every turn for ever, and one that costs more builds the difference up between
+actions. A Pawn of health 2 and attack 1 never runs dry; a Heavy of health 10
+and attack 5 pays eight to walk in and strike, and is short of the next blow
+for three turns.
 
-Rest happens after combat and before the game is judged (**R7**), so a unit
-that spends its last energy acting is out before it can recover it, while one
-that merely stood still is not.
+The recovery happens after combat and before the game is judged (**R7**), so
+a player is judged on what their units will hold rather than on what they
+hold mid-turn. The turn's account says a unit rested only where its energy
+rose: a full army at rest is not reported, line by line, every turn.
 
 **R3.10 Every turn is recorded.** Each resolved turn is written to the record
 as it happens: the board, every unit, every flag, what the turn did, each
@@ -458,8 +462,11 @@ the worst**: one more point of health than health 4, for double the running
 cost, for ever.
 
 Rounding is upward, so **no unit ever moves for nothing**. A fare of zero would
-put a unit outside the energy economy entirely — it could cross the board for
-ever and never need to rest — and it is the cheapest units that would escape.
+put a unit outside the energy economy entirely — it could cross the board
+and strike for ever on what the turn gives back — and it is the cheapest units
+that would escape. The cheapest units do walk for ever as it is, since a fare
+of one is under the two a turn every unit recovers (**R3.9**); what a fare of
+zero would waive is the strike's share of the bill.
 
 Weight therefore costs mobility. A unit's energy divided by its fare is the
 number of squares it has left in it, and armour is paid for twice — once at the
@@ -605,9 +612,9 @@ the record as a casualty (**R6.6**).
 **R5.10 Inert units.** A unit whose energy has fallen below its attack value can
 no longer attack or defend itself, but is *not* removed. It stays on the board,
 holds its square, blocks movement, and can only be cleared by being killed. It
-keeps its owner in the game whatever it holds, because a unit that stands still
-recovers 1 energy a turn (**R3.9**): an inert unit is one that needs to rest,
-not one that is finished. A **wall** (**R2.10**) is the exception — its type was
+keeps its owner in the game whatever it holds, because every unit standing on
+the board recovers 2 energy a turn (**R3.9**): an inert unit is one that needs
+a turn or two, not one that is finished. A **wall** (**R2.10**) is the exception — its type was
 designed with no energy, so it has nothing to recover to, and it is the one
 kind of unit that does not keep its owner in the game (**R7.1**).
 
@@ -720,13 +727,13 @@ in the list of what it refused alike.
 **R7.1 You are eliminated when you have nothing left that could ever act
 again.** A player is out once every unit they own is either destroyed or is a
 **wall** (**R2.10**). What matters is whether a unit has a future, not what it
-holds this turn: a unit at zero energy recovers a point for every turn it does
-nothing (**R3.9**), so it is spent for the moment rather than finished, and it
+holds this turn: a unit at zero energy recovers two a turn whatever it does
+(**R3.9**), so it is spent for the moment rather than finished, and it
 keeps you in. A wall is the one unit that never recovers, because its type was
 designed with no energy at all — it can never move and never strike, so it holds
 a square for you and nothing else. It is the *only* such unit, and that is what
-the energy-at-least-health rule of **R2.4** is for: without it a type could be
-designed that rests for ever and never affords a square, which would be a wall
+the energy-at-least-the-fare rule of **R2.4** is for: without it a type could be
+designed that recovers for ever and never affords a square, which would be a wall
 in everything but name while still keeping its owner in the game. A player who deployed nothing is out on the
 first turn with units on the board.
 
@@ -779,7 +786,7 @@ rule anybody plays to.
 turns pass in which no unit changes square, no blow is landed, nothing is
 destroyed and no flag falls, the game is stopped and recorded as undecided,
 saying so and naming the last turn on which anything happened. Thinking,
-sleeping and resting are not things happening. A sleeping unit's countdown
+sleeping and recovering energy are not things happening. A sleeping unit's countdown
 and a controller's meter keep a static board from ever repeating its whole
 state (**R7.5**), and a board nobody has moved or struck on for fifty turns
 is one nobody is watching. Whichever of the three stops - the repeat, the
@@ -895,9 +902,9 @@ because it rounds up.
 | Being attacked | **nothing in energy**; damage comes off health | **R5.5** |
 | A turn's thinking | **ticks**, one instruction at a time as the tariff in **R10.2** says; at most `100 × compute` in one turn, and a controller that reaches the cap gives no order | **R10.3** |
 | — the meter | **1 energy for every `100 × compute` ticks** thought, carried across turns, charged the moment the meter fills; a unit with no energy to pay halts at the instruction that would fill it | **R10.3** |
-| — a turn asleep | **nothing**: a sleeping controller does not run, and the unit rests | **R10.6** |
-| A turn in which a unit did nothing | **gains 1 energy**, never above the energy its type was designed with | **R3.9** |
-| — a turn in which it was given any order, or its meter charged it | **gains nothing**, even if the order cost it nothing | **R3.9** |
+| — a turn asleep | **nothing**: a sleeping controller does not run, and the unit recovers like any other | **R10.6** |
+| The end of every turn, for every unit standing on the board | **gains 2 energy**, whatever it did during the turn, never above the energy its type was designed with | **R3.9** |
+| — a destroyed unit, or a type designed with no energy | **gains nothing** | **R3.9** |
 
 Three things follow from the table that are worth stating out loud, because
 they decide how the game is played and none of them is obvious from any single
@@ -931,12 +938,15 @@ cost for the rest of the game — the worst. The same edge sits between 8 and 9.
 again a point at a time as it walks and fights. A unit's energy is both a line
 in its price and the number of actions left in it.
 
-**Standing still is a move a controller can make.** It is the only way to
-get energy back, it costs a turn, and it is refused to anything that was given
-an order — so a unit its controller sent into the board's edge, which pays
-nothing, still learns nothing and gains nothing from the turn. Rest returns 1
-whatever the unit is, so a heavy unit takes a quarter of its health in quiet
-turns to buy back one square — three, at health 9 or 10.
+**Two a turn is the pace of the game.** Every unit standing on the board
+gets 2 energy back at the end of every turn, whatever it did, so the question
+for a type is not whether it can act but how often. A unit whose fare and
+strike together cost 2 or less acts every turn for ever; one that costs more
+builds up the difference between actions. A Pawn of health 2 and attack 1
+never waits; a Heavy of health 10 and attack 5 pays eight to walk in and
+strike and is three turns short of doing it again. Standing still is still a
+move a controller can make, and it is the quickest way to full energy, but it
+is no longer the only way to get any back.
 
 **Thinking is paid for in energy, slowly.** A controller that thinks `t`
 ticks a turn on compute `c` pays one energy every `10c ÷ t` turns, and that
@@ -1033,8 +1043,8 @@ and nothing is charged for holding it. A destroyed unit's memory dies with
 it.
 
 **R10.6 Sleep.** `SLEEP n` puts the unit to sleep for `n` turns, 1 to 100:
-its controller does not run and pays nothing, and the unit rests (**R3.9**)
-every turn it sleeps. **A blow wakes it**: a unit struck in a contest fights
+its controller does not run and pays nothing, and the unit recovers energy
+(**R3.9**) every turn it sleeps, as every unit does. **A blow wakes it**: a unit struck in a contest fights
 back in that same exchange as any unit does (**R5.2**), its sleep is cancelled
 at the end of that turn, and its controller runs again next turn. Nothing
 else wakes it - not a message, not an enemy walking past. There is no sleep
@@ -1094,7 +1104,9 @@ the game, and every match was a race to the bottom of two pockets.
   the energy its type was designed with (**R3.9**). Standing still is now a
   move you can make, resting is a decision with a cost — a turn — and an
   exhausted unit is a unit that needs to withdraw rather than one that is
-  finished.
+  finished. *Since revised*: once every unit thought for itself every turn,
+  a rule that paid only for doing nothing was a rule against playing, and
+  **R3.9** now gives every standing unit 2 a turn whatever it did.
 - Elimination is judged on whether a unit **could ever act again** (**R7.1**)
   rather than on what it holds this turn. Zero energy was a death sentence
   while energy never came back, and counting a unit out for it was right then;
@@ -1104,8 +1116,8 @@ the game, and every match was a race to the bottom of two pockets.
 **What it opened.** Two things worth watching, now that a spent unit is not
 finished: a defender that is never reached recovers for free, which makes a
 holding position stronger than it was; and a **wall** (**R2.10**) is the one
-kind of unit rest can never help, because its type was designed with no energy
-at all.
+kind of unit recovery can never help, because its type was designed with no
+energy at all.
 
 ---
 

@@ -390,10 +390,10 @@ def eliminated_players(game):
 
     What counts is whether a unit has a future, not what it happens to hold
     this turn. A unit at zero energy used to be finished, because energy never
-    came back, and not counting it was the honest reading; now a unit that
-    stands still recovers a point a turn, so being at zero is a bad afternoon
-    rather than a death, and judging a player on it would decide games on the
-    timing of a snapshot.
+    came back, and not counting it was the honest reading; now every unit
+    standing on the board recovers energy each turn (R3.9), so being at zero
+    is a bad afternoon rather than a death, and judging a player on it would
+    decide games on the timing of a snapshot.
 
     A **wall** is the one unit that has no future: its type was designed with
     no energy at all, so resting gives it nothing, it can never move and it

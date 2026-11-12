@@ -212,16 +212,16 @@ SHALL be recorded in the unit's trace with the instruction it stopped at.
 The system SHALL switch a unit's controller off for `n` turns, `n` being 1 to
 100, when its program runs `SLEEP n`; no sleep SHALL last longer. A sleeping
 unit SHALL give no order, spend no ticks, and recover energy under the rest
-rule like any unit that did nothing. Being in a fight SHALL wake it: the
-exchange is fought on the ordinary terms, and its controller runs again on
-the next turn, whatever `n` remained. Nothing else SHALL wake a sleeper; a
+rule like every unit standing on the board. Being in a fight SHALL wake it:
+the exchange is fought on the ordinary terms, and its controller runs again
+on the next turn, whatever `n` remained. Nothing else SHALL wake a sleeper; a
 message SHALL NOT.
 
 #### Scenario: Sleeping and resting
 
 - **WHEN** a unit runs `SLEEP 3` on a turn and is not attacked
 - **THEN** its controller does not run on the next three turns
-- **AND** it recovers 1 energy on each of them, up to the energy its type was designed with
+- **AND** it recovers 2 energy on each of them, up to the energy its type was designed with
 
 #### Scenario: The longest sleep
 

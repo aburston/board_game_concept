@@ -295,7 +295,8 @@ def test_the_turn_a_running_game_reported(tmp_path):
 
     units = harness.units()
     mover, wall = units['=-1'], units['#-2']
-    assert mover.energy == 9 - 3 - 1, 'the fare, and one strike, and no more'
+    assert mover.energy == 9 - 3 - 1 + UnitType.REST_GAIN, (
+        'the fare, one strike and no more, and the turn\'s gain back')
     assert wall.health == 10 - 1, 'struck once, not six times'
     assert not mover.destroyed and not wall.destroyed
     assert (mover.x, mover.y) == (0, 0), 'undecided, so it falls back'

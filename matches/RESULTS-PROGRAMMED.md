@@ -1,6 +1,15 @@
 # Twenty games nobody ordered
 
 > **Played under superseded rules.** Since these games were played the
+> rest rule changed (`rest-for-everyone`): every unit standing on the board
+> now recovers 2 energy at the end of every turn, whatever it did, where
+> these games were played when a unit recovered 1, and only on a turn it
+> was given no order, paid for nothing and was not charged by its meter.
+> Every hunter's pauses to afford its next step, and every count of turns
+> between blows below, belong to the old rule. The games have not been
+> replayed.
+>
+> **Played under superseded rules.** Since these games were played the
 > default array was rearranged and the Pawn became a vanguard
 > (`default-army-that-plays`), the Scout got an explorer of its own, units
 > that contest a square now see each other whether or not a blow lands

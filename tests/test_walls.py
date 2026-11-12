@@ -133,17 +133,18 @@ def test_a_wall_cannot_be_ordered_to_move(tmp_path):
 def test_an_army_of_walls_is_an_army_that_has_lost(tmp_path):
     # player 2 holds a wall and one real unit. The wall keeps nobody in the
     # game, so player 2 is out the moment the real one is destroyed - but a
-    # unit merely out of energy still counts, because it can rest (R7.1)
+    # unit merely too spent to move still counts, because it recovers (R7.1)
     harness = GameHarness(tmp_path)
     harness.create(6, 4, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('X', 'X', 5, 10, 50)], [('X', 'x1', 0, 1)])
-    harness.deploy(2, [('W', 'W', 0, 10, 0), ('O', 'O', 1, 1, 1)],
+    harness.deploy(1, [('X', 'X', 10, 10, 50)], [('X', 'x1', 0, 1)])
+    harness.deploy(2, [('W', 'W', 0, 10, 0), ('O', 'O', 1, 10, 3)],
                    [('W', 'w1', 3, 2), ('O', 'o1', 0, 2)])
     harness.resolve()
 
-    # o1 walks itself down to nothing, and player 2 is still in
+    # o1 walks its one square's worth off, and player 2 is still in
     harness.turn({1: [], 2: [('o1', UnitType.EAST)]})
-    assert harness.units()['o1'].energy == 0
+    o1 = harness.units()['o1']
+    assert o1.energy < o1.move_cost
     assert harness.session(0).getEliminated() == []
 
     # destroyed is another matter: what is left is a wall, and scenery does
@@ -165,7 +166,9 @@ def test_a_scout_moves_and_strikes_nothing(tmp_path):
     """It goes where it likes and lands nothing when it gets there."""
     harness = GameHarness(tmp_path)
     harness.create(6, 4, [1, 2], budget=Player.MAX_BUDGET)
-    harness.deploy(1, [('S', 'S', 0, 4, 20), ('X', 'X', 2, 4, 20)],
+    # ten health, so the fare is three and the turn's gain of two does not
+    # cover it: what the move cost can be read back
+    harness.deploy(1, [('S', 'S', 0, 10, 20), ('X', 'X', 2, 4, 20)],
                    [('S', 's1', 0, 1), ('X', 'x1', 5, 0)], flag='x1')
     harness.deploy(2, [('O', 'O', 2, 8, 20)], [('O', 'o1', 0, 2)])
     harness.resolve()
@@ -176,10 +179,11 @@ def test_a_scout_moves_and_strikes_nothing(tmp_path):
 
     units = harness.units()
     assert units['o1'].health == 8, 'the scout struck nothing'
-    assert units['s1'].health == 4 - 2, 'and was struck for it'
+    assert units['s1'].health == 10 - 2, 'and was struck for it'
     assert not units['s1'].destroyed
-    # the fare came out of its energy, and nothing was paid for an attack
-    assert units['s1'].energy == 20 - units['s1'].move_cost
+    # the fare came out of its energy, nothing was paid for an attack, and
+    # the turn gave its two back
+    assert units['s1'].energy == 20 - units['s1'].move_cost + UnitType.REST_GAIN
 
 
 def test_a_scout_keeps_its_owner_in_the_game(tmp_path):

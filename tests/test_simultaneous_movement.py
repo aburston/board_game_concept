@@ -8,15 +8,27 @@ into each other's squares collide instead of passing through.
 from board_game_concept import Board, Player, UnitType
 
 
+#: what every standing unit gets back at the end of a turn (R3.9)
+GAIN = UnitType.REST_GAIN
+
+
 def board_with(units, size_x=6, size_y=3):
-    """`units` are `(player, name, x, y, attack, health, energy)`."""
+    """`units` are `(player, name, x, y, attack, health, energy)`.
+
+    Each type is designed with `GAIN` more energy than its unit starts the
+    turn holding, so that the turn's gain is never hidden by the cap and
+    what a move cost can be read back.
+    """
     board = Board(size_x, size_y)
     players = {}
     for number, name, x, y, attack, health, energy in units:
         player = players.setdefault(number, Player(number))
         board.add(player, x, y, name,
-                  UnitType(name, name[0].upper(), attack, health, energy))
+                  UnitType(name, name[0].upper(), attack, health,
+                           min(100, energy + GAIN)))
     board.commit()
+    for number, name, x, y, attack, health, energy in units:
+        board.getUnitByName(name)[0].setEnergy(energy)
     return board
 
 
@@ -38,10 +50,10 @@ def test_a_move_costs_the_units_fare_from_any_starting_energy():
     # the fare is a quarter of the unit's health, and it is the same fare
     # however much it happens to be carrying. `test_movement_cost.py` is about
     # the rule itself
-    for energy in (2, 6, 50, 99, 100):
+    for energy in (2, 6, 50, 90, 98):
         board = board_with([(1, 'u', 0, 0, 1, 5, energy)])
         order(board, ('u', UnitType.EAST))
-        assert board.getUnitByName('u')[0].energy == energy - 2
+        assert board.getUnitByName('u')[0].energy == energy - 2 + GAIN
 
 
 def test_a_unit_with_no_energy_does_not_move():
@@ -49,7 +61,7 @@ def test_a_unit_with_no_energy_does_not_move():
     board.getUnitByName('u')[0].setEnergy(0)
     events = order(board, ('u', UnitType.EAST))
     assert at(board, 'u') == (0, 0)
-    assert board.getUnitByName('u')[0].energy == 0
+    assert board.getUnitByName('u')[0].energy == 0 + GAIN, 'paid nothing'
     assert any(e.kind == 'refused' for e in events)
 
 
@@ -57,7 +69,7 @@ def test_a_move_off_the_board_is_refused_and_costs_nothing():
     board = board_with([(1, 'u', 0, 0, 1, 5, 50)])
     events = order(board, ('u', UnitType.WEST))
     assert at(board, 'u') == (0, 0)
-    assert board.getUnitByName('u')[0].energy == 50
+    assert board.getUnitByName('u')[0].energy == 50 + GAIN, 'paid nothing'
     assert [e.detail['reason'] for e in events if e.kind == 'refused'] == [
         'the move would leave the board']
 
@@ -149,8 +161,9 @@ def test_an_undecided_collision_leaves_both_where_they_started():
     a = board.getUnitByName('a')[0]
     b = board.getUnitByName('b')[0]
     # five health is a fare of two, which is everything either of them had:
-    # both paid it, and neither could then pay to attack
-    assert a.energy == 0 and b.energy == 0
+    # both paid it, neither could then pay to attack, and both got the
+    # turn's gain back afterwards
+    assert a.energy == 0 + GAIN and b.energy == 0 + GAIN
     assert (a.x, a.y) == (0, 0) and (b.x, b.y) == (1, 0)
     assert not a.destroyed and not b.destroyed
     assert any(e.kind == 'undecided' for e in events)

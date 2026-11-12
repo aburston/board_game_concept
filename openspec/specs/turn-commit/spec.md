@@ -11,66 +11,72 @@ player gains an advantage from committing early or late.
 
 ### Requirement: Energy Regeneration
 
-The system SHALL give back `REST_GAIN` energy, at the end of each turn, to
-every unit on the board that took no action during it - one that was given no
-order **and** paid for nothing while the turn resolved. A unit SHALL NOT
-recover past the energy its type was designed with, and a destroyed unit SHALL
-recover nothing. Regeneration SHALL happen after combat and before elimination
-is judged, so that a player whose units are merely out of energy is judged on
-what they will hold rather than on what they hold mid-turn.
-
-Both halves of "took no action" are required. A unit whose controller ordered
-it to move has acted whether or not the move was carried out: one ordered off
-the board pays nothing and still does not rest, so a program that walks a
-unit into the edge every turn is not a way to refuel. A unit that was attacked
-and could not afford to strike back has done nothing at all, and does rest -
-being attacked is not an action.
-
-Thinking is paying only when the meter charges. A unit whose controller ran
-and gave no order, and whose meter did not reach its capacity this turn, paid
-for nothing and SHALL rest. A unit whose meter charged energy this turn paid
-for something and SHALL NOT rest. A sleeping unit's controller does not run,
-so a sleeper that was not in a fight SHALL rest.
+The system SHALL give back `REST_GAIN` energy, which SHALL be 2, at the end
+of each turn, to every unit standing on the board, whatever it did during
+the turn: a unit that moved, struck, was struck, thought, was charged by its
+meter, slept or stood still all recover alike. A unit SHALL NOT recover past
+the energy its type was designed with, so a type designed with no energy
+recovers nothing, and a destroyed unit SHALL recover nothing. Regeneration
+SHALL happen after combat and before elimination is judged, so that a player
+whose units are merely out of energy is judged on what they will hold rather
+than on what they hold mid-turn. The turn's account SHALL report a unit as
+rested only where its energy rose.
 
 #### Scenario: A unit that was given no order
 
 - **WHEN** a turn resolves in which a unit was given no order and paid for nothing
-- **THEN** that unit's energy is one higher than it was, up to the energy its type was designed with
+- **THEN** that unit's energy is two higher than it was, up to the energy its type was designed with
 
 #### Scenario: A unit already at the energy it was designed with
 
 - **WHEN** a turn resolves in which such a unit took no action
 - **THEN** its energy is unchanged
+- **AND** the turn's account does not say it rested
+
+#### Scenario: A unit one short of the energy it was designed with
+
+- **WHEN** a turn resolves in which such a unit did nothing
+- **THEN** its energy is the energy its type was designed with, not one more
 
 #### Scenario: A unit that was ordered to move
 
-- **WHEN** a turn resolves in which a unit's controller ordered it to move
-- **THEN** that unit does not recover energy, whether or not the move was carried out
+- **WHEN** a turn resolves in which a unit's controller ordered it to move and the move was carried out
+- **THEN** that unit's energy is the fare lower and two higher than it was, within the energy its type was designed with
 
 #### Scenario: A unit ordered off the board
 
 - **WHEN** a turn resolves in which a unit's controller ordered it off the board, which costs it nothing
-- **THEN** that unit does not recover energy
+- **THEN** that unit recovers two energy like any other
+
+#### Scenario: A unit that fought
+
+- **WHEN** a turn resolves in which a unit struck in a contest
+- **THEN** that unit's energy is its attack lower and two higher than it was, within the energy its type was designed with
 
 #### Scenario: A unit that was attacked but could not pay to fight back
 
 - **WHEN** a turn resolves in which a unit was attacked and could not afford to attack
-- **THEN** that unit recovers energy
+- **THEN** that unit recovers two energy like any other
 
 #### Scenario: A unit that thought a little and gave no order
 
 - **WHEN** a turn resolves in which a unit's controller ran, gave no order, and its meter did not fill
-- **THEN** that unit recovers energy
+- **THEN** that unit recovers two energy like any other
 
 #### Scenario: A unit whose meter charged
 
-- **WHEN** a turn resolves in which a unit's meter filled and charged 1 energy, and the unit gave no order
-- **THEN** that unit does not recover energy
+- **WHEN** a turn resolves in which a unit's meter filled and charged 1 energy
+- **THEN** that unit recovers two energy like any other
 
 #### Scenario: A sleeping unit
 
-- **WHEN** a turn resolves in which a unit slept and was not in a fight
-- **THEN** that unit recovers energy
+- **WHEN** a turn resolves in which a unit slept
+- **THEN** that unit recovers two energy like any other
+
+#### Scenario: A type designed with no energy
+
+- **WHEN** a turn resolves with a Wall standing on the board
+- **THEN** its energy is 0, as it was designed
 
 #### Scenario: A destroyed unit
 
