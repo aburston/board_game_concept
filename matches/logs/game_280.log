@@ -1,0 +1,842 @@
+=== game 280: p1 Flag Hunt vs p2 Fugitive
+  board 8x8, p1: 320 points, rows 0-3, p2: 320 points, rows 4-7
+  p1 Flag Hunt: the stock army with the programs the catalogue gives it; the Runners, Lines and Heavies hunt the enemy flag, the Pawns advance, the Scouts explore
+  p2 Fugitive: the flag on a Runner that walks the back row every turn it can + 11 x Lance (a8 h2 e10 c4) that hunt
+  p1 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p1 setup: keeps the army as given, programs and all
+  p2 is handed 16 units: heavy1, heavy2, keep1, keep2, line1, line2, pawn1, pawn2, pawn3, pawn4, runner1, runner2, scout1, scout2, wall1, wall2
+  p2 setup: remove unit heavy1; remove unit heavy2; remove unit keep1; remove unit keep2; remove unit line1; remove unit line2; remove unit pawn1; remove unit pawn2; remove unit pawn3; remove unit pawn4; remove unit runner1; remove unit runner2; remove unit scout1; remove unit scout2; remove unit wall1; remove unit wall2; add type Lance ! 8 2 10 4; set program Lance hunter9.asm; add type Runner r 2 4 10 5; set program Runner fugitive.asm; add unit Lance lance1 0 4; add unit Lance lance2 1 4; add unit Lance lance3 2 4; add unit Lance lance4 3 4; add unit Lance lance5 4 4; add unit Lance lance6 5 4; add unit Lance lance7 6 4; add unit Lance lance8 7 4; add unit Lance lance9 1 5; add unit Lance lance10 4 5; add unit Lance lance11 6 5; add unit Runner runner1 3 7; set flag runner1
+  -- turn 1
+    p1: places its army
+    p2: places its army
+      pawn1 is placed at (0, 1)
+      pawn2 is placed at (1, 1)
+      line1 is placed at (2, 1)
+      heavy1 is placed at (3, 1)
+      heavy2 is placed at (4, 1)
+      line2 is placed at (5, 1)
+      pawn3 is placed at (6, 1)
+      pawn4 is placed at (7, 1)
+      runner1 is placed at (0, 0)
+      scout1 is placed at (1, 0)
+      wall1 is placed at (2, 0)
+      keep1 is placed at (3, 0)
+      keep2 is placed at (4, 0)
+      wall2 is placed at (5, 0)
+      scout2 is placed at (6, 0)
+      runner2 is placed at (7, 0)
+      lance1 is placed at (0, 4)
+      lance2 is placed at (1, 4)
+      lance3 is placed at (2, 4)
+      lance4 is placed at (3, 4)
+      lance5 is placed at (4, 4)
+      lance6 is placed at (5, 4)
+      lance7 is placed at (6, 4)
+      lance8 is placed at (7, 4)
+      lance9 is placed at (1, 5)
+      lance10 is placed at (4, 5)
+      lance11 is placed at (6, 5)
+      runner1 is placed at (3, 7)
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|!|!|!|!|!|!|!|!|
++-+-+-+-+-+-+-+-+
+| |!| | |!| |!| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | |r| | | | |
++-+-+-+-+-+-+-+-+
+    after turn 1: in play 14 v 12  (walls: 2 v 0)
+  -- turn 2
+    p1: heavy1 moves south; heavy2 moves south; keep1 holds; keep2 holds; line1 moves south; line2 moves south; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 holds; runner2 holds; scout1 holds; scout2 holds
+    p2: lance1 moves north; lance10 moves west; lance11 moves west; lance2 moves north; lance3 moves north; lance4 moves north; lance5 moves north; lance6 moves north; lance7 moves north; lance8 moves north; lance9 moves east; runner1 moves east
+      pawn1 moves to (0, 2)
+      pawn2 moves to (1, 2)
+      line1 moves to (2, 2)
+      heavy1 moves to (3, 2)
+      heavy2 moves to (4, 2)
+      line2 moves to (5, 2)
+      pawn3 moves to (6, 2)
+      pawn4 moves to (7, 2)
+      lance1 moves to (0, 3)
+      lance2 moves to (1, 3)
+      lance3 moves to (2, 3)
+      lance4 moves to (3, 3)
+      lance5 moves to (4, 3)
+      lance6 moves to (5, 3)
+      lance7 moves to (6, 3)
+      lance8 moves to (7, 3)
+      lance9 moves to (2, 5)
+      lance10 moves to (3, 5)
+      lance11 moves to (5, 5)
+      runner1 moves to (4, 7)
+      heavy1 thinks for 30 ticks, pays 0, moves south
+      heavy2 thinks for 30 ticks, pays 0, moves south
+      keep1 thinks for 1 ticks, pays 0, holds
+      keep2 thinks for 1 ticks, pays 0, holds
+      line1 thinks for 30 ticks, pays 0, moves south
+      line2 thinks for 30 ticks, pays 0, moves south
+      pawn1 thinks for 19 ticks, pays 0, moves south
+      pawn2 thinks for 19 ticks, pays 0, moves south
+      pawn3 thinks for 19 ticks, pays 0, moves south
+      pawn4 thinks for 19 ticks, pays 0, moves south
+      runner1 thinks for 39 ticks, pays 0, holds
+      runner2 thinks for 39 ticks, pays 0, holds
+      scout1 thinks for 71 ticks, pays 0, holds
+      scout2 thinks for 71 ticks, pays 0, holds
+      lance1 thinks for 30 ticks, pays 0, moves north
+      lance10 thinks for 40 ticks, pays 0, moves west
+      lance11 thinks for 40 ticks, pays 0, moves west
+      lance2 thinks for 30 ticks, pays 0, moves north
+      lance3 thinks for 30 ticks, pays 0, moves north
+      lance4 thinks for 30 ticks, pays 0, moves north
+      lance5 thinks for 30 ticks, pays 0, moves north
+      lance6 thinks for 30 ticks, pays 0, moves north
+      lance7 thinks for 30 ticks, pays 0, moves north
+      lance8 thinks for 41 ticks, pays 0, moves north
+      lance9 thinks for 40 ticks, pays 0, moves east
+      runner1 thinks for 21 ticks, pays 0, moves east
+      pawn1 rests and recovers to 2 energy
+      pawn2 rests and recovers to 2 energy
+      line1 rests and recovers to 12 energy
+      heavy1 rests and recovers to 14 energy
+      heavy2 rests and recovers to 14 energy
+      line2 rests and recovers to 12 energy
+      pawn3 rests and recovers to 2 energy
+      pawn4 rests and recovers to 2 energy
+      lance1 rests and recovers to 10 energy
+      lance2 rests and recovers to 10 energy
+      lance3 rests and recovers to 10 energy
+      lance4 rests and recovers to 10 energy
+      lance5 rests and recovers to 10 energy
+      lance6 rests and recovers to 10 energy
+      lance7 rests and recovers to 10 energy
+      lance8 rests and recovers to 10 energy
+      lance9 rests and recovers to 10 energy
+      lance10 rests and recovers to 10 energy
+      lance11 rests and recovers to 10 energy
+      runner1 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|p|p|L|H|H|L|p|p|
++-+-+-+-+-+-+-+-+
+|!|!|!|!|!|!|!|!|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | |!|!| |!| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |r| | | |
++-+-+-+-+-+-+-+-+
+    after turn 2: in play 14 v 12  (walls: 2 v 0)
+  -- turn 3
+    p1: heavy1 moves south; heavy2 moves south; keep1 sleeps; keep2 sleeps; line1 moves south; line2 moves south; pawn1 moves south; pawn2 moves south; pawn3 moves south; pawn4 moves south; runner1 sleeps; runner2 sleeps; scout1 sleeps; scout2 sleeps
+    p2: lance1 moves north; lance10 moves north; lance11 moves north; lance2 moves north; lance3 moves north; lance4 moves north; lance5 moves north; lance6 moves north; lance7 moves north; lance8 moves north; lance9 moves north; runner1 moves east
+      lance9 moves to (2, 4)
+      lance10 moves to (3, 4)
+      lance11 moves to (5, 4)
+      runner1 moves to (5, 7)
+      heavy1 and lance4 collide between (3, 2) and (3, 3)
+      heavy1 attacks lance4 for 5
+      lance4 is destroyed
+      lance4 attacks heavy1 for 8
+      heavy1 holds (3, 3)
+      heavy2 and lance5 collide between (4, 2) and (4, 3)
+      heavy2 attacks lance5 for 5
+      lance5 is destroyed
+      lance5 attacks heavy2 for 8
+      heavy2 holds (4, 3)
+      line1 and lance3 collide between (2, 2) and (2, 3)
+      line1 attacks lance3 for 3
+      lance3 is destroyed
+      lance3 attacks line1 for 8
+      line1 is destroyed
+      line2 and lance6 collide between (5, 2) and (5, 3)
+      line2 attacks lance6 for 3
+      lance6 is destroyed
+      lance6 attacks line2 for 8
+      line2 is destroyed
+      pawn1 and lance1 collide between (0, 2) and (0, 3)
+      pawn1 attacks lance1 for 1
+      lance1 attacks pawn1 for 8
+      pawn1 is destroyed
+      lance1 holds (0, 2)
+      pawn2 and lance2 collide between (1, 2) and (1, 3)
+      pawn2 attacks lance2 for 1
+      lance2 attacks pawn2 for 8
+      pawn2 is destroyed
+      lance2 holds (1, 2)
+      pawn3 and lance7 collide between (6, 2) and (6, 3)
+      pawn3 attacks lance7 for 1
+      lance7 attacks pawn3 for 8
+      pawn3 is destroyed
+      lance7 holds (6, 2)
+      pawn4 and lance8 collide between (7, 2) and (7, 3)
+      pawn4 attacks lance8 for 1
+      lance8 attacks pawn4 for 8
+      pawn4 is destroyed
+      lance8 holds (7, 2)
+      heavy1 thinks for 30 ticks, pays 0, moves south
+      heavy2 thinks for 30 ticks, pays 0, moves south
+      keep1 sleeps
+      keep2 sleeps
+      line1 thinks for 30 ticks, pays 0, moves south
+      line2 thinks for 30 ticks, pays 0, moves south
+      pawn1 thinks for 19 ticks, pays 0, moves south
+      pawn2 thinks for 19 ticks, pays 0, moves south
+      pawn3 thinks for 19 ticks, pays 0, moves south
+      pawn4 thinks for 19 ticks, pays 0, moves south
+      runner1 sleeps
+      runner2 sleeps
+      scout1 sleeps
+      scout2 sleeps
+      lance1 thinks for 41 ticks, pays 0, moves north
+      lance10 thinks for 30 ticks, pays 0, moves north
+      lance11 thinks for 30 ticks, pays 0, moves north
+      lance2 thinks for 30 ticks, pays 0, moves north
+      lance3 thinks for 30 ticks, pays 0, moves north
+      lance4 thinks for 30 ticks, pays 0, moves north
+      lance5 thinks for 30 ticks, pays 0, moves north
+      lance6 thinks for 30 ticks, pays 0, moves north
+      lance7 thinks for 41 ticks, pays 0, moves north
+      lance8 thinks for 41 ticks, pays 0, moves north
+      lance9 thinks for 30 ticks, pays 0, moves north
+      runner1 thinks for 20 ticks, pays 0, moves east
+      heavy1 rests and recovers to 8 energy
+      heavy2 rests and recovers to 8 energy
+      lance1 rests and recovers to 3 energy
+      lance2 rests and recovers to 3 energy
+      lance7 rests and recovers to 3 energy
+      lance8 rests and recovers to 3 energy
+      lance9 rests and recovers to 10 energy
+      lance10 rests and recovers to 10 energy
+      lance11 rests and recovers to 10 energy
+      runner1 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+|r|o|W|K|K|W|o|r|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+|!|!| | | | |!|!|
++-+-+-+-+-+-+-+-+
+| | | |H|H| | | |
++-+-+-+-+-+-+-+-+
+| | |!|!| |!| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |r| | |
++-+-+-+-+-+-+-+-+
+    after turn 3: in play 8 v 8  (walls: 2 v 0)
+  -- turn 4
+    p1: heavy1 moves south; heavy2 moves south; keep1 sleeps; keep2 sleeps; runner1 moves south; runner2 moves south; scout1 moves south; scout2 moves south
+    p2: lance1 holds; lance10 moves north; lance11 moves north; lance2 holds; lance7 holds; lance8 holds; lance9 moves north; runner1 moves east
+      heavy2 moves to (4, 4)
+      runner1 moves to (0, 1)
+      scout1 moves to (1, 1)
+      scout2 moves to (6, 1)
+      runner2 moves to (7, 1)
+      lance9 moves to (2, 3)
+      lance11 moves to (5, 3)
+      runner1 moves to (6, 7)
+      heavy1 and lance10 collide between (3, 3) and (3, 4)
+      heavy1 attacks lance10 for 5
+      lance10 is destroyed
+      lance10 attacks heavy1 for 8
+      heavy1 is destroyed
+      heavy1 thinks for 30 ticks, pays 0, moves south
+      heavy2 thinks for 30 ticks, pays 0, moves south
+      keep1 sleeps
+      keep2 sleeps
+      runner1 thinks for 30 ticks, pays 0, moves south
+      runner2 thinks for 30 ticks, pays 0, moves south
+      scout1 thinks for 40 ticks, pays 0, moves south
+      scout2 thinks for 40 ticks, pays 0, moves south
+      lance1 thinks for 6 ticks, pays 0, holds
+      lance10 thinks for 30 ticks, pays 0, moves north
+      lance11 thinks for 30 ticks, pays 0, moves north
+      lance2 thinks for 6 ticks, pays 0, holds
+      lance7 thinks for 6 ticks, pays 0, holds
+      lance8 thinks for 6 ticks, pays 0, holds
+      lance9 thinks for 30 ticks, pays 0, moves north
+      runner1 thinks for 20 ticks, pays 0, moves east
+      heavy2 rests and recovers to 7 energy
+      runner1 rests and recovers to 10 energy
+      scout1 rests and recovers to 12 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 10 energy
+      lance1 rests and recovers to 5 energy
+      lance2 rests and recovers to 5 energy
+      lance7 rests and recovers to 5 energy
+      lance8 rests and recovers to 5 energy
+      lance9 rests and recovers to 10 energy
+      lance11 rests and recovers to 10 energy
+      runner1 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+|r|o| | | | |o|r|
++-+-+-+-+-+-+-+-+
+|!|!| | | | |!|!|
++-+-+-+-+-+-+-+-+
+| | |!| | |!| | |
++-+-+-+-+-+-+-+-+
+| | | | |H| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |r| |
++-+-+-+-+-+-+-+-+
+    after turn 4: in play 7 v 7  (walls: 2 v 0)
+  -- turn 5
+    p1: heavy2 holds; keep1 sleeps; keep2 sleeps; runner1 moves south; runner2 moves south; scout1 moves south; scout2 moves south
+    p2: lance1 sleeps; lance11 moves north; lance2 sleeps; lance7 sleeps; lance8 sleeps; lance9 moves north; runner1 moves east
+      runner1 engages lance1 at (0, 2)
+      scout1 engages lance2 at (1, 2)
+      scout2 engages lance7 at (6, 2)
+      runner2 engages lance8 at (7, 2)
+      lance9 moves to (2, 2)
+      lance11 moves to (5, 2)
+      runner1 moves to (7, 7)
+      (0, 2) is contested by 2 units
+      runner1 attacks lance1 for 2
+      lance1 is destroyed
+      runner1 holds (0, 2)
+      (1, 2) is contested by 2 units
+      the contest at (1, 2) is undecided between lance2,scout1
+      scout1 falls back to (1, 1)
+      lance2 holds (1, 2)
+      (6, 2) is contested by 2 units
+      the contest at (6, 2) is undecided between lance7,scout2
+      scout2 falls back to (6, 1)
+      lance7 holds (6, 2)
+      (7, 2) is contested by 2 units
+      runner2 attacks lance8 for 2
+      lance8 is destroyed
+      runner2 holds (7, 2)
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps
+      runner1 thinks for 41 ticks, pays 0, moves south
+      runner2 thinks for 30 ticks, pays 0, moves south
+      scout1 thinks for 40 ticks, pays 0, moves south
+      scout2 thinks for 40 ticks, pays 0, moves south
+      lance1 sleeps
+      lance11 thinks for 30 ticks, pays 0, moves north
+      lance2 sleeps
+      lance7 sleeps
+      lance8 sleeps
+      lance9 thinks for 30 ticks, pays 0, moves north
+      runner1 thinks for 20 ticks, pays 0, moves east
+      heavy2 rests and recovers to 9 energy
+      runner1 rests and recovers to 9 energy
+      scout1 rests and recovers to 12 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 9 energy
+      lance2 rests and recovers to 7 energy
+      lance7 rests and recovers to 7 energy
+      lance9 rests and recovers to 10 energy
+      lance11 rests and recovers to 10 energy
+      runner1 rests and recovers to 10 energy
+    p1: - scout1 at (1,1): the contest at (1, 2) was undecided
+    p2: - lance2 at (1,2): the contest at (1, 2) was undecided
+    p1: - scout2 at (6,1): the contest at (6, 2) was undecided
+    p2: - lance7 at (6,2): the contest at (6, 2) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| |o| | | | |o| |
++-+-+-+-+-+-+-+-+
+|r|!|!| | |!|!|r|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |H| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | |r|
++-+-+-+-+-+-+-+-+
+    after turn 5: in play 7 v 5  (walls: 2 v 0)
+  -- turn 6
+    p1: heavy2 sleeps; keep1 sleeps; keep2 sleeps; runner1 moves east; runner2 moves south; scout1 moves east; scout2 moves east
+    p2: lance11 moves west; lance2 holds; lance7 holds; lance9 moves north; runner1 moves east
+      runner1 stays at (7, 7): the move would leave the board
+      runner1 engages lance2 at (1, 2)
+      scout1 joins the contest at (2, 1)
+      scout2 moves to (7, 1)
+      runner2 moves to (7, 3)
+      lance9 joins the contest at (2, 1)
+      lance11 moves to (4, 2)
+      (1, 2) is contested by 2 units
+      runner1 attacks lance2 for 2
+      lance2 is destroyed
+      runner1 holds (1, 2)
+      (2, 1) is contested by 2 units
+      lance9 attacks scout1 for 8
+      scout1 is destroyed
+      lance9 holds (2, 1)
+      lance2 is woken by the blow
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 sleeps
+      runner1 thinks for 31 ticks, pays 0, moves east
+      runner2 thinks for 30 ticks, pays 0, moves south
+      scout1 thinks for 62 ticks, pays 0, moves east
+      scout2 thinks for 62 ticks, pays 0, moves east
+      lance11 thinks for 31 ticks, pays 0, moves west
+      lance2 thinks for 6 ticks, pays 0, holds
+      lance7 thinks for 6 ticks, pays 0, holds
+      lance9 thinks for 30 ticks, pays 0, moves north
+      runner1 thinks for 33 ticks, pays 0, moves east
+      heavy2 rests and recovers to 11 energy
+      runner1 rests and recovers to 8 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 10 energy
+      lance7 rests and recovers to 9 energy
+      lance9 rests and recovers to 3 energy
+      lance11 rests and recovers to 10 energy
+    p2: - runner1 at (7,7): the move would leave the board
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!| | | | |o|
++-+-+-+-+-+-+-+-+
+| |r| | |!| |!| |
++-+-+-+-+-+-+-+-+
+| | | | | | | |r|
++-+-+-+-+-+-+-+-+
+| | | | |H| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | |r|
++-+-+-+-+-+-+-+-+
+    after turn 6: in play 6 v 4  (walls: 2 v 0)
+  -- turn 7
+    p1: heavy2 moves east; keep1 sleeps; keep2 sleeps; runner1 moves east; runner2 moves south; scout2 moves south
+    p2: lance11 moves north; lance7 sleeps; lance9 holds; runner1 moves east
+      runner1 stays at (7, 7): the move would leave the board
+      heavy2 moves to (5, 4)
+      runner1 moves to (2, 2)
+      scout2 moves to (7, 2)
+      runner2 moves to (7, 4)
+      lance11 moves to (4, 1)
+      heavy2 thinks for 31 ticks, pays 0, moves east
+      keep1 sleeps
+      keep2 sleeps
+      runner1 thinks for 31 ticks, pays 0, moves east
+      runner2 thinks for 30 ticks, pays 0, moves south
+      scout2 thinks for 40 ticks, pays 0, moves south
+      lance11 thinks for 30 ticks, pays 0, moves north
+      lance7 sleeps
+      lance9 thinks for 6 ticks, pays 0, holds
+      runner1 thinks for 33 ticks, pays 0, moves east
+      heavy2 rests and recovers to 10 energy
+      runner1 rests and recovers to 9 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 10 energy
+      lance7 rests and recovers to 10 energy
+      lance9 rests and recovers to 5 energy
+      lance11 rests and recovers to 10 energy
+    p2: - runner1 at (7,7): the move would leave the board
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!| |!| | | |
++-+-+-+-+-+-+-+-+
+| | |r| | | |!|o|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |H| |r|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | |r|
++-+-+-+-+-+-+-+-+
+    after turn 7: in play 6 v 4  (walls: 2 v 0)
+  -- turn 8
+    p1: heavy2 moves south; keep1 sleeps; keep2 sleeps; runner1 moves east; runner2 moves south; scout2 moves south
+    p2: lance11 moves west; lance7 moves west; lance9 sleeps; runner1 moves east
+      runner1 stays at (7, 7): the move would leave the board
+      heavy2 moves to (5, 5)
+      runner1 moves to (3, 2)
+      scout2 moves to (7, 3)
+      runner2 moves to (7, 5)
+      lance7 moves to (5, 2)
+      lance11 moves to (3, 1)
+      heavy2 thinks for 30 ticks, pays 0, moves south
+      keep1 sleeps
+      keep2 sleeps
+      runner1 thinks for 31 ticks, pays 0, moves east
+      runner2 thinks for 30 ticks, pays 0, moves south
+      scout2 thinks for 40 ticks, pays 0, moves south
+      lance11 thinks for 31 ticks, pays 0, moves west
+      lance7 thinks for 31 ticks, pays 0, moves west
+      lance9 sleeps
+      runner1 thinks for 33 ticks, pays 0, moves east
+      heavy2 rests and recovers to 9 energy
+      runner1 rests and recovers to 10 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 10 energy
+      lance7 rests and recovers to 10 energy
+      lance9 rests and recovers to 7 energy
+      lance11 rests and recovers to 10 energy
+    p2: - runner1 at (7,7): the move would leave the board
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!|!| | | | |
++-+-+-+-+-+-+-+-+
+| | | |r| |!| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | |o|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |H| |r|
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | |r|
++-+-+-+-+-+-+-+-+
+    after turn 8: in play 6 v 4  (walls: 2 v 0)
+  -- turn 9
+    p1: heavy2 moves east; keep1 sleeps; keep2 sleeps; runner1 moves south; runner2 moves south; scout2 moves west
+    p2: lance11 moves north; lance7 moves west; lance9 holds; runner1 moves east
+      runner1 stays at (7, 7): the move would leave the board
+      heavy2 moves to (6, 5)
+      runner1 moves to (3, 3)
+      scout2 moves to (6, 3)
+      runner2 moves to (7, 6)
+      lance7 moves to (4, 2)
+      lance11 engages keep1 at (3, 0)
+      (3, 0) is contested by 2 units
+      keep1 attacks lance11 for 1
+      lance11 attacks keep1 for 8
+      the contest at (3, 0) is undecided between keep1,lance11
+      lance11 falls back to (3, 1)
+      keep1 holds (3, 0)
+      keep1 is woken by the blow
+      heavy2 thinks for 31 ticks, pays 0, moves east
+      keep1 sleeps, and is woken
+      keep2 sleeps
+      runner1 thinks for 30 ticks, pays 0, moves south
+      runner2 thinks for 30 ticks, pays 0, moves south
+      scout2 thinks for 49 ticks, pays 0, moves west
+      lance11 thinks for 30 ticks, pays 0, moves north
+      lance7 thinks for 31 ticks, pays 0, moves west
+      lance9 thinks for 6 ticks, pays 0, holds
+      runner1 thinks for 33 ticks, pays 0, moves east
+      heavy2 rests and recovers to 8 energy
+      runner1 rests and recovers to 10 energy
+      keep1 rests and recovers to 5 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 10 energy
+      lance7 rests and recovers to 10 energy
+      lance9 rests and recovers to 9 energy
+      lance11 rests and recovers to 3 energy
+    p2: - runner1 at (7,7): the move would leave the board
+    p1: - keep1 at (3,0): the contest at (3, 0) was undecided
+    p2: - lance11 at (3,1): the contest at (3, 0) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!|!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | |!| | | |
++-+-+-+-+-+-+-+-+
+| | | |r| | |o| |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | | |r|
++-+-+-+-+-+-+-+-+
+| | | | | | | |r|
++-+-+-+-+-+-+-+-+
+    after turn 9: in play 6 v 4  (walls: 2 v 0)
+  -- turn 10
+    p1: heavy2 moves south; keep1 holds; keep2 sleeps; runner1 moves east; runner2 moves south; scout2 moves west
+    p2: lance11 holds; lance7 moves north; lance9 sleeps; runner1 moves east
+      runner1 stays at (7, 7): the move would leave the board
+      heavy2 moves to (6, 6)
+      runner1 moves to (4, 3)
+      scout2 moves to (5, 3)
+      runner2 engages runner1 at (7, 7)
+      lance7 moves to (4, 1)
+      (7, 7) is contested by 2 units
+      runner1 attacks runner2 for 2
+      runner2 attacks runner1 for 2
+      the contest at (7, 7) is undecided between runner1,runner2
+      runner2 falls back to (7, 6)
+      runner1 holds (7, 7)
+      heavy2 thinks for 30 ticks, pays 0, moves south
+      keep1 thinks for 1 ticks, pays 0, holds
+      keep2 sleeps
+      runner1 thinks for 31 ticks, pays 0, moves east
+      runner2 thinks for 30 ticks, pays 0, moves south
+      scout2 thinks for 52 ticks, pays 0, moves west
+      lance11 thinks for 6 ticks, pays 0, holds
+      lance7 thinks for 30 ticks, pays 0, moves north
+      lance9 sleeps
+      runner1 thinks for 33 ticks, pays 0, moves east
+      heavy2 rests and recovers to 7 energy
+      runner1 rests and recovers to 10 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 9 energy
+      lance7 rests and recovers to 10 energy
+      lance9 rests and recovers to 10 energy
+      lance11 rests and recovers to 5 energy
+      runner1 rests and recovers to 10 energy
+    p2: - runner1 at (7,7): the move would leave the board
+    p1: - runner2 at (7,6): the contest at (7, 7) was undecided
+    p2: - runner1 at (7,7): the contest at (7, 7) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!|!|!| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |r|o| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H|r|
++-+-+-+-+-+-+-+-+
+| | | | | | | |r|
++-+-+-+-+-+-+-+-+
+    after turn 10: in play 6 v 4  (walls: 2 v 0)
+  -- turn 11
+    p1: heavy2 holds; keep1 sleeps; keep2 sleeps; runner1 moves south; runner2 moves south; scout2 moves south
+    p2: lance11 sleeps; lance7 moves north; lance9 moves north; runner1 moves west
+      runner1 moves to (4, 4)
+      scout2 moves to (5, 4)
+      runner2 moves to (7, 7)
+      lance7 engages keep2 at (4, 0)
+      lance9 engages wall1 at (2, 0)
+      runner1 moves to (6, 7)
+      (2, 0) is contested by 2 units
+      lance9 attacks wall1 for 8
+      the contest at (2, 0) is undecided between lance9,wall1
+      lance9 falls back to (2, 1)
+      wall1 holds (2, 0)
+      (4, 0) is contested by 2 units
+      keep2 attacks lance7 for 1
+      lance7 is destroyed
+      lance7 attacks keep2 for 8
+      keep2 holds (4, 0)
+      keep2 is woken by the blow
+      heavy2 thinks for 6 ticks, pays 0, holds
+      keep1 sleeps
+      keep2 sleeps, and is woken
+      runner1 thinks for 30 ticks, pays 0, moves south
+      runner2 thinks for 30 ticks, pays 0, moves south
+      scout2 thinks for 40 ticks, pays 0, moves south
+      lance11 sleeps
+      lance7 thinks for 41 ticks, pays 0, moves north
+      lance9 thinks for 41 ticks, pays 0, moves north
+      runner1 thinks for 30 ticks, pays 0, moves west
+      heavy2 rests and recovers to 9 energy
+      runner1 rests and recovers to 10 energy
+      keep2 rests and recovers to 5 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 10 energy
+      lance9 rests and recovers to 3 energy
+      lance11 rests and recovers to 7 energy
+      runner1 rests and recovers to 10 energy
+    p1: - wall1 at (2,0): the contest at (2, 0) was undecided
+    p2: - lance9 at (2,1): the contest at (2, 0) was undecided
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!|!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |r|o| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | | |r|r|
++-+-+-+-+-+-+-+-+
+    after turn 11: in play 6 v 3  (walls: 2 v 0)
+  -- turn 12
+    p1: heavy2 sleeps; keep1 sleeps; keep2 holds; runner1 moves south; runner2 moves west; scout2 moves east
+    p2: lance11 holds; lance9 holds; runner1 moves west
+      runner1 moves to (4, 5)
+      scout2 moves to (6, 4)
+      runner2 moves to (6, 7)
+      runner1 moves to (5, 7)
+      heavy2 sleeps
+      keep1 sleeps
+      keep2 thinks for 1 ticks, pays 0, holds
+      runner1 thinks for 30 ticks, pays 0, moves south
+      runner2 thinks for 31 ticks, pays 0, moves west
+      scout2 thinks for 52 ticks, pays 0, moves east
+      lance11 thinks for 6 ticks, pays 0, holds
+      lance9 thinks for 6 ticks, pays 0, holds
+      runner1 thinks for 30 ticks, pays 0, moves west
+      heavy2 rests and recovers to 11 energy
+      runner1 rests and recovers to 10 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 10 energy
+      lance9 rests and recovers to 5 energy
+      lance11 rests and recovers to 9 energy
+      runner1 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!|!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |o| |
++-+-+-+-+-+-+-+-+
+| | | | |r| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | |H| |
++-+-+-+-+-+-+-+-+
+| | | | | |r|r| |
++-+-+-+-+-+-+-+-+
+    after turn 12: in play 6 v 3  (walls: 2 v 0)
+  -- turn 13
+    p1: heavy2 moves west; keep1 sleeps; keep2 sleeps; runner1 moves south; runner2 moves west; scout2 moves west
+    p2: lance11 sleeps; lance9 sleeps; runner1 moves west
+      heavy2 moves to (5, 6)
+      runner1 moves to (4, 6)
+      scout2 moves to (5, 4)
+      runner2 moves to (5, 7)
+      runner1 moves to (4, 7)
+      heavy2 thinks for 31 ticks, pays 0, moves west
+      keep1 sleeps
+      keep2 sleeps
+      runner1 thinks for 30 ticks, pays 0, moves south
+      runner2 thinks for 31 ticks, pays 0, moves west
+      scout2 thinks for 52 ticks, pays 0, moves west
+      lance11 sleeps
+      lance9 sleeps
+      runner1 thinks for 30 ticks, pays 0, moves west
+      heavy2 rests and recovers to 10 energy
+      runner1 rests and recovers to 10 energy
+      scout2 rests and recovers to 12 energy
+      runner2 rests and recovers to 10 energy
+      lance9 rests and recovers to 7 energy
+      lance11 rests and recovers to 10 energy
+      runner1 rests and recovers to 10 energy
++-+-+-+-+-+-+-+-+
+| | |W|K|K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!|!| | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |o| | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |r|H| | |
++-+-+-+-+-+-+-+-+
+| | | | |r|r| | |
++-+-+-+-+-+-+-+-+
+    after turn 13: in play 6 v 3  (walls: 2 v 0)
+  -- turn 14
+    p1: heavy2 holds; keep1 sleeps; keep2 sleeps; runner1 moves south; runner2 moves west; scout2 moves west
+    p2: lance11 moves north; lance9 holds; runner1 moves west
+      runner1 joins the contest at (4, 7)
+      scout2 moves to (4, 4)
+      runner2 joins the contest at (4, 7)
+      lance11 engages keep1 at (3, 0)
+      runner1 moves to (3, 7)
+      (3, 0) is contested by 2 units
+      keep1 attacks lance11 for 1
+      lance11 is destroyed
+      lance11 attacks keep1 for 8
+      keep1 is destroyed
+      (3, 0) is left empty
+      (4, 7) is contested by 2 units
+      runner1 attacks runner2 for 2
+      runner2 is destroyed
+      runner2 attacks runner1 for 2
+      runner1 holds (4, 7)
+      keep1 is woken by the blow
+      heavy2 thinks for 39 ticks, pays 0, holds
+      keep1 sleeps, and is woken
+      keep2 sleeps
+      runner1 thinks for 30 ticks, pays 0, moves south
+      runner2 thinks for 31 ticks, pays 0, moves west
+      scout2 thinks for 52 ticks, pays 0, moves west
+      lance11 thinks for 30 ticks, pays 0, moves north
+      lance9 thinks for 6 ticks, pays 0, holds
+      runner1 thinks for 26 ticks, pays 0, moves west
+      heavy2 rests and recovers to 12 energy
+      runner1 rests and recovers to 9 energy
+      scout2 rests and recovers to 12 energy
+      lance9 rests and recovers to 9 energy
+      runner1 rests and recovers to 10 energy
+      keep1 carried player 1's flag, and it has fallen
++-+-+-+-+-+-+-+-+
+| | |W| |K|W| | |
++-+-+-+-+-+-+-+-+
+| | |!| | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | |o| | | |
++-+-+-+-+-+-+-+-+
+| | | | | | | | |
++-+-+-+-+-+-+-+-+
+| | | | | |H| | |
++-+-+-+-+-+-+-+-+
+| | | |r|r| | | |
++-+-+-+-+-+-+-+-+
+    p1 is eliminated from turn 14
+    after turn 14: in play 4 v 2  (walls: 2 v 0)
+  game over: player 2 wins on turn 14
+  final units:
+    p1 heavy2   Heavy   a5 h10 (5,6) hp 2 en 12
+    p1 keep2    Keep    a1 h10 (4,0) hp 2 en 5
+    p1 runner1  Runner  a2 h4 (4,7) hp 2 en 9
+    p1 scout2   Scout   a0 h2 (4,4) hp 2 en 12
+    p1 wall1    Wall    a0 h10 (2,0) hp 2 en 0
+    p1 wall2    Wall    a0 h10 (5,0) hp 10 en 0
+    p2 lance9   Lance   a8 h2 (2,1) hp 2 en 9
+    p2 runner1  Runner  a2 h4 (3,7) hp 2 en 10 flag

@@ -7,7 +7,10 @@
 # explorer went round the enemies it knows of; and game 247, the mirror once
 # more with ties for the nearest square settled towards each seat's own edge;
 # and games 251-270, the eighth series: the whole draw again under the
-# default that plays, the Scout's explorer, the contact rule and the tie-break.
+# default that plays, the Scout's explorer, the contact rule and the tie-break;
+# and games 271-290, the ninth series: the whole draw again once every unit
+# standing on the board recovers 2 energy a turn whatever it did (R3.9), and
+# a controller thinks a hundred ticks a point with subroutines to hand (R10).
 #
 # Each game is one `arena.py` invocation and writes its own log, so the series
 # can be resumed: a game whose log already ends in an outcome line is skipped.
@@ -73,6 +76,26 @@ DRAW="
 268 fugitive   executioner
 269 flag_hunt  flag_hunt
 270 advance    advance
+271 garrison   garrison
+272 advance    garrison
+273 flag_hunt  garrison
+274 screen     garrison
+275 flag_hunt  lancers
+276 flag_hunt  heavies
+277 flag_hunt  runners
+278 flag_hunt  bulwark
+279 flag_hunt  executioner
+280 flag_hunt  fugitive
+281 lancers    heavies
+282 lancers    runners
+283 lancers    bulwark
+284 heavies    runners
+285 heavies    bulwark
+286 runners    bulwark
+287 executioner lancers
+288 fugitive   executioner
+289 flag_hunt  flag_hunt
+290 advance    advance
 "
 
 played() {

@@ -244,7 +244,7 @@ keep to count as evidence, as the `match-series` capability.
 | `match-series` — A Series Is Played On The Game's Defaults | `test_match_harness.py`'s slow test, which plays Garrison against Garrison and reads `8x8`, `320` and the halves back from the log; the harness sends `add player` and `commit` and nothing else |
 | `match-series` — The Outcome Is Read From The Game | `test_match_harness.py`, for a seat's status read from the record's own list of the eliminated, for a wall not being counted in play, and for Garrison against Garrison stopping undecided on its first repeated state - in process, and through the roles |
 | `match-series` — Every Game Leaves A Record That Can Be Checked | the log, the roles' transcripts and the history each game writes under `matches/logs/`; `matches/check_records.py` reads them back, and the slow test runs it on the game it played; the series script skips a game whose log ends in an outcome |
-| `match-series` — A Series Write-Up Says What It Was Played Under | `matches/RESULTS-ARMY-THAT-PLAYS.md` at its head; the seven earlier write-ups carry the superseded notice |
+| `match-series` — A Series Write-Up Says What It Was Played Under | `matches/RESULTS-REST-FOR-EVERYONE.md` at its head; the eight earlier write-ups carry the superseded notice |
 
 The doctrines are held to the game before a game is played: every type a
 doctrine fields is run through `UnitType` with its program, every program

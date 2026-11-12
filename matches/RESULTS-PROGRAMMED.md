@@ -6,8 +6,8 @@
 > these games were played when a unit recovered 1, and only on a turn it
 > was given no order, paid for nothing and was not charged by its meter.
 > Every hunter's pauses to afford its next step, and every count of turns
-> between blows below, belong to the old rule. The games have not been
-> replayed.
+> between blows below, belong to the old rule. The whole draw played again
+> under the new one is `RESULTS-REST-FOR-EVERYONE.md`.
 >
 > **Played under superseded rules.** Since these games were played the
 > default array was rearranged and the Pawn became a vanguard

@@ -619,7 +619,7 @@ game's own defaults: nothing names a board size or a budget, so it is the
 ```
 python matches/arena.py --game 221 --p1 matches/bots/flag_hunt.yaml \
                         --p2 matches/bots/lancers.yaml   # one game
-matches/series.sh                                        # games 221-240
+matches/series.sh                                        # every game of the draw
 PARALLEL=4 matches/series.sh 225 226                     # some, at once
 ```
 
@@ -627,8 +627,8 @@ Each game writes `matches/logs/game_<n>.log` - each seat's setup, the
 board after every turn, what every turn did, every refusal, the outcome and
 the final units - beside the roles' transcripts and a turn-by-turn history
 in JSON. The series are written up in `matches/RESULTS-*.md`; the current
-one is `matches/RESULTS-ARMY-THAT-PLAYS.md`, and the earlier ones say at their
-head which rules they were played under. `tests/test_match_harness.py`
+one is `matches/RESULTS-REST-FOR-EVERYONE.md`, and the earlier ones say at
+their head which rules they were played under. `tests/test_match_harness.py`
 checks every doctrine's army and programs against the game's own rules
 without playing a game; `pytest -m slow tests/test_match_harness.py` plays
 a short game through the real roles as well.
