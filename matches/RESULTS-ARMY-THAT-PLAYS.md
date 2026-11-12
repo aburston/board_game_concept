@@ -1,5 +1,14 @@
 # Twenty games with an army that plays
 
+> **Played under superseded rules.** Since these games were played the
+> rest rule changed (`rest-for-everyone`): every unit standing on the board
+> now recovers 2 energy at the end of every turn, whatever it did, where
+> these games were played when a unit recovered 1, and only on a turn it
+> was given no order, paid for nothing and was not charged by its meter.
+> Every hunter's pauses to afford its next step, and every count of turns
+> between blows below, belong to the old rule. The games have not been
+> replayed.
+
 The eighth series: the draw of the seventh played again, under the default
 army the seventh showed was needed. Nobody ordered anything in these games
 either. What differs is what a player who commits the army they are handed

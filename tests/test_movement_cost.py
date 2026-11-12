@@ -20,16 +20,30 @@ from board_game_concept import Board, Player, UnitType
 #: what each permitted health pays for a square
 FARES = {1: 1, 2: 1, 3: 1, 4: 1, 5: 2, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3}
 
+#: what every standing unit gets back at the end of a turn (R3.9), which
+#: every energy read after a turn here carries
+GAIN = UnitType.REST_GAIN
+
 
 def board_with(units, size_x=6, size_y=3):
-    """`units` are `(player, name, x, y, attack, health, energy)`."""
+    """`units` are `(player, name, x, y, attack, health, energy)`.
+
+    Each type is designed with `GAIN` more energy than its unit starts the
+    turn holding, so that the turn's gain is never hidden by the cap and the
+    fare can be read: a unit ends a turn at what it held, less what it paid,
+    plus `GAIN`. A hundred is the most a type may hold, so a unit that must
+    start below its cap starts at ninety here rather than a hundred.
+    """
     board = Board(size_x, size_y)
     players = {}
     for number, name, x, y, attack, health, energy in units:
         player = players.setdefault(number, Player(number))
         board.add(player, x, y, name,
-                  UnitType(name, name[0].upper(), attack, health, energy))
+                  UnitType(name, name[0].upper(), attack, health,
+                           min(100, energy + GAIN)))
     board.commit()
+    for number, name, x, y, attack, health, energy in units:
+        board.getUnitByName(name)[0].setEnergy(energy)
     return board
 
 
@@ -49,11 +63,11 @@ def at(board, name):
 
 @pytest.mark.parametrize('health,fare', sorted(FARES.items()))
 def test_a_move_costs_a_quarter_of_the_units_maximum_health(health, fare):
-    board = board_with([(1, 'u', 0, 0, 1, health, 100)])
+    board = board_with([(1, 'u', 0, 0, 1, health, 90)])
     order(board, ('u', UnitType.EAST))
     unit = board.getUnitByName('u')[0]
     assert unit.move_cost == fare
-    assert unit.energy == 100 - fare
+    assert unit.energy == 90 - fare + GAIN
     assert at(board, 'u') == (1, 0)
 
 
@@ -65,11 +79,11 @@ def test_the_fare_is_the_ceiling_and_never_zero():
 
 
 def test_the_lightest_unit_pays_one_and_the_heaviest_three():
-    board = board_with([(1, 'scout', 0, 0, 1, 1, 100),
-                        (1, 'brute', 0, 2, 1, 10, 100)])
+    board = board_with([(1, 'scout', 0, 0, 1, 1, 90),
+                        (1, 'brute', 0, 2, 1, 10, 90)])
     order(board, ('scout', UnitType.EAST), ('brute', UnitType.EAST))
-    assert board.getUnitByName('scout')[0].energy == 99
-    assert board.getUnitByName('brute')[0].energy == 97
+    assert board.getUnitByName('scout')[0].energy == 89 + GAIN
+    assert board.getUnitByName('brute')[0].energy == 87 + GAIN
 
 
 def test_the_fare_is_a_step_and_health_one_to_four_are_equally_quick():
@@ -78,18 +92,18 @@ def test_the_fare_is_a_step_and_health_one_to_four_are_equally_quick():
     That was impossible when the fare was the health itself, and it is the
     price of a fare that fits in three values while health fits in ten.
     """
-    board = board_with([(1, 'thin', 0, 0, 1, 1, 100),
-                        (1, 'stout', 0, 2, 1, 4, 100)])
+    board = board_with([(1, 'thin', 0, 0, 1, 1, 90),
+                        (1, 'stout', 0, 2, 1, 4, 90)])
     order(board, ('thin', UnitType.EAST), ('stout', UnitType.EAST))
-    assert board.getUnitByName('thin')[0].energy == 99
-    assert board.getUnitByName('stout')[0].energy == 99
+    assert board.getUnitByName('thin')[0].energy == 89 + GAIN
+    assert board.getUnitByName('stout')[0].energy == 89 + GAIN
 
 
 def test_the_fare_is_the_same_from_any_starting_energy():
-    for energy in (2, 5, 50, 99, 100):
+    for energy in (2, 5, 50, 90, 98):
         board = board_with([(1, 'u', 0, 0, 1, 8, energy)])
         order(board, ('u', UnitType.EAST))
-        assert board.getUnitByName('u')[0].energy == energy - 2
+        assert board.getUnitByName('u')[0].energy == energy - 2 + GAIN
 
 
 def test_a_unit_with_exactly_its_fare_moves_and_is_spent():
@@ -98,7 +112,7 @@ def test_a_unit_with_exactly_its_fare_moves_and_is_spent():
     order(board, ('u', UnitType.EAST))
     unit = board.getUnitByName('u')[0]
     assert at(board, 'u') == (1, 0)
-    assert unit.energy == 0
+    assert unit.energy == 0 + GAIN, 'spent, and then the turn gives back'
 
 
 def test_a_unit_of_one_health_with_a_single_energy_can_still_move():
@@ -107,7 +121,7 @@ def test_a_unit_of_one_health_with_a_single_energy_can_still_move():
     order(board, ('u', UnitType.EAST))
     unit = board.getUnitByName('u')[0]
     assert at(board, 'u') == (1, 0)
-    assert unit.energy == 0
+    assert unit.energy == 0 + GAIN
 
 
 # --- what happens when the fare cannot be paid
@@ -119,7 +133,7 @@ def test_a_unit_one_energy_short_of_its_fare_does_not_move():
     events = order(board, ('u', UnitType.EAST))
     unit = board.getUnitByName('u')[0]
     assert at(board, 'u') == (0, 0)
-    assert unit.energy == 1
+    assert unit.energy == 1 + GAIN, 'paid nothing, and recovered'
     assert [e.detail['reason'] for e in events if e.kind == 'refused'] == [
         'not enough energy to move']
 
@@ -132,9 +146,9 @@ def test_a_heavy_unit_is_refused_on_energy_a_light_one_could_spend():
         board.getUnitByName(name)[0].setEnergy(2)
     events = order(board, ('light', UnitType.EAST), ('heavy', UnitType.EAST))
     assert at(board, 'light') == (1, 0)
-    assert board.getUnitByName('light')[0].energy == 0
+    assert board.getUnitByName('light')[0].energy == 0 + GAIN
     assert at(board, 'heavy') == (0, 2)
-    assert board.getUnitByName('heavy')[0].energy == 2
+    assert board.getUnitByName('heavy')[0].energy == 2 + GAIN
     assert [(e.detail['unit'], e.detail['reason'])
             for e in events if e.kind == 'refused'] == [
         ('heavy', 'not enough energy to move')]
@@ -144,14 +158,14 @@ def test_a_heavy_unit_is_refused_on_energy_a_light_one_could_spend():
 
 
 def test_a_wounded_unit_pays_what_it_paid_while_whole():
-    board = board_with([(1, 'u', 0, 0, 1, 8, 100)])
+    board = board_with([(1, 'u', 0, 0, 1, 8, 90)])
     order(board, ('u', UnitType.EAST))
-    whole = 100 - board.getUnitByName('u')[0].energy
+    whole = 90 + GAIN - board.getUnitByName('u')[0].energy
 
     board.getUnitByName('u')[0].setHealth(1)
     before = board.getUnitByName('u')[0].energy
     order(board, ('u', UnitType.EAST))
-    wounded = before - board.getUnitByName('u')[0].energy
+    wounded = before + GAIN - board.getUnitByName('u')[0].energy
 
     assert whole == 2
     assert wounded == 2
@@ -165,7 +179,7 @@ def test_a_wounded_unit_is_refused_where_a_lighter_type_would_move():
     unit.setEnergy(1)
     events = order(board, ('u', UnitType.EAST))
     assert at(board, 'u') == (0, 0)
-    assert board.getUnitByName('u')[0].energy == 1
+    assert board.getUnitByName('u')[0].energy == 1 + GAIN
     assert board.getUnitByName('u')[0].move_cost == 2
     assert any(e.kind == 'refused' for e in events)
 
@@ -178,11 +192,12 @@ def collide(board):
 
 
 def fare_paid(board, name, before, events):
-    """What the move cost, with the fight's share of the bill taken off."""
+    """What the move cost, with the fight's share of the bill taken off
+    and the turn's gain put back."""
     unit = board.getUnitByName(name)[0]
     attacks = sum(1 for e in events
                   if e.kind == 'attacked' and e.detail['unit'] == name)
-    return before - unit.energy - attacks * unit.attack
+    return before + GAIN - unit.energy - attacks * unit.attack
 
 
 def test_colliding_units_of_different_weights_pay_differently():
@@ -232,7 +247,7 @@ def test_health_is_paid_for_twice_over():
     assert heavy.cost > light.cost, 'the heavier costs more to deploy'
     assert heavy.move_cost > light.move_cost, 'and more for every square'
     assert 50 // heavy.move_cost < 50 // light.move_cost, \
-        'so it has fewer squares in it before it must rest'
+        'so it has fewer squares in it before it must wait to recover'
 
 
 def test_the_heavier_never_pays_less_though_it_may_pay_the_same():

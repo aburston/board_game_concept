@@ -87,27 +87,31 @@ def test_a_player_who_loses_their_last_unit_is_eliminated(tmp_path):
 
 
 def test_a_unit_with_energy_left_keeps_its_owner_in_the_game(tmp_path):
-    # one square costs o1 two energy - a quarter of its health, rounded up -
-    # and leaves it a point it can do nothing at all with: too little to move
-    # again, far too little for an attack of 5. A point of energy is still a
-    # point of energy, and its owner is still in
-    harness = duel(tmp_path, mine=(1, 10, 50), theirs=(5, 5, 3),
+    # one square costs o1 three energy - a quarter of its health, rounded up
+    # - which is all it had, and the turn's gain leaves it two it can do
+    # nothing at all with: too little to move again, far too little for an
+    # attack of 5. Energy it cannot spend yet is still energy, and its owner
+    # is still in
+    harness = duel(tmp_path, mine=(1, 10, 50), theirs=(5, 10, 3),
                    their_units=[('O', 'o1', 5, 2)])
     harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
-    assert harness.units()['o1'].energy == 1
+    o1 = harness.units()['o1']
+    assert o1.energy == 2 and o1.energy < o1.move_cost < o1.attack
     assert harness.session(0).getEliminated() == []
     assert outcome(harness) is None
 
 
 def test_a_spent_unit_still_keeps_its_owner_in_the_game(tmp_path):
-    # o1 has one point of energy and walks it off. It is out of energy, not
-    # out of the game: resting will give it back (R3.9), so it still counts
-    harness = duel(tmp_path, mine=(1, 10, 50), theirs=(1, 2, 1),
+    # o1 has three energy, which is one square at its weight, and walks it
+    # off. It cannot move again this turn or next, but it is spent, not out
+    # of the game: every turn gives it two back (R3.9), so it still counts
+    harness = duel(tmp_path, mine=(1, 10, 50), theirs=(1, 10, 3),
                    their_units=[('O', 'o1', 5, 2)])
     harness.turn({1: [], 2: [('o1', UnitType.NORTH)]})
 
     spent = harness.units()['o1']
-    assert spent.energy == 0
+    assert spent.energy == 0 + UnitType.REST_GAIN
+    assert spent.energy < spent.move_cost
     assert spent.on_board and not spent.destroyed
     assert harness.session(0).getEliminated() == []
     assert outcome(harness) is None

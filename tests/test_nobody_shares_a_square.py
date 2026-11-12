@@ -204,8 +204,11 @@ def test_being_forced_back_costs_no_energy():
     board.commit()
 
     energy = {unit.name: unit.energy for unit in board.units}
-    assert energy['lead'] == 15 - 3 - 5, 'its fare, and the strike it ordered'
-    assert energy['back'] == 15 - 3, 'its fare, and nothing for the pile-up'
+    gain = UnitType.REST_GAIN
+    assert energy['lead'] == 15 - 3 - 5 + gain, (
+        'its fare, the strike it ordered, and the turn\'s gain back')
+    assert energy['back'] == 15 - 3 + gain, (
+        'its fare, nothing for the pile-up, and the turn\'s gain back')
 
 
 def test_a_free_blow_still_needs_a_unit_that_can_fight():
@@ -282,10 +285,10 @@ def test_a_wall_never_strikes_back():
 def test_one_unit_destroys_a_wall_over_time_if_it_has_the_energy():
     """One attack a turn, for as long as it can pay for one.
 
-    A unit ordered in every turn cannot: it is forced back out, walks in again
-    at the ordinary fare, and a unit given an order does not rest (`R3.9`), so
-    it grinds down to nothing having landed one blow. Left alone between
-    attacks it recovers, and a wall comes down.
+    A Heavy pays its fare and its strike - eight of its fifteen - to land a
+    blow, and gets two back a turn whatever it did (`R3.9`), so the nine it
+    is left holding pays the second blow at once: a wall of ten health comes
+    down to two blows of five on two turns running.
     """
     from board_game_concept.domain import army
     catalogue = army.types()
@@ -307,14 +310,16 @@ def test_one_unit_destroys_a_wall_over_time_if_it_has_the_energy():
         turns += 1
 
     assert wall.destroyed is True
-    assert turns == 3, 'strike, rest, strike'
+    assert turns == 2, 'strike, strike'
 
 
-def test_a_unit_ordered_in_every_turn_cannot_keep_it_up():
-    """Which is why the walls in a played game were untouched at full health.
-
-    Ordering it in again the moment it is forced back spends the fare and
-    stops it resting, so it never affords a second blow.
+def test_a_unit_ordered_in_every_turn_grinds_a_wall_down_all_the_same():
+    """Being ordered in again the moment it is forced back no longer costs
+    a unit its recovery (`R3.9`), so ordering it in every turn is no worse
+    than waiting: it pays the fare for every walk back in, gets two back a
+    turn, and lands a blow each time it can afford one. Under the old rule
+    the order stopped it resting, and the walls in a played game stood
+    untouched at full health for it.
     """
     from board_game_concept.domain import army
     catalogue = army.types()
@@ -327,10 +332,15 @@ def test_a_unit_ordered_in_every_turn_cannot_keep_it_up():
     heavy = board.getUnitByName('h', one)[0]
     wall = board.getUnitByName('w', two)[0]
 
-    for _turn in range(8):
+    blows = []
+    for turn in range(1, 9):
         heavy.move(UnitType.NORTH)
-        board.commit()
+        events = board.commit()
+        if any(e.kind == 'attacked' and e.detail['unit'] == 'h'
+               for e in events):
+            blows.append(turn)
+        if wall.destroyed:
+            break
 
-    assert wall.destroyed is False
-    assert wall.health == 5, 'one blow landed, and never a second'
-    assert heavy.energy < heavy.attack, 'it spent itself walking back in'
+    assert wall.destroyed is True
+    assert blows == [1, 2], 'fifteen pays the first, and what is left the second'

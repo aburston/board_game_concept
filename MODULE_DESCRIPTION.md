@@ -44,7 +44,8 @@ touching the parts that do not care.
   board, a unit: name, symbol, attack, health, energy and compute, the
   program its units run, plus the direction and state constants. Holds
   movement, combat and contest resolution, the meter a unit pays its ticks
-  through, the sleep that rests it, and `cost` - what deploying one unit of
+  through, the sleep that switches its controller off, the energy every
+  standing unit gets back at the end of a turn (`REST_GAIN`), and `cost` - what deploying one unit of
   the design spends, compute included.
 - **`program.py`** - the controller: `Program`, which parses a program and
   refuses one that will not run, and the register machine that runs it.

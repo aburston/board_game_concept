@@ -14,15 +14,15 @@ def test_a_sleeping_controller_does_not_run_and_the_unit_rests():
     board, players = setup((1, [(sleeper, [('s1', 0, 0)])]),
                            (2, [(quiet, [('q1', 7, 7)])]))
     me = unit(board, players, 1, 's1')
-    me.energy = 5
+    me.energy = 1
     board.commit(turn=1)                 # thinks, marks, sleeps
     assert me.memory == {0: 1} and me.asleep == 3
     me.memory.clear()
     for turn in (2, 3, 4):
         board.commit(turn=turn)
         assert me.memory == {}, f'the controller ran on turn {turn}'
-    # thought nothing and paid nothing on the first turn either: 5 -> 6 ->
-    # 7 -> 8 -> 9
+    # two back on every turn, the one it slept on included: 1 -> 3 -> 5 ->
+    # 7 -> 9
     assert me.energy == 9
     board.commit(turn=5)
     assert me.memory == {0: 1}
@@ -48,10 +48,11 @@ def test_a_blow_wakes_a_sleeper_who_fights_back():
     board, players = setup((1, [(sleeper, [('s1', 0, 0)])]),
                            (2, [(lance, [('l1', 0, 1)])]))
     me = unit(board, players, 1, 's1')
+    me.energy = 6
     board.commit(turn=1)                 # s1 sleeps; l1 steps onto it
     assert me.asleep == 0
     assert me.health == 7                # struck for 3
-    assert me.energy == 8                # struck back for 2, no rest
+    assert me.energy == 6 - 2 + 2        # struck back for 2, two back
     assert unit(board, players, 2, 'l1').health == 2
     assert me.trace['woken'] is True
     me.memory.clear()
@@ -101,4 +102,4 @@ def test_a_struck_sleeper_that_cannot_pay_still_rests():
     board.commit(turn=1)
     board.commit(turn=2)                 # the scout walks in; s1 is woken
     assert me.asleep == 0
-    assert me.energy == 4                # rested on both turns
+    assert me.energy == 6                # two back on both turns

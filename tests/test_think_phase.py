@@ -120,13 +120,15 @@ class TestTheMeterOnTheBoard:
                         '\n'.join(['SELF'] * 60))               # 60 ticks
         board, players = setup((1, [(pawn, [('p1', 0, 0)])]),
                                (2, [(pawn, [('p2', 7, 7)])]))
+        me = unit(board, players, 1, 'p1')
+        me.energy = 1                    # below the cap, so the gain shows
         energies = []
         for turn in range(1, 6):
             board.commit(turn=turn)
-            energies.append(unit(board, players, 1, 'p1').energy)
-        # pays on the fourth turn, and rests on the fifth, when the meter
-        # did not fill and nothing was ordered
-        assert energies == [10, 10, 10, 9, 10]
+            energies.append(me.energy)
+        # two back every turn; the meter charges one on the fourth, when it
+        # fills, so that turn nets one
+        assert energies == [3, 5, 7, 8, 10]
         assert unit(board, players, 1, 'p1').meter == 100
 
     def test_thinking_leaves_less_for_the_fare(self):
@@ -137,13 +139,15 @@ class TestTheMeterOnTheBoard:
         me.energy = 1
         me.meter = 199
         events = board.commit(turn=1)
-        assert me.energy == 0
+        # the meter took its one, the move was refused for it, and the turn
+        # then gave two back
+        assert me.energy == 0 + UnitType.REST_GAIN
         assert (me.x, me.y) == (0, 0)
         refused = [e for e in events if e.kind == 'refused'
                    and e.detail['unit'] == 't1']
         assert refused and 'energy' in refused[0].detail['reason']
 
-    def test_a_unit_whose_meter_charged_does_not_rest(self):
+    def test_a_unit_whose_meter_charged_recovers_all_the_same(self):
         thinker = UnitType('T', 't', 1, 4, 10, 1,
                            '\n'.join(['SELF'] * 100))            # 100 ticks
         board, players = setup((1, [(thinker, [('t1', 0, 0)])]),
@@ -151,16 +155,16 @@ class TestTheMeterOnTheBoard:
         me = unit(board, players, 1, 't1')
         me.energy = 5
         board.commit(turn=1)
-        assert me.energy == 4                    # paid 1, rested nothing
+        assert me.energy == 5 - 1 + 2            # paid 1, recovered 2
 
-    def test_a_unit_that_thought_a_little_and_gave_no_order_rests(self):
+    def test_a_unit_that_thought_a_little_and_gave_no_order_recovers(self):
         thinker = UnitType('T', 't', 1, 4, 10, 5, 'SELF\nHOLD')
         board, players = setup((1, [(thinker, [('t1', 0, 0)])]),
                                (2, [(thinker, [('t2', 7, 7)])]))
         me = unit(board, players, 1, 't1')
         me.energy = 5
         board.commit(turn=1)
-        assert me.energy == 6
+        assert me.energy == 7
 
     def test_a_halted_controller_holds_and_is_traced(self):
         looper = UnitType('L', 'l', 1, 4, 10, 2, 'MOVE south\nloop:\nSELF\nJMP loop')

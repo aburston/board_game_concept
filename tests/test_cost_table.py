@@ -82,8 +82,8 @@ def test_a_type_that_could_never_move_is_refused(cost_table):
 
 
 def test_the_rest_gain_is_the_one_the_game_gives(cost_table):
-    assert UnitType.REST_GAIN == 1, (
-        'REST_GAIN changed; R9 says a quiet turn gains 1 energy')
+    assert UnitType.REST_GAIN == 2, (
+        'REST_GAIN changed; R9 says every turn gives 2 energy back')
     assert f'**gains {UnitType.REST_GAIN} energy**' in cost_table
 
 

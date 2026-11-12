@@ -130,7 +130,7 @@ def _facing_pair(attacker_energy=40, defender_energy=40):
     # the energies are the units', not the types': a type must be designed
     # holding at least its health, since that is what one move costs, and
     # spending it down is what play does. Set after the deployment turn has
-    # resolved, because a unit holding less than its design rests through it
+    # resolved, because a unit holding less than its design recovers through it
     board = Board(4, 2)
     p1, p2 = Player(1), Player(2)
     board.add(p1, 0, 0, 'a', UnitType('A', 'A', 3, 6, 40))
@@ -190,7 +190,7 @@ def test_a_unit_too_spent_to_attack_still_arrives():
     # contest it walked into
     attacker.move(UnitType.EAST)
     events = board.commit()
-    assert attacker.energy == 0
+    assert attacker.energy == 0 + UnitType.REST_GAIN, 'spent, then the gain'
     assert not any(e.kind == 'attacked' and e.detail['unit'] == 'a'
                    for e in events)
     assert not attacker.destroyed or attacker.health <= 0
@@ -203,7 +203,7 @@ def test_a_unit_that_cannot_pay_the_fare_does_not_move():
     attacker.move(UnitType.EAST)
     events = board.commit()
     assert (attacker.x, attacker.y) == (0, 0)
-    assert attacker.energy == 0
+    assert attacker.energy == 0 + UnitType.REST_GAIN, 'paid nothing'
     assert [e.detail['reason'] for e in events if e.kind == 'refused'] == [
         'not enough energy to move']
 

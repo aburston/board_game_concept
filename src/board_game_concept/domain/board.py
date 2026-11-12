@@ -302,8 +302,8 @@ class Board:
         turn began and gives its unit's order, then units waiting to be
         deployed are placed, then every move is planned against that same
         board and applied together, then every square more than one unit
-        finished in is fought out, and then every unit that did none of it
-        recovers a point of energy.
+        finished in is fought out, and then every unit still standing
+        recovers `REST_GAIN` energy, whatever it did.
 
         `turn` is the number of the turn being resolved, which the sensors
         report and the map stamps; left out, it is the one after the last
@@ -327,12 +327,6 @@ class Board:
         # an army that was still in the game when the turn started
         self.out = {number for number in self._playerNumbers()
                     if self.flagFallen(number)}
-        # what every standing unit held before the turn ran, so that resting
-        # can tell the ones that paid for nothing - no fare, no strike, no
-        # energy to the meter - from the ones that did. Taken before the
-        # controllers run, because thinking is the first thing a unit pays for
-        before = {unit: unit.energy for unit in self.units
-                  if unit.on_board and not unit.destroyed}
         for unit in self.units:
             unit.woken = False
 
@@ -347,12 +341,6 @@ class Board:
             if unit.on_board:
                 unit.seen_by = []
                 unit.moved_from = None
-        # the units that were given no order - by a controller, or by nobody -
-        # and what they held, for the rest phase. Taken here because the
-        # movement phase consumes the order it is read from (R3.3)
-        resting = {unit: before[unit] for unit in self.units
-                   if unit in before and unit.state != UnitType.MOVING}
-
         # who has struck whom, for the whole turn rather than for one square.
         # A unit strikes each other unit once a turn, and a turn holds more
         # than one exchange now: a contest nobody won sends its movers back
@@ -368,7 +356,7 @@ class Board:
             self.maps.setdefault(number, ArmyMap()).observe(
                 self.units, number, turn)
         self._wake(events)
-        self._rest(events, resting)
+        self._rest(events)
         self._reportFallenFlags(events)
         self.turn = turn
         return events
@@ -571,24 +559,18 @@ class Board:
                                     player=number,
                                     players=owners(carrier)))
 
-    def _rest(self, events, resting):
-        """Give a point of energy back to every unit that did nothing.
+    def _rest(self, events):
+        """Give REST_GAIN energy back to every unit standing on the board.
 
-        Doing nothing means two things together: the unit was given no order,
-        and it paid for nothing while the turn resolved. A unit ordered to
-        move has acted whether or not the move happened - it was ordered off
-        the board, or could not pay the fare - so it does not rest, and
-        walking a unit into the edge every turn is not a way to refuel. A unit
-        that was attacked and could not afford to strike back has taken no
-        action either, and does rest.
-
-        Nothing recovers past the energy its type was designed with, and a
-        destroyed unit recovers nothing.
+        Whatever the unit did this turn - moved, struck, was struck, thought,
+        was charged by its meter, slept or stood still - it recovers the same
+        amount (R3.9). Nothing recovers past the energy its type was designed
+        with, so a type designed with none recovers nothing, and a destroyed
+        unit recovers nothing. The turn's account reports a rest only where
+        the energy rose, so a full army at rest is not a line per unit.
         """
-        for unit, before in resting.items():
+        for unit in self.units:
             if unit.destroyed or not unit.on_board:
-                continue
-            if unit.energy != before:
                 continue
             if unit.energy >= unit.type_energy:
                 continue
