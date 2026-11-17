@@ -662,7 +662,9 @@ PLAYER  NAME   SYMBOL  ATTACK  HEALTH  ENERGY  COMPUTE  PROGRAM  COST
 A type's program is written in a file and given to the type with
 `set program <type> <file>`, during setup. `show program <type>` lists it
 back with the ticks each line costs and the per-turn cap the type's compute
-buys; `GAME_RULES.md` R10 is the instruction set and the tariff.
+buys; `GAME_RULES.md` R10 is the instruction set and the tariff, and
+`PROGRAMMING_GUIDE.md` is the guide to writing programs, with a reference
+for every instruction.
 
 # Completion
 
