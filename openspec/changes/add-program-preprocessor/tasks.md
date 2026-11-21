@@ -47,4 +47,4 @@
 
 ## 7. Integration
 
-- [ ] 7.1 Run the full test suite and `python -m board_game_concept.test_suite`, and play one stock-army game end to end through `matches/arena.py`, confirming it resolves to an outcome and every controller trace is free of halts
+- [x] 7.1 Run the full test suite and `python -m board_game_concept.test_suite`, and play one stock-army game end to end through `matches/arena.py`, confirming it resolves to an outcome and every controller trace is free of halts
