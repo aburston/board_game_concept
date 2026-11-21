@@ -65,14 +65,26 @@ give different units different roles.
 
 ### Requirement: A Program Is Checked When It Is Set
 
-A program SHALL be checked when it is set: an instruction that is not in the
-set, a malformed operand, or a jump or call to a label that does not exist
-SHALL be refused, naming the line, and the type's program SHALL be unchanged.
+A program SHALL be checked when it is set, after it is expanded: an
+instruction that is not in the set, a malformed operand, a jump or call to a
+label that does not exist, or a directive the preprocessor refuses SHALL be
+refused, naming the source line, and the type's program SHALL be unchanged.
 A program SHALL NOT be refused for what it would do.
 
 #### Scenario: A program with an unknown instruction
 
 - **WHEN** a player sets a program containing a line that is not an instruction
+- **THEN** it is refused, naming the line
+- **AND** the type's program is as it was
+
+#### Scenario: An unknown instruction from a macro
+
+- **WHEN** a macro expands to a line that is not an instruction
+- **THEN** it is refused, naming the source line that used the macro and the macro's name
+
+#### Scenario: A bad directive
+
+- **WHEN** a program contains a directive the preprocessor does not accept
 - **THEN** it is refused, naming the line
 - **AND** the type's program is as it was
 
@@ -411,3 +423,15 @@ be empty when the next run begins.
 
 - **WHEN** a program ends a run inside a subroutine, by `HALT` or `SLEEP`
 - **THEN** the next run begins with nothing to return to
+
+### Requirement: A Program's Text May Use Macros
+
+A program's text MAY hold preprocessor directives and macro uses, as
+`program-preprocessor` defines, alongside instructions, labels and comments.
+The instructions every unit of the type runs SHALL be those of the program's
+expansion.
+
+#### Scenario: Setting a program written with macros
+
+- **WHEN** a player sets a program that includes `<unit.h>` and uses its names
+- **THEN** every unit of that type runs the program's expansion from the first turn of play

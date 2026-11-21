@@ -158,7 +158,11 @@ editor for the program it runs: every line is priced in ticks as it is
 written, from the same tariff the server charges, and the total is held
 against the per-turn cap the type's compute buys, so a program that does not
 fit its type is seen before a turn says so. The server checks the program
-when it is set and names the line it refused.
+when it is set and names the line it refused. Programs can use a C-style
+macro preprocessor - `#define` names for registers and numbers, inline
+helpers, `#include <unit.h>` for the machine's own names - and the default
+programs are written with it, so they read as a description of what the unit
+does.
 
 The record tells you what every turn did. Every unit is drawn with the
 health it has left against the health its type was built with, so a unit a

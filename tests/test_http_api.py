@@ -5,6 +5,8 @@ what the unit tests need: one request, one response, no background thread.
 The end-to-end observer coverage lives in `test_observer_over_http.py`.
 """
 
+import json
+
 import pytest
 
 from board_game_concept.domain import army
@@ -456,6 +458,39 @@ def test_a_program_is_set_and_read_back_with_its_listing(tmp_path):
     assert [(line['line'], line['ticks']) for line in
             listing['program']['lines']] == [(1, 1), (2, 1)]
     assert listing['program']['total'] == 2
+    # a line that reads as it runs has nothing to show for its expansion
+    assert [line['expanded'] for line in listing['program']['lines']] == [
+        [], []]
+
+
+def test_a_program_with_macros_is_read_back_as_written_and_priced(tmp_path):
+    _set_up_in_setup(tmp_path)
+    web = _client(tmp_path)
+    web.post('/games/two/players/1/commands',
+             json={'kind': 'add_type', 'name': 'Runner', 'symbol': 'r',
+                   'attack': 1, 'health': 4, 'energy': 10, 'compute': 3})
+    text = '#include <unit.h>\nUNLESS_AFFORD(2, rest)\nSTEP(south)\nrest: REST\n'
+    assert web.post('/games/two/players/1/commands',
+                    json={'kind': 'set_program', 'type_name': 'Runner',
+                          'program': text}).status_code == 204
+    listing = web.get('/games/two/players/1/programs/Runner').get_json()
+    program = listing['program']
+    assert program['program'] == text
+    assert [(line['line'], line['ticks'], line['expanded'])
+            for line in program['lines']] == [
+        (1, None, []),
+        (2, 3, ['SELF', 'SUB r3, 2', 'JIF neg r3, rest']),
+        (3, 1, ['MOVE south', 'HALT']),
+        (4, 1, ['rest: SLEEP 1'])]
+    assert program['total'] == 5
+
+
+def test_the_tariff_publishes_the_headers(tmp_path):
+    from board_game_concept.domain.preprocess import UNIT_H
+    web = _client(tmp_path)
+    tariff = web.get('/_/program').get_json()
+    assert tariff['headers'] == {'unit.h': UNIT_H}
+    assert '#define NORTH 1' in tariff['headers']['unit.h']
 
 
 def test_a_bad_program_is_refused_naming_the_line(tmp_path):
@@ -498,6 +533,8 @@ def test_a_seats_request_for_another_seats_trace_gets_nothing(tmp_path):
     web = _a_programmed_game(tmp_path)
     second = web.get('/games/programmed/players/1/turns/2').get_json()['turn']
     assert {trace['unit'] for trace in second['traces']} == {'u1'}
+    # and nothing of any program: not its text, not what it expands to
+    assert 'SELF' not in json.dumps(second) and 'SLEEP' not in json.dumps(second)
     # the observer is given every seat's
     everyone = web.get('/games/programmed/players/1000/turns/2'
                        ).get_json()['turn']

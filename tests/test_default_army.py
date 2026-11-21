@@ -410,3 +410,232 @@ def test_the_explorer_with_a_subroutine_gives_the_same_orders():
             assert (before.order, before.sleep) == (after.order, after.sleep)
             assert memory_old == memory_new
             assert after.halted is None
+
+
+# --- the doctrine of each default program
+#
+# What the catalogue says each program does, held on hand-built boards. The
+# programs are written for readability first and may change their shape, so
+# the bar is the doctrine and not the instruction stream: these are what a
+# rewrite has to pass, and they were written against the programs they
+# replaced before anything was rewritten.
+
+
+def think(type_name, square, *, friends=(), enemies=(), visited=(),
+          flags=None, energy=None, memory=None, turn=5):
+    """Run a catalogue type's program once for a unit of player 1 standing
+    on `square` of an 8 by 8 board, against what its army knows."""
+    from board_game_concept.domain.army_map import ArmyMap
+    from board_game_concept.domain.program import Program, Snapshot, run
+    record = army.types()[type_name]
+    program = Program(record['program'])
+    known = ArmyMap()
+    for x, y in visited:
+        known.visited[(x, y)] = 1
+    for x, y in enemies:
+        known.enemies[(x, y)] = (turn - 1, 3, 6)
+    allies = {'me': square}
+    allies.update({f'friend{i}': at for i, at in enumerate(friends)})
+    snap = Snapshot(turn, 8, 8, 1, allies,
+                    {1: (3, 0), 2: (3, 7)} if flags is None else flags,
+                    known)
+    me = {'x': square[0], 'y': square[1], 'health': record['health'],
+          'energy': record['energy'] if energy is None else energy,
+          'flag': False, 'number': 0}
+    memory = {} if memory is None else memory
+    result = run(program, snap, me, None, memory, [], record['compute'],
+                 me['energy'], 0)
+    assert result.halted is None, result.halted
+    return result, memory
+
+
+NORTH, EAST, SOUTH, WEST = 1, 2, 3, 4
+
+
+class TestTheHunter:
+    """Walks at the nearest enemy flag, round its own units, fighting what it
+    meets; sleeps when it cannot afford a step and a strike, or when both
+    ways round stand its own."""
+
+    def test_an_open_way_steps_towards_the_flag(self):
+        for type_name in ('Runner', 'Line', 'Lance', 'Heavy'):
+            result, _ = think(type_name, (2, 2))
+            assert result.order == SOUTH, type_name
+            assert result.sleep is None
+
+    def test_a_friend_ahead_is_stepped_round(self):
+        result, _ = think('Runner', (2, 2), friends=[(2, 3)])
+        assert result.order == EAST
+
+    def test_both_ways_blocked_sleeps_a_turn(self):
+        result, _ = think('Runner', (2, 2), friends=[(2, 3), (3, 2)])
+        assert result.order is None and result.sleep == 1
+
+    def test_too_poor_for_a_step_and_a_strike_sleeps_a_turn(self):
+        for type_name, need in (('Runner', 3), ('Line', 5), ('Lance', 9),
+                                ('Heavy', 8)):
+            result, _ = think(type_name, (2, 2), energy=need - 1)
+            assert result.order is None and result.sleep == 1, type_name
+            result, _ = think(type_name, (2, 2), energy=need)
+            assert result.order == SOUTH, type_name
+
+    def test_no_enemy_flag_left_sleeps(self):
+        result, _ = think('Runner', (2, 2), flags={1: (3, 0)})
+        assert result.order is None and result.sleep == 1
+
+    def test_an_enemy_in_the_way_is_walked_into(self):
+        """Fighting what it meets: a known enemy is not something to avoid."""
+        result, _ = think('Runner', (2, 2), enemies=[(2, 3)])
+        assert result.order == SOUTH
+
+
+class TestTheExplorer:
+    """Walks at the nearest unknown square onto unknown or empty squares
+    only, a step aside when the way is blocked; sleeps when there is nothing
+    left to find, or when twenty turns have not brought it nearer."""
+
+    ROWS_0_TO_2 = [(x, y) for x in range(8) for y in range(3)]
+
+    def test_an_unknown_square_is_walked_at(self):
+        result, _ = think('Scout', (2, 2), visited=self.ROWS_0_TO_2)
+        assert result.order == SOUTH
+
+    def test_a_blocked_way_means_a_step_aside(self):
+        result, _ = think('Scout', (2, 2), visited=self.ROWS_0_TO_2,
+                          friends=[(2, 3)])
+        assert result.order in (EAST, WEST)
+
+    def test_it_never_steps_onto_a_known_enemy_or_its_own(self):
+        result, _ = think('Scout', (2, 2), visited=self.ROWS_0_TO_2,
+                          friends=[(2, 3)], enemies=[(3, 2)])
+        assert result.order == WEST
+
+    def test_nowhere_to_step_rests_a_turn(self):
+        result, _ = think('Scout', (2, 2), visited=self.ROWS_0_TO_2,
+                          friends=[(2, 3), (3, 2), (1, 2)])
+        assert result.order is None and result.sleep == 1
+
+    def test_nothing_left_to_find_sleeps_long(self):
+        everywhere = [(x, y) for x in range(8) for y in range(8)]
+        result, _ = think('Scout', (2, 2), visited=everywhere)
+        assert result.order is None and result.sleep == 100
+
+    def test_too_poor_for_a_step_sleeps_a_turn(self):
+        result, _ = think('Scout', (2, 2), energy=0)
+        assert result.order is None and result.sleep == 1
+
+    def test_twenty_turns_without_getting_nearer_gives_up(self):
+        memory = None
+        for turn in range(22):
+            result, memory = think('Scout', (2, 2), visited=self.ROWS_0_TO_2,
+                                   friends=[(2, 3), (3, 2), (1, 2)],
+                                   memory=memory, turn=turn + 1)
+            if result.sleep == 100:
+                break
+        else:
+            raise AssertionError('never gave up')
+        assert 19 <= turn <= 21
+
+    def test_getting_nearer_starts_the_count_again(self):
+        """Nineteen turns stalled, then a turn that brings it nearer than it
+        has been: it steps, and the count starts from nothing."""
+        memory = {1: 3, 2: 19}
+        result, memory = think('Scout', (2, 2), visited=self.ROWS_0_TO_2,
+                               memory=memory)
+        assert result.order == SOUTH
+        assert memory[1] == 1 and memory[2] == 0
+
+
+class TestTheVanguard:
+    """Steps towards the enemy's edge when it can afford a step and a strike,
+    never onto one of its own; sleeps a turn otherwise."""
+
+    def test_it_steps_at_the_enemy_edge(self):
+        result, _ = think('Pawn', (1, 1))
+        assert result.order == SOUTH
+
+    def test_too_poor_sleeps_a_turn(self):
+        result, _ = think('Pawn', (1, 1), energy=1)
+        assert result.order is None and result.sleep == 1
+
+    def test_one_of_its_own_in_front_means_waiting(self):
+        result, _ = think('Pawn', (1, 1), friends=[(1, 2)])
+        assert result.order is None and result.sleep == 1
+
+    def test_at_the_enemy_edge_it_waits(self):
+        result, _ = think('Pawn', (1, 7))
+        assert result.order is None and result.sleep == 1
+
+    def test_an_enemy_in_front_is_walked_into(self):
+        result, _ = think('Pawn', (1, 1), enemies=[(1, 2)])
+        assert result.order == SOUTH
+
+
+class TestTheWarden:
+    """Holds its square, sleeping a hundred turns at a time."""
+
+    def test_it_sleeps_a_hundred_turns(self):
+        result, _ = think('Keep', (3, 0))
+        assert result.order is None and result.sleep == 100
+
+
+# --- the default programs read as words
+
+import re
+
+
+def own_lines(text):
+    """A program's own instruction lines: no directives, comments or blanks."""
+    lines = []
+    continuing = False
+    for raw in text.splitlines():
+        line = raw.split(';', 1)[0].rstrip()
+        if continuing or line.lstrip().startswith('#'):
+            continuing = line.endswith('\\')
+            continue
+        if line.strip():
+            lines.append(line.strip())
+    return lines
+
+
+def test_every_default_program_reads_as_words():
+    """Each includes the unit header, names its registers and constants, and
+    names no direction or map answer by number."""
+    for name, record in army.types().items():
+        text = record['program']
+        if text is None:
+            continue
+        assert '#include <unit.h>' in text, name
+        for line in own_lines(text):
+            # no raw register: every one the program keeps a value in has a
+            # name, given by a #define
+            assert not re.search(r'\br[0-7]\b', line), (name, line)
+            # no direction by number
+            assert not re.search(r'\bMOVE\s+\d', line), (name, line)
+            # no map answer or direction as a bare number against what MAP
+            # or SELF answered: SET, SUB and ADD with a literal are left to
+            # counting, as `ADD look_x, 1` is
+            assert not re.search(r'\b(SUB|SET)\s+\w+,\s*[2-4]\b', line), (
+                name, line)
+
+
+def test_a_player_can_copy_a_default_program_onto_their_own_type(tmp_path):
+    """What a catalogue type's program reads back as can be set, as it
+    stands, on a type of the player's own, and thinks as the catalogue's."""
+    from board_game_concept.service import games
+    from board_game_concept.service.commands import AddType, SetProgram
+    from board_game_concept.service.replay import program_view
+    harness = GameHarness(tmp_path)
+    harness.create(army.DEFAULT_SIZE_X, army.DEFAULT_SIZE_Y, [1, 2])
+    session = harness.session(1)
+    shown = program_view(session.getPlayers()[1]['types']['Runner'])
+    games.perform(session, AddType(name='Hound', symbol='h', attack=2,
+                                   health=4, energy=10, compute=5))
+    games.perform(session, SetProgram(type_name='Hound',
+                                      program=shown['program']))
+    mine = session.getPlayers()[1]['types']['Hound']
+    assert mine['program'] == shown['program']
+    assert (program_view(mine)['total'] == shown['total']
+            and shown['total'] > 0)
+    assert Program(mine['program']).instructions == Program(
+        army.types()['Runner']['program']).instructions

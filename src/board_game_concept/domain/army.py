@@ -58,211 +58,288 @@ DEFAULT_SIZE_Y = 8
 # type's per-turn cap of ten ticks a point of compute on every turn, which
 # `tests/test_default_army.py` holds it to
 
-# a controller that goes for the nearest enemy flag by the shortest route
-# round its own units - a square one of its own stands on is never stepped
-# onto, because a contest is fought with whoever is in the square - and
-# sleeps a turn when it cannot afford both the step and the strike it may
-# have to land on arriving. `{need}` is the fare plus the attack of the type
-# that carries it: the one number that differs between the types that hunt.
-# A hunter blocked both ways has run most of the program to find out, and
-# sleeps a turn rather than pay to hold - a rest costs nothing, and the way
-# may be clear next turn. Thirty-three ticks on its longest path, which is
-# why nothing that runs it has less than four compute
-HUNTER = """
-; hunt: walk at the nearest enemy flag, round my own units
-SELF                 ; r0 x, r1 y, r3 energy
-MOV r6, r0
-MOV r7, r1
-SUB r3, {need}       ; a step and a strike
-JIF neg r3, rest
-{target}             ; r0, r1 = where to go, or -1
-JIF neg r0, rest
-SUB r0, r6           ; dx
-SUB r1, r7           ; dy
-MOV r4, r0
-MOV r5, r1
-SIGN r4              ; which way along the row, or 0
-SIGN r5              ; which way down the column, or 0
-ABS r0
-ABS r1
-JIF lt r0, r1, vfirst
-CALL row             ; along the row first, unless one of mine stands there
-JIF zero r0, vonly
-JMP goh
-vfirst: CALL col     ; down the column first
-JIF zero r0, honly
-JMP gov
-vonly: CALL col      ; the row is blocked: the column, if it is clear
-JIF zero r0, stay
-JMP gov
-honly: CALL row      ; the column is blocked: the row, if it is clear
-JIF zero r0, stay
-goh: JIF pos r4, east
-MOVE west
-HALT
-east: MOVE east
-HALT
-gov: JIF pos r5, south
-MOVE north
-HALT
-south: MOVE south
-HALT
-stay: SLEEP 1        ; both ways stand one of mine: rest until one moves
-rest: SLEEP 1
-; what stands where I would step along the row, or down the column: r0 is
-; 0 for one of mine - or my own square, when the step is nowhere
-row: MOV r2, r6
-ADD r2, r4
-MOV r3, r7
-JMP look
-col: MOV r2, r6
-MOV r3, r7
-ADD r3, r5
-look: MAP r2, r3
-SUB r0, 2
-RET
+# Every default program is written with the preprocessor - `#include
+# <unit.h>` for the machine's names, `#define` for its own - so that it reads
+# as a description of what the unit does rather than as register numbers.
+# A program's parameters are `#define`d above it by the function that builds
+# it, as lines the player can read and edit: `#define NEED 3` is the one
+# number that differs between the types that hunt.
+
+# a controller that goes for the nearest enemy flag by the shorter axis
+# first and round its own units - a square one of its own stands on is never
+# stepped onto, because a contest is fought with whoever is in the square -
+# and sleeps a turn when it cannot afford both the step and the strike it
+# may have to land on arriving. A hunter blocked both ways has run most of
+# the program to find out, and sleeps a turn rather than pay to hold - a rest
+# costs nothing, and the way may be clear next turn. Fifty-odd ticks on its
+# longest path, well inside the four compute of the least thoughtful hunter
+HUNTER = """\
+#include <unit.h>
+; hunter: walk at the nearest enemy flag, round my own units, and fight
+; whatever I walk into. I set out only when I can afford a step and the
+; strike that may follow it, so that I arrive able to fight; when I cannot,
+; or when my own units stand both ways round, I rest a turn.
+;
+; NEED is a step's fare plus my attack; TARGET is what I walk at
+
+#ifndef TARGET
+#define TARGET FLAG enemy
+#endif
+
+; my registers. The sensors write r0 to r3, so what I keep lives above them
+#define here_x   r6
+#define here_y   r7
+#define way_x    r4          ; -1 west, 0 level, 1 east: towards the flag
+#define way_y    r5          ; -1 north, 0 level, 1 south
+#define row_gap  FOUND_X     ; how far along the row the flag is
+#define col_gap  FOUND_Y     ; how far down the column
+#define look_x   r2          ; the square I am thinking of stepping onto
+#define look_y   r3
+#define can_step r0          ; what the look-ahead answers: 1 to go
+#define heading  r0          ; the direction number of my step
+
+        UNLESS_AFFORD(NEED, rest)
+        MOV here_x, MY_X
+        MOV here_y, MY_Y
+        TARGET
+        IF_NONE(FOUND_X, rest)              ; nothing left to hunt
+
+        SUB row_gap, here_x
+        SUB col_gap, here_y
+        MOV way_x, row_gap
+        SIGN way_x
+        MOV way_y, col_gap
+        SIGN way_y
+        ABS row_gap
+        ABS col_gap
+        IF_BELOW(row_gap, col_gap, column_first)
+
+row_first:
+        CALL row_is_clear
+        IF_NONZERO(can_step, step_along_row)
+        CALL column_is_clear
+        IF_NONZERO(can_step, step_down_column)
+        REST                                ; my own stand both ways: wait
+column_first:
+        CALL column_is_clear
+        IF_NONZERO(can_step, step_down_column)
+        CALL row_is_clear
+        IF_NONZERO(can_step, step_along_row)
+        REST
+
+step_along_row:
+        ROW_STEP(way_x, heading)
+        STEP(heading)
+step_down_column:
+        COLUMN_STEP(way_y, heading)
+        STEP(heading)
+rest:   REST
+
+; may I step the next square along the row, or down the column? Not onto
+; one of my own - and a way of 0 looks at my own square, so a level axis
+; answers no. Anything else, an enemy included, is something to walk into
+row_is_clear:
+        MOV look_x, here_x
+        ADD look_x, way_x
+        MOV look_y, here_y
+        GOTO(is_it_mine)
+column_is_clear:
+        MOV look_x, here_x
+        MOV look_y, here_y
+        ADD look_y, way_y
+is_it_mine:
+        LOOK_AT(look_x, look_y)
+        IF_SEEN(FRIEND, mine)
+        SET can_step, 1
+        RET
+mine:   SET can_step, 0
+        RET
 """
 
 
-def hunter(need, target='FLAG enemy'):
-    return HUNTER.format(need=need, target=target)
+def hunter(need, target=None):
+    """The hunter for a type whose step and strike cost `need`, walking at
+    `target` - a sensor line - or the nearest enemy flag."""
+    defines = f'#define NEED {need}\n'
+    if target is not None:
+        defines += f'#define TARGET {target}\n'
+    return defines + HUNTER
 
 
-# the Scout's controller. A Scout strikes nothing, so a step onto an enemy is
-# a contest it cannot win and a fare for nothing. The explorer walks at the
-# nearest square its army does not know, trying four steps in turn - down
-# the column towards it, along the row towards it, and a step aside each
-# way - and takes the first onto a square its map calls unknown or empty,
-# never onto one of its own, an enemy it knows of, or off the board. It
-# remembers how near it has got to what it is looking for: twenty turns
+# the Scout's controller. A Scout strikes nothing, so a step onto an enemy
+# is a contest it cannot win and a fare for nothing. The explorer walks at
+# the nearest square its army does not know, trying four steps in turn -
+# down the column towards it, along the row towards it, and a step aside
+# each way - and takes the first onto a square its map calls unknown or
+# empty, never onto one of its own, an enemy it knows of, or off the board.
+# It remembers how near it has got to what it is looking for: twenty turns
 # without getting nearer means the unknown is behind something it cannot
 # pass, and it sleeps a hundred turns rather than pace for ever, which is
-# what kept a game alive to the cap. Nothing left to find, it sleeps too.
-# `{need}` is its fare, since it has no strike to pay for. Directions are
-# numbers here - north 1, east 2, south 3, west 4 - so a step down the
-# column is 2 plus the sign of dy and along the row 3 minus the sign of dx
-EXPLORER = """
-; explore: walk at the nearest unknown square, round what is in the way
-SELF                 ; r0 x, r1 y, r3 energy
-MOV r6, r0
-MOV r7, r1
-SUB r3, {need}
-JIF neg r3, rest
-NEAREST unknown      ; r0, r1 = where, r2 = how far, or -1
-JIF neg r0, none
-MOV r4, r0
-MOV r5, r1
-LOAD r3, 1           ; the nearest I have been to one, or 0 at the start
-JIF zero r3, nearer
-JIF lt r2, r3, nearer
-LOAD r3, 2           ; turns without getting nearer
-ADD r3, 1
-STORE r3, 2
-SET r0, 20
-JIF lt r0, r3, none  ; too long: it is behind something I cannot pass
-JMP go
-nearer: STORE r2, 1
-SET r3, 0
-STORE r3, 2
-go: SUB r4, r6       ; dx
-SUB r5, r7           ; dy
-SIGN r4
-SIGN r5
-MOV r2, r6           ; first: down the column towards it
-MOV r3, r7
-ADD r3, r5
-CALL peek
-JIF notzero r0, gocol
-MOV r2, r6           ; second: along the row towards it
-ADD r2, r4
-MOV r3, r7
-CALL peek
-JIF notzero r0, gorow
-MOV r2, r6           ; third: a step aside, east
-ADD r2, 1
-MOV r3, r7
-CALL peek
-JIF notzero r0, goeast
-MOV r2, r6           ; fourth: a step aside, west
-SUB r2, 1
-MOV r3, r7
-CALL peek
-JIF notzero r0, gowest
-JMP rest             ; nowhere to step this turn
-gocol: SET r0, 2
-ADD r0, r5
-MOVE r0
-HALT
-gorow: SET r0, 3
-SUB r0, r4
-MOVE r0
-HALT
-goeast: MOVE east
-HALT
-gowest: MOVE west
-HALT
-none: SLEEP 100      ; nothing left to find that I can reach
-rest: SLEEP 1
-; can I step onto (r2, r3)? r0 is 1 for a square my map calls unknown or
-; empty, 0 for one of mine, an enemy I know of, or off the board
-peek: MAP r2, r3
-SET r3, 2
-JIF lt r0, r3, yes
-SET r0, 0
-RET
-yes: SET r0, 1
-RET
+# what kept a game alive to the cap. Nothing left to find, it sleeps too
+EXPLORER = """\
+#include <unit.h>
+; explorer: walk at the nearest square my army knows nothing of. I strike
+; nothing, so I step only onto squares my map calls unknown or empty -
+; never onto one of my own, an enemy I know of, or off the board - trying
+; the column towards it, then the row, then a step aside each way. I
+; remember how near I have got: twenty turns without getting nearer means
+; what I am looking for is behind something I cannot pass, and I sleep a
+; hundred turns rather than pace. Nothing left to find, I sleep too.
+;
+; NEED is a step's fare: I have no strike to pay for
+
+; my registers. The sensors write r0 to r3, so what I keep lives above them
+#define here_x   r6
+#define here_y   r7
+#define way_x    r4          ; -1 west, 0 level, 1 east: towards the unknown
+#define way_y    r5          ; -1 north, 0 level, 1 south
+#define look_x   r2          ; the square I am thinking of stepping onto
+#define look_y   r3
+#define count    r3          ; a number read from my memory
+#define limit    r0
+#define can_step r0          ; what may_step answers: 1 to go
+#define heading  r0          ; the direction number of my step
+
+; my memory, by word: how near I have ever been to an unknown square, and
+; how many turns running I have failed to get nearer
+#define NEAREST_YET   1
+#define TURNS_STALLED 2
+#define PATIENCE      20
+
+        UNLESS_AFFORD(NEED, rest)
+        MOV here_x, MY_X
+        MOV here_y, MY_Y
+        NEAREST unknown
+        IF_NONE(FOUND_X, nothing_left)
+        MOV way_x, FOUND_X
+        MOV way_y, FOUND_Y
+
+; am I nearer than I have ever been?
+        LOAD count, NEAREST_YET             ; 0 before I have seen one
+        IF_ZERO(count, nearer)
+        IF_BELOW(FOUND_DIST, count, nearer)
+        LOAD count, TURNS_STALLED           ; no: one more turn stalled
+        ADD count, 1
+        STORE count, TURNS_STALLED
+        SET limit, PATIENCE
+        IF_BELOW(limit, count, nothing_left) ; too long: it is out of reach
+        GOTO(choose_a_step)
+nearer: STORE FOUND_DIST, NEAREST_YET
+        SET count, 0
+        STORE count, TURNS_STALLED
+
+choose_a_step:
+        SUB way_x, here_x
+        SUB way_y, here_y
+        SIGN way_x
+        SIGN way_y
+        MOV look_x, here_x                  ; first: down the column
+        MOV look_y, here_y
+        ADD look_y, way_y
+        CALL may_step
+        IF_NONZERO(can_step, step_down_column)
+        MOV look_x, here_x                  ; second: along the row
+        ADD look_x, way_x
+        MOV look_y, here_y
+        CALL may_step
+        IF_NONZERO(can_step, step_along_row)
+        MOV look_x, here_x                  ; third: a step aside, east
+        ADD look_x, 1
+        MOV look_y, here_y
+        CALL may_step
+        IF_NONZERO(can_step, step_east)
+        MOV look_x, here_x                  ; fourth: a step aside, west
+        SUB look_x, 1
+        MOV look_y, here_y
+        CALL may_step
+        IF_NONZERO(can_step, step_west)
+        REST                                ; nowhere to step this turn
+
+step_down_column:
+        COLUMN_STEP(way_y, heading)
+        STEP(heading)
+step_along_row:
+        ROW_STEP(way_x, heading)
+        STEP(heading)
+step_east:
+        STEP(east)
+step_west:
+        STEP(west)
+nothing_left:
+        REST_LONG
+rest:   REST
+
+; may I step onto (look_x, look_y)? Yes for a square my map calls unknown
+; or empty; no for one of mine, an enemy I know of, or off the board
+may_step:
+        LOOK_AT(look_x, look_y)
+        IF_SEEN(UNKNOWN, yes)
+        IF_SEEN(EMPTY, yes)
+        SET can_step, 0
+        RET
+yes:    SET can_step, 1
+        RET
 """
 
 
 def explorer(need=1):
-    return EXPLORER.format(need=need)
+    return f'#define NEED {need}\n' + EXPLORER
 
 
 # a controller for the front rank: step towards the enemy's edge whenever a
 # step and the strike that may follow are affordable, never onto one of my
-# own, and fight whatever the step meets. `{need}` is the fare plus the
-# attack, as for the hunter. The enemy's row is kept in r6, which no sensor
-# writes - SELF fills r0 to r5. Nineteen ticks on its longest path, so it
-# fits a Pawn's cap of thirty with room to think every turn it is awake
-VANGUARD = """
-; vanguard: step at the enemy's edge when I can afford the step and a strike
-FLAG enemy           ; r0, r1 = the enemy flag, or -1
-JIF neg r0, stay
-MOV r6, r1           ; the enemy's row
-SELF                 ; r0 x, r1 y, r3 energy
-SUB r3, {need}
-JIF neg r3, rest
-SUB r6, r1           ; dy to the enemy's edge
-JIF zero r6, stay
-SIGN r6
-MOV r2, r1
-ADD r2, r6           ; the row in front of me
-MAP r0, r2           ; r0 = what my army knows stands there
-SUB r0, 2
-JIF zero r0, stay    ; one of mine: wait for it
-JIF pos r6, south
-MOVE north
-HALT
-south: MOVE south
-HALT
-stay: SLEEP 1
-rest: SLEEP 1
+# own, and fight whatever the step meets. Twenty-odd ticks on its longest
+# path, so it fits a Pawn's cap of three hundred many times over
+VANGUARD = """\
+#include <unit.h>
+; vanguard: step towards the enemy's edge of the board whenever I can afford
+; the step and the strike that may follow it, never onto a square one of my
+; own stands on, and fight whatever the step meets. Otherwise I rest a turn.
+;
+; NEED is a step's fare plus my attack
+
+#define enemy_row r6         ; the row the enemy flag stands on: their edge
+#define ahead     r7         ; -1 or 1: which way down the column they are
+#define front     r2         ; the row of the square in front of me
+#define heading   r0         ; the direction number of my step
+
+        FLAG enemy
+        IF_NONE(FOUND_X, rest)              ; no enemy flag left to go at
+        MOV enemy_row, FOUND_Y
+        UNLESS_AFFORD(NEED, rest)
+        MOV ahead, enemy_row
+        SUB ahead, MY_Y
+        IF_ZERO(ahead, rest)                ; I am at their edge already
+        SIGN ahead
+        MOV front, MY_Y
+        ADD front, ahead
+        LOOK_AT(MY_X, front)
+        IF_SEEN(FRIEND, rest)               ; one of mine: wait for it
+        COLUMN_STEP(ahead, heading)
+        STEP(heading)
+rest:   REST
 """
 
 # a controller that holds its square and sleeps as long as it may, waking
 # to strike back when struck, which is combat's doing and not its own
-WARDEN = """
-; warden: hold the square; a blow wakes me and I strike back
-SLEEP 100
+WARDEN = """\
+#include <unit.h>
+; warden: hold the square and sleep as long as I may. A blow wakes me, and
+; I strike back - which is combat's doing and not mine.
+        REST_LONG
 """
+
+
+def vanguard(need):
+    return f'#define NEED {need}\n' + VANGUARD
+
 
 CATALOGUE = (
     # not `#`: that is the glyph an empty square is drawn with, and a wall
     # drawn as one is a wall a player cannot see on their own board
     ('Wall',   'W', 0, 10,  0, 0, None),
     ('Scout',  'o', 0,  2, 12, 6, explorer()),
-    ('Pawn',   'p', 1,  4,  2, 3, VANGUARD.format(need=2)),
+    ('Pawn',   'p', 1,  4,  2, 3, vanguard(2)),
     ('Runner', 'r', 2,  4, 10, 5, hunter(3)),
     ('Line',   'L', 3,  6, 12, 4, hunter(5)),
     ('Lance',  '!', 8,  2, 10, 4, hunter(9)),
