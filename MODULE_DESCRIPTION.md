@@ -47,8 +47,16 @@ touching the parts that do not care.
   through, the sleep that switches its controller off, the energy every
   standing unit gets back at the end of a turn (`REST_GAIN`), and `cost` - what deploying one unit of
   the design spends, compute included.
-- **`program.py`** - the controller: `Program`, which parses a program and
-  refuses one that will not run, and the register machine that runs it.
+- **`preprocess.py`** - the macro language a program's text is written in:
+  a deterministic subset of the C preprocessor (`#define`, `#undef`,
+  conditionals, `#error`, `##`, `#include` of the headers the game holds -
+  never a file). `expand` turns a text into lines that each remember the
+  source line and the macro they came from, so that refusals, listings and
+  traces speak of what the player wrote. Holds `unit.h`, the header that
+  names the machine, as plain text.
+- **`program.py`** - the controller: `Program`, which expands a program
+  through `preprocess`, parses it and refuses one that will not run, and
+  the register machine that runs it.
   Eight registers, a memory of words, subroutines through a return stack
   that lasts one run, sensors that read the army's map and the unit's own
   state, actuators that give the unit's order, speak on the radio or send

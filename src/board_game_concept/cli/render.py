@@ -301,11 +301,12 @@ def print_program(view):
     if not view['lines']:
         print('no program')
         return
-    print(table(
-        ('LINE', 'TICKS', 'PROGRAM'),
-        [[entry['line'], entry['ticks'], entry['text']]
-         for entry in view['lines']],
-        numeric=('LINE', 'TICKS')))
+    rows = []
+    for entry in view['lines']:
+        rows.append([entry['line'], entry['ticks'], entry['text']])
+        for expanded in entry.get('expanded') or ():
+            rows.append(['', '', '    = ' + expanded])
+    print(table(('LINE', 'TICKS', 'PROGRAM'), rows, numeric=('LINE', 'TICKS')))
     print(f"a straight run costs {view['total']} ticks")
 
 

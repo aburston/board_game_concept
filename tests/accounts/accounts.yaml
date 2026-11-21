@@ -1,0 +1,14 @@
+- created_at: '2026-11-21T16:34:44.880983+00:00'
+  id: 1
+  kind: admin
+  must_change: true
+  password_hash: scrypt:32768:8:1$r4b1Wk5SMoSanxlS$7979b670f3c9f1da6f3f941aadec5bbb46e9d1f58a17e4cedd1c0266f844bd56a16b011209dc4f988129e6ad2e0f35d80f12dc71a00a250490b0105b886209cf
+  username: admin
+  username_key: admin
+- created_at: '2026-11-21T16:34:44.965542+00:00'
+  id: 2
+  kind: observer
+  must_change: true
+  password_hash: scrypt:32768:8:1$v6Yvfjq86vxaVrGf$787608942b38fbb24f6d4b4038b524832adf544dafdcb248d9d40867bd11ba02526d7e3d7c059d29902c3414be2d2e297d8c244204260e1d83e427344f42e0fe
+  username: observer
+  username_key: observer

@@ -7,7 +7,9 @@
 # explorer went round the enemies it knows of; and game 247, the mirror once
 # more with ties for the nearest square settled towards each seat's own edge;
 # and games 251-270, the eighth series: the whole draw again under the
-# default that plays, the Scout's explorer, the contact rule and the tie-break.
+# default that plays, the Scout's explorer, the contact rule and the tie-break;
+# and games 281-285, the five pairings with a stock seat once more, under the
+# default programs rewritten with the preprocessor (`add-program-preprocessor`).
 #
 # Each game is one `arena.py` invocation and writes its own log, so the series
 # can be resumed: a game whose log already ends in an outcome line is skipped.
@@ -73,6 +75,11 @@ DRAW="
 268 fugitive   executioner
 269 flag_hunt  flag_hunt
 270 advance    advance
+281 flag_hunt  flag_hunt
+282 flag_hunt  garrison
+283 advance    flag_hunt
+284 flag_hunt  lancers
+285 flag_hunt  heavies
 "
 
 played() {

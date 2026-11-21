@@ -23,23 +23,38 @@
  */
 export function listing(text, tariff) {
   const ticks = (tariff && tariff.ticks) || null;
+  const macros = definedNames(text, tariff);
   const made = [];
   const lines = String(text || '').split('\n');
   // a text that ends in a newline has no line after it, as the server's
   // own `splitlines` reads it
   if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+  let continuing = false;
   lines.forEach((raw, index) => {
     const number = index + 1;
     let line = raw.split(';', 1)[0].trim();
+    // a directive, or a line continuing one with a trailing backslash,
+    // costs nothing: the preprocessor reads it and the machine never does
+    if (continuing || line.startsWith('#')) {
+      continuing = line.endsWith('\\');
+      made.push({ line: number, text: raw, ticks: null, error: null });
+      return;
+    }
     const labelled = /^([A-Za-z_][\w-]*):\s*(.*)$/.exec(line);
     if (labelled) line = labelled[2].trim();
     if (!line) {
       made.push({ line: number, text: raw, ticks: null, error: null });
       return;
     }
-    const parts = line.split(/[\s,]+/).filter(Boolean);
+    const parts = line.split(/[\s,(]+/).filter(Boolean);
     const op = parts[0].toUpperCase();
     if (!ticks) {
+      made.push({ line: number, text: raw, ticks: null, error: null });
+      return;
+    }
+    if (macros.has(parts[0])) {
+      // a macro the text or a header defines: what it costs is what it
+      // expands to, which only the server's check knows
       made.push({ line: number, text: raw, ticks: null, error: null });
       return;
     }
@@ -51,6 +66,25 @@ export function listing(text, tariff) {
     made.push({ line: number, text: raw, ticks: ticks[op], error: null });
   });
   return made;
+}
+
+/**
+ * The names `#define`d in a text and in every header the text includes,
+ * so the listing knows which first words are macros rather than mistakes.
+ */
+export function definedNames(text, tariff) {
+  const names = new Set();
+  const headers = (tariff && tariff.headers) || {};
+  const collect = (source) => {
+    for (const raw of String(source || '').split('\n')) {
+      const found = /^\s*#\s*define\s+([A-Za-z_]\w*)/.exec(raw);
+      if (found) names.add(found[1]);
+      const included = /^\s*#\s*include\s*<([\w.]+)>/.exec(raw);
+      if (included && included[1] in headers) collect(headers[included[1]]);
+    }
+  };
+  collect(text);
+  return names;
 }
 
 /** What a straight run of the listed program costs. */

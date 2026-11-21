@@ -25,7 +25,7 @@ extends to anything between the text and the instructions.
 - No change to the machine: the tariff, executor, meter and cap untouched.
 - Source-line fidelity everywhere a player is told about their program.
 - Default programs that read top to bottom as a description of behaviour,
-  and expand to the same instruction stream they replace.
+  keeping their doctrine rather than their old instruction stream.
 
 **Non-Goals:**
 - `#if` with expressions, `defined()`, `#line`, `#pragma`, stringising (`#x`),

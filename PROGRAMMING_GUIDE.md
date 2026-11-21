@@ -28,6 +28,7 @@ guide disagrees with the code, the code is right; please fix the guide.
 11. [Worked examples](#11-worked-examples)
 12. [Testing and debugging](#12-testing-and-debugging)
 13. [Pitfalls](#13-pitfalls)
+14. [Macros and the unit header](#14-macros-and-the-unit-header)
 
 ---
 
@@ -194,6 +195,11 @@ other:                            ; or stand on a line of its own
   `MAP 1, 2` is refused because `MAP` takes registers only, and
   `DIST r1, 3` is refused for the same reason. See the
   [reference](#7-instruction-reference).
+- **A line beginning `#` is a directive** for the preprocessor, which
+  expands the text before any of the above applies: `#define` gives a
+  register or a number a name, or wraps a few instructions in an inline
+  function, and `#include <unit.h>` brings in the machine's own names. See
+  [Macros and the unit header](#14-macros-and-the-unit-header).
 
 ---
 
@@ -857,15 +863,88 @@ Things to notice:
 ### 11.3 Reading the default hunter
 
 `HUNTER` in `src/board_game_concept/domain/army.py` is the best complete
-example in the codebase. It shows:
+example in the codebase, and it is written with the preprocessor
+([section 14](#14-macros-and-the-unit-header)). `show program Runner` lists
+it; the shape is:
 
-- saving `SELF`'s square into `r6`/`r7`, which no sensor touches
-- deciding with `SUB r3, {need}` / `JIF neg` whether a step and a strike are
+```asm
+#define NEED 3
+#include <unit.h>
+#define here_x   r6
+#define here_y   r7
+#define way_x    r4          ; -1 west, 0 level, 1 east: towards the flag
+#define way_y    r5
+#define row_gap  FOUND_X     ; how far along the row the flag is
+#define col_gap  FOUND_Y
+#define look_x   r2          ; the square I am thinking of stepping onto
+#define look_y   r3
+#define can_step r0          ; what the look-ahead answers: 1 to go
+#define heading  r0
+
+        UNLESS_AFFORD(NEED, rest)          ; SELF; sleep if too poor to fight
+        MOV here_x, MY_X
+        MOV here_y, MY_Y
+        FLAG enemy
+        IF_NONE(FOUND_X, rest)
+        SUB row_gap, here_x                ; how far, and which way
+        SUB col_gap, here_y
+        MOV way_x, row_gap
+        SIGN way_x
+        MOV way_y, col_gap
+        SIGN way_y
+        ABS row_gap
+        ABS col_gap
+        IF_BELOW(row_gap, col_gap, column_first)
+row_first:
+        CALL row_is_clear                  ; the shorter axis first
+        IF_NONZERO(can_step, step_along_row)
+        CALL column_is_clear               ; the other if it is blocked
+        IF_NONZERO(can_step, step_down_column)
+        REST                               ; my own stand both ways: wait
+column_first:
+        CALL column_is_clear
+        IF_NONZERO(can_step, step_down_column)
+        CALL row_is_clear
+        IF_NONZERO(can_step, step_along_row)
+        REST
+step_along_row:
+        ROW_STEP(way_x, heading)
+        STEP(heading)
+step_down_column:
+        COLUMN_STEP(way_y, heading)
+        STEP(heading)
+rest:   REST
+row_is_clear:                              ; can_step = 1 unless one of mine
+        MOV look_x, here_x
+        ADD look_x, way_x
+        MOV look_y, here_y
+        GOTO(is_it_mine)
+column_is_clear:
+        MOV look_x, here_x
+        MOV look_y, here_y
+        ADD look_y, way_y
+is_it_mine:
+        LOOK_AT(look_x, look_y)
+        IF_SEEN(FRIEND, mine)
+        SET can_step, 1
+        RET
+mine:   SET can_step, 0
+        RET
+```
+
+It shows:
+
+- naming the registers that outlive a sensor (`here_x`, `here_y` in
+  `r6`/`r7`, which no sensor touches) and giving the sensor's own answers
+  a meaning (`row_gap` is `FOUND_X` once the hunter has subtracted its own
+  square from it)
+- deciding with `UNLESS_AFFORD` whether a step and a strike are both
   affordable, and sleeping a turn if not
-- picking an axis with `ABS` and `JIF lt`, and keeping the signs for direction
-- a shared subroutine tail: `row` and `col` both fall into `look`, which does
-  the `MAP` and normalises "friend" to 0 for its callers
-- trying the other axis when the first is blocked, and sleeping if both are
+- picking an axis with `ABS` and `IF_BELOW`, having kept the signs as the
+  way to go
+- two subroutines with a shared tail: `row_is_clear` and `column_is_clear`
+  both fall into `is_it_mine`, which asks the map and answers in `can_step`
+- trying the other axis when the first is blocked, and resting if both are
 
 ---
 
@@ -973,3 +1052,227 @@ Things to look for:
 13. **Energy is shared.** Every tick is eventually paid for out of the same
     energy that buys moves and strikes. A unit that thinks every turn on a
     small compute pays for it in moves.
+
+---
+
+## 14. Macros and the unit header
+
+A program's text goes through a **preprocessor** before it is checked,
+priced or run. It is a cut-down version of the C preprocessor, so if you
+have read any C you already know it: `#define`, `#undef`, `#ifdef`,
+`#ifndef`, `#else`, `#endif`, `#error`, `##` and `#include`. It exists so
+that a program can say `MOV here_x, MY_X` instead of `MOV r6, r0`, and
+`IF_SEEN(FRIEND, wait)` instead of `SET r1, 2` / `JIF eq r0, r1, wait`.
+
+**Macros cost nothing.** The machine never sees a directive. A line that
+uses a macro costs exactly what it expands to, by the same tariff as
+everything else, so a program written with macros costs what the same
+program written out would cost. `show program` and the armoury list a macro
+line with the ticks of its expansion, and show the expansion beneath it.
+
+**Everything speaks of the line you wrote.** A refusal names your line, and
+the macro it came through (`line 12: in STEP_UP: MOVE takes north, east,
+south, west or a register`); a halt is traced at your line.
+
+### Two things that differ from C
+
+1. **A `\` continuation makes several lines, not one long one.** This
+   language has one instruction a line, so a macro that stands for two
+   instructions is written on two lines joined by `\`, and expands to two
+   lines:
+
+   ```asm
+   #define STEP(dir) MOVE dir \
+       HALT
+   STEP(east)
+   ```
+
+   expands to `MOVE east` then `HALT`.
+
+2. **A label written `@name` inside a macro body is private to each use.**
+   Each expansion gets its own copy, so a macro that branches can be used
+   twice in one program without its labels clashing:
+
+   ```asm
+   #define SKIP_IF_ZERO(r, what) JIF zero r, @skip \
+       what \
+   @skip:
+   SKIP_IF_ZERO(r0, MOVE north)
+   SKIP_IF_ZERO(r1, MOVE south)
+   HALT
+   ```
+
+   You cannot write `@name` outside a macro body, and names beginning
+   `_m<digit>` are reserved for what `@name` becomes.
+
+### The directives
+
+| Directive | What it does |
+|---|---|
+| `#define NAME body` | every later whole word `NAME` stands for `body`. `#define here_x r6`, `#define PATIENCE 20` |
+| `#define NAME(a, b) body` | an inline function: `NAME(x, y)` stands for `body` with `a` and `b` replaced. No space before the `(`. Arguments are expanded first; the wrong number is refused |
+| `a ## b` | in a body, pastes two words into one: `JMP go_ ## dir` with `dir` = `east` is `JMP go_east` |
+| `#undef NAME` | forgets a name, so it can be defined again |
+| `#ifdef NAME` / `#ifndef NAME` … `#else` … `#endif` | keeps or drops the lines between by whether `NAME` is defined. They nest |
+| `#error text` | refuses the program with `text`, if the line is kept |
+| `#include <unit.h>` | inserts the header of that name. Only headers the game holds can be included - there is one - and a file never can be. Including the same header twice inserts it once |
+
+A name is case-sensitive, is not expanded inside a `;` comment, and may not
+be defined twice with different bodies without an `#undef` between. A macro
+is never expanded inside its own expansion, as in C. An expansion of more
+than 4096 lines, or macros nested more than 64 deep, is refused.
+
+The usual pattern for a parameter a program's author may want to override:
+
+```asm
+#ifndef TARGET
+#define TARGET FLAG enemy
+#endif
+TARGET
+```
+
+### `unit.h`
+
+The one header the game holds names the machine. Every helper in it expands
+to exactly the instructions written beside it, so using one costs what
+writing it out costs; a helper that writes registers says which. The
+armoury shows it under the program editor, and `GET /_/program` publishes it
+under `headers`. In full:
+
+```asm
+; unit.h - names for the machine, so a program can say what it means.
+;
+; Every helper here expands to exactly the instructions named beside it, so
+; using one costs what writing it out costs. A helper that writes registers
+; says which; the sensors write the ones SELF, FLAG, NEAREST and MAP write.
+
+; where MOVE goes, as the numbers a register may hold
+#define NORTH 1
+#define EAST 2
+#define SOUTH 3
+#define WEST 4
+
+; what MAP answers in SEEN about a square
+#define UNKNOWN 0
+#define EMPTY 1
+#define FRIEND 2
+#define ENEMY 3
+#define OFF_BOARD 4
+
+; what SELF writes
+#define MY_X r0
+#define MY_Y r1
+#define MY_HEALTH r2
+#define MY_ENERGY r3
+#define HAVE_FLAG r4
+#define MY_NUMBER r5
+
+; what FLAG and NEAREST write: a square and how far, or -1 for none
+#define FOUND_X r0
+#define FOUND_Y r1
+#define FOUND_DIST r2
+
+; what MAP writes: the kind of square, when it was last known, and the
+; attack and health of an enemy met there
+#define SEEN r0
+#define SEEN_TURN r1
+#define SEEN_ATTACK r2
+#define SEEN_HEALTH r3
+
+; what RECV writes: 1 if a message was read, and its three words
+#define GOT_MESSAGE r0
+#define WORD1 r1
+#define WORD2 r2
+#define WORD3 r3
+
+; branching: one JIF each
+#define GOTO(where) JMP where
+#define IF_ZERO(r, where) JIF zero r, where
+#define IF_NONZERO(r, where) JIF notzero r, where
+#define IF_NEG(r, where) JIF neg r, where
+#define IF_POS(r, where) JIF pos r, where
+#define IF_EQ(a, b, where) JIF eq a, b, where
+#define IF_BELOW(a, b, where) JIF lt a, b, where
+#define IF_NONE(r, where) JIF neg r, where
+#define IF_FOUND(r, where) JIF pos r, where
+
+; what my map says of the square (x, y): SEEN, with SEEN_TURN and the
+; enemy's SEEN_ATTACK and SEEN_HEALTH
+#define LOOK_AT(x, y) MAP x, y
+
+; after LOOK_AT: off to `where` if the square is of `kind` - UNKNOWN, EMPTY,
+; FRIEND, ENEMY or OFF_BOARD. Writes SEEN_TURN
+#define IF_SEEN(kind, where) SET SEEN_TURN, kind \
+    JIF eq SEEN, SEEN_TURN, where
+
+; acting: a step and the end of the turn, a hold, or a rest
+#define STEP(dir) MOVE dir \
+    HALT
+#define STAY HOLD \
+    HALT
+#define REST SLEEP 1
+#define REST_LONG SLEEP 100
+
+; SELF, then off to `where` unless MY_ENERGY covers `need`. Writes r0-r5
+; as SELF does and leaves MY_ENERGY less `need`
+#define UNLESS_AFFORD(need, where) SELF \
+    SUB MY_ENERGY, need \
+    JIF neg MY_ENERGY, where
+
+; the direction number for a step along the row by way_x (-1 west, 1 east)
+; or down the column by way_y (-1 north, 1 south), into `into`
+#define ROW_STEP(way_x, into) SET into, 3 \
+    SUB into, way_x
+#define COLUMN_STEP(way_y, into) SET into, 2 \
+    ADD into, way_y
+```
+
+### The register table, by name
+
+| Written by | Names | Registers |
+|---|---|---|
+| `SELF` | `MY_X`, `MY_Y`, `MY_HEALTH`, `MY_ENERGY`, `HAVE_FLAG`, `MY_NUMBER` | r0-r5 |
+| `FLAG`, `NEAREST` | `FOUND_X`, `FOUND_Y`, `FOUND_DIST` | r0-r2 |
+| `MAP` / `LOOK_AT` | `SEEN`, `SEEN_TURN`, `SEEN_ATTACK`, `SEEN_HEALTH` | r0-r3 |
+| `RECV` | `GOT_MESSAGE`, `WORD1`, `WORD2`, `WORD3` | r0-r3 |
+| nobody | - | r6, r7 |
+
+`r6` and `r7` are the registers no sensor writes, which is why every default
+program keeps its own square in them. A name is only a name: `MY_X` is `r0`
+whether or not `SELF` has run, so read a sensor's names right after the
+sensor.
+
+### A program written with the header
+
+```asm
+#define NEED 2
+#include <unit.h>
+; step towards the enemy's edge when I can afford a step and a strike,
+; never onto one of my own
+
+#define enemy_row r6
+#define ahead     r7
+#define front     r2
+#define heading   r0
+
+        FLAG enemy
+        IF_NONE(FOUND_X, rest)
+        MOV enemy_row, FOUND_Y
+        UNLESS_AFFORD(NEED, rest)
+        MOV ahead, enemy_row
+        SUB ahead, MY_Y
+        IF_ZERO(ahead, rest)
+        SIGN ahead
+        MOV front, MY_Y
+        ADD front, ahead
+        LOOK_AT(MY_X, front)
+        IF_SEEN(FRIEND, rest)
+        COLUMN_STEP(ahead, heading)
+        STEP(heading)
+rest:   REST
+```
+
+That is the catalogue's vanguard, the program every Pawn runs. All four
+default programs are written this way; `show program <type>` lists any of
+them with each line's ticks and what the macro lines expand to, and they
+are the best examples of the style.

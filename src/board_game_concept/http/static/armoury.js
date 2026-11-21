@@ -708,9 +708,13 @@ function renderProgramEditor(game) {
     spellcheck: 'false', 'aria-label': `program of ${chosen.name}`,
   });
   editor.value = text;
-  const lines = listing(text, tariff);
   const check = state.programCheck && state.programCheck.text === text
     ? state.programCheck : null;
+  // the server's listing is the one that knows what a macro line expands
+  // to and costs; while it is on its way, the local pass prices what it can
+  const lines = check && check.ok === true
+    ? check.lines.map((line) => ({ ...line, error: null }))
+    : listing(text, tariff);
   const bad = new Map();
   for (const line of lines) if (line.error) bad.set(line.line, line.error);
   if (check && check.ok === false && !bad.has(check.line)) {
@@ -758,8 +762,21 @@ function renderProgramEditor(game) {
               line.ticks === null ? '' : String(line.ticks)),
       element('td', {}, element('code', {}, line.text || ' '),
               wrong ? element('span', { class: 'tag warn' }, wrong) : null)));
+    // what a macro line stands for, beneath it
+    for (const expanded of line.expanded || []) {
+      body.append(element('tr', { class: 'expanded' },
+        element('td', {}), element('td', {}),
+        element('td', {}, element('code', {}, `= ${expanded}`))));
+    }
   }
   table.append(body);
+  // the header a program may #include, for a player who wants its names
+  const headers = (tariff && tariff.headers) || {};
+  for (const name of Object.keys(headers).sort()) {
+    card.append(element('details', { class: 'header' },
+      element('summary', {}, `#include <${name}>`),
+      element('pre', {}, headers[name])));
+  }
 
   card.append(element('div', { class: 'row' },
     element('div', { class: 'grow' }, editor),

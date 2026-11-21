@@ -46,8 +46,9 @@ def program_view(record):
             program = Program(text)
         except ProgramError as e:
             raise GameError(f"the stored program is refused at {e}") from e
-        for number, raw, ticks in program.listing():
-            lines.append({'line': number, 'text': raw, 'ticks': ticks})
+        for number, raw, ticks, expanded in program.listing(expanded=True):
+            lines.append({'line': number, 'text': raw, 'ticks': ticks,
+                          'expanded': expanded})
         total = program.ticks
     return {
         'type': record.get('name'),
