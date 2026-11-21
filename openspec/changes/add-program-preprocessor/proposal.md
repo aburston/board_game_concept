@@ -41,10 +41,14 @@ machine, the tariff, or what any instruction costs.
   source line the ticks of what it expands to, and a halt is traced at the
   source line. A listing also shows what each macro line expands to.
 - **The catalogue's default programs are rewritten to read as prose** -
-  the hunter, the explorer, the vanguard and the warden - using `<unit.h>`
-  and named registers. They give the same orders, sleeps and memory and
-  spend the same ticks on every board as the programs they replace, so no
-  game played with the stock army changes.
+  the hunter, the explorer, the vanguard and the warden - using `<unit.h>`,
+  named registers and inline helpers. Readability comes first: a rewrite may
+  restructure a program, change its register use and make slightly different
+  choices on the board, as long as it keeps the doctrine the catalogue states
+  for it, stays deterministic, fits its type's cap every turn and still
+  passes every stock-army scenario. Games played with the stock army may
+  therefore resolve differently from before; the recorded match series under
+  `matches/` stay as history of the programs they were played with.
 - The web armoury prices a program through the server's check, so a line
   that uses a macro shows the ticks of its expansion and a directive costs
   nothing.
@@ -65,7 +69,8 @@ machine, the tariff, or what any instruction costs.
 - `unit-program`: a program's text may hold directives and macro uses and
   is expanded before it is checked; refusals name the source line.
 - `default-army`: the catalogue's default programs are written with the
-  preprocessor for readability, and must behave exactly as before.
+  preprocessor for readability, keeping their doctrine rather than their
+  exact instructions.
 - `web-interface`: the armoury's per-line tick listing prices a line by its
   expansion and accepts directive lines.
 
@@ -83,7 +88,8 @@ machine, the tariff, or what any instruction costs.
 - `PROGRAMMING_GUIDE.md` (new chapter, `<unit.h>` printed in full),
   `GAME_RULES.md` R10, `MODULE_DESCRIPTION.md`, `SPEC_COVERAGE.md`.
 - Tests: new `tests/test_preprocess.py`; `test_default_army.py` holds the
-  rewritten programs to the old ones' orders and ticks.
+  rewritten programs to their doctrine and the stock-army scenarios rather
+  than to the old programs' orders.
 - No new dependency, no storage change: types already store program text.
 - Out of scope: the match-harness doctrines under `matches/bots/programs/`,
   which are experiment fixtures whose recorded results cite them as written.

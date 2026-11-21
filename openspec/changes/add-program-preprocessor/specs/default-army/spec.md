@@ -19,19 +19,30 @@ numbers, and carry no templating a player could not type themselves.
 - **WHEN** a player sets the text a catalogue type's program reads back as on a type of their own
 - **THEN** it is accepted, and their type thinks as the catalogue's does
 
-### Requirement: The Rewritten Default Programs Play As Before
+### Requirement: The Rewritten Default Programs Keep Their Doctrine
 
-Each rewritten default program SHALL behave exactly as the program it
-replaces: on every board, memory and inbox it SHALL give the same order,
-sleep, memory and messages and spend the same ticks, so that a game played
-with the stock army resolves as it did before the rewrite.
+Each rewritten default program SHALL be written for readability first and MAY
+differ in its instructions, register use and exact choices from the program it
+replaces, but SHALL keep the doctrine the catalogue states for it, SHALL be
+deterministic, SHALL fit its type's tick cap on every turn, and SHALL still
+satisfy every scenario this specification sets for the stock army.
 
-#### Scenario: Old and new on the same board
+#### Scenario: The hunter keeps its doctrine
 
-- **WHEN** a rewritten default program and the program it replaced are run against the same board, memory and inbox
-- **THEN** they give the same order, sleep, memory and messages and spend the same ticks
+- **WHEN** a rewritten hunter stands with an enemy flag in reach and one of its own units on the direct way
+- **THEN** it steps round its own unit towards the flag, and sleeps a turn when it cannot afford a step and a strike or when both ways round are its own units
 
-#### Scenario: A stock game is unchanged
+#### Scenario: The explorer keeps its doctrine
 
-- **WHEN** two players commit the stock army unchanged
-- **THEN** every turn resolves as it did with the programs the rewrite replaced
+- **WHEN** a rewritten explorer has an unknown square to reach
+- **THEN** it steps towards it onto a square its map calls unknown or empty, never onto one of its own, a known enemy or off the board, and sleeps when nothing is left to find or twenty turns have not brought it nearer
+
+#### Scenario: The vanguard keeps its doctrine
+
+- **WHEN** a rewritten vanguard can afford a step and a strike and the square in front of it is not one of its own
+- **THEN** it steps towards the enemy's edge, and sleeps a turn otherwise
+
+#### Scenario: The stock army still plays
+
+- **WHEN** two players commit the stock army unchanged under the rewritten programs
+- **THEN** every scenario of "Every Registered Player Is Given The Default Catalogue" and the two-player array holds: at least one unit moves on turn one, every unit with a controller but the Keeps leaves its square within twenty turns, a blocked hunter sleeps, and the two seats mirror each other

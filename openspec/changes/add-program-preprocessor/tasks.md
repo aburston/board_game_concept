@@ -32,12 +32,13 @@
 
 ## 5. Rewrite the default programs
 
-- [ ] 5.1 Freeze the current HUNTER, EXPLORER, VANGUARD and WARDEN texts (formatted for each catalogue type) as fixtures in `tests/test_default_army.py`, beside the existing OLD_ fixtures
-- [ ] 5.2 Rewrite the hunter with `#include <unit.h>`, `#define NEED`, `#ifndef TARGET`, named registers and helpers; replace `str.format` templating in `army.hunter`; verify its expansion's `(op, args)` stream equals the frozen one modulo label names for every hunter type, and the snapshot test gives the same orders, sleeps and ticks
-- [ ] 5.3 Rewrite the explorer the same way, its two memory words given names; verify stream equality and the existing three-turn snapshot test including memory
-- [ ] 5.4 Rewrite the vanguard and the warden; verify stream equality and a new snapshot-equivalence test for the vanguard
+- [ ] 5.1 Write a doctrine test per default program on hand-built snapshots in `tests/test_default_army.py` (hunter: open way, friend ahead, both ways blocked, too poor, no flag; explorer: unknown reachable, step aside, nothing left, twenty turns stalled; vanguard: can afford, cannot, friend in front, at the edge; warden: sleeps 100); verify they pass against the current programs first, so the bar is known before anything is rewritten
+- [ ] 5.2 Rewrite the hunter with `#include <unit.h>`, `#define NEED`, `#ifndef TARGET`, named registers, named subroutines and helpers, restructuring freely for readability; replace `str.format` in `army.hunter`; verify the doctrine tests, the cap test and "A blocked hunter costs nothing" pass for every hunter type
+- [ ] 5.3 Rewrite the explorer the same way, its memory words named; verify its doctrine tests and the cap test pass over a multi-turn run
+- [ ] 5.4 Rewrite the vanguard and the warden; verify their doctrine tests and the cap test pass
 - [ ] 5.5 Add tests for "A default program reads as words" (each includes `<unit.h>`, no direction or map answer by bare number in its own text) and "A player copies a default program" (set the read-back text on a new type)
-- [ ] 5.6 Verify the stock-army tests ("A seat that changes nothing plays", "The whole army gets out", the mirror test, "A blocked hunter costs nothing") pass unchanged
+- [ ] 5.6 Verify the stock-army scenarios ("A seat that changes nothing plays", "The whole army gets out", the mirror test, determinism) pass; rewrite any test that compared a replay to a fixture of the old programs to assert properties instead
+- [ ] 5.7 Play a short stock-army series with `matches/series.sh` and read the result for anything the doctrine tests missed (a unit that never leaves, a loop that halts at the cap); record the outcome in a `matches/RESULTS-READABLE-PROGRAMS.md`
 
 ## 6. Documentation
 
@@ -46,4 +47,4 @@
 
 ## 7. Integration
 
-- [ ] 7.1 Run the full test suite and `python -m board_game_concept.test_suite`, and play one stock-army game end to end through `matches/arena.py`, confirming the record matches a game played before the change on the same seed setup
+- [ ] 7.1 Run the full test suite and `python -m board_game_concept.test_suite`, and play one stock-army game end to end through `matches/arena.py`, confirming it resolves to an outcome and every controller trace is free of halts

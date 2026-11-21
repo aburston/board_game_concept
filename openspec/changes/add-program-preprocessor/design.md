@@ -138,13 +138,31 @@ The final header is settled during implementation by what the four default
 programs need; the spec fixes only the constants and the "costs what it
 replaces" rule. Helpers that clobber registers say so beside them.
 
-### Default programs: named registers, same instruction stream
+### Default programs: readability first, doctrine held
 
 Each catalogue program becomes source text that begins `#include <unit.h>`,
-`#define`s its parameters (`NEED`, `TARGET`) and register roles, and reads as
-a sequence of helpers and named operands. `army.hunter(need)` becomes
-`"#define NEED %d\n" % need + HUNTER` - a line the player can read and edit -
-instead of `str.format`. Sketch of the hunter's head:
+`#define`s its parameters (`NEED`, `TARGET`) and register roles, and reads
+top to bottom as a description of what the unit does. `army.hunter(need)`
+becomes `"#define NEED %d\n" % need + HUNTER` - a line the player can read
+and edit - instead of `str.format`.
+
+The rewrites are free to restructure: subroutines with speaking names
+(`step_round_friends`, `can_afford`), one decision per labelled block,
+helpers from `unit.h` for every test, and comments that say why rather than
+what a register holds. Where the old program's exact tie-breaks or ordering
+of checks got in the way of a clear shape, the clear shape wins. What is
+held fixed is the **doctrine** the catalogue table states for each program,
+and the measurable consequences the stock-army tests already pin down:
+determinism, fitting the cap on every turn, a blocked hunter sleeping, the
+whole army leaving its squares within twenty turns, and the two seats
+mirroring each other. Each doctrine clause gets a direct unit test on a
+hand-built snapshot (e.g. "friend ahead, flag beyond: steps aside").
+
+Consequence accepted: a stock-army game may no longer resolve turn for turn
+as it did. The determinism suite is unaffected (it compares a game with
+itself), but any test that compares a replay against a recorded fixture of
+the old programs is rewritten to assert properties instead. `matches/`
+results stand as history of the programs they name. Sketch of the hunter:
 
 ```
 #define NEED 3
@@ -156,27 +174,20 @@ instead of `str.format`. Sketch of the hunter's head:
 #endif
 #define here_x r6
 #define here_y r7
-#define way_x  r4          ; -1 west, 0 still, +1 east
-#define way_y  r5          ; -1 north, 0 still, +1 south
+#define goal_x r4
+#define goal_y r5
 
-        SELF
+        UNLESS_AFFORD(NEED, rest)        ; SELF, then sleep if too poor
         MOV here_x, MY_X
         MOV here_y, MY_Y
-        SUB MY_ENERGY, NEED
-        IF_NEG(MY_ENERGY, rest)
         TARGET
-        IF_NONE(FOUND_X, rest)
-        ...
+        IF_NONE(FOUND_X, rest)           ; no flag left to hunt
+        MOV goal_x, FOUND_X
+        MOV goal_y, FOUND_Y
+        CALL step_towards_goal           ; MOVEs and HALTs if a way is clear
+rest:   REST                             ; both ways are mine: wait a turn
+...
 ```
-
-The acceptance test is mechanical and strong: for each default program,
-the new expansion's `(op, args)` sequence equals the old program's after
-renaming labels, and the existing snapshot-equivalence tests extend to the
-vanguard and warden. Equal streams mean equal orders, sleeps, memory and
-ticks on every board, so no recorded series result is invalidated. Where a
-readable form genuinely needs a different instruction order, the snapshot
-test (orders, sleeps, memory, ticks) is the fallback bar, and the change is
-noted in the guide.
 
 ### The armoury: the server's listing wins, the local pass stays honest
 
@@ -210,8 +221,13 @@ exponential fan-out.
 - [Helpers hide register clobbering] → every helper that writes a register
   says which beside its definition; the guide's chapter opens with the
   register table.
-- [Rewrites drift behaviour] → instruction-stream equality test, plus the
-  existing mirror and "whole army gets out" tests unchanged.
+- [Rewrites drift from doctrine] → a unit test per doctrine clause on
+  hand-built snapshots, plus the existing cap, mirror, "blocked hunter" and
+  "whole army gets out" tests unchanged; a short stock-army series is played
+  and read before the change lands, as earlier program changes were.
+- [Stock games resolve differently from recorded ones] → accepted; the
+  records under `matches/` are kept as history and any fixture-replay test
+  asserts properties instead of turns.
 
 ## Migration Plan
 
