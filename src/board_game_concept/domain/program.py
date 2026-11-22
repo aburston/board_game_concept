@@ -22,6 +22,8 @@ what it returns, so a program's bill is the same on every board.
 import re
 from collections import namedtuple
 
+from .preprocess import HEADERS, ProgramError, expand
+
 # the longest a unit may sleep in one order. Without a bound a program could
 # switch a unit off for the whole game for the price of one tick; with it a
 # unit looks at the board at least this often, paying another tick to sleep
@@ -71,16 +73,9 @@ _LABEL = re.compile(r'^[A-Za-z_][\w-]*$')
 _LABEL_LINE = re.compile(r'^([A-Za-z_][\w-]*):\s*(.*)$')
 
 
-class ProgramError(ValueError):
-    """A program the machine will not accept, naming the line."""
-
-    def __init__(self, line, message):
-        self.line = line
-        self.message = message
-        super().__init__(f"line {line}: {message}")
-
-
-Instruction = namedtuple('Instruction', 'op args line')
+# `line` is the source line the instruction came from and `macro` the
+# outermost macro that produced it, or None for a line written as it stands
+Instruction = namedtuple('Instruction', 'op args line macro', defaults=(None,))
 
 
 def _operand(token, line):
@@ -161,30 +156,40 @@ def _check(op, args, line):
 
 
 def _parse(text):
-    """The instructions and labels of a program's text."""
+    """The instructions and labels of a program's text, after expansion.
+
+    The preprocessor turns the text into lines, each remembering the source
+    line it came from; what is checked and run is those lines, and every
+    refusal names the source line, with the macro it came through.
+    """
     instructions = []
     labels = {}
-    for number, raw in enumerate(text.splitlines(), 1):
-        line = raw.split(';', 1)[0].strip()
-        if not line:
-            continue
-        found = _LABEL_LINE.match(line)
-        if found:
-            label, line = found.group(1), found.group(2).strip()
-            if label in labels:
-                raise ProgramError(number, f"label {label} is defined twice")
-            labels[label] = len(instructions)
-            if not line:
-                continue
-        parts = [part for part in re.split(r'[\s,]+', line) if part]
-        op = parts[0].upper()
-        args = [_operand(part, number) for part in parts[1:]]
-        if op == 'SAY' and args:
-            # the recipient is a unit's name, whatever it looks like: a unit
-            # called `r1` is addressed by that name, not by a register
-            args[0] = ('word', parts[1])
-        _check(op, args, number)
-        instructions.append(Instruction(op, tuple(args), number))
+    for number, macro, line in expand(text):
+        try:
+            found = _LABEL_LINE.match(line)
+            if found:
+                label, line = found.group(1), found.group(2).strip()
+                if label in labels:
+                    raise ProgramError(number,
+                                       f"label {label} is defined twice")
+                labels[label] = len(instructions)
+                if not line:
+                    continue
+            parts = [part for part in re.split(r'[\s,]+', line) if part]
+            op = parts[0].upper()
+            args = [_operand(part, number) for part in parts[1:]]
+            if op == 'SAY' and args:
+                # the recipient is a unit's name, whatever it looks like: a
+                # unit called `r1` is addressed by that name, not by a
+                # register
+                args[0] = ('word', parts[1])
+            _check(op, args, number)
+        except ProgramError as error:
+            if macro is not None:
+                raise ProgramError(number,
+                                   f"in {macro}: {error.message}") from None
+            raise
+        instructions.append(Instruction(op, tuple(args), number, macro))
     for instruction in instructions:
         if instruction.op in ('JMP', 'JIF', 'CALL'):
             target = instruction.args[-1][1]
@@ -215,12 +220,33 @@ class Program:
         """What a straight run through the program costs."""
         return sum(TICKS[instruction.op] for instruction in self.instructions)
 
-    def listing(self):
-        """Each source line with the ticks it costs, for a player to read."""
-        by_line = {instruction.line: TICKS[instruction.op]
-                   for instruction in self.instructions}
-        return [(number, raw, by_line.get(number))
-                for number, raw in enumerate(self.text.splitlines(), 1)]
+    def listing(self, expanded=False):
+        """Each source line with the ticks it costs, for a player to read.
+
+        A line that uses a macro costs what its expansion costs. With
+        `expanded`, each entry also carries the instructions the line
+        expands to - empty for a line that reads as it runs - so that a
+        reader can see what a macro line stands for.
+        """
+        by_line = {}
+        for instruction in self.instructions:
+            by_line[instruction.line] = (by_line.get(instruction.line, 0)
+                                         + TICKS[instruction.op])
+        source = self.text.splitlines()
+        if not expanded:
+            return [(number, raw, by_line.get(number))
+                    for number, raw in enumerate(source, 1)]
+        shown = {}
+        for number, macro, text in expand(self.text):
+            shown.setdefault(number, []).append(text)
+        made = []
+        for number, raw in enumerate(source, 1):
+            lines = shown.get(number, [])
+            own = ' '.join(raw.split(';', 1)[0].split())
+            if lines == [own] or (not lines and not own):
+                lines = []
+            made.append((number, raw, by_line.get(number), lines))
+        return made
 
 
 def cap(compute):

@@ -31,6 +31,7 @@ source of truth for intended behaviour.
 | `default-army` | What a new game and a newly registered player start with: the default board, the catalogue of eight types, the fifteen-unit array, and when each is given |
 | `web-interface` | Playing in a browser: a client of the same contract, the armoury where a program is written and priced, the replay the game is watched as, what it must make visible, and what it must not remember |
 | `match-series` | How a series of bot-played games is run so that its results are evidence about the rules: through the real roles, each bot given only its own view, on the game's own defaults, recorded turn by turn, and written up saying what it was played under |
+| `program-preprocessor` | The macro language a program's text is written in: a C-style subset - `#define`, function-like macros, `##`, conditionals, `#error`, `#include` of built-in headers only - with multi-line bodies, labels private to each use, bounds on expansion, `unit.h`, and every refusal, listing and trace naming the source line |
 | `unit-program` | The controller a type's units run: the program and its instruction set, the one published cost of every instruction, the meter and the per-turn cap compute buys, sleep and waking, the army's shared map, the radio and the inbox, and the trace kept for the owner |
 
 Validate them with:

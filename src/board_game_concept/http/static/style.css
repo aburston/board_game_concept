@@ -480,4 +480,6 @@ ul.feed li.deployed, ul.feed li.moved, ul.feed li.joined { border-left-color: va
 .program-editor .listing tr.bad td { background: var(--warn-soft); }
 .program-editor .listing tr.bad td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
 .program-editor .listing .tag { margin-left: 0.5rem; }
+.program-editor .listing tr.expanded td { color: var(--muted); padding-top: 0; padding-bottom: 0; }
+.program-editor details.header pre { font-family: var(--mono); font-size: 0.8rem; white-space: pre; overflow-x: auto; }
 button.link { background: none; border: none; color: var(--focus); text-decoration: underline; padding: 0; }

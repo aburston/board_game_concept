@@ -145,13 +145,16 @@ def create_app(base_path=None, backend=None, account_store=None):
         ticks as it is typed. Rules rather than game state, so no credential:
         the same table `domain/program.py` prices every program by."""
         from ..domain.program import (MAX_SLEEP, TICKS, TICKS_PER_COMPUTE,
-                                      CONDITIONS, DIRECTIONS)
+                                      CONDITIONS, DIRECTIONS, HEADERS)
         return jsonify({
             'ticks': TICKS,
             'ticks_per_compute': TICKS_PER_COMPUTE,
             'max_sleep': MAX_SLEEP,
             'conditions': CONDITIONS,
             'directions': sorted(DIRECTIONS),
+            # the headers a program may #include, by name: what the armoury
+            # shows a player who asks what <unit.h> gives them
+            'headers': HEADERS,
         })
 
     @app.post('/_/program/check')
@@ -170,8 +173,10 @@ def create_app(base_path=None, backend=None, account_store=None):
                             'message': error.message})
         return jsonify({
             'ok': True,
-            'lines': [{'line': number, 'text': raw, 'ticks': ticks}
-                      for number, raw, ticks in program.listing()],
+            'lines': [{'line': number, 'text': raw, 'ticks': ticks,
+                       'expanded': expanded}
+                      for number, raw, ticks, expanded
+                      in program.listing(expanded=True)],
             'total': program.ticks,
             'cap': cap(compute),
         })

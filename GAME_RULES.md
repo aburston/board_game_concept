@@ -966,7 +966,14 @@ A program is text in a small assembly language, set during setup with
 commit, and refused at the moment it is set if any line is not an instruction
 the set accepts - naming the line. A type with compute 0 has no controller
 and carries no program (**R2.4**). The program is private to the player who
-wrote it (**R6.2**).
+wrote it (**R6.2**). Its text may use a macro preprocessor in the style of
+C's - `#define`, `#undef`, `#ifdef`/`#ifndef`/`#else`/`#endif`, `#error`,
+`##` and `#include <unit.h>`, the one header the game holds - so that
+registers, numbers and recurring idioms can be given names; the program is
+expanded before it is checked, priced and run, a macro costs nothing beyond
+what it expands to, and every refusal, listing and trace names the line the
+player wrote. `#include` never reads a file. See `PROGRAMMING_GUIDE.md`
+section 14.
 
 **R10.2 The machine and its tariff.** Eight registers `r0` to `r7`, a memory
 of words addressed by number and unbounded, and an inbox of messages. Every
@@ -1067,10 +1074,13 @@ slept or was woken, and whether it halted and at which instruction. A trace
 is its owner's to read and the observer's; nothing of it reaches another
 player (**R6.2**).
 
-**R10.9 Every default program fits its cap.** The programs the catalogue
-ships with (**R2.13**) are written to run within their type's cap on every
-turn of a stock-army game, and `tests/test_default_army.py` plays one to hold
-them to it.
+**R10.9 Every default program fits its cap, and reads as words.** The
+programs the catalogue ships with (**R2.13**) are written to run within their
+type's cap on every turn of a stock-army game, and `tests/test_default_army.py`
+plays one to hold them to it. Each is written with the preprocessor - it
+includes `<unit.h>`, names every register it keeps a value in, and names no
+direction or map answer by number - so that the defaults are the language's
+first lesson rather than a page of register numbers.
 
 ---
 ---

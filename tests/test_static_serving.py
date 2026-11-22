@@ -376,6 +376,25 @@ def test_the_editor_lists_each_line_with_its_ticks_as_it_is_typed():
     assert "class: wrong ? 'bad' : ''" in editor
 
 
+def test_the_editor_draws_the_servers_listing_when_it_is_current():
+    armoury = _module('armoury.js')
+    editor = _function(armoury, 'renderProgramEditor')
+    # the server's check, when it is the current text's, is what is drawn:
+    # it knows what a macro line costs and expands to
+    assert 'check && check.ok === true' in editor
+    assert 'check.lines.map(' in editor
+    assert 'line.expanded || []' in editor
+    assert "class: 'expanded'" in editor
+
+
+def test_the_editor_shows_the_headers_a_program_may_include():
+    armoury = _module('armoury.js')
+    editor = _function(armoury, 'renderProgramEditor')
+    assert 'tariff.headers' in editor
+    assert "element('details', { class: 'header' }" in editor
+    assert '`#include <${name}>`' in editor
+
+
 def test_a_program_is_not_sent_until_every_line_is_accepted():
     armoury = _module('armoury.js')
     editor = _function(armoury, 'renderProgramEditor')
@@ -434,8 +453,14 @@ def test_the_listing_agrees_with_the_server_line_for_line(client):
             'compute': record['compute']}).get_json()
         assert theirs['ok'] is True, name
         ours = _run_listing(record['program'], tariff)
-        assert [(line['line'], line['ticks']) for line in ours] == [
-            (line['line'], line['ticks']) for line in theirs['lines']], name
+        # every line the page prices, it prices as the server does; a line
+        # that uses a macro it leaves to the server, which knows what the
+        # line expands to
+        servers = {line['line']: line['ticks'] for line in theirs['lines']}
+        assert [(line['line'], line['ticks']) for line in ours
+                if line['ticks'] is not None] == [
+            (line['line'], servers[line['line']]) for line in ours
+            if line['ticks'] is not None], name
         assert all(line['error'] is None for line in ours), name
     # and a subroutine, priced at a tick each end
     text = 'CALL step\nHALT\nstep: SELF\nRET\n'
@@ -447,6 +472,31 @@ def test_the_listing_agrees_with_the_server_line_for_line(client):
         (1, 1), (2, 0), (3, 1), (4, 1)]
     assert [(line['line'], line['ticks']) for line in theirs['lines']] == [
         (1, 1), (2, 0), (3, 1), (4, 1)]
+
+
+@pytest.mark.skipif(NODE is None, reason='node is not installed')
+def test_the_listing_leaves_directives_and_macros_to_the_server(client):
+    """A directive costs nothing; a macro line is unpriced and unmarked
+    locally, and priced by its expansion by the server; a bad macro use is
+    marked from the server's answer."""
+    tariff = client.get('/_/program').get_json()
+    text = ('#include <unit.h>\n#define NEED 3\n#define GO(d) MOVE d \\\n'
+            '    HALT\nUNLESS_AFFORD(NEED, rest)\nGO(south)\nrest: REST\n')
+    ours = _run_listing(text, tariff)
+    assert [line['ticks'] for line in ours] == [None] * 7
+    assert all(line['error'] is None for line in ours)
+    theirs = client.post('/_/program/check',
+                         json={'program': text, 'compute': 3}).get_json()
+    assert theirs['ok'] is True
+    assert [(line['ticks'], line['expanded']) for line in theirs['lines']] == [
+        (None, []), (None, []), (None, []), (None, []),
+        (3, ['SELF', 'SUB r3, 3', 'JIF neg r3, rest']),
+        (1, ['MOVE south', 'HALT']),
+        (1, ['rest: SLEEP 1'])]
+    wrong = client.post('/_/program/check', json={
+        'program': '#include <unit.h>\nIF_NEG(r0)\n', 'compute': 3}).get_json()
+    assert wrong['ok'] is False and wrong['line'] == 2
+    assert 'IF_NEG' in wrong['message']
 
 
 @pytest.mark.skipif(NODE is None, reason='node is not installed')

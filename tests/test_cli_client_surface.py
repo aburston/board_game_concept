@@ -365,6 +365,25 @@ class SettingAProgram(ClientTestCase):
         assert by_line['3'] == '1' and by_line['5'] == '0'
         assert lines[-1] == 'a straight run costs 6 ticks'
 
+    def test_a_macro_line_is_priced_by_its_expansion_and_shown(self):
+        client = self.a_thinking_type()
+        path = self.program_file('#include <unit.h>\nUNLESS_AFFORD(2, rest)\n'
+                                 'STEP(south)\nrest: REST\n', name='m.asm')
+        client.send_line(f'set program Runner {path}')
+        client.read_until_count(CLIENT_PROMPT, 3)
+        lines = self.shown(client, CLIENT_PROMPT,
+                           'show program Runner').splitlines()
+        assert lines[2].split()[:2] == ['1', '-']
+        assert lines[3].split()[:3] == ['2', '3', 'UNLESS_AFFORD(2,']
+        # the expansion is printed beneath the line that stands for it
+        assert lines[4].strip() == '= SELF'
+        assert lines[5].strip() == '= SUB r3, 2'
+        assert lines[6].strip() == '= JIF neg r3, rest'
+        assert lines[-1] == 'a straight run costs 5 ticks'
+        shown = self.shown(client, CLIENT_PROMPT,
+                           'show program Runner json')
+        assert '"expanded"' in shown and '"MOVE south"' in shown
+
     def test_a_type_without_a_program(self):
         client = self.a_thinking_type()
         shown = self.shown(client, CLIENT_PROMPT, 'show program Runner')
